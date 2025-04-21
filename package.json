@@ -9,7 +9,8 @@
     "lint": "next lint",
     "export": "next build",
     "predeploy": "npm run build",
-    "deploy": "touch out/.nojekyll && gh-pages -d out -t true"
+    "deploy": "touch out/.nojekyll && gh-pages -d out -t true",
+    "deploy:manual": "npm run build && touch out/.nojekyll && gh-pages -d out -t true"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",
