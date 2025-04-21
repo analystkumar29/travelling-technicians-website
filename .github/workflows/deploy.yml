@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -26,13 +27,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
-      - name: Build and export
+      - name: Build
         run: npm run build
         env:
           NODE_ENV: production
         
       - name: Add .nojekyll file
         run: touch ./out/.nojekyll
+      
+      # Create CNAME file if you have a custom domain (remove this if not needed)
+      # - name: Create CNAME file
+      #   run: echo "yourdomain.com" > ./out/CNAME
       
       # This action deploys the contents of the 'out' directory to the gh-pages branch
       # Your site will be available at https://analystkumar29.github.io/travelling-technicians-website/
