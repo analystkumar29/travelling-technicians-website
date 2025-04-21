@@ -50,8 +50,8 @@ export default function Header() {
   };
 
   // Function to check if any submenu item is active
-  const isAnySubmenuActive = (submenu: {name: string, href: string}[]): boolean => {
-    return submenu.some(subItem => isActiveSubmenuItem(subItem.href));
+  const isAnySubmenuActive = (submenu: {name: string, href: string}[] | undefined): boolean => {
+    return submenu ? submenu.some(subItem => isActiveSubmenuItem(subItem.href)) : false;
   };
 
   // Handle dropdown toggles
@@ -107,7 +107,7 @@ export default function Header() {
                         <button
                           onClick={() => handleDropdownToggle(item.name)}
                           className={`px-3 py-2 rounded-md text-sm font-medium flex items-center ${
-                            item.submenu && isAnySubmenuActive(item.submenu)
+                            isAnySubmenuActive(item.submenu)
                               ? 'text-primary-600 bg-gray-100'
                               : 'text-gray-700 hover:text-primary-600 hover:bg-gray-100'
                           }`}
@@ -206,7 +206,7 @@ export default function Header() {
                   <>
                     <Disclosure.Button
                       className={`flex justify-between w-full px-3 py-2 text-base font-medium rounded-md ${
-                        isAnySubmenuActive(navigation[1].submenu)
+                        isAnySubmenuActive(navigation[1]?.submenu)
                           ? 'text-primary-600 bg-gray-100'
                           : 'text-gray-700 hover:text-primary-600 hover:bg-gray-100'
                       }`}
@@ -230,7 +230,7 @@ export default function Header() {
                       </svg>
                     </Disclosure.Button>
                     <Disclosure.Panel className="px-4 py-2 space-y-1.5">
-                      {navigation[1].submenu.map((subItem) => (
+                      {navigation[1]?.submenu?.map((subItem) => (
                         <Link
                           key={subItem.name}
                           href={subItem.href}
