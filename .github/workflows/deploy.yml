@@ -34,6 +34,8 @@ jobs:
       - name: Add .nojekyll file
         run: touch ./out/.nojekyll
       
+      # This action deploys the contents of the 'out' directory to the gh-pages branch
+      # Your site will be available at https://analystkumar29.github.io/travelling-technicians-website/
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
