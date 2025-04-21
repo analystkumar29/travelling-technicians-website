@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "export": "next build && next export",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d out -t true"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",
@@ -30,6 +33,7 @@
     "@types/react-dom": "^18.2.13",
     "eslint": "^8.51.0",
     "eslint-config-next": "13.5.4",
+    "gh-pages": "^6.3.0",
     "typescript": "^5.2.2"
   }
 }
