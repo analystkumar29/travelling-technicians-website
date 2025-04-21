@@ -1,0 +1,64 @@
+/* Custom styles for Leaflet map */
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 0;
+  overflow: hidden;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  padding: 0;
+  width: 280px !important;
+}
+
+.service-area-popup h3 {
+  color: #1e40af; /* primary-700 */
+  font-weight: 700;
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+
+.service-area-popup .text-green-600 {
+  color: #059669; /* green-600 */
+}
+
+.service-area-popup .text-gray-600 {
+  color: #4b5563; /* gray-600 */
+}
+
+.service-area-popup a {
+  color: #2563eb; /* primary-600 */
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.service-area-popup a:hover {
+  color: #1d4ed8; /* primary-700 */
+  text-decoration: underline;
+}
+
+.leaflet-popup-tip {
+  background: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  color: #6b7280; /* gray-500 */
+  top: 8px;
+  right: 8px;
+}
+
+.leaflet-container a.leaflet-popup-close-button:hover {
+  color: #1f2937; /* gray-800 */
+}
+
+/* Custom marker styles */
+.leaflet-marker-icon {
+  transition: transform 0.2s;
+}
+
+.leaflet-marker-icon:hover {
+  transform: scale(1.2);
+} 
