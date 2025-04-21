@@ -9,6 +9,8 @@ const nextConfig = {
     domains: ['images.unsplash.com'], // For placeholder images
     unoptimized: true, // This is required for static export
   },
+  // Disable trailing slashes for GitHub Pages compatibility
+  trailingSlash: false,
 }
 
 module.exports = nextConfig 

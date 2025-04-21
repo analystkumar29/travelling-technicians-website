@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
+import { DynamicOptionsLoadingProps } from 'next/dynamic';
 
 // Define interfaces outside of dynamic components
 interface AreaData {
@@ -15,6 +16,7 @@ interface AreaData {
 interface InteractiveMapProps {
   height?: string;
   className?: string;
+  serviceAreas?: AreaData[];
 }
 
 // Enhanced service areas data
@@ -183,12 +185,14 @@ const enhancedServiceAreas: AreaData[] = [
 ];
 
 // Create a placeholder component for server-side rendering
-const MapPlaceholder = ({ height, className }: InteractiveMapProps) => (
+const MapPlaceholder = ({ isLoading, error }: DynamicOptionsLoadingProps) => (
   <div 
-    style={{ height: height }} 
-    className={`bg-gray-200 rounded-lg flex items-center justify-center ${className}`}
+    style={{ height: "500px" }} 
+    className="bg-gray-200 rounded-lg flex items-center justify-center"
   >
-    <div className="text-gray-500">Loading map...</div>
+    <div className="text-gray-500">
+      {isLoading ? "Loading map..." : error ? "Error loading map" : "Map component"}
+    </div>
   </div>
 );
 

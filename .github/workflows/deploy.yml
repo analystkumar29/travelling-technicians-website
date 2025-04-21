@@ -5,9 +5,23 @@ on:
     branches:
       - main
 
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     
     steps:
       - name: Checkout repository
@@ -24,13 +38,19 @@ jobs:
         
       - name: Build and export
         run: npm run build
+        env:
+          NODE_ENV: production
         
       - name: Add .nojekyll file
         run: touch ./out/.nojekyll
-        
-      - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
+      
+      # Alternative deployment method using gh-pages branch
+      - name: Deploy to GitHub Pages via gh-pages branch
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          branch: gh-pages
-          folder: out
-          clean: true 
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./out
+          publish_branch: gh-pages
+          force_orphan: true
+          cname: ${{ secrets.CNAME }}
+          enable_jekyll: false 
