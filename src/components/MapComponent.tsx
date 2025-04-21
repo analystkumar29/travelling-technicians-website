@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -34,17 +34,21 @@ const customIcon = (popular: boolean) =>
     shadowSize: [41, 41],
   });
 
-const MapComponent = ({ height, className, serviceAreas }: MapComponentProps) => {
-  const mapRef = useRef<L.Map | null>(null);
-
-  // Function to fit map bounds to include all markers
-  const fitMapToBounds = () => {
-    if (mapRef.current) {
+// Function to fit map bounds based on markers (used inside child component)
+const MapController = ({ serviceAreas }: { serviceAreas: AreaData[] }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (serviceAreas.length > 0) {
       const bounds = L.latLngBounds(serviceAreas.map(area => area.coordinates));
-      mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+      map.fitBounds(bounds, { padding: [50, 50] });
     }
-  };
+  }, [map, serviceAreas]);
+  
+  return null;
+};
 
+const MapComponent = ({ height, className, serviceAreas }: MapComponentProps) => {
   // Fix Leaflet icons on component mount
   useEffect(() => {
     // Fix the marker icon paths in Leaflet
@@ -62,12 +66,9 @@ const MapComponent = ({ height, className, serviceAreas }: MapComponentProps) =>
         center={[49.2827, -123.1207]} // Center on Vancouver by default
         zoom={9}
         style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
-        whenReady={(e) => {
-          mapRef.current = e.target;
-          fitMapToBounds();
-        }}
         zoomControl={false} // We'll add it in a different position
       >
+        <MapController serviceAreas={serviceAreas} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
