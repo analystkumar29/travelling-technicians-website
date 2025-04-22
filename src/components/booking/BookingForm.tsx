@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { FaChevronRight, FaCalendarAlt, FaMapMarkerAlt, FaMobile, FaLaptop, FaTools, FaCheckCircle } from 'react-icons/fa';
 import PostalCodeChecker from '@/components/PostalCodeChecker';
 import { ServiceAreaType } from '@/utils/locationUtils';
+import DeviceModelSelector from './DeviceModelSelector';
+import AddressAutocomplete from './AddressAutocomplete';
 
 // Device types
 const deviceTypes = [
@@ -101,6 +103,16 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
   const [contactEmail, setContactEmail] = useState('');
   const [serviceAreaResult, setServiceAreaResult] = useState<ServiceAreaType | null>(null);
   const [postalCodeError, setPostalCodeError] = useState<string | null>(null);
+  const [addressError, setAddressError] = useState<boolean>(false);
+  const [dateError, setDateError] = useState<boolean>(false);
+  const [timeError, setTimeError] = useState<boolean>(false);
+  const [showScheduleErrors, setShowScheduleErrors] = useState<boolean>(false);
+  const [nameError, setNameError] = useState<boolean>(false);
+  const [phoneError, setPhoneError] = useState<boolean>(false);
+  const [emailError, setEmailError] = useState<boolean>(false);
+  const [showContactErrors, setShowContactErrors] = useState<boolean>(false);
+  const [isAddressValid, setIsAddressValid] = useState<boolean>(false);
+  const [addressPostalCode, setAddressPostalCode] = useState<string>('');
   
   // Handle successful postal code check
   const handlePostalCodeSuccess = (result: ServiceAreaType, code: string) => {
@@ -267,19 +279,12 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
                   </div>
                   
                   {brand && (
-                    <div className="mb-6">
-                      <label htmlFor="model" className="block text-gray-700 font-medium mb-2">
-                        Model *
-                      </label>
-                      <input
-                        type="text"
-                        id="model"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        placeholder="Enter your device model (e.g., iPhone 13 Pro, XPS 15)"
-                        value={model}
-                        onChange={(e) => setModel(e.target.value)}
-                      />
-                    </div>
+                    <DeviceModelSelector
+                      deviceType={deviceType}
+                      brand={brand}
+                      value={model}
+                      onChange={setModel}
+                    />
                   )}
                 </>
               )}
@@ -425,23 +430,46 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
             <div>
               <h2 className="text-2xl font-bold mb-6">Choose Appointment Time</h2>
               
+              {showScheduleErrors && (
+                <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="text-sm font-medium text-red-800">
+                    Please complete all required fields to continue:
+                  </div>
+                  <ul className="mt-2 text-sm text-red-700 list-disc pl-5">
+                    {!address && <li>Service address is required</li>}
+                    {address && !isAddressValid && <li>The provided address is outside our service area</li>}
+                    {!date && <li>Appointment date is required</li>}
+                    {!timeSlot && <li>Appointment time is required</li>}
+                  </ul>
+                </div>
+              )}
+              
               <div className="mb-6">
                 <label htmlFor="address" className="block text-gray-700 font-medium mb-2">
                   Service Address *
                 </label>
-                <div className="flex items-center">
-                  <div className="mr-2 text-primary-600">
-                    <FaMapMarkerAlt />
-                  </div>
-                  <input
-                    type="text"
-                    id="address"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    placeholder="Enter your full address"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                  />
-                </div>
+                <AddressAutocomplete
+                  onAddressSelect={(newAddress, postalCode) => {
+                    setAddress(newAddress);
+                    if (postalCode) {
+                      setAddressPostalCode(postalCode);
+                      // Check if this postal code is within our service area
+                      const result = checkServiceArea(postalCode);
+                      setIsAddressValid(result !== null && result.serviceable); 
+                    } else {
+                      setIsAddressValid(false);
+                    }
+                    setAddressError(false);
+                  }}
+                  placeholder="Enter your service address with postal code (e.g., 123 Main St, Vancouver, BC V6B 1A1)"
+                  className={addressError ? "border-red-500" : ""}
+                />
+                {addressError && !address && (
+                  <p className="mt-1 text-sm text-red-600">Service address is required</p>
+                )}
+                {addressError && address && !isAddressValid && (
+                  <p className="mt-1 text-sm text-red-600">The provided address is outside our service area</p>
+                )}
               </div>
               
               <div className="mb-6">
@@ -460,37 +488,55 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
                       className={`p-3 rounded-lg border-2 transition-all text-center ${
                         dateOption.value === date 
                           ? 'border-primary-500 bg-primary-50 text-primary-700' 
-                          : 'border-gray-200 hover:border-primary-200 text-gray-700'
+                          : dateError
+                            ? 'border-red-300 hover:border-primary-200 text-gray-700'
+                            : 'border-gray-200 hover:border-primary-200 text-gray-700'
                       }`}
-                      onClick={() => setDate(dateOption.value)}
+                      onClick={() => {
+                        setDate(dateOption.value);
+                        setDateError(false);
+                      }}
                     >
                       {dateOption.label}
                     </button>
                   ))}
                 </div>
+                {dateError && (
+                  <p className="mt-1 text-sm text-red-600">Please select an appointment date</p>
+                )}
               </div>
               
-              {date && (
-                <div className="mb-6">
-                  <label className="block text-gray-700 font-medium mb-3">Select Time *</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {availableTimes.map((time) => (
-                      <button
-                        key={time.id}
-                        type="button"
-                        className={`p-3 rounded-lg border-2 transition-all text-center ${
-                          time.id === timeSlot 
-                            ? 'border-primary-500 bg-primary-50 text-primary-700' 
+              <div className={`mb-6 ${!date && !timeError ? 'opacity-60' : ''}`}>
+                <label className="block text-gray-700 font-medium mb-3">Select Time *</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {availableTimes.map((time) => (
+                    <button
+                      key={time.id}
+                      type="button"
+                      disabled={!date}
+                      className={`p-3 rounded-lg border-2 transition-all text-center ${
+                        time.id === timeSlot 
+                          ? 'border-primary-500 bg-primary-50 text-primary-700' 
+                          : timeError
+                            ? 'border-red-300 hover:border-primary-200 text-gray-700'
                             : 'border-gray-200 hover:border-primary-200 text-gray-700'
-                        }`}
-                        onClick={() => setTimeSlot(time.id)}
-                      >
-                        {time.label}
-                      </button>
-                    ))}
-                  </div>
+                      } ${!date ? 'cursor-not-allowed' : ''}`}
+                      onClick={() => {
+                        setTimeSlot(time.id);
+                        setTimeError(false);
+                      }}
+                    >
+                      {time.label}
+                    </button>
+                  ))}
                 </div>
-              )}
+                {timeError && (
+                  <p className="mt-1 text-sm text-red-600">Please select an appointment time</p>
+                )}
+                {!date && !timeError && (
+                  <p className="mt-1 text-sm text-gray-500">Please select a date first</p>
+                )}
+              </div>
               
               <div className="flex justify-between mt-8">
                 <button
@@ -503,8 +549,36 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
                 <button
                   type="button"
                   className="btn-primary"
-                  disabled={!address || !date || !timeSlot}
-                  onClick={() => setStep(5)}
+                  onClick={() => {
+                    let hasError = false;
+                    
+                    if (!address) {
+                      setAddressError(true);
+                      hasError = true;
+                    } else if (!isAddressValid) {
+                      setAddressError(true);
+                      hasError = true;
+                    }
+                    
+                    if (!date) {
+                      setDateError(true);
+                      hasError = true;
+                    }
+                    
+                    if (!timeSlot) {
+                      setTimeError(true);
+                      hasError = true;
+                    }
+                    
+                    if (hasError) {
+                      setShowScheduleErrors(true);
+                      // Scroll to top to show the error message
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else {
+                      setShowScheduleErrors(false);
+                      setStep(5);
+                    }
+                  }}
                 >
                   Continue
                 </button>
@@ -517,6 +591,19 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
             <div>
               <h2 className="text-2xl font-bold mb-6">Contact Information</h2>
               
+              {showContactErrors && (
+                <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="text-sm font-medium text-red-800">
+                    Please complete all required fields to confirm your booking:
+                  </div>
+                  <ul className="mt-2 text-sm text-red-700 list-disc pl-5">
+                    {!contactName && <li>Full name is required</li>}
+                    {!contactPhone && <li>Phone number is required</li>}
+                    {!contactEmail && <li>Email address is required</li>}
+                  </ul>
+                </div>
+              )}
+              
               <div className="grid grid-cols-1 gap-6 mb-6">
                 <div>
                   <label htmlFor="contactName" className="block text-gray-700 font-medium mb-2">
@@ -525,12 +612,18 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
                   <input
                     type="text"
                     id="contactName"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className={`w-full px-4 py-3 border ${nameError ? 'border-red-500 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
                     placeholder="Enter your full name"
                     value={contactName}
-                    onChange={(e) => setContactName(e.target.value)}
+                    onChange={(e) => {
+                      setContactName(e.target.value);
+                      if (e.target.value) setNameError(false);
+                    }}
                     required
                   />
+                  {nameError && (
+                    <p className="mt-1 text-sm text-red-600">Full name is required</p>
+                  )}
                 </div>
                 
                 <div>
@@ -540,12 +633,18 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
                   <input
                     type="tel"
                     id="contactPhone"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className={`w-full px-4 py-3 border ${phoneError ? 'border-red-500 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
                     placeholder="Enter your phone number"
                     value={contactPhone}
-                    onChange={(e) => setContactPhone(e.target.value)}
+                    onChange={(e) => {
+                      setContactPhone(e.target.value);
+                      if (e.target.value) setPhoneError(false);
+                    }}
                     required
                   />
+                  {phoneError && (
+                    <p className="mt-1 text-sm text-red-600">Phone number is required</p>
+                  )}
                 </div>
                 
                 <div>
@@ -555,12 +654,18 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
                   <input
                     type="email"
                     id="contactEmail"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className={`w-full px-4 py-3 border ${emailError ? 'border-red-500 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
                     placeholder="Enter your email address"
                     value={contactEmail}
-                    onChange={(e) => setContactEmail(e.target.value)}
+                    onChange={(e) => {
+                      setContactEmail(e.target.value);
+                      if (e.target.value) setEmailError(false);
+                    }}
                     required
                   />
+                  {emailError && (
+                    <p className="mt-1 text-sm text-red-600">Email address is required</p>
+                  )}
                 </div>
               </div>
               
@@ -601,7 +706,33 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
                 <button
                   type="submit"
                   className="btn-primary"
-                  disabled={!contactName || !contactPhone || !contactEmail}
+                  onClick={(e) => {
+                    let hasError = false;
+                    
+                    if (!contactName) {
+                      setNameError(true);
+                      hasError = true;
+                    }
+                    
+                    if (!contactPhone) {
+                      setPhoneError(true);
+                      hasError = true;
+                    }
+                    
+                    if (!contactEmail) {
+                      setEmailError(true);
+                      hasError = true;
+                    }
+                    
+                    if (hasError) {
+                      e.preventDefault();
+                      setShowContactErrors(true);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else {
+                      setShowContactErrors(false);
+                      // Let the form submit naturally
+                    }
+                  }}
                 >
                   Confirm Booking
                 </button>

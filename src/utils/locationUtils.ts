@@ -343,79 +343,79 @@ export const POSTAL_CODE_MAP: Record<string, ServiceAreaType> = {
     city: 'North Vancouver', 
     serviceable: true, 
     sameDay: true,
-    responseTime: '2-3 hours'
+    responseTime: '1-2 hours'
   },
   'V7H': { 
     city: 'North Vancouver', 
     serviceable: true, 
     sameDay: true,
-    responseTime: '2-3 hours'
+    responseTime: '1-2 hours'
   },
   'V7J': { 
     city: 'North Vancouver', 
     serviceable: true, 
     sameDay: true,
-    responseTime: '2-3 hours'
+    responseTime: '1-2 hours'
   },
   'V7K': { 
     city: 'North Vancouver', 
     serviceable: true, 
     sameDay: true,
-    responseTime: '2-3 hours'
+    responseTime: '1-2 hours'
   },
   'V7L': { 
     city: 'North Vancouver', 
     serviceable: true, 
     sameDay: true,
-    responseTime: '2-3 hours'
+    responseTime: '1-2 hours'
   },
   'V7M': { 
     city: 'North Vancouver', 
     serviceable: true, 
     sameDay: true,
-    responseTime: '2-3 hours'
+    responseTime: '1-2 hours'
   },
   'V7N': { 
     city: 'North Vancouver', 
     serviceable: true, 
     sameDay: true,
-    responseTime: '2-3 hours'
+    responseTime: '1-2 hours'
   },
   'V7P': { 
     city: 'North Vancouver', 
     serviceable: true, 
     sameDay: true,
-    responseTime: '2-3 hours'
+    responseTime: '1-2 hours'
   },
   'V7R': { 
     city: 'West Vancouver', 
     serviceable: true, 
     sameDay: true,
-    responseTime: '2-3 hours'
+    responseTime: '1-2 hours'
   },
   'V7S': { 
     city: 'West Vancouver', 
     serviceable: true, 
     sameDay: true,
-    responseTime: '2-3 hours'
+    responseTime: '1-2 hours'
   },
   'V7T': { 
     city: 'West Vancouver', 
     serviceable: true, 
     sameDay: true,
-    responseTime: '2-3 hours'
+    responseTime: '1-2 hours'
   },
   'V7V': { 
     city: 'West Vancouver', 
     serviceable: true, 
     sameDay: true,
-    responseTime: '2-3 hours'
+    responseTime: '1-2 hours'
   },
   'V7W': { 
     city: 'West Vancouver', 
     serviceable: true, 
-    sameDay: false,
-    responseTime: '3-4 hours'
+    sameDay: true,
+    responseTime: '1-2 hours'
   },
   
   // New Westminster (V3L, V3M)
@@ -619,7 +619,116 @@ export const POSTAL_CODE_MAP: Record<string, ServiceAreaType> = {
     sameDay: false,
     travelFee: 35,
     responseTime: '1-2 days'
-  }
+  },
+  
+  // Nanaimo (V9R-V9T, V9S)
+  'V9R': { 
+    city: 'Nanaimo', 
+    serviceable: true, 
+    sameDay: false,
+    travelFee: 75,
+    responseTime: '2-3 days'
+  },
+  'V9S': { 
+    city: 'Nanaimo', 
+    serviceable: true, 
+    sameDay: false,
+    travelFee: 75,
+    responseTime: '2-3 days'
+  },
+  'V9T': { 
+    city: 'Nanaimo', 
+    serviceable: true, 
+    sameDay: false,
+    travelFee: 75,
+    responseTime: '2-3 days'
+  },
+  
+  // Victoria (V8N-V8Z, V9A-V9B)
+  'V8N': { 
+    city: 'Victoria', 
+    serviceable: true, 
+    sameDay: false,
+    travelFee: 75,
+    responseTime: '2-3 days'
+  },
+  'V8P': { 
+    city: 'Victoria', 
+    serviceable: true, 
+    sameDay: false,
+    travelFee: 75,
+    responseTime: '2-3 days'
+  },
+  'V8R': { 
+    city: 'Victoria', 
+    serviceable: true, 
+    sameDay: false,
+    travelFee: 75,
+    responseTime: '2-3 days'
+  },
+  'V8S': { 
+    city: 'Victoria', 
+    serviceable: true, 
+    sameDay: false,
+    travelFee: 75,
+    responseTime: '2-3 days'
+  },
+  'V8T': { 
+    city: 'Victoria', 
+    serviceable: true, 
+    sameDay: false,
+    travelFee: 75,
+    responseTime: '2-3 days'
+  },
+  'V8V': { 
+    city: 'Victoria', 
+    serviceable: true, 
+    sameDay: false,
+    travelFee: 75,
+    responseTime: '2-3 days'
+  },
+  'V8W': { 
+    city: 'Victoria', 
+    serviceable: true, 
+    sameDay: false,
+    travelFee: 75,
+    responseTime: '2-3 days'
+  },
+  'V8X': { 
+    city: 'Victoria', 
+    serviceable: true, 
+    sameDay: false,
+    travelFee: 75,
+    responseTime: '2-3 days'
+  },
+  'V8Y': { 
+    city: 'Victoria', 
+    serviceable: true, 
+    sameDay: false,
+    travelFee: 75,
+    responseTime: '2-3 days'
+  },
+  'V8Z': { 
+    city: 'Victoria', 
+    serviceable: true, 
+    sameDay: false,
+    travelFee: 75,
+    responseTime: '2-3 days'
+  },
+  'V9A': { 
+    city: 'Victoria', 
+    serviceable: true, 
+    sameDay: false,
+    travelFee: 75,
+    responseTime: '2-3 days'
+  },
+  'V9B': { 
+    city: 'Victoria', 
+    serviceable: true, 
+    sameDay: false,
+    travelFee: 75,
+    responseTime: '2-3 days'
+  },
 };
 
 /**
@@ -628,9 +737,40 @@ export const POSTAL_CODE_MAP: Record<string, ServiceAreaType> = {
  * @returns boolean indicating if the format is valid
  */
 export const isValidPostalCodeFormat = (postalCode: string): boolean => {
-  // Canadian postal code format: A1A 1A1 or A1A1A1
-  const postalCodeRegex = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/;
-  return postalCodeRegex.test(postalCode);
+  if (!postalCode) return false;
+  
+  // Canadian postal code formats:
+  // - A1A 1A1 (with space)
+  // - A1A-1A1 (with hyphen)
+  // - A1A1A1 (no separator)
+  // First character is always A-Z, not D, F, I, O, Q, or U (unused in Canadian postal codes)
+  // Second character is always a digit
+  // Third character is always A-Z
+  // Fourth character is always a digit
+  // Fifth character is always A-Z
+  // Sixth character is always a digit
+  
+  // Normalize to simplify checking
+  const normalized = postalCode.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  
+  // Check for proper length
+  if (normalized.length !== 6) {
+    console.log('Invalid postal code length:', normalized.length);
+    return false;
+  }
+  
+  // Check first character (A-Z, not D, F, I, O, Q, U)
+  if (!/^[A-Z]/.test(normalized) || /^[DFIOQU]/.test(normalized)) {
+    console.log('Invalid first character in postal code');
+    return false;
+  }
+  
+  // Check pattern for rest of postal code
+  const pattern = /^[A-Z]\d[A-Z]\d[A-Z]\d$/;
+  const isValid = pattern.test(normalized);
+  
+  console.log('Postal code validation result for', normalized, ':', isValid);
+  return isValid;
 };
 
 /**
@@ -661,34 +801,68 @@ export const getPostalCodePrefix = (postalCode: string): string => {
  * @returns Service area information or null if not serviced
  */
 export const checkServiceArea = (postalCode: string): ServiceAreaType | null => {
-  if (!postalCode || !isValidPostalCodeFormat(postalCode)) return null;
+  console.log('Checking service area for postal code:', postalCode);
   
-  const normalizedPostalCode = normalizePostalCode(postalCode);
-  const fullPostalCode = normalizedPostalCode.substring(0, 6); // Full 6-character code
-  const fiveCharCode = normalizedPostalCode.substring(0, 5); // First 5 characters
-  const fourCharCode = normalizedPostalCode.substring(0, 4); // First 4 characters 
-  const prefix = normalizedPostalCode.substring(0, 3); // First 3 characters (FSA)
-  
-  // First try to match the full 6-character postal code for more precise location matching
-  if (POSTAL_CODE_MAP[fullPostalCode]) {
-    return POSTAL_CODE_MAP[fullPostalCode];
+  if (!postalCode) {
+    console.error('No postal code provided');
+    return null;
   }
   
-  // Then try to match the first 5 characters
+  const isValid = isValidPostalCodeFormat(postalCode);
+  if (!isValid) {
+    console.error('Invalid postal code format:', postalCode);
+    return null;
+  }
+  
+  const normalizedPostalCode = normalizePostalCode(postalCode);
+  console.log('Normalized postal code:', normalizedPostalCode);
+  
+  // Debug: Dump first 10 keys from POSTAL_CODE_MAP
+  const keys = Object.keys(POSTAL_CODE_MAP).slice(0, 10);
+  console.log('Some postal code map keys:', keys);
+  console.log('Looking for FSA V5A in map:', 'V5A' in POSTAL_CODE_MAP);
+  
+  // Try exact match for all 6 characters
+  if (POSTAL_CODE_MAP[normalizedPostalCode]) {
+    console.log('Found exact match for full postal code:', normalizedPostalCode);
+    return POSTAL_CODE_MAP[normalizedPostalCode];
+  }
+  
+  // Try the first 5 characters
+  const fiveCharCode = normalizedPostalCode.substring(0, 5);
   if (POSTAL_CODE_MAP[fiveCharCode]) {
+    console.log('Found match for 5-character prefix:', fiveCharCode);
     return POSTAL_CODE_MAP[fiveCharCode];
   }
   
-  // Then try to match the first 4 characters
+  // Try the first 4 characters
+  const fourCharCode = normalizedPostalCode.substring(0, 4);
   if (POSTAL_CODE_MAP[fourCharCode]) {
+    console.log('Found match for 4-character prefix:', fourCharCode);
     return POSTAL_CODE_MAP[fourCharCode];
   }
   
-  // Fall back to the 3-character FSA
+  // Finally try the first 3 characters (FSA)
+  const prefix = normalizedPostalCode.substring(0, 3);
+  console.log('Looking for prefix match:', prefix);
   if (POSTAL_CODE_MAP[prefix]) {
+    console.log('Found match for 3-character FSA:', prefix);
     return POSTAL_CODE_MAP[prefix];
   }
   
+  // Handle V7J specifically (temporary fix for North Vancouver)
+  if (prefix === 'V7J') {
+    console.log('Special case: V7J for North Vancouver');
+    return {
+      city: 'North Vancouver',
+      serviceable: true,
+      sameDay: true,
+      responseTime: '1-2 hours'
+    };
+  }
+  
+  console.log('No service area match found for postal code:', postalCode);
+  console.log('Tried:', normalizedPostalCode, fiveCharCode, fourCharCode, prefix);
   return null;
 };
 
@@ -697,56 +871,167 @@ export const checkServiceArea = (postalCode: string): ServiceAreaType | null => 
  * @returns Promise resolving to postal code or error message
  */
 export const getCurrentLocationPostalCode = async (): Promise<string> => {
-  try {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject('Geolocation is not supported by your browser');
-        return;
-      }
-      
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject('Geolocation is not supported by your browser');
+      return;
+    }
+    
+    // Set a timeout for the entire location detection process
+    const overallTimeout = setTimeout(() => {
+      reject('Location detection timed out. Please try entering your postal code manually.');
+    }, 20000); // 20 seconds overall timeout
+    
+    // Try to use the browser's geolocation API
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          clearTimeout(overallTimeout);
+          const { latitude, longitude } = position.coords;
+          console.log('Detected coordinates:', latitude, longitude);
+          
+          // Attempt multiple geocoding services for redundancy
+          let postalCode = '';
+          
+          // First try Nominatim API
           try {
-            const { latitude, longitude } = position.coords;
-            
-            // Call the Nominatim API to get the address from coordinates
+            console.log('Trying Nominatim API...');
             const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
-              { headers: { 'Accept-Language': 'en-US,en' } }
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18`,
+              { 
+                headers: { 
+                  'Accept-Language': 'en-US,en',
+                  'User-Agent': 'TheTravellingTechnicians/1.0' 
+                },
+                // Add cache control to avoid rate limiting issues
+                cache: 'no-cache'
+              }
             );
             
-            if (!response.ok) {
-              reject('Failed to fetch location data');
+            if (response.ok) {
+              const data = await response.json();
+              console.log('Nominatim response:', data);
+              
+              if (data.address?.postcode) {
+                postalCode = data.address.postcode;
+                console.log('Found postal code from Nominatim:', postalCode);
+              }
+            } else {
+              console.error('Nominatim API error:', response.status, response.statusText);
+            }
+          } catch (error) {
+            console.error('Error with Nominatim API:', error);
+          }
+          
+          // If Nominatim failed, try alternative API or method
+          if (!postalCode) {
+            // FALLBACK: Fixed postal codes based on rough coordinates
+            // This is an oversimplified approach but can serve as a last resort
+            const roughLocation = getRoughLocationFromCoordinates(latitude, longitude);
+            if (roughLocation) {
+              postalCode = roughLocation;
+              console.log('Using rough location fallback:', postalCode);
+            }
+          }
+          
+          if (!postalCode) {
+            reject('Could not determine postal code from your location');
+            return;
+          }
+          
+          // Format and validate the postal code
+          let formattedPostalCode = postalCode.toUpperCase().trim();
+          
+          // If it's a Canadian postal code without space, add space
+          if (formattedPostalCode.length === 6 && /^[A-Z]\d[A-Z]\d[A-Z]\d$/.test(formattedPostalCode)) {
+            formattedPostalCode = `${formattedPostalCode.slice(0, 3)} ${formattedPostalCode.slice(3)}`;
+          }
+          
+          console.log('Formatted postal code:', formattedPostalCode);
+          
+          // If the format is invalid, it might be a non-Canadian postal code
+          // Try to use just the first three characters if they match our format
+          if (!isValidPostalCodeFormat(formattedPostalCode)) {
+            const firstThree = formattedPostalCode.substring(0, 3);
+            if (/^[A-Z]\d[A-Z]$/.test(firstThree)) {
+              // Add placeholder for second half of postal code
+              formattedPostalCode = `${firstThree} 1A1`;
+              console.log('Created placeholder postal code:', formattedPostalCode);
+            } else {
+              reject(`Invalid postal code format detected: ${formattedPostalCode}`);
               return;
             }
-            
-            const data = await response.json();
-            const postalCode = data.address?.postcode || '';
-            
-            resolve(postalCode);
-          } catch (error) {
-            reject('Error fetching address data');
           }
-        },
-        (error) => {
-          switch(error.code) {
-            case error.PERMISSION_DENIED:
-              reject('Location permission denied');
-              break;
-            case error.POSITION_UNAVAILABLE:
-              reject('Location information is unavailable');
-              break;
-            case error.TIMEOUT:
-              reject('Location request timed out');
-              break;
-            default:
-              reject('An unknown error occurred');
-          }
-        },
-        { maximumAge: 60000, timeout: 10000, enableHighAccuracy: true }
-      );
-    });
-  } catch (error) {
-    throw new Error('Failed to get location: ' + error);
+          
+          resolve(formattedPostalCode);
+        } catch (error) {
+          clearTimeout(overallTimeout);
+          console.error('Error fetching address data:', error);
+          reject('Error fetching address data. Please try entering your postal code manually.');
+        }
+      },
+      (error) => {
+        clearTimeout(overallTimeout);
+        console.error('Geolocation permission error:', error);
+        
+        let errorMessage = 'An unknown location error occurred.';
+        
+        if (error.code === 1) {
+          errorMessage = 'Location permission denied. Please allow location access in your browser settings.';
+        } else if (error.code === 2) {
+          errorMessage = 'Location information is unavailable. Your device may not support precise location.';
+        } else if (error.code === 3) {
+          errorMessage = 'Location request timed out. Please check your internet connection and try again.';
+        }
+        
+        reject(errorMessage);
+      },
+      { 
+        enableHighAccuracy: true,  // More precise location
+        maximumAge: 30000,         // Accept cached positions up to 30 seconds old
+        timeout: 15000             // Give more time to respond (15 seconds)
+      }
+    );
+  });
+};
+
+/**
+ * Fallback function to determine approximate postal code from coordinates
+ * This is a very rough approximation for BC's Lower Mainland
+ */
+function getRoughLocationFromCoordinates(latitude: number, longitude: number): string | null {
+  // Simplified mapping of rough coordinate ranges to postal code prefixes
+  // These are approximate and not meant to be precise
+  
+  // Vancouver area
+  if (latitude >= 49.2 && latitude <= 49.3 && longitude >= -123.2 && longitude <= -123.0) {
+    return 'V6B 1A1'; // Downtown Vancouver
   }
-}; 
+  
+  // North Vancouver
+  if (latitude >= 49.3 && latitude <= 49.4 && longitude >= -123.1 && longitude <= -122.9) {
+    return 'V7J 1A1'; // North Vancouver
+  }
+  
+  // Burnaby
+  if (latitude >= 49.2 && latitude <= 49.3 && longitude >= -123.0 && longitude <= -122.9) {
+    return 'V5B 1A1'; // Burnaby
+  }
+  
+  // Richmond
+  if (latitude >= 49.1 && latitude <= 49.2 && longitude >= -123.2 && longitude <= -123.0) {
+    return 'V6Y 1A1'; // Richmond
+  }
+  
+  // Surrey
+  if (latitude >= 49.1 && latitude <= 49.2 && longitude >= -122.9 && longitude <= -122.7) {
+    return 'V3R 1A1'; // Surrey
+  }
+  
+  // Default to Vancouver if within general Lower Mainland area
+  if (latitude >= 49.0 && latitude <= 49.5 && longitude >= -123.5 && longitude <= -122.5) {
+    return 'V6B 1A1'; // Default to Vancouver
+  }
+  
+  return null; // Outside of our known areas
+} 

@@ -26,6 +26,7 @@ export default function PostalCodeChecker({
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ServiceAreaType | null>(null);
   const [searched, setSearched] = useState(false);
+  const [locationErrorDetails, setLocationErrorDetails] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Focus the input field when the component mounts
@@ -39,6 +40,7 @@ export default function PostalCodeChecker({
     e.preventDefault();
     setError(null);
     setSearched(true);
+    setLocationErrorDetails(null);
     
     if (!postalCode.trim()) {
       const errMsg = 'Please enter a postal code';
@@ -59,7 +61,10 @@ export default function PostalCodeChecker({
     setLoading(true);
     
     try {
+      console.log('Checking service area for:', postalCode);
       const serviceArea = checkServiceArea(postalCode);
+      console.log('Service area result:', serviceArea);
+      
       setResult(serviceArea);
       
       if (!serviceArea) {
@@ -70,7 +75,8 @@ export default function PostalCodeChecker({
         // Call onSuccess callback with the result and postal code
         if (onSuccess) onSuccess(serviceArea, postalCode);
       }
-    } catch (err) {
+    } catch (err: any) {
+      console.error('Error checking postal code:', err);
       const errMsg = 'An error occurred while checking your postal code';
       setError(errMsg);
       setResult(null);
@@ -83,21 +89,33 @@ export default function PostalCodeChecker({
   const detectLocation = async () => {
     setLoadingLocation(true);
     setError(null);
+    setLocationErrorDetails(null);
     
     try {
+      console.log('Detecting location...');
+      
+      // Show message to user - helpful especially on mobile
+      setLocationErrorDetails('Please allow location access when prompted. This may take a few seconds...');
+      
       const detectedPostalCode = await getCurrentLocationPostalCode();
+      console.log('Detected postal code:', detectedPostalCode);
       
       if (!detectedPostalCode) {
         const errMsg = 'Unable to detect your postal code. Please enter it manually.';
         setError(errMsg);
+        setLocationErrorDetails('The location service could not determine your postal code. Try entering a nearby postal code instead.');
         if (onError) onError(errMsg);
         return;
       }
       
       setPostalCode(detectedPostalCode);
+      setLocationErrorDetails(null);
       
       // Auto-check the detected postal code
+      console.log('Checking service area for detected postal code:', detectedPostalCode);
       const serviceArea = checkServiceArea(detectedPostalCode);
+      console.log('Service area result for detected postal code:', serviceArea);
+      
       setResult(serviceArea);
       setSearched(true);
       
@@ -110,8 +128,10 @@ export default function PostalCodeChecker({
         if (onSuccess) onSuccess(serviceArea, detectedPostalCode);
       }
     } catch (err: any) {
+      console.error('Location detection error:', err);
       const errMsg = err.message || 'Failed to detect your location';
       setError(errMsg);
+      setLocationErrorDetails('This could be due to browser permissions, network issues, or API limitations. Please try entering your postal code manually instead.');
       if (onError) onError(errMsg);
     } finally {
       setLoadingLocation(false);
@@ -140,6 +160,9 @@ export default function PostalCodeChecker({
               <h3 className="text-sm font-medium text-red-800">Service Area Check</h3>
               <div className="mt-2 text-sm text-red-700">
                 <p>{error}</p>
+                {locationErrorDetails && (
+                  <p className="mt-1 text-xs">{locationErrorDetails}</p>
+                )}
               </div>
               {error.includes("don't currently service") && (
                 <div className="mt-4">
@@ -200,12 +223,31 @@ export default function PostalCodeChecker({
                   >
                     Book a repair now →
                   </a>
-                  <a 
-                    href="/services" 
-                    className="text-sm font-medium text-green-800 hover:text-green-900"
-                  >
-                    View our services →
-                  </a>
+                  <div className="relative group">
+                    <span 
+                      className="text-sm font-medium text-green-800 hover:text-green-900 cursor-pointer flex items-center"
+                    >
+                      View our services →
+                    </span>
+                    <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-10">
+                      <div className="py-1" role="menu" aria-orientation="vertical">
+                        <a
+                          href="/services/mobile"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          role="menuitem"
+                        >
+                          Mobile Repair
+                        </a>
+                        <a
+                          href="/services/laptop" 
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          role="menuitem"
+                        >
+                          Laptop Repair
+                        </a>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -289,9 +331,11 @@ export default function PostalCodeChecker({
           <div className="mt-4 text-sm text-gray-500 flex items-start">
             <FaInfoCircle className="h-4 w-4 mr-2 text-gray-400 mt-0.5" />
             <p>
-              We service most areas in the Lower Mainland, including Vancouver, Burnaby, Richmond, Surrey, and more. 
-              We also cover Squamish, Whistler, and other areas along Highway 99, plus Metro Vancouver and Fraser Valley 
-              communities up to Chilliwack.
+              We service most areas in the Lower Mainland, including Vancouver, Burnaby, Richmond, 
+              Surrey, Coquitlam, Port Coquitlam, North Vancouver, West Vancouver, New Westminster, 
+              Delta, Langley, Maple Ridge, Pitt Meadows, and White Rock. 
+              We also cover Squamish, Whistler, Victoria, Nanaimo, and Fraser Valley 
+              communities up to Chilliwack with adjusted service timeframes and travel fees for some areas.
             </p>
           </div>
         )}
