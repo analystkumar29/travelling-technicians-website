@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FaChevronRight, FaCalendarAlt, FaMapMarkerAlt, FaMobile, FaLaptop, FaTools, FaCheckCircle } from 'react-icons/fa';
 import PostalCodeChecker from '@/components/PostalCodeChecker';
-import { ServiceAreaType } from '@/utils/locationUtils';
+import { ServiceAreaType, checkServiceArea } from '@/utils/locationUtils';
 import DeviceModelSelector from './DeviceModelSelector';
 import AddressAutocomplete from './AddressAutocomplete';
 
@@ -449,7 +449,7 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
                   Service Address *
                 </label>
                 <AddressAutocomplete
-                  onAddressSelect={(newAddress, postalCode) => {
+                  onAddressSelect={(newAddress, isValid, postalCode) => {
                     setAddress(newAddress);
                     if (postalCode) {
                       setAddressPostalCode(postalCode);
@@ -461,7 +461,8 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
                     }
                     setAddressError(false);
                   }}
-                  placeholder="Enter your service address with postal code (e.g., 123 Main St, Vancouver, BC V6B 1A1)"
+                  value={address}
+                  error={addressError}
                   className={addressError ? "border-red-500" : ""}
                 />
                 {addressError && !address && (

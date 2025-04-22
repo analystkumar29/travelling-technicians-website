@@ -1,7 +1,18 @@
 import { useState, useEffect } from 'react';
 
+// Define types for device models
+type DeviceType = 'mobile' | 'laptop' | 'tablet';
+type BrandType = 'apple' | 'samsung' | 'google' | 'oneplus' | 'xiaomi' | 'dell' | 'hp' | 'lenovo' | 'asus' | 'microsoft' | 'other';
+
+// Create a type that represents the structure of deviceModels
+type DeviceModelsType = {
+  [key in DeviceType]: {
+    [brand in BrandType]?: string[];
+  }
+};
+
 // Common device models by brand and type
-const deviceModels = {
+const deviceModels: DeviceModelsType = {
   mobile: {
     apple: [
       'iPhone 15 Pro Max', 'iPhone 15 Pro', 'iPhone 15 Plus', 'iPhone 15',
@@ -160,7 +171,11 @@ export default function DeviceModelSelector({
     }
     
     try {
-      return deviceModels[deviceType as keyof typeof deviceModels][brand as any] || [];
+      // Type assertion to make TypeScript happy
+      const deviceTypeKey = deviceType as DeviceType;
+      const brandKey = brand as BrandType;
+      
+      return deviceModels[deviceTypeKey]?.[brandKey] || [];
     } catch (error) {
       console.error('Error getting models:', error);
       return [];
