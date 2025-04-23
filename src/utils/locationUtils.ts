@@ -732,9 +732,9 @@ export const POSTAL_CODE_MAP: Record<string, ServiceAreaType> = {
 };
 
 /**
- * Validates if a postal code is properly formatted (Canadian format)
+ * Validates if a string is in proper Canadian postal code format
  * @param postalCode - The postal code to validate
- * @returns boolean indicating if the format is valid
+ * @returns Whether the postal code is valid
  */
 export const isValidPostalCodeFormat = (postalCode: string): boolean => {
   if (!postalCode) return false;
@@ -743,17 +743,30 @@ export const isValidPostalCodeFormat = (postalCode: string): boolean => {
   // - A1A 1A1 (with space)
   // - A1A-1A1 (with hyphen)
   // - A1A1A1 (no separator)
-  // First character is always A-Z, not D, F, I, O, Q, or U (unused in Canadian postal codes)
-  // Second character is always a digit
-  // Third character is always A-Z
-  // Fourth character is always a digit
-  // Fifth character is always A-Z
-  // Sixth character is always a digit
+  // - Partial formats like V5R are also accepted
   
   // Normalize to simplify checking
   const normalized = postalCode.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
   
-  // Check for proper length
+  // Check for partial postal code (e.g., "V5R")
+  if (normalized.length === 3) {
+    // Check first character (A-Z, not D, F, I, O, Q, U)
+    if (!/^[A-Z]/.test(normalized) || /^[DFIOQU]/.test(normalized)) {
+      console.log('Invalid first character in partial postal code');
+      return false;
+    }
+    
+    // Check pattern for partial postal code
+    const partialPattern = /^[A-Z]\d[A-Z]$/;
+    const isValidPartial = partialPattern.test(normalized);
+    
+    if (isValidPartial) {
+      console.log('Valid partial postal code:', normalized);
+      return true;
+    }
+  }
+  
+  // For complete postal codes (6 characters)
   if (normalized.length !== 6) {
     console.log('Invalid postal code length:', normalized.length);
     return false;
@@ -842,12 +855,22 @@ export const checkServiceArea = (postalCode: string): ServiceAreaType | null => 
     return POSTAL_CODE_MAP[fourCharCode];
   }
   
-  // Finally try the first 3 characters (FSA)
+  // Try the first 3 characters (FSA)
   const prefix = normalizedPostalCode.substring(0, 3);
   console.log('Looking for prefix match:', prefix);
   if (POSTAL_CODE_MAP[prefix]) {
     console.log('Found match for 3-character FSA:', prefix);
     return POSTAL_CODE_MAP[prefix];
+  }
+  
+  // Try general area codes (first 2 characters)
+  const areaCode = normalizedPostalCode.substring(0, 2);
+  console.log('Looking for area code match:', areaCode);
+  
+  // Handle Vancouver (V5, V6)
+  if (areaCode === 'V5' || areaCode === 'V6') {
+    console.log('Found match for Vancouver area code:', areaCode);
+    return POSTAL_CODE_MAP[areaCode];
   }
   
   // Handle V7J specifically (temporary fix for North Vancouver)
@@ -862,7 +885,7 @@ export const checkServiceArea = (postalCode: string): ServiceAreaType | null => 
   }
   
   console.log('No service area match found for postal code:', postalCode);
-  console.log('Tried:', normalizedPostalCode, fiveCharCode, fourCharCode, prefix);
+  console.log('Tried:', normalizedPostalCode, fiveCharCode, fourCharCode, prefix, areaCode);
   return null;
 };
 
