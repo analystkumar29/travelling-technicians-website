@@ -147,6 +147,12 @@ export default function AddressAutocomplete({
     setInputValue(combinedAddress);
     setShowSuggestions(false);
     setExtractedPostalCode(postalCode);
+    
+    // If we have a postal code, call onAddressSelect immediately
+    if (postalCode) {
+      console.log("Suggestion clicked with postal code, calling onAddressSelect:", postalCode);
+      onAddressSelect(combinedAddress, postalCode);
+    }
   };
 
   const handleUseLocation = () => {
@@ -220,6 +226,12 @@ export default function AddressAutocomplete({
             postalCode = `${postalCode.slice(0, 3)} ${postalCode.slice(3)}`;
           }
           setExtractedPostalCode(postalCode);
+          
+          // If we have a valid postal code, call onAddressSelect
+          if (postalCode) {
+            console.log("Got location with postal code, calling onAddressSelect:", postalCode);
+            onAddressSelect(data.display_name, postalCode);
+          }
         }
       } else {
         throw new Error('No address found for this location');
@@ -268,8 +280,10 @@ export default function AddressAutocomplete({
     const result = checkServiceArea(postalCode);
     console.log("Checking postal code:", postalCode, "Result:", result);
     
+    // Always call onAddressSelect with the postal code
+    onAddressSelect(address, postalCode);
+    
     if (result && result.serviceable) {
-      onAddressSelect(address, postalCode);
       setError('');
     } else {
       setError(`We don't currently service the area with postal code ${postalCode}`);

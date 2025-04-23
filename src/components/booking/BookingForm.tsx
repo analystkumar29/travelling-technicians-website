@@ -552,11 +552,15 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
                   className="btn-primary"
                   onClick={() => {
                     let hasError = false;
+                    console.log("Validating form: Address:", address, "Is valid:", isAddressValid);
                     
+                    // Only validate address if it's empty
                     if (!address) {
                       setAddressError(true);
                       hasError = true;
-                    } else if (!isAddressValid) {
+                    }
+                    // Only check this if address is provided but not valid
+                    else if (!isAddressValid) {
                       setAddressError(true);
                       hasError = true;
                     }

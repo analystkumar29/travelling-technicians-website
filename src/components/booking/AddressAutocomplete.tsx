@@ -20,7 +20,8 @@ export default function AddressAutocomplete({
     <GlobalAddressAutocomplete
       onAddressSelect={(address, postalCode) => {
         // For backward compatibility with the booking form
-        const isValid = Boolean(postalCode);
+        const isValid = Boolean(postalCode && postalCode.trim() !== '');
+        console.log("Address selected:", address, "Postal code:", postalCode, "Is valid:", isValid);
         onAddressSelect(address, isValid, postalCode);
       }}
       placeholder={value || "Enter your service address with postal code"}
