@@ -167,7 +167,7 @@ export default function PostalCodeChecker({
               {error.includes("don't currently service") && (
                 <div className="mt-4">
                   {!onSuccess && !onError ? (
-                    <a href="/contact" className="text-sm font-medium text-red-800 hover:text-red-900">
+                    <a href="/contact/" className="text-sm font-medium text-red-800 hover:text-red-900">
                       Contact us for special arrangements →
                     </a>
                   ) : (
@@ -218,7 +218,7 @@ export default function PostalCodeChecker({
               {!onSuccess && !onError && (
                 <div className="mt-4 flex space-x-3">
                   <a 
-                    href="/book-online" 
+                    href="/book-online/" 
                     className="text-sm font-medium text-green-800 hover:text-green-900"
                   >
                     Book a repair now →
@@ -232,14 +232,14 @@ export default function PostalCodeChecker({
                     <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-10">
                       <div className="py-1" role="menu" aria-orientation="vertical">
                         <a
-                          href="/services/mobile"
+                          href="/services/mobile/"
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                           role="menuitem"
                         >
                           Mobile Repair
                         </a>
                         <a
-                          href="/services/laptop" 
+                          href="/services/laptop/" 
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                           role="menuitem"
                         >
