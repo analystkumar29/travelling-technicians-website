@@ -1,8 +1,29 @@
+import { useEffect } from 'react';
 import Link from 'next/link';
 import Layout from '@/components/layout/Layout';
 import { FaSearch, FaExclamationTriangle, FaHome, FaArrowLeft } from 'react-icons/fa';
 
 export default function Custom404() {
+  useEffect(() => {
+    // Check if we're on GitHub Pages and the path might be missing the basePath
+    const isGitHubPages = typeof window !== 'undefined' && 
+      window.location.hostname.includes('github.io');
+    
+    if (isGitHubPages) {
+      const currentPath = window.location.pathname;
+      
+      // If we're on GitHub Pages and the path doesn't include /travelling-technicians-website
+      // then redirect to the correct path with basePath
+      if (!currentPath.includes('/travelling-technicians-website')) {
+        // For example, if someone tries to access /book-online
+        // Redirect them to /travelling-technicians-website/book-online/
+        const pathWithoutLeadingSlash = currentPath.replace(/^\//, '');
+        const correctPath = `/travelling-technicians-website/${pathWithoutLeadingSlash}${pathWithoutLeadingSlash.endsWith('/') ? '' : '/'}`;
+        window.location.href = correctPath;
+      }
+    }
+  }, []);
+
   return (
     <Layout title="Page Not Found | The Travelling Technicians">
       <div className="py-16 md:py-24 bg-gray-50">

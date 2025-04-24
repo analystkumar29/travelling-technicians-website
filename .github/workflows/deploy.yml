@@ -10,40 +10,39 @@ on:
 permissions:
   contents: write
 
+# Create CNAME file if you have a custom domain (remove this if not needed)
+# - name: Create CNAME file
+#   run: echo "yourdomain.com" > ./out/CNAME
+
+# This action deploys the contents of the 'out' directory to the gh-pages branch
+# Your site will be available at https://analystkumar29.github.io/travelling-technicians-website/ 
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v3
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 16
-          cache: 'npm'
-          
-      - name: Install dependencies
+          node-version: '18'
+
+      - name: Install Dependencies
         run: npm ci
-        
+
       - name: Build
         run: npm run build
         env:
           NODE_ENV: production
-        
+
       - name: Add .nojekyll file
         run: touch ./out/.nojekyll
-      
-      # Create CNAME file if you have a custom domain (remove this if not needed)
-      # - name: Create CNAME file
-      #   run: echo "yourdomain.com" > ./out/CNAME
-      
-      # This action deploys the contents of the 'out' directory to the gh-pages branch
-      # Your site will be available at https://analystkumar29.github.io/travelling-technicians-website/
+
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: out
           branch: gh-pages
+          folder: out
           clean: true 
