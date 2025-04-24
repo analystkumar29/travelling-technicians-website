@@ -15,6 +15,7 @@
   "dependencies": {
     "@headlessui/react": "^1.7.17",
     "@heroicons/react": "^2.0.18",
+    "@sendgrid/mail": "^8.1.5",
     "autoprefixer": "^10.4.16",
     "framer-motion": "^10.16.4",
     "leaflet": "^1.9.4",
