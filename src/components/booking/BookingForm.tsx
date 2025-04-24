@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FaChevronRight, FaCalendarAlt, FaMapMarkerAlt, FaMobile, FaLaptop, FaTools, FaCheckCircle } from 'react-icons/fa';
+import { FaChevronRight, FaCalendarAlt, FaMapMarkerAlt, FaMobile, FaLaptop, FaTools, FaCheckCircle, FaEnvelope, FaSpinner } from 'react-icons/fa';
 import PostalCodeChecker from '@/components/PostalCodeChecker';
 import { ServiceAreaType, checkServiceArea } from '@/utils/locationUtils';
 import DeviceModelSelector from './DeviceModelSelector';
@@ -113,6 +113,12 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
   const [showContactErrors, setShowContactErrors] = useState<boolean>(false);
   const [isAddressValid, setIsAddressValid] = useState<boolean>(false);
   const [addressPostalCode, setAddressPostalCode] = useState<string>('');
+  // New states for confirmation email
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bookingComplete, setBookingComplete] = useState(false);
+  const [bookingReference, setBookingReference] = useState('');
+  const [confirmationEmailSent, setConfirmationEmailSent] = useState(false);
+  const [emailError2, setEmailError2] = useState<string | null>(null);
   
   // Handle successful postal code check
   const handlePostalCodeSuccess = (result: ServiceAreaType, code: string) => {
@@ -129,11 +135,103 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
     setPostalCodeError(error);
   };
   
+  // Generate a random booking reference
+  const generateBookingReference = () => {
+    const prefix = 'TT';
+    const timestamp = Date.now().toString().slice(-6);
+    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    return `${prefix}${timestamp}${random}`;
+  };
+  
+  // Send confirmation email
+  const sendConfirmationEmail = async () => {
+    try {
+      // Reference to the selected service
+      const selectedService = serviceTypes[deviceType as keyof typeof serviceTypes].find(s => s.id === serviceType)?.name || '';
+      
+      // Format date for email
+      const formattedDate = date ? new Date(date).toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        month: 'long', 
+        day: 'numeric' 
+      }) : '';
+      
+      // Format time for email
+      const formattedTime = availableTimes.find(t => t.id === timeSlot)?.label || '';
+      
+      const response = await fetch('/api/send-confirmation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: contactEmail,
+          name: contactName,
+          bookingDate: formattedDate,
+          bookingTime: formattedTime,
+          deviceType: deviceType === 'mobile' ? 'Mobile Phone' : deviceType === 'laptop' ? 'Laptop' : 'Tablet',
+          brand: brand,
+          model: model,
+          service: selectedService,
+          address: address,
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setConfirmationEmailSent(true);
+        setEmailError2(null);
+        return true;
+      } else {
+        setEmailError2('Failed to send confirmation email. Please contact support.');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error sending confirmation email:', error);
+      setEmailError2('An error occurred while sending the confirmation email. Please contact support.');
+      return false;
+    }
+  };
+  
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate all required fields first
+    let hasError = false;
+    
+    if (!contactName) {
+      setNameError(true);
+      hasError = true;
+    }
+    
+    if (!contactPhone) {
+      setPhoneError(true);
+      hasError = true;
+    }
+    
+    if (!contactEmail) {
+      setEmailError(true);
+      hasError = true;
+    }
+    
+    if (hasError) {
+      setShowContactErrors(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    
+    // Start submission process
+    setIsSubmitting(true);
+    
+    // Generate a booking reference
+    const reference = generateBookingReference();
+    setBookingReference(reference);
+    
+    // Prepare booking data
     const bookingData = {
+      reference,
       deviceType,
       brand,
       model,
@@ -146,8 +244,17 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
       contactName,
       contactPhone,
       contactEmail,
+      createdAt: new Date().toISOString(),
     };
     
+    // Send confirmation email
+    const emailSent = await sendConfirmationEmail();
+    
+    // Complete booking process
+    setBookingComplete(true);
+    setIsSubmitting(false);
+    
+    // Pass data to parent component if provided
     if (onComplete) {
       onComplete(bookingData);
     }
@@ -174,6 +281,112 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
     
     return dates;
   };
+  
+  // Return JSX for Form
+  if (bookingComplete) {
+    // Show booking confirmation page when complete
+    return (
+      <div className="bg-white rounded-lg shadow-custom-lg overflow-hidden">
+        <div className="p-6 sm:p-10">
+          <div className="text-center">
+            <FaCheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Booking Complete!</h2>
+            <p className="text-lg text-gray-600 mb-6">
+              Thank you for booking with The Travelling Technicians.
+            </p>
+            
+            <div className="bg-gray-50 p-6 rounded-lg mb-8 text-left">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Booking Reference: <span className="text-primary-600 font-bold">{bookingReference}</span></h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div className="col-span-1 sm:col-span-2">
+                  <p className="text-gray-500 mb-1">Device</p>
+                  <p className="font-medium">{deviceType === 'mobile' ? 'Mobile Phone' : deviceType === 'laptop' ? 'Laptop' : 'Tablet'} - {brand} {model}</p>
+                </div>
+                
+                <div className="col-span-1 sm:col-span-2">
+                  <p className="text-gray-500 mb-1">Service</p>
+                  <p className="font-medium">
+                    {serviceTypes[deviceType as keyof typeof serviceTypes].find(s => s.id === serviceType)?.name}
+                  </p>
+                </div>
+                
+                <div>
+                  <p className="text-gray-500 mb-1">Date</p>
+                  <p className="font-medium">
+                    {date && new Date(date).toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </p>
+                </div>
+                
+                <div>
+                  <p className="text-gray-500 mb-1">Time</p>
+                  <p className="font-medium">
+                    {availableTimes.find(t => t.id === timeSlot)?.label}
+                  </p>
+                </div>
+                
+                <div className="col-span-1 sm:col-span-2">
+                  <p className="text-gray-500 mb-1">Address</p>
+                  <p className="font-medium">{address}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mb-8">
+              <div className="flex items-center justify-center mb-4">
+                <div className={`rounded-full w-8 h-8 flex items-center justify-center mr-2 ${confirmationEmailSent ? 'bg-green-500 text-white' : 'bg-primary-100 text-primary-600'}`}>
+                  {confirmationEmailSent ? (
+                    <FaCheckCircle className="h-5 w-5" />
+                  ) : (
+                    <FaEnvelope className="h-5 w-5" />
+                  )}
+                </div>
+                <span className="text-gray-700">
+                  {confirmationEmailSent 
+                    ? `Confirmation email sent to ${contactEmail}`
+                    : 'Sending confirmation email...'}
+                </span>
+              </div>
+              
+              {emailError2 && (
+                <p className="text-sm text-red-600 mb-4">{emailError2}</p>
+              )}
+              
+              <p className="text-sm text-gray-500 mb-4">
+                Please check your email for booking details and verification link.
+              </p>
+              
+              <p className="text-sm text-gray-700">
+                Our technician will arrive at your address during the selected time window.
+                You will receive a call about 30 minutes before the technician arrives.
+              </p>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 justify-center">
+              <button
+                type="button"
+                onClick={() => window.location.href = '/'}
+                className="btn-outline"
+              >
+                Return Home
+              </button>
+              <button
+                type="button"
+                onClick={() => window.location.href = '/contact'}
+                className="btn-primary"
+              >
+                Contact Support
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="bg-white rounded-lg shadow-custom-lg overflow-hidden">
@@ -705,41 +918,23 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
                   type="button"
                   className="btn-outline"
                   onClick={() => setStep(4)}
+                  disabled={isSubmitting}
                 >
                   Back
                 </button>
                 <button
                   type="submit"
-                  className="btn-primary"
-                  onClick={(e) => {
-                    let hasError = false;
-                    
-                    if (!contactName) {
-                      setNameError(true);
-                      hasError = true;
-                    }
-                    
-                    if (!contactPhone) {
-                      setPhoneError(true);
-                      hasError = true;
-                    }
-                    
-                    if (!contactEmail) {
-                      setEmailError(true);
-                      hasError = true;
-                    }
-                    
-                    if (hasError) {
-                      e.preventDefault();
-                      setShowContactErrors(true);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    } else {
-                      setShowContactErrors(false);
-                      // Let the form submit naturally
-                    }
-                  }}
+                  className="btn-primary flex items-center justify-center"
+                  disabled={isSubmitting}
                 >
-                  Confirm Booking
+                  {isSubmitting ? (
+                    <>
+                      <FaSpinner className="animate-spin h-5 w-5 mr-2" />
+                      Processing...
+                    </>
+                  ) : (
+                    'Confirm Booking'
+                  )}
                 </button>
               </div>
             </div>
