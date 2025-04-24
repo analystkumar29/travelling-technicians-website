@@ -118,40 +118,46 @@ export default function AddressAutocomplete({
   };
 
   const handleSuggestionClick = (suggestion: any) => {
-    // Extract user-entered street number if available
-    const streetNumberMatch = userEnteredAddress.match(/^\s*(\d+)\s+/);
-    const userEnteredStreetNumber = streetNumberMatch ? streetNumberMatch[1] : '';
-    
-    // Get address components
-    let street = suggestion.address?.road || suggestion.address?.street || '';
-    let city = suggestion.address?.city || suggestion.address?.town || suggestion.address?.village || '';
-    let postalCode = suggestion.address?.postcode || '';
-    
-    if (postalCode.length === 6 && !postalCode.includes(' ')) {
-      postalCode = `${postalCode.slice(0, 3)} ${postalCode.slice(3)}`;
-    }
-    
-    // Check if the suggestion already includes a number at the beginning
-    const suggestionHasNumber = suggestion.display_name.match(/^\s*\d+\s+/) !== null;
-    
-    // Create a combined address
-    let combinedAddress = '';
-    
-    // Only prepend the user's number if suggestion doesn't have one and the user entered one
-    if (userEnteredStreetNumber && !suggestionHasNumber && street) {
-      combinedAddress = `${userEnteredStreetNumber} ${street}, ${city}, BC ${postalCode}, Canada`;
-    } else {
-      combinedAddress = suggestion.display_name;
-    }
-    
-    setInputValue(combinedAddress);
-    setShowSuggestions(false);
-    setExtractedPostalCode(postalCode);
-    
-    // If we have a postal code, call onAddressSelect immediately
-    if (postalCode) {
-      console.log("Suggestion clicked with postal code, calling onAddressSelect:", postalCode);
-      onAddressSelect(combinedAddress, postalCode);
+    try {
+      // Extract user-entered street number if available
+      const streetNumberMatch = userEnteredAddress.match(/^\s*(\d+)\s+/);
+      const userEnteredStreetNumber = streetNumberMatch ? streetNumberMatch[1] : '';
+      
+      // Get address components
+      let street = suggestion.address?.road || suggestion.address?.street || '';
+      let city = suggestion.address?.city || suggestion.address?.town || suggestion.address?.village || '';
+      let postalCode = suggestion.address?.postcode || '';
+      
+      if (postalCode && postalCode.length === 6 && !postalCode.includes(' ')) {
+        postalCode = `${postalCode.slice(0, 3)} ${postalCode.slice(3)}`;
+      }
+      
+      // Check if the suggestion already includes a number at the beginning
+      const suggestionHasNumber = suggestion.display_name.match(/^\s*\d+\s+/) !== null;
+      
+      // Create a combined address
+      let combinedAddress = '';
+      
+      // Only prepend the user's number if suggestion doesn't have one and the user entered one
+      if (userEnteredStreetNumber && !suggestionHasNumber && street) {
+        combinedAddress = `${userEnteredStreetNumber} ${street}, ${city}, BC ${postalCode}, Canada`;
+      } else {
+        combinedAddress = suggestion.display_name;
+      }
+      
+      setInputValue(combinedAddress);
+      setShowSuggestions(false);
+      
+      if (postalCode) {
+        setExtractedPostalCode(postalCode);
+        console.log("Suggestion clicked with postal code, calling onAddressSelect:", postalCode);
+        onAddressSelect(combinedAddress, postalCode);
+      } else {
+        setError('Selected address is missing a postal code. Please enter it manually.');
+      }
+    } catch (err) {
+      console.error('Error processing address selection:', err);
+      setError('Error processing selected address. Please try another or enter manually.');
     }
   };
 
@@ -163,6 +169,7 @@ export default function AddressAutocomplete({
 
     setLocationLoading(true);
     setError('');
+    setInputValue('Detecting your location...');
     
     // Use a direct approach that works better with Next.js static export
     navigator.geolocation.getCurrentPosition(
@@ -170,11 +177,12 @@ export default function AddressAutocomplete({
         const { latitude, longitude } = position.coords;
         console.log("Got coordinates:", latitude, longitude);
         
-        // Create a simple fetch in a separate function to avoid CORS issues
+        // Use the Nominatim reverse geocoding service
         fetchAddressFromCoordinates(latitude, longitude);
       },
       (err) => {
         setLocationLoading(false);
+        setInputValue('');
         console.error("Geolocation error:", err);
         
         let errorMessage = 'Failed to get your location. Please enter your address manually.';
@@ -190,60 +198,76 @@ export default function AddressAutocomplete({
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
+        timeout: 15000,  // Increased timeout for more reliable results
         maximumAge: 0
       }
     );
   };
   
   const fetchAddressFromCoordinates = (latitude: number, longitude: number) => {
-    // Create a fallback using direct nominatim URL that doesn't need CORS
-    const geocodeUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`;
-    
-    // Use a simpler approach with direct browser fetch
-    fetch(geocodeUrl, {
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'TheTravellingTechnicians/1.0'
-      }
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Failed to get address from coordinates');
-      }
-      return response.json();
-    })
-    .then(data => {
-      if (data && data.display_name) {
-        setInputValue(data.display_name);
-        
-        // Extract postal code if available
-        let postalCode = '';
-        if (data.address && data.address.postcode) {
-          postalCode = data.address.postcode.trim();
-          // Format postal code if necessary
-          if (postalCode.length === 6 && !postalCode.includes(' ')) {
-            postalCode = `${postalCode.slice(0, 3)} ${postalCode.slice(3)}`;
-          }
-          setExtractedPostalCode(postalCode);
-          
-          // If we have a valid postal code, call onAddressSelect
-          if (postalCode) {
-            console.log("Got location with postal code, calling onAddressSelect:", postalCode);
-            onAddressSelect(data.display_name, postalCode);
-          }
+    try {
+      // Create a fallback using direct nominatim URL that doesn't need CORS
+      const geocodeUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18`;
+      
+      // Use a simpler approach with direct browser fetch
+      fetch(geocodeUrl, {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'TheTravellingTechnicians/1.0'
         }
-      } else {
-        throw new Error('No address found for this location');
-      }
-    })
-    .catch(err => {
-      console.error('Error fetching address:', err);
-      setError('Failed to get your location. Please enter your address manually.');
-    })
-    .finally(() => {
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Failed to get address from coordinates: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log("Reverse geocoding response:", data);
+        
+        if (data && data.display_name) {
+          setInputValue(data.display_name);
+          
+          // Extract postal code if available
+          let postalCode = '';
+          if (data.address && data.address.postcode) {
+            postalCode = data.address.postcode.trim();
+            // Format postal code if necessary
+            if (postalCode.length === 6 && !postalCode.includes(' ')) {
+              postalCode = `${postalCode.slice(0, 3)} ${postalCode.slice(3)}`;
+            }
+            setExtractedPostalCode(postalCode);
+            
+            // If we have a valid postal code, call onAddressSelect
+            if (postalCode) {
+              console.log("Got location with postal code, calling onAddressSelect:", postalCode);
+              onAddressSelect(data.display_name, postalCode);
+              setError('');
+            } else {
+              setError('Could not determine postal code from your location. Please enter it manually.');
+            }
+          } else {
+            setError('Your location was found, but no postal code was detected. Please add it manually.');
+          }
+        } else {
+          setInputValue('');
+          throw new Error('No address found for this location');
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching address:', err);
+        setInputValue('');
+        setError('Failed to get your location. Please enter your address manually.');
+      })
+      .finally(() => {
+        setLocationLoading(false);
+      });
+    } catch (error) {
+      console.error("Error in fetchAddressFromCoordinates:", error);
       setLocationLoading(false);
-    });
+      setInputValue('');
+      setError('Error processing your location. Please enter your address manually.');
+    }
   };
   
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -325,7 +349,7 @@ export default function AddressAutocomplete({
           disabled={locationLoading} // Only disable when getting location, NOT when loading suggestions
         />
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          {loading ? (
+          {loading || locationLoading ? (
             <FaSpinner className="h-5 w-5 text-gray-400 animate-spin" />
           ) : (
             <FaMapMarkerAlt className="h-5 w-5 text-gray-400" />
@@ -342,7 +366,7 @@ export default function AddressAutocomplete({
         {locationLoading ? (
           <>
             <FaSpinner className="animate-spin h-5 w-5 mr-2" />
-            Detecting...
+            Detecting your location...
           </>
         ) : (
           <>
