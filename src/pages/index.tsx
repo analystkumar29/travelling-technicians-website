@@ -321,7 +321,7 @@ export default function Home() {
                   } {selectedIssue} issue at your doorstep!
                 </p>
                 <Link 
-                  href="/book-online" 
+                  href="/book-online/" 
                   className="btn-primary text-lg inline-block"
                 >
                   See Pricing & Book Now
@@ -501,7 +501,7 @@ export default function Home() {
             <p className="text-xl mb-8 max-w-3xl mx-auto">
               Book now and get your device repaired at your doorstep by certified technicians.
             </p>
-            <Link href="/book-online" className="btn-accent text-center inline-block text-lg">
+            <Link href="/book-online/" className="btn-accent text-center inline-block text-lg">
               Book Your Repair Now
             </Link>
             <p className="mt-4 text-primary-100">

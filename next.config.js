@@ -9,7 +9,7 @@ const nextConfig = {
     domains: ['images.unsplash.com'], // For placeholder images
     unoptimized: true, // This is required for static export
   },
-  // Trailing slash is recommended for static exports
+  // Trailing slash is required for static exports to work properly with links
   trailingSlash: true,
 }
 

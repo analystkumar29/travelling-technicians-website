@@ -159,7 +159,7 @@ export default function Header() {
                 </div>
                 <div className="ml-4 pl-4 border-l border-gray-200">
                   <Link 
-                    href="/book-online"
+                    href="/book-online/"
                     className={`btn-accent text-sm px-4 py-2 ${
                       isActivePath('/book-online')
                         ? 'ring-2 ring-accent-300'
@@ -330,7 +330,7 @@ export default function Header() {
 
               <div className="pt-3 mt-3 border-t border-gray-200">
                 <Link
-                  href="/book-online"
+                  href="/book-online/"
                   className={`w-full flex items-center justify-center px-4 py-2.5 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-accent-500 hover:bg-accent-600 ${
                     isActivePath('/book-online')
                       ? 'ring-2 ring-accent-300'
