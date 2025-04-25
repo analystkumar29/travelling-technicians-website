@@ -18,8 +18,6 @@ type EmailData = {
   service: string;
   address: string;
   bookingReference?: string;
-  oldDate?: string;
-  oldTime?: string;
 };
 
 // Generate a secure token for email verification
@@ -54,8 +52,6 @@ export default async function handler(
       service,
       address,
       bookingReference = `TT${Date.now().toString().substring(6)}`,
-      oldDate,
-      oldTime,
     }: EmailData = req.body;
 
     // Validate essential data
@@ -70,7 +66,8 @@ export default async function handler(
     const verificationToken = generateVerificationToken(to, bookingReference);
     
     // Construct verification URL
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || 'http://localhost:3000';
+    const verificationUrl = `${baseUrl}/verify-booking?token=${verificationToken}`;
     const rescheduleUrl = `${baseUrl}/reschedule-booking?reference=${bookingReference}&token=${verificationToken}`;
 
     // Check if SendGrid is configured
@@ -79,13 +76,10 @@ export default async function handler(
       
       // Log what would be sent
       console.log({
+        verificationUrl,
         rescheduleUrl,
         to,
-        subject: 'Your Booking Reschedule Confirmation - The Travelling Technicians',
-        oldDate,
-        oldTime,
-        newDate: bookingDate,
-        newTime: bookingTime,
+        subject: 'Your Booking Confirmation - The Travelling Technicians',
       });
       
       // Simulate API delay
@@ -97,6 +91,7 @@ export default async function handler(
         message: 'Email sending simulated (SendGrid API key not configured)',
         sentTo: to,
         verificationToken,
+        verificationUrl,
       });
     }
 
@@ -107,25 +102,23 @@ export default async function handler(
         email: process.env.SENDGRID_FROM_EMAIL || 'bookings@travelling-technicians.ca',
         name: process.env.SENDGRID_FROM_NAME || 'The Travelling Technicians',
       },
-      subject: 'Your Repair Booking Has Been Rescheduled',
+      subject: 'Your Repair Booking Confirmation',
       // No text property - only use templateId
-      templateId: process.env.SENDGRID_TEMPLATE_ID,
-      dynamicTemplateData: {
-        isRescheduled: true,  // This flag indicates it's a rescheduled booking
-        name,
-        bookingReference,
-        deviceType: deviceType === 'mobile' ? 'Mobile Phone' : deviceType === 'laptop' ? 'Laptop' : deviceType,
-        brand,
-        model,
-        service,
-        oldDate,
-        oldTime,
-        bookingDate,
-        bookingTime,
-        address,
-        rescheduleUrl,
-        year: new Date().getFullYear()
-      },
+      templateId: 'd-c9dbac568573432bb15f79c92c4fd4b5',
+dynamicTemplateData: {
+  name,
+  bookingReference,
+  deviceType: deviceType === 'mobile' ? 'Mobile Phone' : deviceType === 'laptop' ? 'Laptop' : 'Tablet',
+  brand,
+  model,
+  service,
+  bookingDate,
+  bookingTime,
+  address,
+  verificationUrl,
+  rescheduleUrl,
+  year: new Date().getFullYear(),
+},
     };
 
     // Send email via SendGrid
@@ -135,7 +128,7 @@ export default async function handler(
       // Return success response
       return res.status(200).json({ 
         success: true,
-        message: 'Reschedule confirmation email sent successfully',
+        message: 'Confirmation email sent successfully',
         sentTo: to,
       });
     } catch (sendGridError: any) {
@@ -152,10 +145,10 @@ export default async function handler(
     }
     
   } catch (error: any) {
-    console.error('Error sending reschedule confirmation email:', error);
+    console.error('Error sending confirmation email:', error);
     return res.status(500).json({ 
       success: false,
-      message: 'Failed to send reschedule confirmation email',
+      message: 'Failed to send confirmation email',
       error: error.message
     });
   }
