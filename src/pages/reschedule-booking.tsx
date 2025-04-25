@@ -131,6 +131,19 @@ export default function RescheduleBooking() {
         const userEmail = typeof reference === 'string' ? reference.split('@').length > 1 ? reference : undefined : undefined;
         
         // Send reschedule confirmation email
+        console.log('Sending reschedule confirmation email with data:', {
+          to: userEmail || 'manoj@example.com',
+          name: 'Customer',
+          bookingReference: bookingInfo.reference,
+          deviceType: bookingInfo.deviceType || 'Device',
+          service: bookingInfo.issue,
+          oldDate: bookingInfo.currentDate,
+          oldTime: bookingInfo.currentTime,
+          bookingDate: formattedDate,
+          bookingTime: formattedTime,
+          address: bookingInfo.address
+        });
+        
         const emailResponse = await fetch('/api/send-reschedule-confirmation', {
           method: 'POST',
           headers: {
@@ -152,6 +165,13 @@ export default function RescheduleBooking() {
             notes: note || '',
           }),
         });
+        
+        if (!emailResponse.ok) {
+          console.error('Failed to send reschedule confirmation email. Status:', emailResponse.status);
+          const errorText = await emailResponse.text();
+          console.error('Error response:', errorText);
+          throw new Error(`Email API responded with status ${emailResponse.status}`);
+        }
         
         const emailResult = await emailResponse.json();
         console.log('Email sending result:', emailResult);

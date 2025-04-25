@@ -40,6 +40,8 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  console.log('⭐ Received reschedule confirmation request');
+  
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
@@ -64,12 +66,17 @@ export default async function handler(
       notes
     }: EmailData = req.body;
 
+    console.log('📧 Reschedule email data received:', { 
+      to, bookingReference, oldDate, oldTime, bookingDate, bookingTime 
+    });
+
     // Use new format if available, fall back to the old one
     const finalDate = newDate || bookingDate;
     const finalTime = newTime || bookingTime;
 
     // Validate essential data
     if (!to || !name || !finalDate || !finalTime) {
+      console.error('❌ Missing required fields for reschedule email:', { to, name, finalDate, finalTime });
       return res.status(400).json({
         success: false,
         message: 'Missing required booking information'
@@ -109,6 +116,9 @@ export default async function handler(
       });
     }
 
+    console.log('🔑 SendGrid API Key present:', !!process.env.SENDGRID_API_KEY);
+    console.log('📝 SendGrid Template ID:', process.env.SENDGRID_TEMPLATE_ID);
+
     // Create email message with SendGrid
     const msg: sgMail.MailDataRequired = {
       to,
@@ -143,9 +153,17 @@ export default async function handler(
       },
     };
 
+    console.log('📤 Attempting to send email via SendGrid:', { 
+      to, 
+      templateId: msg.templateId,
+      isRescheduled: true
+    });
+
     // Send email via SendGrid
     try {
       await sgMail.send(msg);
+      
+      console.log('✅ Reschedule confirmation email sent successfully to:', to);
       
       // Return success response
       return res.status(200).json({ 
@@ -154,7 +172,7 @@ export default async function handler(
         sentTo: to,
       });
     } catch (sendGridError: any) {
-      console.error('SendGrid Error:', sendGridError);
+      console.error('❌ SendGrid Error:', sendGridError);
       if (sendGridError.response) {
         console.error('SendGrid Error Body:', sendGridError.response.body);
       }
@@ -167,7 +185,7 @@ export default async function handler(
     }
     
   } catch (error: any) {
-    console.error('Error sending rescheduling confirmation email:', error);
+    console.error('❌ Error sending rescheduling confirmation email:', error);
     return res.status(500).json({ 
       success: false,
       message: 'Failed to send rescheduling confirmation email',
