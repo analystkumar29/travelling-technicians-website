@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Booking Confirmation</title>
+</head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <div style="background-color: #4f46e5; padding: 20px; text-align: center;">
+    {{#if isRescheduled}}
+      <h1 style="color: white; margin: 0;">Booking Rescheduled</h1>
+    {{else}}
+      <h1 style="color: white; margin: 0;">Booking Confirmation</h1>
+    {{/if}}
+  </div>
+  
+  <div style="padding: 20px; border: 1px solid #e5e7eb;">
+    <p>Hi {{name}},</p>
+    
+    {{#if isRescheduled}}
+      <p>Your booking with The Travelling Technicians has been <strong>rescheduled</strong>:</p>
+      
+      <div style="background-color: #f9fafb; padding: 15px; margin: 15px 0; border-radius: 5px;">
+        <p><strong>Booking Reference:</strong> {{bookingReference}}</p>
+        <p><strong>Device:</strong> {{deviceType}} - {{brand}} {{model}}</p>
+        <p><strong>Service:</strong> {{service}}</p>
+        <p><strong style="color: #ef4444;">Previous Date/Time:</strong> {{oldDate}} at {{oldTime}}</p>
+        <p><strong style="color: #22c55e;">New Date/Time:</strong> {{bookingDate}} at {{bookingTime}}</p>
+        <p><strong>Address:</strong> {{address}}</p>
+      </div>
+    {{else}}
+      <p>Your booking with The Travelling Technicians has been confirmed:</p>
+      
+      <div style="background-color: #f9fafb; padding: 15px; margin: 15px 0; border-radius: 5px;">
+        <p><strong>Booking Reference:</strong> {{bookingReference}}</p>
+        <p><strong>Device:</strong> {{deviceType}} - {{brand}} {{model}}</p>
+        <p><strong>Service:</strong> {{service}}</p>
+        <p><strong>Date/Time:</strong> {{bookingDate}} at {{bookingTime}}</p>
+        <p><strong>Address:</strong> {{address}}</p>
+      </div>
+      
+      <div style="text-align: center; margin: 25px 0;">
+        <a href="{{verificationUrl}}" style="background-color: #4f46e5; color: white; padding: 12px 20px; border-radius: 5px; text-decoration: none; display: inline-block; font-weight: bold;">Verify Booking</a>
+      </div>
+    {{/if}}
+    
+    <div style="text-align: center; margin: 25px 0;">
+      <a href="{{rescheduleUrl}}" style="background-color: #f59e0b; color: white; padding: 12px 20px; border-radius: 5px; text-decoration: none; display: inline-block; font-weight: bold;">Reschedule Booking</a>
+    </div>
+    
+    <p>Our technician will arrive at your location during the scheduled time window.</p>
+    <p>If you need to make any changes, click the reschedule button above or call us at (604) 849-5329.</p>
+  </div>
+  
+  <div style="text-align: center; padding: 20px; color: #6b7280; font-size: 12px;">
+    <p>© {{year}} The Travelling Technicians. All rights reserved.</p>
+    <p>Lower Mainland, British Columbia, Canada</p>
+  </div>
+</body>
+</html> 
