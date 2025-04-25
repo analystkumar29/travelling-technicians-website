@@ -103,7 +103,7 @@ export default async function handler(
         name: process.env.SENDGRID_FROM_NAME || 'The Travelling Technicians',
       },
       subject: 'Your Repair Booking Confirmation',
-      // No text property - only use templateId
+      text: `Hi ${name}, your booking has been confirmed for ${bookingDate} at ${bookingTime}. Please verify your booking at: ${verificationUrl}`,
       templateId: 'd-c9dbac568573432bb15f79c92c4fd4b5',
 dynamicTemplateData: {
   name,
