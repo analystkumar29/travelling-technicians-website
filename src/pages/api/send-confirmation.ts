@@ -96,29 +96,35 @@ export default async function handler(
     }
 
     // Create email message with SendGrid
-    const msg = {
+    const msg: sgMail.MailDataRequired = {
       to,
       from: {
         email: process.env.SENDGRID_FROM_EMAIL || 'bookings@travelling-technicians.ca',
         name: process.env.SENDGRID_FROM_NAME || 'The Travelling Technicians',
       },
       subject: 'Your Repair Booking Confirmation',
-      // No text property - only use templateId
+      content: [
+        {
+          type: 'text/html',
+          value: '<p>Your booking has been confirmed.</p>'
+        }
+      ],
       templateId: 'd-c9dbac568573432bb15f79c92c4fd4b5',
-dynamicTemplateData: {
-  name,
-  bookingReference,
-  deviceType: deviceType === 'mobile' ? 'Mobile Phone' : deviceType === 'laptop' ? 'Laptop' : 'Tablet',
-  brand,
-  model,
-  service,
-  bookingDate,
-  bookingTime,
-  address,
-  verificationUrl,
-  rescheduleUrl,
-  year: new Date().getFullYear(),
-},
+      dynamicTemplateData: {
+        isRescheduled: false,
+        name,
+        bookingReference,
+        deviceType: deviceType === 'mobile' ? 'Mobile Phone' : deviceType === 'laptop' ? 'Laptop' : 'Tablet',
+        brand,
+        model,
+        service,
+        bookingDate,
+        bookingTime,
+        address,
+        verificationUrl,
+        rescheduleUrl,
+        year: new Date().getFullYear(),
+      },
     };
 
     // Send email via SendGrid

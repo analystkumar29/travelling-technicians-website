@@ -110,15 +110,20 @@ export default async function handler(
     }
 
     // Create email message with SendGrid
-    const msg = {
+    const msg: sgMail.MailDataRequired = {
       to,
       from: {
         email: process.env.SENDGRID_FROM_EMAIL || 'bookings@travelling-technicians.ca',
         name: process.env.SENDGRID_FROM_NAME || 'The Travelling Technicians',
       },
       subject: 'Your Repair Booking Has Been Rescheduled',
-      // No text property - only use templateId
-      templateId: process.env.SENDGRID_TEMPLATE_ID,
+      content: [
+        {
+          type: 'text/html',
+          value: '<p>Your booking has been rescheduled.</p>'
+        }
+      ],
+      templateId: process.env.SENDGRID_TEMPLATE_ID || 'd-c9dbac568573432bb15f79c92c4fd4b5',
       dynamicTemplateData: {
         isRescheduled: true,
         name,
