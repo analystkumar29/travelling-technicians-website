@@ -115,8 +115,50 @@ export default function RescheduleBooking() {
     
     try {
       // In production, you would call an API to update the booking
-      // For demo, we'll simulate success after a delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // For now, we'll use our real email API
+      try {
+        // Format the date for display
+        const formattedDate = date ? new Date(date).toLocaleDateString('en-US', { 
+          weekday: 'long', 
+          month: 'long', 
+          day: 'numeric' 
+        }) : '';
+        
+        // Format the time for display
+        const formattedTime = availableTimes.find(t => t.id === timeSlot)?.label || '';
+        
+        // Prepare the user's email
+        const userEmail = typeof reference === 'string' ? reference.split('@').length > 1 ? reference : undefined : undefined;
+        
+        // Send reschedule confirmation email
+        const emailResponse = await fetch('/api/send-reschedule-confirmation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to: userEmail || 'manoj@example.com', // In production, you'd get this from your database
+            name: 'Customer', // In production, you'd get this from your database
+            bookingReference: bookingInfo.reference,
+            deviceType: bookingInfo.deviceType || 'Device',
+            brand: '', // Would come from database
+            model: '', // Would come from database
+            service: bookingInfo.issue,
+            oldDate: bookingInfo.currentDate,
+            oldTime: bookingInfo.currentTime,
+            newDate: formattedDate,
+            newTime: formattedTime,
+            address: bookingInfo.address,
+            notes: note || '',
+          }),
+        });
+        
+        const emailResult = await emailResponse.json();
+        console.log('Email sending result:', emailResult);
+      } catch (emailError) {
+        console.error('Failed to send reschedule confirmation email:', emailError);
+        // Continue with success state even if email fails
+      }
       
       // Update status to success
       setStatus('success');
