@@ -10,19 +10,14 @@ if (process.env.SENDGRID_API_KEY) {
 type EmailData = {
   to: string;
   name: string;
-  bookingReference?: string;
+  bookingDate: string;
+  bookingTime: string;
   deviceType: string;
   brand: string;
   model: string;
   service: string;
-  oldDate?: string;
-  oldTime?: string;
-  newDate?: string; 
-  newTime?: string;
-  bookingDate?: string; // For backward compatibility
-  bookingTime?: string; // For backward compatibility
   address: string;
-  notes?: string;
+  bookingReference?: string;
 };
 
 // Generate a secure token for email verification
@@ -40,8 +35,6 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  console.log('⭐ Received reschedule confirmation request');
-  
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
@@ -51,32 +44,18 @@ export default async function handler(
     const {
       to,
       name,
-      bookingReference = `TT${Date.now().toString().substring(6)}`,
+      bookingDate,
+      bookingTime,
       deviceType,
       brand,
       model,
       service,
-      oldDate,
-      oldTime,
-      newDate,
-      newTime,
-      bookingDate, // For backward compatibility
-      bookingTime, // For backward compatibility
       address,
-      notes
+      bookingReference = `TT${Date.now().toString().substring(6)}`,
     }: EmailData = req.body;
 
-    console.log('📧 Reschedule email data received:', { 
-      to, bookingReference, oldDate, oldTime, bookingDate, bookingTime 
-    });
-
-    // Use new format if available, fall back to the old one
-    const finalDate = newDate || bookingDate;
-    const finalTime = newTime || bookingTime;
-
     // Validate essential data
-    if (!to || !name || !finalDate || !finalTime) {
-      console.error('❌ Missing required fields for reschedule email:', { to, name, finalDate, finalTime });
+    if (!to || !name || !bookingDate || !bookingTime) {
       return res.status(400).json({
         success: false,
         message: 'Missing required booking information'
@@ -97,12 +76,10 @@ export default async function handler(
       
       // Log what would be sent
       console.log({
-        isRescheduled: true,
-        oldDate,
-        oldTime,
+        verificationUrl,
         rescheduleUrl,
         to,
-        subject: 'Your Booking Has Been Rescheduled - The Travelling Technicians',
+        subject: 'Your Booking Confirmation - The Travelling Technicians',
       });
       
       // Simulate API delay
@@ -111,93 +88,67 @@ export default async function handler(
       // Return success for development
       return res.status(200).json({ 
         success: true,
-        message: 'Rescheduling email sending simulated (SendGrid API key not configured)',
+        message: 'Email sending simulated (SendGrid API key not configured)',
         sentTo: to,
+        verificationToken,
+        verificationUrl,
       });
     }
 
-    console.log('🔑 SendGrid API Key present:', !!process.env.SENDGRID_API_KEY);
-    console.log('📝 SendGrid Template ID:', process.env.SENDGRID_TEMPLATE_ID);
-
     // Create email message with SendGrid
-    const msg: sgMail.MailDataRequired = {
+    const msg = {
       to,
       from: {
         email: process.env.SENDGRID_FROM_EMAIL || 'bookings@travelling-technicians.ca',
         name: process.env.SENDGRID_FROM_NAME || 'The Travelling Technicians',
       },
-      subject: 'Your Repair Booking Has Been Rescheduled',
-      content: [
-        {
-          type: 'text/html',
-          value: '<p>Your booking has been rescheduled.</p>'
-        }
-      ],
-      templateId: process.env.SENDGRID_TEMPLATE_ID || 'd-c9dbac568573432bb15f79c92c4fd4b5',
-      dynamicTemplateData: {
-        isRescheduled: true,
-        name,
-        bookingReference,
-        deviceType: deviceType === 'mobile' ? 'Mobile Phone' : deviceType === 'laptop' ? 'Laptop' : deviceType,
-        brand,
-        model,
-        service,
-        oldDate,
-        oldTime,
-        bookingDate: finalDate,
-        bookingTime: finalTime,
-        address,
-        notes: notes || '',
-        rescheduleUrl,
-        year: new Date().getFullYear(),
-      },
+      subject: 'Your Repair Booking Confirmation',
+      // No text property - only use templateId
+      templateId: 'd-c9dbac568573432bb15f79c92c4fd4b5',
+dynamicTemplateData: {
+  name,
+  bookingReference,
+  deviceType: deviceType === 'mobile' ? 'Mobile Phone' : deviceType === 'laptop' ? 'Laptop' : 'Tablet',
+  brand,
+  model,
+  service,
+  bookingDate,
+  bookingTime,
+  address,
+  verificationUrl,
+  rescheduleUrl,
+  year: new Date().getFullYear(),
+},
     };
-
-    console.log('📤 Attempting to send email via SendGrid:', { 
-      to, 
-      templateId: msg.templateId,
-      isRescheduled: true,
-      templateData: {
-        name,
-        bookingReference,
-        oldDate,
-        oldTime,
-        bookingDate: finalDate,
-        bookingTime: finalTime
-      }
-    });
 
     // Send email via SendGrid
     try {
       await sgMail.send(msg);
       
-      console.log('✅ Reschedule confirmation email sent successfully to:', to);
-      
       // Return success response
       return res.status(200).json({ 
         success: true,
-        message: 'Rescheduling confirmation email sent successfully',
+        message: 'Confirmation email sent successfully',
         sentTo: to,
       });
     } catch (sendGridError: any) {
-      console.error('❌ SendGrid Error:', sendGridError);
+      console.error('SendGrid Error:', sendGridError);
       if (sendGridError.response) {
-        console.error('SendGrid Error Body:', JSON.stringify(sendGridError.response.body));
+        console.error('SendGrid Error Body:', sendGridError.response.body);
       }
       
       return res.status(500).json({ 
         success: false,
         message: 'Failed to send email via SendGrid',
-        error: sendGridError.message,
-        details: sendGridError.response?.body || {}
+        error: sendGridError.message
       });
     }
     
   } catch (error: any) {
-    console.error('❌ Error sending rescheduling confirmation email:', error);
+    console.error('Error sending confirmation email:', error);
     return res.status(500).json({ 
       success: false,
-      message: 'Failed to send rescheduling confirmation email',
+      message: 'Failed to send confirmation email',
       error: error.message
     });
   }

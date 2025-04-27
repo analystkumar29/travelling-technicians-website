@@ -170,14 +170,22 @@ export default function RescheduleBooking() {
           console.error('Failed to send reschedule confirmation email. Status:', emailResponse.status);
           const errorText = await emailResponse.text();
           console.error('Error response:', errorText);
-          throw new Error(`Email API responded with status ${emailResponse.status}`);
+          throw new Error(`Email API responded with status ${emailResponse.status}: ${errorText}`);
         }
         
         const emailResult = await emailResponse.json();
         console.log('Email sending result:', emailResult);
+        
+        if (!emailResult.success) {
+          console.error('Email API reported failure:', emailResult);
+          throw new Error(`Email sending failed: ${emailResult.message || 'Unknown error'}`);
+        }
       } catch (emailError) {
         console.error('Failed to send reschedule confirmation email:', emailError);
-        // Continue with success state even if email fails
+        // Instead of silently continuing, show a partial success message
+        setStatus('success');
+        setMessage('Your booking has been successfully rescheduled, but we could not send a confirmation email. Please take note of your booking details.');
+        return; // Exit early to prevent overwriting the message
       }
       
       // Update status to success
