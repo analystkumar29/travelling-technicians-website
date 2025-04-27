@@ -1,0 +1,151 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - represents customers who book repairs
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  name      String
+  phone     String?
+  address   String?
+  postalCode String?
+  city      String?
+  province  String?   @default("BC")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  bookings  Booking[]
+
+  @@map("users")
+}
+
+// Booking model - represents repair service requests
+model Booking {
+  id            Int       @id @default(autoincrement())
+  referenceCode String    @unique @map("reference_code") // Format: TT12345678
+  userId        Int       @map("user_id")
+  serviceId     Int       @map("service_id")
+  deviceId      Int?      @map("device_id")
+  address       String
+  postalCode    String    @map("postal_code")
+  city          String
+  province      String    @default("BC")
+  bookingDate   DateTime  @map("booking_date")
+  bookingTimeSlot String  @map("booking_time_slot") // Format: "09-11" (9-11 AM)
+  status        String    @default("pending") // pending, confirmed, completed, cancelled, rescheduled
+  technicianId  Int?      @map("technician_id") // For future technician assignment
+  notes         String?
+  issue         String?   // Customer description of the issue
+  price         Float?    // Final price (may differ from base price)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  user          User      @relation(fields: [userId], references: [id])
+  service       Service   @relation(fields: [serviceId], references: [id])
+  device        Device?   @relation(fields: [deviceId], references: [id])
+  technician    Technician? @relation(fields: [technicianId], references: [id])
+  
+  // For rescheduled bookings
+  originalBookingDate DateTime? @map("original_booking_date")
+  originalTimeSlot   String?    @map("original_time_slot")
+  
+  @@map("bookings")
+}
+
+// Service model - represents types of repair services offered
+model Service {
+  id           Int       @id @default(autoincrement())
+  name         String
+  description  String?
+  deviceType   String    @map("device_type") // mobile, laptop, tablet
+  basePrice    Float     @map("base_price")
+  doorstepAvailable Boolean @default(true) @map("doorstep_available")
+  estimatedTime Int?     @map("estimated_time") // in minutes
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  bookings     Booking[]
+  
+  @@map("services")
+}
+
+// Service Areas model - represents geographical areas serviced
+model ServiceArea {
+  id          Int       @id @default(autoincrement())
+  city        String
+  province    String    @default("BC")
+  postalCodes PostalCode[] 
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  @@map("service_areas")
+}
+
+// Postal Code model - for detailed postal code coverage
+model PostalCode {
+  id            Int         @id @default(autoincrement())
+  code          String      @unique // Format: V6B1A1 (no spaces)
+  serviceAreaId Int         @map("service_area_id")
+  active        Boolean     @default(true)
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  
+  // Relation
+  serviceArea   ServiceArea @relation(fields: [serviceAreaId], references: [id])
+  
+  @@map("postal_codes")
+}
+
+// Device model - represents brands and models of devices
+model Device {
+  id          Int       @id @default(autoincrement())
+  type        String    // mobile, laptop, tablet
+  brand       String
+  model       String
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  bookings    Booking[]
+  
+  @@unique([brand, model])
+  @@map("devices")
+}
+
+// Technician model - for future technician app integration
+model Technician {
+  id          Int       @id @default(autoincrement())
+  email       String    @unique
+  name        String
+  phone       String
+  active      Boolean   @default(true)
+  skills      TechnicianSkill[]
+  bookings    Booking[]
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  @@map("technicians")
+}
+
+// Technician Skills - many-to-many relationship
+model TechnicianSkill {
+  id            Int       @id @default(autoincrement())
+  technicianId  Int       @map("technician_id")
+  serviceId     Int       @map("service_id")
+  proficiency   String    @default("intermediate") // beginner, intermediate, expert
+  
+  // Relations
+  technician    Technician @relation(fields: [technicianId], references: [id])
+  service       Service    @relation(fields: [serviceId], references: [id])
+  
+  @@unique([technicianId, serviceId])
+  @@map("technician_skills")
+} 
