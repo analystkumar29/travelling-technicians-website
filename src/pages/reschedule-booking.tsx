@@ -43,8 +43,10 @@ export default function RescheduleBooking() {
   const [date, setDate] = useState('');
   const [timeSlot, setTimeSlot] = useState('');
   const [note, setNote] = useState('');
+  const [email, setEmail] = useState('');
   const [dateError, setDateError] = useState(false);
   const [timeError, setTimeError] = useState(false);
+  const [emailError, setEmailError] = useState(false);
   
   // Process states
   const [status, setStatus] = useState<'loading' | 'ready' | 'submitting' | 'success' | 'error'>('loading');
@@ -61,6 +63,9 @@ export default function RescheduleBooking() {
         // For demo, we'll just simulate a successful validation after delay
         await new Promise(resolve => setTimeout(resolve, 1500));
         
+        // Extract email from URL query parameters if available
+        const emailFromUrl = typeof router.query.email === 'string' ? router.query.email : undefined;
+        
         // Simple validation check
         if (typeof reference === 'string' && typeof token === 'string' && 
             reference.startsWith('TT') && token.length > 20) {
@@ -72,8 +77,15 @@ export default function RescheduleBooking() {
             issue: 'Screen Replacement',
             currentDate: 'Monday, June 10, 2024',
             currentTime: '9:00 AM - 11:00 AM',
-            address: '123 Main St, Vancouver, BC'
+            address: '123 Main St, Vancouver, BC',
+            // Store email from URL or use example email
+            email: emailFromUrl || undefined // Set to undefined to show email input field
           });
+          
+          // If we have email from URL, pre-populate the email field
+          if (emailFromUrl) {
+            setEmail(emailFromUrl);
+          }
           
           setStatus('ready');
           setMessage('');
@@ -89,7 +101,7 @@ export default function RescheduleBooking() {
     };
     
     validateToken();
-  }, [reference, token]);
+  }, [reference, token, router.query.email]);
   
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -105,6 +117,12 @@ export default function RescheduleBooking() {
     
     if (!timeSlot) {
       setTimeError(true);
+      hasError = true;
+    }
+    
+    // Validate email if we don't have it in booking info
+    if (!bookingInfo.email && !email) {
+      setEmailError(true);
       hasError = true;
     }
     
@@ -127,10 +145,13 @@ export default function RescheduleBooking() {
         // Format the time for display
         const formattedTime = availableTimes.find(t => t.id === timeSlot)?.label || '';
         
-        // Prepare the user's email - fix the detection logic
-        const userEmail = typeof reference === 'string' && reference.includes('@') 
-          ? reference 
-          : 'bishnoimanoj2@gmail.com'; // Use the correct email address
+        // Get the user's email from booking data or form input
+        const userEmail = bookingInfo.email || email || 'customer@example.com'; 
+        
+        // Add an email input field if we don't have the user's email
+        if (!bookingInfo.email && !email) {
+          console.warn('No email found in booking data or form! Using fallback.');
+        }
         
         // Send reschedule confirmation email
         console.log('Sending reschedule confirmation email with data:', {
@@ -152,7 +173,7 @@ export default function RescheduleBooking() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            to: userEmail, // Use the correct email, not the fallback
+            to: userEmail,
             name: 'Customer', // In production, you'd get this from your database
             bookingReference: bookingInfo.reference,
             deviceType: bookingInfo.deviceType || 'Device',
@@ -330,6 +351,33 @@ export default function RescheduleBooking() {
                       )}
                     </div>
                   </div>
+                  
+                  {/* Show email field only if we don't have it in booking data */}
+                  {!bookingInfo.email && (
+                    <div className="mb-6">
+                      <label htmlFor="email" className="block text-gray-700 font-medium mb-2">
+                        Your Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        id="email"
+                        className={`w-full px-4 py-3 border ${emailError ? 'border-red-500 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                        placeholder="Enter your email for confirmation"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setEmailError(false);
+                        }}
+                        required={!bookingInfo.email}
+                      />
+                      {emailError && (
+                        <p className="mt-1 text-sm text-red-600">Please enter your email address</p>
+                      )}
+                      <p className="mt-1 text-sm text-gray-500">
+                        You'll receive a confirmation email for your rescheduled booking
+                      </p>
+                    </div>
+                  )}
                   
                   <div className="mb-6">
                     <label htmlFor="note" className="block text-gray-700 font-medium mb-2">

@@ -23,6 +23,7 @@ type EmailData = {
   bookingTime?: string; // For backward compatibility
   address: string;
   notes?: string;
+  email?: string; // Add support for email
 };
 
 // Generate a secure token for email verification
@@ -63,11 +64,20 @@ export default async function handler(
       bookingDate, // For backward compatibility
       bookingTime, // For backward compatibility
       address,
-      notes
+      notes,
+      email, // Get email if provided
     }: EmailData = req.body;
 
+    // Use email from request or fallback to 'to' field for backward compatibility
+    const recipientEmail = email || to;
+
     console.log('📧 Reschedule email data received:', { 
-      to, bookingReference, oldDate, oldTime, bookingDate, bookingTime 
+      to: recipientEmail, 
+      bookingReference, 
+      oldDate, 
+      oldTime, 
+      bookingDate, 
+      bookingTime 
     });
 
     // Use new format if available, fall back to the old one
@@ -75,8 +85,13 @@ export default async function handler(
     const finalTime = newTime || bookingTime;
 
     // Validate essential data
-    if (!to || !name || !finalDate || !finalTime) {
-      console.error('❌ Missing required fields for reschedule email:', { to, name, finalDate, finalTime });
+    if (!recipientEmail || !name || !finalDate || !finalTime) {
+      console.error('❌ Missing required fields for reschedule email:', { 
+        to: recipientEmail, 
+        name, 
+        finalDate, 
+        finalTime 
+      });
       return res.status(400).json({
         success: false,
         message: 'Missing required booking information'
@@ -84,12 +99,13 @@ export default async function handler(
     }
 
     // Create verification token
-    const verificationToken = generateVerificationToken(to, bookingReference);
+    const verificationToken = generateVerificationToken(recipientEmail, bookingReference);
     
     // Construct verification URL
     const baseUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || 'http://localhost:3000';
     const verificationUrl = `${baseUrl}/verify-booking?token=${verificationToken}`;
-    const rescheduleUrl = `${baseUrl}/reschedule-booking?reference=${bookingReference}&token=${verificationToken}`;
+    // Include email in reschedule URL for future reference
+    const rescheduleUrl = `${baseUrl}/reschedule-booking?reference=${bookingReference}&token=${verificationToken}${recipientEmail ? `&email=${encodeURIComponent(recipientEmail)}` : ''}`;
 
     // Check if SendGrid is configured
     if (!process.env.SENDGRID_API_KEY) {
@@ -101,7 +117,7 @@ export default async function handler(
         oldDate,
         oldTime,
         rescheduleUrl,
-        to,
+        to: recipientEmail,
         subject: 'Your Booking Has Been Rescheduled - The Travelling Technicians',
       });
       
@@ -112,7 +128,7 @@ export default async function handler(
       return res.status(200).json({ 
         success: true,
         message: 'Rescheduling email sending simulated (SendGrid API key not configured)',
-        sentTo: to,
+        sentTo: recipientEmail,
       });
     }
 
@@ -121,7 +137,7 @@ export default async function handler(
 
     // Create email message with SendGrid
     const msg: sgMail.MailDataRequired = {
-      to,
+      to: recipientEmail,
       from: {
         email: process.env.SENDGRID_FROM_EMAIL || 'bookings@travelling-technicians.ca',
         name: process.env.SENDGRID_FROM_NAME || 'The Travelling Technicians',
@@ -154,7 +170,7 @@ export default async function handler(
     };
 
     console.log('📤 Attempting to send email via SendGrid:', { 
-      to, 
+      to: recipientEmail, 
       templateId: msg.templateId,
       isRescheduled: true,
       templateData: {
@@ -171,13 +187,13 @@ export default async function handler(
     try {
       await sgMail.send(msg);
       
-      console.log('✅ Reschedule confirmation email sent successfully to:', to);
+      console.log('✅ Reschedule confirmation email sent successfully to:', recipientEmail);
       
       // Return success response
       return res.status(200).json({ 
         success: true,
         message: 'Rescheduling confirmation email sent successfully',
-        sentTo: to,
+        sentTo: recipientEmail,
       });
     } catch (sendGridError: any) {
       console.error('❌ SendGrid Error:', sendGridError);
