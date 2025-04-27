@@ -127,12 +127,14 @@ export default function RescheduleBooking() {
         // Format the time for display
         const formattedTime = availableTimes.find(t => t.id === timeSlot)?.label || '';
         
-        // Prepare the user's email
-        const userEmail = typeof reference === 'string' ? reference.split('@').length > 1 ? reference : undefined : undefined;
+        // Prepare the user's email - fix the detection logic
+        const userEmail = typeof reference === 'string' && reference.includes('@') 
+          ? reference 
+          : 'bishnoimanoj2@gmail.com'; // Use the correct email address
         
         // Send reschedule confirmation email
         console.log('Sending reschedule confirmation email with data:', {
-          to: userEmail || 'manoj@example.com',
+          to: userEmail,
           name: 'Customer',
           bookingReference: bookingInfo.reference,
           deviceType: bookingInfo.deviceType || 'Device',
@@ -150,7 +152,7 @@ export default function RescheduleBooking() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            to: userEmail || 'manoj@example.com', // In production, you'd get this from your database
+            to: userEmail, // Use the correct email, not the fallback
             name: 'Customer', // In production, you'd get this from your database
             bookingReference: bookingInfo.reference,
             deviceType: bookingInfo.deviceType || 'Device',

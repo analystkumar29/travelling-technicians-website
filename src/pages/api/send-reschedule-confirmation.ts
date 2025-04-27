@@ -181,8 +181,21 @@ export default async function handler(
       });
     } catch (sendGridError: any) {
       console.error('❌ SendGrid Error:', sendGridError);
+      
+      // Log more detailed error information
+      console.error('Error Details:', {
+        message: sendGridError.message,
+        code: sendGridError.code,
+        statusCode: sendGridError.statusCode,
+      });
+      
       if (sendGridError.response) {
-        console.error('SendGrid Error Body:', JSON.stringify(sendGridError.response.body));
+        console.error('SendGrid Error Body:', JSON.stringify(sendGridError.response.body, null, 2));
+      }
+      
+      // Check for specific Handlebars errors
+      if (sendGridError.message && sendGridError.message.includes('content')) {
+        console.error('⚠️ This appears to be a Handlebars template error. Check triple brackets {{{ }}} for values that might contain special characters.');
       }
       
       return res.status(500).json({ 
