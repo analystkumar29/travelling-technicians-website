@@ -35,8 +35,10 @@ export default function AddressAutocomplete({
           console.warn("DEBUG - AddressAutocomplete: Empty postal code being passed to form!");
         }
         
-        // Call the parent component's handler with the values
-        onAddressSelect(formattedAddress, isValid, formattedPostalCode);
+        // Add a check before calling onAddressSelect
+        if (onAddressSelect && postalCode) {
+          onAddressSelect(formattedAddress, isValid, formattedPostalCode);
+        }
       }}
       placeholder={value || "Enter your service address with postal code"}
       className={className}

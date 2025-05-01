@@ -131,53 +131,42 @@ export default function AddressAutocomplete({
 
   const handleSuggestionClick = (suggestion: any) => {
     try {
-      console.log("DEBUG - handleSuggestionClick - Processing suggestion:", suggestion);
+      console.log("DEBUG - handleSuggestionClick - Suggestion clicked:", suggestion);
 
-      // Extract user-entered street number if available
-      const streetNumberMatch = userEnteredAddress.match(/^\s*(\d+)\s+/);
-      const userEnteredStreetNumber = streetNumberMatch ? streetNumberMatch[1] : '';
+      // Extract street, city, and postal code from the suggestion address
+      const addressParts = suggestion.address.split(', ');
+      const street = addressParts[0] || '';
+      const city = addressParts[1] || '';
+      const postalCode = extractPostalCode(suggestion.address);
       
-      // Get address components
-      let street = suggestion.address?.road || suggestion.address?.street || '';
-      let city = suggestion.address?.city || suggestion.address?.town || suggestion.address?.village || '';
-      let postalCode = suggestion.address?.postcode || '';
+      // Add the street number if provided by the user
+      const streetNumberMatch = inputValue.match(/^\d+/);
+      const streetNumber = streetNumberMatch ? streetNumberMatch[0] + ' ' : '';
+      const combinedAddress = `${streetNumber}${street}, ${city}`;
       
       console.log("DEBUG - handleSuggestionClick - Extracted components:", {
-        street, 
-        city, 
+        street,
+        city,
         postalCode,
-        userEnteredStreetNumber
+        streetNumber
       });
       
-      if (postalCode && postalCode.length === 6 && !postalCode.includes(' ')) {
-        postalCode = `${postalCode.slice(0, 3)} ${postalCode.slice(3)}`;
-      }
+      console.log("DEBUG - handleSuggestionClick - Combined address:", combinedAddress);
       
-      // Check if the suggestion already includes a number at the beginning
-      const suggestionHasNumber = suggestion.display_name.match(/^\s*\d+\s+/) !== null;
-      
-      // Create a combined address
-      let combinedAddress = '';
-      
-      // Only prepend the user's number if suggestion doesn't have one and the user entered one
-      if (userEnteredStreetNumber && !suggestionHasNumber && street) {
-        combinedAddress = `${userEnteredStreetNumber} ${street}, ${city}, BC ${postalCode}, Canada`;
-      } else {
-        combinedAddress = suggestion.display_name;
-      }
-      
-      console.log("DEBUG - handleSuggestionClick - Final combined address:", combinedAddress);
-      
+      // Update input field
       setInputValue(combinedAddress);
       setShowSuggestions(false);
       
+      // Call the onAddressSelect callback with the selected address components
       if (postalCode) {
-        setExtractedPostalCode(postalCode);
         console.log("DEBUG - handleSuggestionClick - Calling onAddressSelect with:", {
           address: combinedAddress,
           postalCode: postalCode
         });
-        onAddressSelect(combinedAddress, postalCode, checkServiceArea(postalCode));
+        
+        if (onAddressSelect) {
+          onAddressSelect(combinedAddress, postalCode, checkServiceArea(postalCode));
+        }
       } else {
         setError('Selected address is missing a postal code. Please enter it manually.');
       }
@@ -267,7 +256,9 @@ export default function AddressAutocomplete({
             // If we have a valid postal code, call onAddressSelect
             if (postalCode) {
               console.log("Got location with postal code, calling onAddressSelect:", postalCode);
-              onAddressSelect(data.display_name, postalCode, checkServiceArea(postalCode));
+              if (onAddressSelect) {
+                onAddressSelect(data.display_name, postalCode, checkServiceArea(postalCode));
+              }
               setError('');
             } else {
               setError('Could not determine postal code from your location. Please enter it manually.');
