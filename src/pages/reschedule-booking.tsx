@@ -57,34 +57,20 @@ export default function RescheduleBooking() {
   useEffect(() => {
     if (!reference || !token) return;
     
-    const validateToken = async () => {
+    const fetchBookingInfo = async () => {
       try {
-        // In production, you would verify the token against your database
-        // For demo, we'll just simulate a successful validation after delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // In a production environment, we would verify the token first
+        // For now, we'll just check if the booking exists
+        const response = await fetch(`/api/bookings/findByReference?reference=${reference}`);
+        const data = await response.json();
         
-        // Extract email from URL query parameters if available
-        const emailFromUrl = typeof router.query.email === 'string' ? router.query.email : undefined;
-        
-        // Simple validation check
-        if (typeof reference === 'string' && typeof token === 'string' && 
-            reference.startsWith('TT') && token.length > 20) {
+        if (data.success && data.booking) {
+          // Set booking info from database
+          setBookingInfo(data.booking);
           
-          // Mock booking data (in production, fetch from database)
-          setBookingInfo({
-            reference: reference,
-            deviceType: 'Mobile Phone',
-            issue: 'Screen Replacement',
-            currentDate: 'Monday, June 10, 2024',
-            currentTime: '9:00 AM - 11:00 AM',
-            address: '123 Main St, Vancouver, BC',
-            // Store email from URL or use example email
-            email: emailFromUrl || undefined // Set to undefined to show email input field
-          });
-          
-          // If we have email from URL, pre-populate the email field
-          if (emailFromUrl) {
-            setEmail(emailFromUrl);
+          // Pre-populate email from booking data
+          if (data.booking.customer_email) {
+            setEmail(data.booking.customer_email);
           }
           
           setStatus('ready');
@@ -94,14 +80,14 @@ export default function RescheduleBooking() {
           setMessage('Invalid or expired reschedule link. Please contact support.');
         }
       } catch (error) {
-        console.error('Error validating reschedule request:', error);
+        console.error('Error fetching booking information:', error);
         setStatus('error');
         setMessage('Something went wrong while loading your booking. Please try again later.');
       }
     };
     
-    validateToken();
-  }, [reference, token, router.query.email]);
+    fetchBookingInfo();
+  }, [reference, token]);
   
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -120,8 +106,7 @@ export default function RescheduleBooking() {
       hasError = true;
     }
     
-    // Validate email if we don't have it in booking info
-    if (!bookingInfo.email && !email) {
+    if (!email) {
       setEmailError(true);
       hasError = true;
     }
@@ -132,92 +117,77 @@ export default function RescheduleBooking() {
     setStatus('submitting');
     
     try {
-      // In production, you would call an API to update the booking
-      // For now, we'll use our real email API
-      try {
-        // Format the date for display
-        const formattedDate = date ? new Date(date).toLocaleDateString('en-US', { 
-          weekday: 'long', 
-          month: 'long', 
-          day: 'numeric' 
-        }) : '';
-        
-        // Format the time for display
-        const formattedTime = availableTimes.find(t => t.id === timeSlot)?.label || '';
-        
-        // Get the user's email from booking data or form input
-        const userEmail = bookingInfo.email || email || 'customer@example.com'; 
-        
-        // Add an email input field if we don't have the user's email
-        if (!bookingInfo.email && !email) {
-          console.warn('No email found in booking data or form! Using fallback.');
-        }
-        
-        // Send reschedule confirmation email
-        console.log('Sending reschedule confirmation email with data:', {
-          to: userEmail,
-          name: 'Customer',
-          bookingReference: bookingInfo.reference,
-          deviceType: bookingInfo.deviceType || 'Device',
-          service: bookingInfo.issue,
-          oldDate: bookingInfo.currentDate,
-          oldTime: bookingInfo.currentTime,
-          bookingDate: formattedDate,
-          bookingTime: formattedTime,
-          address: bookingInfo.address
-        });
-        
-        const emailResponse = await fetch('/api/send-reschedule-confirmation', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            to: userEmail,
-            name: 'Customer', // In production, you'd get this from your database
-            bookingReference: bookingInfo.reference,
-            deviceType: bookingInfo.deviceType || 'Device',
-            brand: '', // Would come from database
-            model: '', // Would come from database
-            service: bookingInfo.issue,
-            oldDate: bookingInfo.currentDate,
-            oldTime: bookingInfo.currentTime,
-            bookingDate: formattedDate,
-            bookingTime: formattedTime,
-            address: bookingInfo.address,
-            notes: note || '',
-          }),
-        });
-        
-        if (!emailResponse.ok) {
-          console.error('Failed to send reschedule confirmation email. Status:', emailResponse.status);
-          const errorText = await emailResponse.text();
-          console.error('Error response:', errorText);
-          throw new Error(`Email API responded with status ${emailResponse.status}: ${errorText}`);
-        }
-        
-        const emailResult = await emailResponse.json();
-        console.log('Email sending result:', emailResult);
-        
-        if (!emailResult.success) {
-          console.error('Email API reported failure:', emailResult);
-          throw new Error(`Email sending failed: ${emailResult.message || 'Unknown error'}`);
-        }
-      } catch (emailError) {
-        console.error('Failed to send reschedule confirmation email:', emailError);
-        // Instead of silently continuing, show a partial success message
-        setStatus('success');
-        setMessage('Your booking has been successfully rescheduled, but we could not send a confirmation email. Please take note of your booking details.');
-        return; // Exit early to prevent overwriting the message
+      // Call API to update booking in Supabase
+      const updateResponse = await fetch('/api/bookings/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          reference: reference,
+          appointmentDate: date,
+          appointmentTime: timeSlot,
+          notes: note || 'Booking rescheduled by customer',
+        }),
+      });
+      
+      const updateData = await updateResponse.json();
+      
+      if (!updateResponse.ok || !updateData.success) {
+        throw new Error(updateData.error || 'Failed to update booking');
       }
       
-      // Update status to success
+      // Format dates for email
+      const formattedDate = date ? new Date(date).toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        month: 'long', 
+        day: 'numeric' 
+      }) : '';
+      
+      const formattedTime = availableTimes.find(t => t.id === timeSlot)?.label || '';
+      
+      // Format old date for comparison
+      const oldDate = bookingInfo.booking_date ? new Date(bookingInfo.booking_date).toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        month: 'long', 
+        day: 'numeric' 
+      }) : '';
+      
+      // Send reschedule confirmation email
+      const emailResponse = await fetch('/api/send-reschedule-confirmation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: email,
+          name: bookingInfo.customer_name || 'Customer',
+          bookingReference: bookingInfo.reference_number,
+          deviceType: bookingInfo.device_type,
+          brand: bookingInfo.device_brand,
+          model: bookingInfo.device_model,
+          service: bookingInfo.service_type,
+          oldDate: oldDate,
+          oldTime: bookingInfo.booking_time,
+          bookingDate: formattedDate,
+          bookingTime: formattedTime,
+          address: bookingInfo.address,
+          notes: note || '',
+        }),
+      });
+      
+      if (!emailResponse.ok) {
+        console.warn('Failed to send reschedule confirmation email, but booking was updated');
+      }
+      
+      // Set success status
       setStatus('success');
-      setMessage('Your booking has been successfully rescheduled! A confirmation email will be sent shortly.');
+      setMessage('Your booking has been successfully rescheduled!');
+      
     } catch (error) {
       console.error('Error rescheduling booking:', error);
       setStatus('error');
-      setMessage('Failed to reschedule your booking. Please try again or contact support.');
+      setMessage(error instanceof Error ? error.message : 'Failed to reschedule your booking. Please try again.');
     }
   };
   
@@ -352,32 +322,29 @@ export default function RescheduleBooking() {
                     </div>
                   </div>
                   
-                  {/* Show email field only if we don't have it in booking data */}
-                  {!bookingInfo.email && (
-                    <div className="mb-6">
-                      <label htmlFor="email" className="block text-gray-700 font-medium mb-2">
-                        Your Email Address *
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        className={`w-full px-4 py-3 border ${emailError ? 'border-red-500 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
-                        placeholder="Enter your email for confirmation"
-                        value={email}
-                        onChange={(e) => {
-                          setEmail(e.target.value);
-                          setEmailError(false);
-                        }}
-                        required={!bookingInfo.email}
-                      />
-                      {emailError && (
-                        <p className="mt-1 text-sm text-red-600">Please enter your email address</p>
-                      )}
-                      <p className="mt-1 text-sm text-gray-500">
-                        You'll receive a confirmation email for your rescheduled booking
-                      </p>
-                    </div>
-                  )}
+                  <div className="mb-6">
+                    <label htmlFor="email" className="block text-gray-700 font-medium mb-2">
+                      Your Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      className={`w-full px-4 py-3 border ${emailError ? 'border-red-500 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                      placeholder="Enter your email for confirmation"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setEmailError(false);
+                      }}
+                      required
+                    />
+                    {emailError && (
+                      <p className="mt-1 text-sm text-red-600">Please enter your email address</p>
+                    )}
+                    <p className="mt-1 text-sm text-gray-500">
+                      You'll receive a confirmation email for your rescheduled booking
+                    </p>
+                  </div>
                   
                   <div className="mb-6">
                     <label htmlFor="note" className="block text-gray-700 font-medium mb-2">

@@ -1,7 +1,13 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { getServiceSupabase } from '@/utils/supabaseClient';
 
-// In-memory storage for bookings (for development)
-const bookings: any[] = [];
+// Helper function to generate a unique reference code
+function generateReferenceCode(): string {
+  const prefix = 'TT';
+  const timestamp = Date.now().toString().slice(-6);
+  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  return `${prefix}${timestamp}${random}`;
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -26,50 +32,52 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } = req.body;
 
     // Validate required fields
-    if (!bookingReference || !deviceType || !serviceType || !appointmentDate || !appointmentTime || !customerEmail) {
+    if (!deviceType || !serviceType || !appointmentDate || !appointmentTime || !customerEmail) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Create booking object
-    const booking = {
-      id: bookings.length + 1,
-      reference: bookingReference,
-      status: 'PENDING',
-      device: {
-        type: deviceType,
-        brand,
-        model,
-      },
-      service: {
-        name: serviceType,
-        deviceType,
-        description: issueDescription || '',
-      },
-      customer: {
-        name: customerName,
-        email: customerEmail,
-        phone: customerPhone,
-      },
-      address: {
-        fullAddress: address,
-        postalCode,
-        country: 'Canada',
-      },
-      bookingDate: appointmentDate,
-      timeSlot: appointmentTime,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    // Create a reference if one wasn't provided
+    const reference = bookingReference || generateReferenceCode();
 
-    // Store booking in memory
-    bookings.push(booking);
+    // Get Supabase client with service role
+    const supabase = getServiceSupabase();
+
+    // Insert the booking into the database
+    const { data, error } = await supabase
+      .from('bookings')
+      .insert([
+        {
+          customer_name: customerName,
+          customer_email: customerEmail,
+          customer_phone: customerPhone,
+          device_type: deviceType,
+          device_brand: brand,
+          device_model: model,
+          issue_description: issueDescription || '',
+          service_type: serviceType,
+          address: address,
+          postal_code: postalCode,
+          booking_date: appointmentDate,
+          booking_time: appointmentTime,
+          status: 'pending',
+          reference_number: reference,
+        }
+      ])
+      .select();
+
+    if (error) {
+      throw error;
+    }
 
     return res.status(201).json({
       success: true,
-      booking,
+      booking: data[0],
     });
   } catch (error) {
     console.error('Error creating booking:', error);
-    return res.status(500).json({ error: 'Failed to create booking' });
+    return res.status(500).json({ 
+      success: false,
+      error: 'Failed to create booking' 
+    });
   }
 } 

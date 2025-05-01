@@ -229,34 +229,53 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
     const reference = generateBookingReference();
     setBookingReference(reference);
     
-    // Prepare booking data
-    const bookingData = {
-      reference,
-      deviceType,
-      brand,
-      model,
-      serviceType,
-      issueDescription,
-      postalCode,
-      address,
-      date,
-      timeSlot,
-      contactName,
-      contactPhone,
-      contactEmail,
-      createdAt: new Date().toISOString(),
-    };
-    
-    // Send confirmation email
-    const emailSent = await sendConfirmationEmail();
-    
-    // Complete booking process
-    setBookingComplete(true);
-    setIsSubmitting(false);
-    
-    // Pass data to parent component if provided
-    if (onComplete) {
-      onComplete(bookingData);
+    try {
+      // Call API to create booking in Supabase
+      const response = await fetch('/api/bookings/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bookingReference: reference,
+          deviceType,
+          brand,
+          model,
+          serviceType,
+          issueDescription,
+          address,
+          postalCode,
+          appointmentDate: date,
+          appointmentTime: timeSlot,
+          customerName: contactName,
+          customerPhone: contactPhone,
+          customerEmail: contactEmail,
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Send confirmation email
+        await sendConfirmationEmail();
+        
+        // Complete booking process
+        setBookingComplete(true);
+        
+        // Pass data to parent component if provided
+        if (onComplete) {
+          onComplete(data.booking);
+        }
+      } else {
+        // Handle error
+        console.error('Error creating booking:', data.error);
+        alert('There was an error creating your booking. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error submitting booking:', error);
+      alert('There was an error creating your booking. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
   

@@ -5,50 +5,33 @@ import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 
 export default function VerifyBooking() {
   const router = useRouter();
-  const { token } = router.query;
+  const { token, reference } = router.query;
   
   const [verificationStatus, setVerificationStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Verifying your booking...');
+  const [bookingInfo, setBookingInfo] = useState<any>(null);
   
   useEffect(() => {
     // Only run verification if token is available from URL
-    if (!token) return;
+    if (!token || !reference) return;
     
     const verifyBooking = async () => {
       try {
-        // In a real implementation, you would call an API endpoint
-        // For demo purposes, we'll simulate API verification with any valid token
+        // Fetch booking information from the database using the reference
+        const response = await fetch(`/api/bookings/findByReference?reference=${reference}`);
+        const data = await response.json();
         
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        // Simple validation - in real implementation you would verify against database
-        if (typeof token === 'string' && token.length > 10) {
+        if (data.success && data.booking) {
+          setBookingInfo(data.booking);
           setVerificationStatus('success');
           setMessage('Your booking has been successfully verified!');
+          
+          // In a production implementation, you would also verify the token
+          // and update the booking status to 'confirmed'
         } else {
           setVerificationStatus('error');
           setMessage('Invalid or expired verification link. Please contact support.');
         }
-        
-        // In production implementation:
-        /*
-        const response = await fetch('/api/verify-booking', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token }),
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-          setVerificationStatus('success');
-          setMessage(data.message || 'Your booking has been successfully verified!');
-        } else {
-          setVerificationStatus('error');
-          setMessage(data.message || 'Failed to verify booking. Please try again.');
-        }
-        */
       } catch (error) {
         console.error('Error during verification:', error);
         setVerificationStatus('error');
@@ -57,7 +40,7 @@ export default function VerifyBooking() {
     };
     
     verifyBooking();
-  }, [token]);
+  }, [token, reference]);
   
   return (
     <Layout title="Verify Booking | The Travelling Technicians">
@@ -80,6 +63,39 @@ export default function VerifyBooking() {
                   <FaCheckCircle className="h-16 w-16 text-green-500 mb-4" />
                   <h2 className="text-2xl font-bold text-gray-800 mb-2">Booking Verified</h2>
                   <p className="text-gray-600 mb-6">{message}</p>
+                  
+                  {bookingInfo && (
+                    <div className="bg-gray-50 p-4 rounded-lg mb-6 max-w-md w-full">
+                      <h3 className="font-medium text-gray-900 mb-2">Booking Details</h3>
+                      <div className="grid grid-cols-1 gap-2 text-sm text-left">
+                        <div>
+                          <span className="text-gray-500">Reference: </span>
+                          <span className="font-medium">{bookingInfo.reference_number}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Device: </span>
+                          <span className="font-medium">{bookingInfo.device_type} - {bookingInfo.device_brand} {bookingInfo.device_model}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Service: </span>
+                          <span className="font-medium">{bookingInfo.service_type}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Date: </span>
+                          <span className="font-medium">{new Date(bookingInfo.booking_date).toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Time: </span>
+                          <span className="font-medium">{bookingInfo.booking_time}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <p className="text-sm text-gray-500 mb-8">
                     Our technician will arrive at your address during the scheduled time window.
                     You will receive a call about 30 minutes before arrival.

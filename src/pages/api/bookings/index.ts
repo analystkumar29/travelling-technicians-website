@@ -1,13 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-
-// In-memory storage for bookings (shared with create.ts)
-declare global {
-  var bookings: any[];
-}
-
-if (!global.bookings) {
-  global.bookings = [];
-}
+import { getServiceSupabase } from '@/utils/supabaseClient';
 
 // Helper function to generate a unique reference code
 function generateReferenceCode(): string {
@@ -20,14 +12,29 @@ function generateReferenceCode(): string {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     try {
-      // Return all bookings
+      // Get Supabase client with service role
+      const supabase = getServiceSupabase();
+      
+      // Fetch all bookings from the database
+      const { data: bookings, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+      
       return res.status(200).json({
         success: true,
-        bookings: global.bookings,
+        bookings,
       });
     } catch (error) {
       console.error('Error fetching bookings:', error);
-      return res.status(500).json({ error: 'Failed to fetch bookings' });
+      return res.status(500).json({ 
+        success: false,
+        error: 'Failed to fetch bookings' 
+      });
     }
   }
 
