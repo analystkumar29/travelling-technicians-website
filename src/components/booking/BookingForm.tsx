@@ -216,6 +216,21 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
       hasError = true;
     }
     
+    if (!address) {
+      setAddressError(true);
+      hasError = true;
+    }
+    
+    if (!date) {
+      setDateError(true);
+      hasError = true;
+    }
+    
+    if (!timeSlot) {
+      setTimeError(true);
+      hasError = true;
+    }
+    
     if (hasError) {
       setShowContactErrors(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -231,6 +246,11 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
     
     try {
       // Call API to create booking in Supabase
+      console.log('Submitting booking with data:', {
+        deviceType, brand, model, serviceType, address, postalCode, 
+        date, timeSlot, contactName, contactPhone, contactEmail
+      });
+      
       const response = await fetch('/api/bookings/create', {
         method: 'POST',
         headers: {
@@ -268,8 +288,12 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
         }
       } else {
         // Handle error
-        console.error('Error creating booking:', data.error);
-        alert('There was an error creating your booking. Please try again.');
+        console.error('Error creating booking:', data.error, data.missingFields);
+        if (data.missingFields) {
+          alert(`There was an error creating your booking. Missing required fields: ${Object.keys(data.missingFields).filter(key => data.missingFields[key]).join(', ')}`);
+        } else {
+          alert('There was an error creating your booking. Please try again.');
+        }
       }
     } catch (error) {
       console.error('Error submitting booking:', error);

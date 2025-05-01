@@ -7,6 +7,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    console.log('Update booking request received:', req.body);
+    
     const {
       reference,
       appointmentDate,
@@ -22,6 +24,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Get Supabase client with service role
     const supabase = getServiceSupabase();
 
+    console.log('Attempting to update booking:', reference);
+
     // Update the booking in the database
     const { data, error } = await supabase
       .from('bookings')
@@ -34,15 +38,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .select();
 
     if (error) {
+      console.error('Error updating booking:', error);
       throw error;
     }
 
-    if (data.length === 0) {
+    if (!data || data.length === 0) {
+      console.log('No booking found with reference:', reference);
       return res.status(404).json({
         success: false,
         error: 'Booking not found',
       });
     }
+
+    console.log('Successfully updated booking:', reference);
 
     return res.status(200).json({
       success: true,
@@ -52,7 +60,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.error('Error updating booking:', error);
     return res.status(500).json({ 
       success: false,
-      error: 'Failed to update booking' 
+      error: error instanceof Error ? error.message : 'Failed to update booking' 
     });
   }
 } 

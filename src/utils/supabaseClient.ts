@@ -10,7 +10,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // Function to get admin client with service role (only use on the server)
 export const getServiceSupabase = () => {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-  return createClient(supabaseUrl, serviceRoleKey);
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
 };
 
 // Types from our database

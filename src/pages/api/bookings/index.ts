@@ -12,6 +12,8 @@ function generateReferenceCode(): string {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     try {
+      console.log('Fetching all bookings');
+      
       // Get Supabase client with service role
       const supabase = getServiceSupabase();
       
@@ -22,8 +24,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .order('created_at', { ascending: false });
       
       if (error) {
+        console.error('Error fetching bookings:', error);
         throw error;
       }
+      
+      console.log(`Successfully fetched ${bookings?.length || 0} bookings`);
       
       return res.status(200).json({
         success: true,
@@ -33,7 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error('Error fetching bookings:', error);
       return res.status(500).json({ 
         success: false,
-        error: 'Failed to fetch bookings' 
+        error: error instanceof Error ? error.message : 'Failed to fetch bookings' 
       });
     }
   }

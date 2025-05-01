@@ -9,6 +9,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { reference } = req.query;
 
+    console.log('Finding booking by reference:', reference);
+
     if (!reference) {
       return res.status(400).json({ error: 'Reference number is required' });
     }
@@ -24,6 +26,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .single();
     
     if (error) {
+      console.error('Error finding booking:', error);
+      
       if (error.code === 'PGRST116') {
         return res.status(404).json({ 
           success: false,
@@ -33,6 +37,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       throw error;
     }
     
+    console.log('Found booking:', booking ? 'Yes' : 'No');
+    
     return res.status(200).json({
       success: true,
       booking,
@@ -41,7 +47,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.error('Error finding booking:', error);
     return res.status(500).json({ 
       success: false,
-      error: 'Failed to find booking' 
+      error: error instanceof Error ? error.message : 'Failed to find booking' 
     });
   }
 } 
