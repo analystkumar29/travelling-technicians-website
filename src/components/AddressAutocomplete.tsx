@@ -2,6 +2,23 @@ import React, { useState, useEffect, useRef, FormEvent } from 'react';
 import { FaMapMarkerAlt, FaSpinner } from 'react-icons/fa';
 import { checkServiceArea } from '@/utils/locationUtils';
 
+// Function to extract postal code from an address string
+function extractPostalCode(address: string): string {
+  if (!address) return '';
+  
+  // Canadian postal code regex pattern
+  const postalCodeRegex = /[A-Za-z]\d[A-Za-z](\s+)?\d[A-Za-z]\d/i;
+  const match = address.match(postalCodeRegex);
+  
+  if (match) {
+    const code = match[0].toUpperCase().replace(/\s/g, '');
+    // Format with space in the middle
+    return `${code.slice(0, 3)} ${code.slice(3)}`;
+  }
+  
+  return '';
+}
+
 interface AddressAutocompleteProps {
   label?: string;
   placeholder?: string;
@@ -47,12 +64,9 @@ export default function AddressAutocomplete({
         
         fetchSuggestions();
         // Try to extract postal code from the input
-        const postalCodeRegex = /[A-Za-z]\d[A-Za-z]\s?\d[A-Za-z]\d/i;
-        const match = inputValue.match(postalCodeRegex);
-        if (match) {
-          const code = match[0].toUpperCase().replace(/\s/g, '');
-          const formattedPostalCode = `${code.slice(0, 3)} ${code.slice(3)}`;
-          setExtractedPostalCode(formattedPostalCode);
+        const extractedCode = extractPostalCode(inputValue);
+        if (extractedCode) {
+          setExtractedPostalCode(extractedCode);
         }
       } else {
         setSuggestions([]);
@@ -303,18 +317,11 @@ export default function AddressAutocomplete({
     console.log('DEBUG - Validating manual input:', inputValue);
     
     // Try to extract a postal code from the input
-    const postalCodeRegex = /[A-Za-z]\d[A-Za-z](\s+)?\d[A-Za-z]\d/g;
-    const postalCodeMatch = inputValue.match(postalCodeRegex);
+    const extractedCode = extractPostalCode(inputValue);
     
-    if (postalCodeMatch) {
-      const extractedPostalCode = postalCodeMatch[0].replace(/\s+/g, '');
-      console.log('DEBUG - Found postal code in input:', extractedPostalCode);
-      
-      // Format postal code with a space
-      const formattedPostalCode = 
-        extractedPostalCode.substring(0, 3) + ' ' + extractedPostalCode.substring(3);
-      
-      validateAndSelectAddress(inputValue, formattedPostalCode);
+    if (extractedCode) {
+      console.log('DEBUG - Found postal code in input:', extractedCode);
+      validateAndSelectAddress(inputValue, extractedCode);
     } else {
       console.log('DEBUG - No valid postal code found in input');
       setError('Please enter a valid Canadian postal code in the format A1A 1A1');
@@ -394,12 +401,9 @@ export default function AddressAutocomplete({
           onBlur={() => {
             // On blur, if there's a postal code, try to validate it
             setTimeout(() => {
-              const postalCodeRegex = /[A-Za-z]\d[A-Za-z]\s?\d[A-Za-z]\d/i;
-              const match = inputValue.match(postalCodeRegex);
-              if (match) {
-                const code = match[0].toUpperCase().replace(/\s/g, '');
-                const formattedPostalCode = `${code.slice(0, 3)} ${code.slice(3)}`;
-                setExtractedPostalCode(formattedPostalCode);
+              const extractedCode = extractPostalCode(inputValue);
+              if (extractedCode) {
+                setExtractedPostalCode(extractedCode);
               }
             }, 200);
           }}
