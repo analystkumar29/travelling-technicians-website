@@ -3,17 +3,29 @@ import { FaMapMarkerAlt, FaSpinner } from 'react-icons/fa';
 import { checkServiceArea } from '@/utils/locationUtils';
 
 interface AddressAutocompleteProps {
-  onAddressSelect: (address: string, postalCode: string) => void;
+  label?: string;
   placeholder?: string;
+  initialValue?: string;
+  onChange?: (value: string) => void;
+  onAddressSelect?: (address: string, postalCode: string, inServiceArea: boolean) => void;
+  onError?: (error: string) => void;
   className?: string;
+  disabled?: boolean;
+  required?: boolean;
 }
 
 export default function AddressAutocomplete({
   onAddressSelect,
   placeholder = 'Enter your address',
-  className = ''
+  className = '',
+  label,
+  initialValue,
+  onChange,
+  onError,
+  disabled = false,
+  required = false
 }: AddressAutocompleteProps) {
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState(initialValue || '');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
@@ -119,6 +131,8 @@ export default function AddressAutocomplete({
 
   const handleSuggestionClick = (suggestion: any) => {
     try {
+      console.log("DEBUG - handleSuggestionClick - Processing suggestion:", suggestion);
+
       // Extract user-entered street number if available
       const streetNumberMatch = userEnteredAddress.match(/^\s*(\d+)\s+/);
       const userEnteredStreetNumber = streetNumberMatch ? streetNumberMatch[1] : '';
@@ -127,6 +141,13 @@ export default function AddressAutocomplete({
       let street = suggestion.address?.road || suggestion.address?.street || '';
       let city = suggestion.address?.city || suggestion.address?.town || suggestion.address?.village || '';
       let postalCode = suggestion.address?.postcode || '';
+      
+      console.log("DEBUG - handleSuggestionClick - Extracted components:", {
+        street, 
+        city, 
+        postalCode,
+        userEnteredStreetNumber
+      });
       
       if (postalCode && postalCode.length === 6 && !postalCode.includes(' ')) {
         postalCode = `${postalCode.slice(0, 3)} ${postalCode.slice(3)}`;
@@ -145,18 +166,23 @@ export default function AddressAutocomplete({
         combinedAddress = suggestion.display_name;
       }
       
+      console.log("DEBUG - handleSuggestionClick - Final combined address:", combinedAddress);
+      
       setInputValue(combinedAddress);
       setShowSuggestions(false);
       
       if (postalCode) {
         setExtractedPostalCode(postalCode);
-        console.log("Suggestion clicked with postal code, calling onAddressSelect:", postalCode);
-        onAddressSelect(combinedAddress, postalCode);
+        console.log("DEBUG - handleSuggestionClick - Calling onAddressSelect with:", {
+          address: combinedAddress,
+          postalCode: postalCode
+        });
+        onAddressSelect(combinedAddress, postalCode, checkServiceArea(postalCode));
       } else {
         setError('Selected address is missing a postal code. Please enter it manually.');
       }
     } catch (err) {
-      console.error('Error processing address selection:', err);
+      console.error('DEBUG - handleSuggestionClick - Error processing address selection:', err);
       setError('Error processing selected address. Please try another or enter manually.');
     }
   };
@@ -241,7 +267,7 @@ export default function AddressAutocomplete({
             // If we have a valid postal code, call onAddressSelect
             if (postalCode) {
               console.log("Got location with postal code, calling onAddressSelect:", postalCode);
-              onAddressSelect(data.display_name, postalCode);
+              onAddressSelect(data.display_name, postalCode, checkServiceArea(postalCode));
               setError('');
             } else {
               setError('Could not determine postal code from your location. Please enter it manually.');
@@ -278,39 +304,76 @@ export default function AddressAutocomplete({
   };
   
   const validateManualInput = () => {
-    if (!inputValue) return;
-    
-    // First, check if we already have an extracted postal code
-    if (extractedPostalCode) {
-      validateAndSelectAddress(inputValue, extractedPostalCode);
+    if (!inputValue.trim()) {
+      console.log('DEBUG - Input value is empty');
       return;
     }
+
+    console.log('DEBUG - Validating manual input:', inputValue);
     
-    // If not, try to extract postal code using regex
-    const postalCodeRegex = /[A-Za-z]\d[A-Za-z]\s?\d[A-Za-z]\d/i;
-    const match = inputValue.match(postalCodeRegex);
+    // Try to extract a postal code from the input
+    const postalCodeRegex = /[A-Za-z]\d[A-Za-z](\s+)?\d[A-Za-z]\d/g;
+    const postalCodeMatch = inputValue.match(postalCodeRegex);
     
-    if (match) {
-      const code = match[0].toUpperCase().replace(/\s/g, '');
-      const formattedPostalCode = `${code.slice(0, 3)} ${code.slice(3)}`;
+    if (postalCodeMatch) {
+      const extractedPostalCode = postalCodeMatch[0].replace(/\s+/g, '');
+      console.log('DEBUG - Found postal code in input:', extractedPostalCode);
+      
+      // Format postal code with a space
+      const formattedPostalCode = 
+        extractedPostalCode.substring(0, 3) + ' ' + extractedPostalCode.substring(3);
+      
       validateAndSelectAddress(inputValue, formattedPostalCode);
     } else {
-      setError('Please enter a valid Canadian postal code in your address (e.g., V6B 1A1)');
+      console.log('DEBUG - No valid postal code found in input');
+      setError('Please enter a valid Canadian postal code in the format A1A 1A1');
+      if (onError) {
+        onError('Please enter a valid Canadian postal code in the format A1A 1A1');
+      }
     }
   };
   
   const validateAndSelectAddress = (address: string, postalCode: string) => {
-    // Check if it's in our service area
-    const result = checkServiceArea(postalCode);
-    console.log("Checking postal code:", postalCode, "Result:", result);
+    console.log('DEBUG - Validating address with postal code:', postalCode);
+    console.log('DEBUG - Address value:', address);
     
-    // Always call onAddressSelect with the postal code
-    onAddressSelect(address, postalCode);
+    if (!postalCode || postalCode.trim().length < 6) {
+      console.log('DEBUG - Invalid postal code format:', postalCode);
+      setError('Please enter a valid Canadian postal code in the format A1A 1A1');
+      if (onError) {
+        onError('Invalid postal code format. Please enter a valid Canadian postal code.');
+      }
+      return;
+    }
     
-    if (result && result.serviceable) {
-      setError('');
+    // Format and clean the postal code
+    const cleanPostalCode = postalCode.trim().toUpperCase().replace(/\s+/g, ' ');
+    
+    // Check if we're in service area
+    const inServiceArea = checkServiceArea(cleanPostalCode);
+    console.log('DEBUG - Postal code check result:', { 
+      postalCode: cleanPostalCode, 
+      inServiceArea 
+    });
+    
+    if (!inServiceArea) {
+      setError(`Unfortunately, we don't service ${cleanPostalCode} at this time.`);
+      if (onError) {
+        onError(`Unfortunately, we don't service ${cleanPostalCode} at this time.`);
+      }
     } else {
-      setError(`We don't currently service the area with postal code ${postalCode}`);
+      setError('');
+      if (onError) onError('');
+      
+      console.log('DEBUG - Calling onAddressSelect with:', { 
+        address, 
+        postalCode: cleanPostalCode,
+        inServiceArea
+      });
+      
+      if (onAddressSelect) {
+        onAddressSelect(address, cleanPostalCode, inServiceArea);
+      }
     }
   };
 
@@ -327,7 +390,12 @@ export default function AddressAutocomplete({
           ref={inputRef}
           type="text"
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          onChange={(e) => {
+            setInputValue(e.target.value);
+            if (onChange) {
+              onChange(e.target.value);
+            }
+          }}
           onFocus={() => {
             if (suggestions.length > 0) setShowSuggestions(true);
           }}
@@ -346,7 +414,7 @@ export default function AddressAutocomplete({
           }}
           placeholder={placeholder}
           className={`w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500 pl-10 text-gray-800 placeholder-gray-400 ${className}`}
-          disabled={locationLoading} // Only disable when getting location, NOT when loading suggestions
+          disabled={locationLoading || disabled} // Only disable when getting location, NOT when loading suggestions
         />
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           {loading || locationLoading ? (
@@ -360,7 +428,7 @@ export default function AddressAutocomplete({
       <button
         type="button"
         onClick={handleUseLocation}
-        disabled={locationLoading}
+        disabled={locationLoading || disabled}
         className="mt-2 w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
       >
         {locationLoading ? (

@@ -1,128 +1,168 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { getServiceSupabase } from '@/utils/supabaseClient';
 
-// Helper function to generate a unique reference code
-function generateReferenceCode(): string {
-  const prefix = 'TT';
+// Function to generate a reference number
+function generateReferenceNumber(): string {
+  const prefix = 'TTR';
   const timestamp = Date.now().toString().slice(-6);
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-  return `${prefix}${timestamp}${random}`;
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `${prefix}-${timestamp}-${random}`;
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  // Only allow POST requests
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ success: false, message: 'Method not allowed' });
   }
 
+  console.log('[bookings/create] Received booking creation request');
+  
   try {
-    // Log the request for debugging
-    console.log('Booking create request received:', { 
-      body: req.body,
-      url: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'URL exists' : 'URL missing',
-      serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Service key exists' : 'Service key missing'
-    });
+    // Check if Supabase environment variables are set
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('[bookings/create] Missing Supabase configuration');
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Server configuration error',
+        details: 'Missing Supabase configuration'
+      });
+    }
 
-    const {
-      bookingReference,
-      deviceType,
-      brand,
-      model,
-      serviceType,
-      issueDescription,
+    // Extract data from request body
+    const { 
+      deviceType, 
+      brand, 
+      model, 
+      serviceType, 
+      appointmentDate, 
+      appointmentTime, 
+      customerName, 
+      customerEmail, 
+      customerPhone,
       address,
       postalCode,
-      appointmentDate,
-      appointmentTime,
-      customerName,
-      customerPhone,
-      customerEmail,
+      message
     } = req.body;
 
-    // Validate ALL required fields according to database constraints
-    if (!deviceType || !serviceType || !appointmentDate || !appointmentTime || 
-        !customerEmail || !customerName || !customerPhone || !address || !postalCode) {
-      console.error('Missing required fields:', {
-        deviceType: !!deviceType,
-        serviceType: !!serviceType,
-        appointmentDate: !!appointmentDate,
-        appointmentTime: !!appointmentTime,
-        customerEmail: !!customerEmail,
-        customerName: !!customerName,
-        customerPhone: !!customerPhone,
-        address: !!address,
-        postalCode: !!postalCode
-      });
+    console.log('[bookings/create] Request body:', {
+      deviceType, 
+      serviceType, 
+      appointmentDate, 
+      appointmentTime, 
+      customerName, 
+      customerEmail, 
+      customerPhone,
+      address,
+      postalCode
+    });
+
+    // Validate required fields
+    const requiredFields = { 
+      deviceType, 
+      serviceType, 
+      appointmentDate, 
+      appointmentTime, 
+      customerName, 
+      customerEmail, 
+      customerPhone 
+    };
+    
+    const missingFields = Object.entries(requiredFields)
+      .filter(([_, value]) => !value)
+      .map(([key]) => key);
+    
+    if (missingFields.length > 0) {
+      console.error('[bookings/create] Missing required fields:', missingFields);
       return res.status(400).json({ 
-        error: 'Missing required fields',
-        missingFields: {
-          deviceType: !deviceType,
-          serviceType: !serviceType,
-          appointmentDate: !appointmentDate,
-          appointmentTime: !appointmentTime,
-          customerEmail: !customerEmail,
-          customerName: !customerName,
-          customerPhone: !customerPhone,
+        success: false, 
+        message: 'Missing required fields',
+        details: { missingFields }
+      });
+    }
+
+    // Validate address and postal code
+    if (!address || !postalCode) {
+      console.error('[bookings/create] Missing address or postal code');
+      return res.status(400).json({
+        success: false,
+        message: 'Address and postal code are required',
+        details: {
           address: !address,
           postalCode: !postalCode
         }
       });
     }
 
-    // Create a reference if one wasn't provided
-    const reference = bookingReference || generateReferenceCode();
+    console.log(`[bookings/create] Processing booking with postal code: ${postalCode}`);
+
+    // Generate a reference number
+    const referenceNumber = generateReferenceNumber();
+    console.log(`[bookings/create] Generated reference: ${referenceNumber}`);
+
+    // Prepare booking data
+    const bookingData = {
+      reference_number: referenceNumber,
+      device_type: deviceType,
+      brand: brand || null,
+      model: model || null,
+      service_type: serviceType,
+      appointment_date: appointmentDate,
+      appointment_time: appointmentTime,
+      customer_name: customerName,
+      customer_email: customerEmail,
+      customer_phone: customerPhone,
+      address: address,
+      postal_code: postalCode,
+      message: message || null,
+      status: 'pending'
+    };
+
+    console.log('[bookings/create] Prepared booking data:', bookingData);
 
     // Get Supabase client with service role
     const supabase = getServiceSupabase();
 
-    // Prepare booking data with default values for required fields
-    const bookingData = {
-      customer_name: customerName,
-      customer_email: customerEmail,
-      customer_phone: customerPhone,
-      device_type: deviceType,
-      device_brand: brand || 'Not specified',
-      device_model: model || 'Not specified',
-      issue_description: issueDescription || '',
-      service_type: serviceType,
-      address: address,
-      postal_code: postalCode,
-      booking_date: appointmentDate,
-      booking_time: appointmentTime,
-      status: 'pending',
-      reference_number: reference,
-    };
-
-    console.log('Attempting to insert booking data:', bookingData);
-
-    // Insert the booking into the database
+    // Insert booking into database
+    console.log('[bookings/create] Inserting booking into database');
     const { data, error } = await supabase
       .from('bookings')
-      .insert([bookingData])
-      .select();
+      .insert(bookingData)
+      .select()
+      .single();
 
+    // Handle database errors
     if (error) {
-      console.error('Supabase insertion error:', error);
-      throw error;
+      console.error('[bookings/create] Database error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create booking',
+        details: error.message
+      });
     }
 
-    console.log('Booking created successfully:', data);
-
+    // Return success response
+    console.log('[bookings/create] Booking created successfully:', data);
     return res.status(201).json({
       success: true,
-      booking: data && data.length > 0 ? data[0] : {
-        ...bookingData,
-        id: 'generated-id',
-        created_at: new Date().toISOString()
-      },
+      message: 'Booking created successfully',
+      booking: data
     });
+
   } catch (error) {
-    console.error('Error creating booking:', error);
+    // Handle unexpected errors
+    console.error('[bookings/create] Unexpected error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
-    // Return more detailed error information
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to create booking',
-      details: error instanceof Error ? error.stack : undefined
+      message: 'Server error while creating booking',
+      details: errorMessage
     });
   }
 } 

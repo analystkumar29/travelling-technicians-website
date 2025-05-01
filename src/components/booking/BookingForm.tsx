@@ -146,6 +146,8 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
   // Send confirmation email
   const sendConfirmationEmail = async () => {
     try {
+      console.log('DEBUG - Preparing to send confirmation email');
+      
       // Reference to the selected service
       const selectedService = serviceTypes[deviceType as keyof typeof serviceTypes].find(s => s.id === serviceType)?.name || '';
       
@@ -158,6 +160,19 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
       
       // Format time for email
       const formattedTime = availableTimes.find(t => t.id === timeSlot)?.label || '';
+      
+      // Log the data being sent to the email API
+      console.log('DEBUG - Email data:', {
+        to: contactEmail,
+        name: contactName,
+        bookingDate: formattedDate,
+        bookingTime: formattedTime,
+        deviceType: deviceType === 'mobile' ? 'Mobile Phone' : deviceType === 'laptop' ? 'Laptop' : 'Tablet',
+        brand,
+        model,
+        service: selectedService,
+        address
+      });
       
       const response = await fetch('/api/send-confirmation', {
         method: 'POST',
@@ -174,21 +189,29 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
           model: model,
           service: selectedService,
           address: address,
+          bookingReference: bookingReference
         }),
       });
       
+      // Log the raw response
+      console.log('DEBUG - Email API response status:', response.status);
+      
+      // Parse the JSON response
       const data = await response.json();
+      console.log('DEBUG - Email API response data:', data);
       
       if (data.success) {
+        console.log('DEBUG - Email sent successfully');
         setConfirmationEmailSent(true);
         setEmailError2(null);
         return true;
       } else {
+        console.error('DEBUG - Email API returned error:', data.error || 'Unknown error');
         setEmailError2('Failed to send confirmation email. Please contact support.');
         return false;
       }
     } catch (error) {
-      console.error('Error sending confirmation email:', error);
+      console.error('DEBUG - Exception during email sending:', error);
       setEmailError2('An error occurred while sending the confirmation email. Please contact support.');
       return false;
     }
@@ -197,6 +220,20 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // DEBUG: Log the current state values
+    console.log('DEBUG - Form submission started with values:', {
+      address: address || 'EMPTY',
+      postalCode: postalCode || 'EMPTY',
+      addressPostalCode: addressPostalCode || 'EMPTY',
+      isAddressValid: isAddressValid,
+      contactName: contactName || 'EMPTY',
+      contactEmail: contactEmail || 'EMPTY',
+      deviceType: deviceType || 'EMPTY',
+      serviceType: serviceType || 'EMPTY',
+      date: date || 'EMPTY',
+      timeSlot: timeSlot || 'EMPTY'
+    });
     
     // Validate all required fields first
     let hasError = false;
@@ -217,6 +254,11 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
     }
     
     if (!address) {
+      console.log('DEBUG - Address is empty, setting error');
+      setAddressError(true);
+      hasError = true;
+    } else if (!isAddressValid) {
+      console.log('DEBUG - Address is present but not valid, setting error');
       setAddressError(true);
       hasError = true;
     }
@@ -232,6 +274,7 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
     }
     
     if (hasError) {
+      console.log('DEBUG - Form validation failed, not submitting');
       setShowContactErrors(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
@@ -245,60 +288,110 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
     setBookingReference(reference);
     
     try {
-      // Call API to create booking in Supabase
-      console.log('Submitting booking with data:', {
-        deviceType, brand, model, serviceType, address, postalCode, 
-        date, timeSlot, contactName, contactPhone, contactEmail
+      // Important: Use postalCode, then addressPostalCode as fallback if empty
+      // We now set both above, so this is just an extra safeguard
+      const finalPostalCode = postalCode || addressPostalCode;
+      
+      if (!finalPostalCode) {
+        console.error('DEBUG - CRITICAL: No postal code available for submission!');
+        setIsSubmitting(false);
+        alert('Error: No postal code is available. Please try selecting your address again or contact support.');
+        return;
+      }
+      
+      if (!address) {
+        console.error('DEBUG - CRITICAL: No address available for submission!');
+        setIsSubmitting(false);
+        alert('Error: No address is available. Please try selecting your address again or contact support.');
+        return;
+      }
+      
+      console.log('DEBUG - Final values being sent to API:', {
+        deviceType, 
+        brand, 
+        model, 
+        serviceType, 
+        address: address || 'MISSING!', 
+        postalCode: finalPostalCode || 'MISSING!', 
+        date, 
+        timeSlot, 
+        contactName, 
+        contactPhone, 
+        contactEmail,
+        reference
       });
       
+      // Prepare the request body
+      const requestBody = {
+        bookingReference: reference,
+        deviceType,
+        brand,
+        model,
+        serviceType,
+        issueDescription,
+        address,
+        postalCode: finalPostalCode, // Use the final postal code value
+        appointmentDate: date,
+        appointmentTime: timeSlot,
+        customerName: contactName,
+        customerPhone: contactPhone,
+        customerEmail: contactEmail,
+      };
+      
+      console.log('DEBUG - Full request body:', JSON.stringify(requestBody));
+      
+      // Call API to create booking in Supabase
       const response = await fetch('/api/bookings/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          bookingReference: reference,
-          deviceType,
-          brand,
-          model,
-          serviceType,
-          issueDescription,
-          address,
-          postalCode,
-          appointmentDate: date,
-          appointmentTime: timeSlot,
-          customerName: contactName,
-          customerPhone: contactPhone,
-          customerEmail: contactEmail,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
+      console.log('DEBUG - API response:', data);
       
       if (data.success) {
-        // Send confirmation email
-        await sendConfirmationEmail();
-        
-        // Complete booking process
-        setBookingComplete(true);
-        
-        // Pass data to parent component if provided
-        if (onComplete) {
-          onComplete(data.booking);
+        console.log('DEBUG - Booking created successfully, sending confirmation email');
+        try {
+          // Send confirmation email AFTER successful database insertion
+          const emailResult = await sendConfirmationEmail();
+          console.log('DEBUG - Email confirmation result:', emailResult);
+          
+          if (emailResult) {
+            // Complete booking process only if both database insertion AND email were successful
+            console.log('DEBUG - Setting booking complete to true');
+            setBookingComplete(true);
+            
+            // Pass data to parent component if provided
+            if (onComplete) {
+              onComplete(data.booking);
+            }
+          } else {
+            // Email failed but booking was created
+            console.error('DEBUG - Booking created but email failed to send');
+            alert('Your booking was created successfully, but we had trouble sending the confirmation email. Please check your booking details and contact us if you need assistance.');
+            setBookingComplete(true);
+          }
+        } catch (emailError) {
+          console.error('DEBUG - Error sending confirmation email:', emailError);
+          alert('Your booking was created successfully, but we had trouble sending the confirmation email. Please check your booking details and contact us if you need assistance.');
+          setBookingComplete(true);
         }
       } else {
         // Handle error
-        console.error('Error creating booking:', data.error, data.missingFields);
+        console.error('DEBUG - Error creating booking:', data.error, data.missingFields);
         if (data.missingFields) {
           alert(`There was an error creating your booking. Missing required fields: ${Object.keys(data.missingFields).filter(key => data.missingFields[key]).join(', ')}`);
         } else {
-          alert('There was an error creating your booking. Please try again.');
+          alert(`There was an error creating your booking: ${data.error || 'Unknown error'}`);
         }
+        setIsSubmitting(false);
       }
     } catch (error) {
-      console.error('Error submitting booking:', error);
+      console.error('DEBUG - Exception during booking submission:', error);
       alert('There was an error creating your booking. Please try again.');
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -706,15 +799,38 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
                 </label>
                 <AddressAutocomplete
                   onAddressSelect={(newAddress, isValid, postalCode) => {
+                    console.log("DEBUG - AddressAutocomplete callback triggered with:", {
+                      newAddress,
+                      isValid,
+                      postalCode
+                    });
+                    
+                    // Save the address in state
                     setAddress(newAddress);
+                    
+                    // Log the state updates
+                    console.log("DEBUG - After setAddress, value is:", newAddress);
+                    
                     if (postalCode) {
+                      // Set both postal code variables to ensure consistency
                       setAddressPostalCode(postalCode);
+                      setPostalCode(postalCode); // Set main postalCode state too
+                      console.log("DEBUG - Setting postal codes to:", postalCode);
+                      console.log("DEBUG - State after setting postal codes:", {
+                        addressPostalCode: postalCode,
+                        postalCode: postalCode
+                      });
+                      
                       // Check if this postal code is within our service area
                       const result = checkServiceArea(postalCode);
+                      console.log("DEBUG - Service area check result:", result);
+                      
                       setIsAddressValid(result !== null && result.serviceable); 
                     } else {
+                      console.log("DEBUG - No postal code provided!");
                       setIsAddressValid(false);
                     }
+                    
                     setAddressError(false);
                   }}
                   value={address}

@@ -21,8 +21,22 @@ export default function AddressAutocomplete({
       onAddressSelect={(address, postalCode) => {
         // For backward compatibility with the booking form
         const isValid = Boolean(postalCode && postalCode.trim() !== '');
-        console.log("Address selected:", address, "Postal code:", postalCode, "Is valid:", isValid);
-        onAddressSelect(address, isValid, postalCode);
+        console.log("DEBUG - AddressAutocomplete: Address selected:", address, "Postal code:", postalCode, "Is valid:", isValid);
+        
+        // Ensure address and postal code are properly formatted
+        const formattedAddress = address ? address.trim() : '';
+        const formattedPostalCode = postalCode ? postalCode.trim() : '';
+        
+        if (!formattedAddress) {
+          console.warn("DEBUG - AddressAutocomplete: Empty address being passed to form!");
+        }
+        
+        if (!formattedPostalCode) {
+          console.warn("DEBUG - AddressAutocomplete: Empty postal code being passed to form!");
+        }
+        
+        // Call the parent component's handler with the values
+        onAddressSelect(formattedAddress, isValid, formattedPostalCode);
       }}
       placeholder={value || "Enter your service address with postal code"}
       className={className}
