@@ -9,11 +9,13 @@ import GlobalErrorHandler from '@/components/GlobalErrorHandler';
 import { useEffect } from 'react';
 import { setupGlobalErrorHandlers } from '@/utils/errorHandling';
 
-// Import font configurations
+// Import font configurations with fallbacks
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
   display: 'swap',
+  fallback: ['system-ui', 'Arial', 'sans-serif'],
+  preload: false,
 });
 
 const poppins = Poppins({
@@ -21,6 +23,8 @@ const poppins = Poppins({
   weight: ['400', '500', '600', '700'],
   variable: '--font-poppins',
   display: 'swap',
+  fallback: ['system-ui', 'Arial', 'sans-serif'],
+  preload: false,
 });
 
 export default function App({ Component, pageProps }: AppProps) {
