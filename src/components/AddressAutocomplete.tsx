@@ -179,7 +179,9 @@ export default function AddressAutocomplete({
         });
         
         if (onAddressSelect) {
-          onAddressSelect(combinedAddress, postalCode, checkServiceArea(postalCode));
+          const serviceAreaResult = checkServiceArea(postalCode);
+          const isServiceable = serviceAreaResult?.serviceable || false;
+          onAddressSelect(combinedAddress, postalCode, isServiceable);
         }
       } else {
         setError('Selected address is missing a postal code. Please enter it manually.');
@@ -271,7 +273,9 @@ export default function AddressAutocomplete({
             if (postalCode) {
               console.log("Got location with postal code, calling onAddressSelect:", postalCode);
               if (onAddressSelect) {
-                onAddressSelect(data.display_name, postalCode, checkServiceArea(postalCode));
+                const serviceAreaResult = checkServiceArea(postalCode);
+                const isServiceable = serviceAreaResult?.serviceable || false;
+                onAddressSelect(data.display_name, postalCode, isServiceable);
               }
               setError('');
             } else {
@@ -348,10 +352,13 @@ export default function AddressAutocomplete({
     const cleanPostalCode = postalCode.trim().toUpperCase().replace(/\s+/g, ' ');
     
     // Check if we're in service area
-    const inServiceArea = checkServiceArea(cleanPostalCode);
+    const serviceAreaResult = checkServiceArea(cleanPostalCode);
+    const inServiceArea = serviceAreaResult?.serviceable || false;
+    
     console.log('DEBUG - Postal code check result:', { 
       postalCode: cleanPostalCode, 
-      inServiceArea 
+      inServiceArea,
+      serviceAreaResult
     });
     
     if (!inServiceArea) {
