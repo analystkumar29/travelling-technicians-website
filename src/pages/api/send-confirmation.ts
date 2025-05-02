@@ -1,24 +1,29 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import sgMail from '@sendgrid/mail';
 import crypto from 'crypto';
+import { logger } from '@/utils/logger';
 
-// Initialize SendGrid with API key from environment variables
+// Set up SendGrid API key if available
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 }
 
-type EmailData = {
+// Create a module logger
+const emailLogger = logger.createModuleLogger('send-confirmation');
+
+// Email data interface
+interface EmailData {
   to: string;
   name: string;
   bookingDate: string;
   bookingTime: string;
   deviceType: string;
-  brand: string;
-  model: string;
+  brand?: string;
+  model?: string;
   service: string;
-  address: string;
-  bookingReference?: string;
-};
+  address?: string;
+  bookingReference: string;
+}
 
 // Generate a secure token for email verification
 function generateVerificationToken(email: string, bookingReference: string): string {
@@ -51,16 +56,25 @@ export default async function handler(
       model,
       service,
       address,
-      bookingReference = `TT${Date.now().toString().substring(6)}`,
+      bookingReference = `TTR-${Date.now().toString().substring(6)}`,
     }: EmailData = req.body;
 
     // Validate essential data
     if (!to || !name || !bookingDate || !bookingTime) {
+      emailLogger.warn('Missing required data for confirmation email', {
+        missing: !to ? 'email' : !name ? 'name' : !bookingDate ? 'date' : 'time'
+      });
+      
       return res.status(400).json({
         success: false,
         message: 'Missing required booking information'
       });
     }
+
+    emailLogger.info('Preparing confirmation email', { 
+      reference: bookingReference,
+      to: to.substring(0, 3) + '***' // Log partial email for privacy
+    });
 
     // Create verification token
     const verificationToken = generateVerificationToken(to, bookingReference);
@@ -72,18 +86,18 @@ export default async function handler(
 
     // Check if SendGrid is configured
     if (!process.env.SENDGRID_API_KEY) {
-      console.warn('SendGrid API key not configured - simulating email send');
+      emailLogger.warn('SendGrid API key not configured - simulating email send');
       
       // Log what would be sent
-      console.log({
+      emailLogger.debug('Email simulation data', {
         verificationUrl,
         rescheduleUrl,
-        to,
+        to: to.substring(0, 3) + '***', // Log partial email for privacy
         subject: 'Your Booking Confirmation - The Travelling Technicians',
       });
       
       // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Return success for development
       return res.status(200).json({ 
@@ -106,10 +120,10 @@ export default async function handler(
       content: [
         {
           type: 'text/html',
-          value: '<p>Your booking has been confirmed.</p>'
+          value: '<p>Your booking has been confirmed. If you cannot view this email properly, please check your booking reference: ${bookingReference}</p>'
         }
       ],
-      templateId: 'd-c9dbac568573432bb15f79c92c4fd4b5',
+      templateId: process.env.SENDGRID_TEMPLATE_ID || 'd-c9dbac568573432bb15f79c92c4fd4b5',
       dynamicTemplateData: {
         isRescheduled: false,
         name,
@@ -131,6 +145,11 @@ export default async function handler(
     try {
       await sgMail.send(msg);
       
+      emailLogger.info('Confirmation email sent successfully', {
+        reference: bookingReference,
+        to: to.substring(0, 3) + '***' // Log partial email for privacy
+      });
+      
       // Return success response
       return res.status(200).json({ 
         success: true,
@@ -138,9 +157,13 @@ export default async function handler(
         sentTo: to,
       });
     } catch (sendGridError: any) {
-      console.error('SendGrid Error:', sendGridError);
+      emailLogger.error('SendGrid Error:', {
+        error: sendGridError.message,
+        reference: bookingReference
+      });
+      
       if (sendGridError.response) {
-        console.error('SendGrid Error Body:', sendGridError.response.body);
+        emailLogger.error('SendGrid Error Body:', sendGridError.response.body);
       }
       
       return res.status(500).json({ 
@@ -151,7 +174,10 @@ export default async function handler(
     }
     
   } catch (error: any) {
-    console.error('Error sending confirmation email:', error);
+    emailLogger.error('Error sending confirmation email:', {
+      error: error.message || 'Unknown error'
+    });
+    
     return res.status(500).json({ 
       success: false,
       message: 'Failed to send confirmation email',

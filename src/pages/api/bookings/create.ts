@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { getServiceSupabase } from '@/utils/supabaseClient';
 import { logger } from '@/utils/logger';
 import { denormalizeBookingData } from '@/services/transformers/bookingTransformer';
+import { formatServiceType, formatTimeSlot, getDeviceTypeDisplay } from '@/utils/formatters';
 
 // Create module logger
 const apiLogger = logger.createModuleLogger('bookings/create');
@@ -12,6 +13,84 @@ function generateReferenceNumber(): string {
   const timestamp = Date.now().toString().slice(-6);
   const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
   return `${prefix}-${timestamp}-${random}`;
+}
+
+// Function to send confirmation email
+async function sendConfirmationEmail(bookingData: any, referenceNumber: string) {
+  try {
+    // Format date for email
+    const formattedDate = bookingData.booking_date 
+      ? (() => {
+          try {
+            return new Date(bookingData.booking_date).toLocaleDateString('en-US', {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric'
+            });
+          } catch (e) {
+            apiLogger.error('Error formatting date:', e);
+            return bookingData.booking_date;
+          }
+        })()
+      : bookingData.booking_date;
+
+    // Format device display name
+    const deviceDisplay = getDeviceTypeDisplay(
+      bookingData.device_type,
+      bookingData.device_brand,
+      bookingData.device_model
+    );
+
+    // Format service type
+    const serviceDisplay = formatServiceType(bookingData.service_type);
+
+    // Format time slot
+    const timeDisplay = formatTimeSlot(bookingData.booking_time);
+
+    // Call send confirmation endpoint
+    const response = await fetch(`${process.env.NEXT_PUBLIC_WEBSITE_URL || 'http://localhost:3000'}/api/send-confirmation`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to: bookingData.customer_email,
+        name: bookingData.customer_name,
+        bookingReference: referenceNumber,
+        deviceType: bookingData.device_type,
+        brand: bookingData.device_brand,
+        model: bookingData.device_model,
+        service: serviceDisplay,
+        bookingDate: formattedDate,
+        bookingTime: timeDisplay,
+        address: bookingData.address,
+      }),
+    });
+
+    const emailResult = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(emailResult.message || 'Failed to send confirmation email');
+    }
+    
+    apiLogger.info('Confirmation email sent successfully', {
+      reference: referenceNumber,
+      to: bookingData.customer_email
+    });
+    
+    return emailResult;
+  } catch (error) {
+    apiLogger.error('Error sending confirmation email', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      reference: referenceNumber
+    });
+    
+    // We don't throw here - don't fail the booking creation if email fails
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error sending confirmation email'
+    };
+  }
 }
 
 export default async function handler(
@@ -158,17 +237,26 @@ export default async function handler(
       });
     }
 
+    // Send confirmation email
+    apiLogger.info('Sending confirmation email');
+    const emailResult = await sendConfirmationEmail(bookingData, referenceNumber);
+
     // Return success response
     apiLogger.info('Booking created successfully', {
       reference: data.reference_number,
-      id: data.id
+      id: data.id,
+      emailSent: emailResult.success
     });
     
     return res.status(201).json({
       success: true,
       message: 'Booking created successfully',
       booking: data,
-      booking_reference: referenceNumber
+      booking_reference: referenceNumber,
+      email: {
+        sent: emailResult.success,
+        message: emailResult.message
+      }
     });
 
   } catch (error) {

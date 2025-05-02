@@ -2,12 +2,18 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { FaCheckCircle, FaEnvelope } from 'react-icons/fa';
 import Link from 'next/link';
-import { useBooking } from '@/lib/bookingContext';
+import { useBooking, STORAGE_KEYS } from '@/context/BookingContext';
+import { StorageService } from '@/services/StorageService';
+import logger from '@/utils/logger';
+
+// Create a logger for this module
+const pageLogger = logger.createModuleLogger('BookingConfirmation');
 
 export default function BookingConfirmation() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const { bookingData: contextBookingData } = useBooking();
+  const { bookingReference, getStoredFormattedData } = useBooking();
+  const [bookingData, setBookingData] = useState<any>(null);
   
   // Format time like "09-11" to "9:00 AM - 11:00 AM"
   const formatTime = (timeSlot: string) => {
@@ -59,8 +65,80 @@ export default function BookingConfirmation() {
   
   useEffect(() => {
     if (!router.isReady) return;
-    setLoading(false);
-  }, [router.isReady]);
+    
+    const initializeBookingData = () => {
+      try {
+        pageLogger.debug('Initializing booking data');
+        
+        // Check if we have query parameters
+        const { ref } = router.query;
+        
+        if (ref) {
+          pageLogger.debug('Using reference from URL query', { ref });
+          
+          // If we have all query parameters, use them directly
+          if (Object.keys(router.query).length > 1) {
+            const {
+              ref,
+              device,
+              service,
+              date,
+              time,
+              address,
+              email
+            } = router.query;
+            
+            const queryData = {
+              reference: ref as string,
+              device: device as string,
+              service: service as string,
+              date: date as string,
+              time: time as string,
+              address: address as string,
+              email: email as string
+            };
+            
+            pageLogger.debug('Using booking data from URL query', { data: queryData });
+            setBookingData(queryData);
+          } else {
+            // Try to get data from storage
+            const storedData = getStoredFormattedData();
+            
+            if (storedData) {
+              pageLogger.debug('Using booking data from storage', { data: storedData });
+              setBookingData(storedData);
+            } else {
+              pageLogger.debug('No stored data found, using minimal reference data');
+              setBookingData({ reference: ref as string });
+            }
+          }
+        } else {
+          // No reference in URL, try to get from storage
+          const storedData = getStoredFormattedData();
+          
+          if (storedData) {
+            pageLogger.debug('Using booking data from storage (no URL ref)', { data: storedData });
+            setBookingData(storedData);
+          } else if (bookingReference) {
+            pageLogger.debug('Using booking reference from context', { reference: bookingReference });
+            setBookingData({ reference: bookingReference });
+          } else {
+            pageLogger.warn('No booking data found');
+            setBookingData(null);
+          }
+        }
+      } catch (error) {
+        pageLogger.error('Error initializing booking data', { 
+          error: error instanceof Error ? error.message : String(error)
+        });
+        setBookingData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    initializeBookingData();
+  }, [router.isReady, router.query, bookingReference, getStoredFormattedData]);
   
   if (loading) {
     return (
@@ -70,91 +148,13 @@ export default function BookingConfirmation() {
     );
   }
   
-  // If no booking data in context, try to use URL parameters as fallback
-  const fallbackData = (() => {
-    if (router.isReady) {
-      const {
-        reference,
-        device,
-        service,
-        date,
-        time,
-        address,
-        email
-      } = router.query;
-
-      // If we have URL parameters, use them
-      if (reference) {
-        return {
-          reference: reference as string,
-          device: device as string,
-          service: service as string,
-          date: date as string,
-          time: time as string,
-          address: address as string,
-          email: email as string
-        };
-      }
-    }
-    return null;
-  })();
-  
-  // If no booking data in context or URL, show error
-  if (!contextBookingData && !fallbackData) {
+  // If no booking data found, show error
+  if (!bookingData) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-lg w-full text-center">
           <h1 className="text-2xl font-bold text-gray-800 mb-4">Booking Information Not Found</h1>
           <p className="text-gray-600 mb-6">We couldn't find your booking information. This could happen if you refreshed the page or accessed this page directly.</p>
-          <Link href="/book-online">
-            <span className="inline-block bg-primary-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-primary-700 transition cursor-pointer">
-              Book A New Repair
-            </span>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-  
-  // Prepare display data from either context or fallback
-  const displayData = contextBookingData 
-    ? {
-        reference: contextBookingData.reference_number,
-        device: getDeviceDisplay(
-          contextBookingData.device_type, 
-          contextBookingData.device_brand, 
-          contextBookingData.device_model
-        ),
-        service: formatServiceType(contextBookingData.service_type),
-        date: contextBookingData.booking_date 
-          ? (() => {
-              try {
-                return new Date(contextBookingData.booking_date).toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  month: 'long',
-                  day: 'numeric'
-                });
-              } catch (e) {
-                console.error('Error formatting date:', e);
-                return contextBookingData.booking_date;
-              }
-            })()
-          : 'Date information not available',
-        time: contextBookingData.booking_time
-          ? formatTime(contextBookingData.booking_time)
-          : 'Time information not available',
-        address: contextBookingData.address || 'Address not provided',
-        email: contextBookingData.customer_email || 'Email not provided'
-      } 
-    : fallbackData;
-  
-  // TypeScript safety check - this should never happen due to the earlier check
-  if (!displayData) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-lg w-full text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Something Went Wrong</h1>
-          <p className="text-gray-600 mb-6">We couldn't display your booking information. Please try again or contact support.</p>
           <Link href="/book-online">
             <span className="inline-block bg-primary-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-primary-700 transition cursor-pointer">
               Book A New Repair
@@ -195,33 +195,33 @@ export default function BookingConfirmation() {
                 
                 <div className="bg-gray-50 p-6 rounded-lg mb-8 text-left">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">
-                    Booking Reference: <span className="text-blue-600 font-bold">{displayData.reference}</span>
+                    Booking Reference: <span className="text-blue-600 font-bold">{bookingData.reference || bookingData.ref}</span>
                   </h3>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div className="col-span-1 sm:col-span-2">
                       <p className="text-gray-500 mb-1">Device</p>
-                      <p className="font-medium">{displayData.device}</p>
+                      <p className="font-medium">{bookingData.device || 'Not specified'}</p>
                     </div>
                     
                     <div className="col-span-1 sm:col-span-2">
                       <p className="text-gray-500 mb-1">Service</p>
-                      <p className="font-medium">{displayData.service}</p>
+                      <p className="font-medium">{bookingData.service || 'Not specified'}</p>
                     </div>
                     
                     <div>
                       <p className="text-gray-500 mb-1">Date</p>
-                      <p className="font-medium">{displayData.date}</p>
+                      <p className="font-medium">{bookingData.date || 'Not specified'}</p>
                     </div>
                     
                     <div>
                       <p className="text-gray-500 mb-1">Time</p>
-                      <p className="font-medium">{displayData.time}</p>
+                      <p className="font-medium">{bookingData.time || 'Not specified'}</p>
                     </div>
                     
                     <div className="col-span-1 sm:col-span-2">
                       <p className="text-gray-500 mb-1">Address</p>
-                      <p className="font-medium">{displayData.address}</p>
+                      <p className="font-medium">{bookingData.address || 'Not specified'}</p>
                     </div>
                   </div>
                 </div>
@@ -232,7 +232,7 @@ export default function BookingConfirmation() {
                       <FaEnvelope className="h-5 w-5" />
                     </div>
                     <span className="text-gray-700">
-                      Confirmation email sent to {displayData.email}
+                      Confirmation email sent to {bookingData.email || 'your email address'}
                     </span>
                   </div>
                   
@@ -248,12 +248,12 @@ export default function BookingConfirmation() {
                 
                 <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 justify-center">
                   <Link href="/">
-                    <span className="inline-flex justify-center items-center px-6 py-3 border border-primary-600 text-primary-600 rounded-md font-medium hover:bg-primary-50 transition cursor-pointer">
-                      Return Home
+                    <span className="inline-block bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition cursor-pointer">
+                      Return to Home
                     </span>
                   </Link>
                   <Link href="/contact">
-                    <span className="inline-flex justify-center items-center px-6 py-3 bg-primary-600 text-white rounded-md font-medium hover:bg-primary-700 transition cursor-pointer">
+                    <span className="inline-block bg-gray-200 text-gray-800 py-3 px-6 rounded-lg font-medium hover:bg-gray-300 transition cursor-pointer">
                       Contact Support
                     </span>
                   </Link>
@@ -264,10 +264,10 @@ export default function BookingConfirmation() {
         </div>
       </main>
 
-      <footer className="bg-gray-800 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            <p>&copy; {new Date().getFullYear()} The Travelling Technicians. All rights reserved.</p>
+      <footer className="bg-white border-t border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="text-center text-gray-500 text-sm">
+            © {new Date().getFullYear()} The Travelling Technicians. All rights reserved.
           </div>
         </div>
       </footer>

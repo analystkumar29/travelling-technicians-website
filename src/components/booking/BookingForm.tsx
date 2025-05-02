@@ -20,6 +20,27 @@ type ServiceAreaType = {
   responseTime: string;
 };
 
+// Type for service
+interface ServiceType {
+  id: string;
+  name: string;
+  price: string;
+  doorstep: boolean;
+}
+
+// Type for date option
+interface DateOption {
+  value: string;
+  dayOfWeek: string;
+  display: string;
+}
+
+// Type for time slot
+interface TimeSlot {
+  id: string;
+  label: string;
+}
+
 export default function BookingForm() {
   // Use our custom hook for form state management
   const { 
@@ -72,10 +93,18 @@ export default function BookingForm() {
 
   // Handle form step navigation
   const handleContinue = () => {
+    bookingLogger.debug('handleContinue called at step', {
+      currentStep: state.currentStep,
+      locationInfo: state.locationInfo,
+      validationState: state.validation
+    });
+    
     if (validateCurrentStep()) {
+      bookingLogger.debug('Validation passed, moving to next step');
       goToNextStep();
     } else {
       // Show errors if validation fails
+      bookingLogger.debug('Validation failed, showing errors');
       dispatch({ type: 'SHOW_ERRORS', payload: true });
     }
   };
@@ -94,7 +123,7 @@ export default function BookingForm() {
     
     try {
       const formData = {
-        deviceType: state.deviceInfo.deviceType,
+        deviceType: state.deviceInfo.deviceType || 'mobile',
         deviceBrand: state.deviceInfo.deviceBrand,
         deviceModel: state.deviceInfo.deviceModel,
         serviceType: state.serviceInfo.serviceType,
@@ -112,6 +141,8 @@ export default function BookingForm() {
       const bookingReference = await createNewBooking(formData);
       
       if (bookingReference) {
+        bookingLogger.info('Booking created successfully:', { reference: bookingReference });
+        
         // Store necessary information in localStorage for the confirmation page
         StorageService.setItem(STORAGE_KEYS.BOOKING_REFERENCE, bookingReference);
         
@@ -131,10 +162,7 @@ export default function BookingForm() {
         };
         
         // Store formatted data for the confirmation page
-        StorageService.setItem('formattedBookingData', formattedData);
-        
-        // Redirect to confirmation page
-        window.location.href = `/booking-confirmation?ref=${bookingReference}`;
+        StorageService.setItem(STORAGE_KEYS.FORMATTED_BOOKING_DATA, formattedData);
         
         dispatch({
           type: 'SUBMIT_FORM_SUCCESS',
@@ -143,6 +171,22 @@ export default function BookingForm() {
             bookingData: formData
           }
         });
+        
+        bookingLogger.debug('Redirecting to confirmation page');
+        
+        // Use direct URL to ensure the page loads properly with query parameters
+        const params = new URLSearchParams({
+          ref: bookingReference,
+          device: formattedData.device,
+          service: formattedData.service,
+          date: formattedData.date,
+          time: formattedData.time,
+          address: formattedData.address,
+          email: formattedData.email
+        });
+        
+        // Redirect to confirmation page
+        window.location.href = `/booking-confirmation?${params.toString()}`;
       } else {
         throw new Error('Failed to create booking');
       }
@@ -312,7 +356,7 @@ export default function BookingForm() {
         <div className="mb-6">
           <label className="block text-gray-700 font-medium mb-3">Service Type</label>
           <div className="grid grid-cols-1 gap-3">
-            {services.map((service) => (
+            {services.map((service: ServiceType) => (
               <button
                 key={service.id}
                 type="button"
@@ -486,7 +530,7 @@ export default function BookingForm() {
           </label>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {getAvailableDates().map((dateOption) => (
+            {getAvailableDates().map((dateOption: DateOption) => (
               <button
                 key={dateOption.value}
                 type="button"
@@ -516,7 +560,7 @@ export default function BookingForm() {
           </label>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {availableTimes.map((time) => (
+            {availableTimes.map((time: TimeSlot) => (
               <button
                 key={time.id}
                 type="button"

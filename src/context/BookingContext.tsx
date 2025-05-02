@@ -1,8 +1,15 @@
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
-import { BookingData, BookingStatus, CreateBookingRequest } from '../types/booking';
-import { createBooking, getBookingByReference } from '../services/api/bookingService';
-import { logger } from '../utils/logger';
-import StorageService, { STORAGE_KEYS } from '../services/StorageService';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
+import { BookingData, BookingStatus, CreateBookingRequest, BookingCreationResponse } from '../types/booking';
+import { bookingService } from '@/services/api/bookingService';
+import logger from '@/utils/logger';
+import { StorageService } from '@/services/StorageService';
+
+// Storage keys for consistent access
+export const STORAGE_KEYS = {
+  BOOKING_REFERENCE: 'bookingReference',
+  BOOKING_REFERENCES: 'bookingReferences', 
+  FORMATTED_BOOKING_DATA: 'formattedBookingData'
+};
 
 // Logger for this module
 const bookingLogger = logger.createModuleLogger('BookingContext');
@@ -84,9 +91,9 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
     setState(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
-      const response = await createBooking(bookingData);
+      const response = await bookingService.createBooking(bookingData);
       
-      if (response && response.booking_reference) {
+      if (response && response.success && response.booking_reference) {
         saveBookingReference(response.booking_reference);
         
         setState(prev => ({
@@ -123,7 +130,7 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
     setState(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
-      const data = await getBookingByReference(reference);
+      const data = await bookingService.getBookingByReference(reference);
       
       setState(prev => ({
         ...prev,
