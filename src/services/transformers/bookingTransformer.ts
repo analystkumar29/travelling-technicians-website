@@ -47,7 +47,6 @@ export function normalizeBookingData(apiData: any): BookingData | null {
     appointment: {
       date: apiData.booking_date || apiData.appointment_date,
       time: apiData.booking_time || apiData.appointment_time,
-      confirmed: apiData.status !== 'pending',
     },
     
     location: {
