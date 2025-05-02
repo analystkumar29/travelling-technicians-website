@@ -70,8 +70,10 @@ export default async function handler(
     let deviceInfo = '';
     if (bookingData.device_type === 'tablet' || 
         (bookingData.device_type === 'mobile' && 
-         bookingData.device_model.toLowerCase().includes('tab') || 
-         bookingData.device_model.toLowerCase().includes('pad'))) {
+         (bookingData.device_model.toLowerCase().includes('tab') || 
+          bookingData.device_model.toLowerCase().includes('pad') ||
+          bookingData.device_model.toLowerCase().includes('ipad') ||
+          bookingData.device_model.toLowerCase().includes('surface')))) {
       deviceInfo = `Tablet - ${bookingData.device_brand} ${bookingData.device_model}`;
     } else if (bookingData.device_type === 'mobile') {
       deviceInfo = `Mobile Phone - ${bookingData.device_brand} ${bookingData.device_model}`;

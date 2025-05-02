@@ -143,52 +143,72 @@ export default function AddressAutocomplete({
     }, 5000);
   };
 
-  const handleSuggestionClick = (suggestion: any) => {
+  const handleSuggestionClick = (e: any) => {
+    console.log("DEBUG - handleSuggestionClick - Suggestion clicked:", e);
+    
     try {
-      console.log("DEBUG - handleSuggestionClick - Suggestion clicked:", suggestion);
-
-      // Extract street, city, and postal code from the suggestion address
-      const addressParts = suggestion.address.split(', ');
-      const street = addressParts[0] || '';
-      const city = addressParts[1] || '';
-      const postalCode = extractPostalCode(suggestion.address);
+      // Handle case when e doesn't have an address property
+      if (!e || typeof e !== 'object') {
+        console.error("DEBUG - handleSuggestionClick - Invalid suggestion object");
+        return;
+      }
       
-      // Add the street number if provided by the user
-      const streetNumberMatch = inputValue.match(/^\d+/);
-      const streetNumber = streetNumberMatch ? streetNumberMatch[0] + ' ' : '';
-      const combinedAddress = `${streetNumber}${street}, ${city}`;
+      // The suggestion might have different structures depending on the source
+      let addressStr = '';
+      let postalCode = '';
       
-      console.log("DEBUG - handleSuggestionClick - Extracted components:", {
-        street,
-        city,
-        postalCode,
-        streetNumber
-      });
-      
-      console.log("DEBUG - handleSuggestionClick - Combined address:", combinedAddress);
-      
-      // Update input field
-      setInputValue(combinedAddress);
-      setShowSuggestions(false);
-      
-      // Call the onAddressSelect callback with the selected address components
-      if (postalCode) {
-        console.log("DEBUG - handleSuggestionClick - Calling onAddressSelect with:", {
-          address: combinedAddress,
-          postalCode: postalCode
-        });
+      // Handle different suggestion formats
+      if (e.address && typeof e.address === 'string') {
+        // Handle case where address is a string (original case)
+        const addressParts = e.address.split(',');
+        const streetNumber = userEnteredStreetNumber || '';
+        const street = addressParts[0] || '';
+        const combinedAddress = streetNumber ? `${streetNumber}, ${street}` : street;
+        const restOfAddress = addressParts.slice(1).join(',');
+        addressStr = `${combinedAddress},${restOfAddress}`;
+        postalCode = e.postalCode || '';
+      } else if (e.display_name) {
+        // Handle OSM Nominatim format 
+        addressStr = e.display_name;
         
-        if (onAddressSelect) {
-          const serviceAreaResult = checkServiceArea(postalCode);
-          const isServiceable = serviceAreaResult?.serviceable || false;
-          onAddressSelect(combinedAddress, postalCode, isServiceable);
+        // Try to extract postal code from address components
+        if (e.address && typeof e.address === 'object' && e.address.postcode) {
+          postalCode = e.address.postcode;
+        } else {
+          // Try to extract postal code from display_name using regex for Canadian postal codes
+          const postalCodeMatch = addressStr.match(/[A-Z]\d[A-Z]\s?\d[A-Z]\d/i);
+          if (postalCodeMatch) {
+            postalCode = postalCodeMatch[0];
+          }
         }
       } else {
-        setError('Selected address is missing a postal code. Please enter it manually.');
+        // For other unknown formats, try to use whatever properties are available
+        addressStr = e.name || e.formatted_address || e.description || JSON.stringify(e);
+        postalCode = e.postal_code || e.postalCode || '';
       }
-    } catch (err) {
-      console.error('DEBUG - handleSuggestionClick - Error processing address selection:', err);
-      setError('Error processing selected address. Please try another or enter manually.');
+      
+      console.log(`DEBUG - handleSuggestionClick - Processed address: ${addressStr}, Postal code: ${postalCode}`);
+      
+      // Set the input value
+      setInputValue(addressStr);
+      
+      // Close suggestions
+      setSuggestions([]);
+      setShowSuggestions(false);
+      
+      // Call the onAddressSelect callback
+      if (onAddressSelect && addressStr) {
+        if (!postalCode) {
+          console.log("DEBUG - handleSuggestionClick - No postal code found in suggestion");
+        }
+        
+        const result = checkServiceArea(postalCode);
+        const isValid = !!(result && result.serviceable);
+        console.log(`DEBUG - handleSuggestionClick - Calling onAddressSelect with: Address=${addressStr}, PostalCode=${postalCode}, Valid=${isValid}`);
+        onAddressSelect(addressStr, isValid, postalCode);
+      }
+    } catch (error) {
+      console.error("DEBUG - handleSuggestionClick - Error processing address selection:", error);
     }
   };
 
