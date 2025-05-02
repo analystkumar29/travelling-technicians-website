@@ -119,6 +119,8 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
   const [bookingReference, setBookingReference] = useState('');
   const [confirmationEmailSent, setConfirmationEmailSent] = useState(false);
   const [emailError2, setEmailError2] = useState<string | null>(null);
+  // Add a new state to store the booking details from the API response
+  const [bookingData, setBookingData] = useState<any>(null);
   
   // Handle successful postal code check
   const handlePostalCodeSuccess = (result: ServiceAreaType, code: string) => {
@@ -354,6 +356,8 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
       
       if (data.success) {
         console.log('DEBUG - Booking created successfully, sending confirmation email');
+        // Store the booking data for the confirmation screen
+        setBookingData(data.booking);
         try {
           // Send confirmation email AFTER successful database insertion
           const emailResult = await sendConfirmationEmail();
@@ -432,42 +436,74 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
             </p>
             
             <div className="bg-gray-50 p-6 rounded-lg mb-8 text-left">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Booking Reference: <span className="text-primary-600 font-bold">{bookingReference}</span></h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Booking Reference: <span className="text-primary-600 font-bold">
+                  {bookingData?.reference_number || bookingReference}
+                </span>
+              </h3>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div className="col-span-1 sm:col-span-2">
                   <p className="text-gray-500 mb-1">Device</p>
-                  <p className="font-medium">{deviceType === 'mobile' ? 'Mobile Phone' : deviceType === 'laptop' ? 'Laptop' : 'Tablet'} - {brand} {model}</p>
+                  <p className="font-medium">
+                    {bookingData ? (
+                      `${bookingData.device_type === 'mobile' ? 'Mobile Phone' : 
+                        bookingData.device_type === 'laptop' ? 'Laptop' : 'Tablet'} - 
+                        ${bookingData.device_brand || ''} ${bookingData.device_model || ''}`
+                    ) : (
+                      `${deviceType === 'mobile' ? 'Mobile Phone' : 
+                        deviceType === 'laptop' ? 'Laptop' : 'Tablet'} - ${brand} ${model}`
+                    )}
+                  </p>
                 </div>
                 
                 <div className="col-span-1 sm:col-span-2">
                   <p className="text-gray-500 mb-1">Service</p>
                   <p className="font-medium">
-                    {serviceTypes[deviceType as keyof typeof serviceTypes].find(s => s.id === serviceType)?.name}
+                    {bookingData ? (
+                      // Try to find the service name based on the ID stored in the booking
+                      serviceTypes[bookingData.device_type as keyof typeof serviceTypes]?.find(s => s.id === bookingData.service_type)?.name ||
+                      bookingData.service_type
+                    ) : (
+                      serviceTypes[deviceType as keyof typeof serviceTypes]?.find(s => s.id === serviceType)?.name
+                    )}
                   </p>
                 </div>
                 
                 <div>
                   <p className="text-gray-500 mb-1">Date</p>
                   <p className="font-medium">
-                    {date && new Date(date).toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
+                    {bookingData?.booking_date ? (
+                      new Date(bookingData.booking_date).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })
+                    ) : date ? (
+                      new Date(date).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })
+                    ) : ''}
                   </p>
                 </div>
                 
                 <div>
                   <p className="text-gray-500 mb-1">Time</p>
                   <p className="font-medium">
-                    {availableTimes.find(t => t.id === timeSlot)?.label}
+                    {bookingData?.booking_time ? (
+                      availableTimes.find(t => t.id === bookingData.booking_time)?.label ||
+                      bookingData.booking_time
+                    ) : (
+                      availableTimes.find(t => t.id === timeSlot)?.label
+                    )}
                   </p>
                 </div>
                 
                 <div className="col-span-1 sm:col-span-2">
                   <p className="text-gray-500 mb-1">Address</p>
-                  <p className="font-medium">{address}</p>
+                  <p className="font-medium">{bookingData?.address || address}</p>
                 </div>
               </div>
             </div>
