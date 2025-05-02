@@ -171,7 +171,7 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
       setState(prev => ({
         ...prev,
         bookingData: data,
-        bookingStatus: data.status,
+        bookingStatus: data?.status || null,
         bookingReference: reference,
         isLoading: false,
       }));
