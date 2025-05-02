@@ -117,23 +117,42 @@ export default function BookingConfirmation() {
   }
   
   // Prepare display data from either context or fallback
-  const displayData = contextBookingData ? {
-    reference: contextBookingData.reference_number,
-    device: getDeviceDisplay(
-      contextBookingData.device_type, 
-      contextBookingData.device_brand, 
-      contextBookingData.device_model
-    ),
-    service: formatServiceType(contextBookingData.service_type),
-    date: new Date(contextBookingData.booking_date).toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric'
-    }),
-    time: formatTime(contextBookingData.booking_time),
-    address: contextBookingData.address,
-    email: contextBookingData.customer_email
-  } : fallbackData;
+  const displayData = contextBookingData 
+    ? {
+        reference: contextBookingData.reference_number,
+        device: getDeviceDisplay(
+          contextBookingData.device_type, 
+          contextBookingData.device_brand, 
+          contextBookingData.device_model
+        ),
+        service: formatServiceType(contextBookingData.service_type),
+        date: new Date(contextBookingData.booking_date).toLocaleDateString('en-US', {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric'
+        }),
+        time: formatTime(contextBookingData.booking_time),
+        address: contextBookingData.address,
+        email: contextBookingData.customer_email
+      } 
+    : fallbackData;
+  
+  // TypeScript safety check - this should never happen due to the earlier check
+  if (!displayData) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-lg w-full text-center">
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">Something Went Wrong</h1>
+          <p className="text-gray-600 mb-6">We couldn't display your booking information. Please try again or contact support.</p>
+          <Link href="/book-online">
+            <span className="inline-block bg-primary-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-primary-700 transition cursor-pointer">
+              Book A New Repair
+            </span>
+          </Link>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
