@@ -12,7 +12,7 @@ import type {
  * the camelCase structured domain model, and normalizes field names
  * that may vary between API responses.
  */
-export function normalizeBookingData(apiData: any): BookingData {
+export function normalizeBookingData(apiData: any): BookingData | null {
   // Handle potential missing data
   if (!apiData) return null;
   
