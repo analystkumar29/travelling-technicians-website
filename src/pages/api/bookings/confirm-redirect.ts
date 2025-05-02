@@ -67,7 +67,7 @@ function formatDate(dateStr: string): string {
 /**
  * Get display name for a device type considering model name
  */
-function getDeviceDisplay(deviceType: string, brand: string, model: string): string {
+function getDeviceDisplay(deviceType: string, brand?: string, model?: string): string {
   if (!deviceType) return 'Device information not available';
   
   // Check for tablet first based on model name
