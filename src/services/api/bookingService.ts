@@ -153,7 +153,7 @@ export const bookingService = {
   /**
    * Get a booking by reference number
    */
-  async getBookingByReference(reference: string): Promise<BookingData> {
+  async getBookingByReference(reference: string): Promise<BookingData | null> {
     apiLogger.debug(`Fetching booking with reference: ${reference}`);
     
     try {
