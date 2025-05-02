@@ -456,6 +456,25 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
     return `${dbDeviceType === 'mobile' ? 'Mobile Phone' : 'Laptop'} - ${brandStr}${deviceModel || ''}`;
   };
   
+  // Add this helper function to format time slots
+  const formatTimeSlot = (timeSlot: string): string => {
+    if (!timeSlot || !timeSlot.includes('-')) return '';
+    
+    const [start, end] = timeSlot.split('-');
+    const startHour = parseInt(start);
+    const endHour = parseInt(end);
+    
+    const startTime = startHour < 12 ? 
+      `${startHour}:00 AM` : 
+      `${startHour === 12 ? 12 : startHour - 12}:00 PM`;
+      
+    const endTime = endHour < 12 ? 
+      `${endHour}:00 AM` : 
+      `${endHour === 12 ? 12 : endHour - 12}:00 PM`;
+    
+    return `${startTime} - ${endTime}`;
+  };
+  
   // Return JSX for Form
   if (bookingComplete) {
     // Show booking confirmation page when complete
@@ -494,10 +513,15 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
                   <p className="font-medium">
                     {bookingData ? (
                       // Try to find the service name based on the ID stored in the booking
-                      serviceTypes[bookingData.device_type as keyof typeof serviceTypes]?.find(s => s.id === bookingData.service_type)?.name ||
-                      bookingData.service_type
+                      (serviceTypes[bookingData.device_type as keyof typeof serviceTypes]?.find(s => s.id === bookingData.service_type)?.name ||
+                      // Fallback to formatted service type string if not found in the serviceTypes map
+                      bookingData.service_type?.replace(/_/g, ' ')
+                        .split(' ')
+                        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+                        .join(' '))
                     ) : (
-                      serviceTypes[deviceType as keyof typeof serviceTypes]?.find(s => s.id === serviceType)?.name
+                      serviceTypes[deviceType as keyof typeof serviceTypes]?.find(s => s.id === serviceType)?.name ||
+                      "Service information not available"
                     )}
                   </p>
                 </div>
@@ -506,18 +530,48 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
                   <p className="text-gray-500 mb-1">Date</p>
                   <p className="font-medium">
                     {bookingData?.booking_date ? (
-                      new Date(bookingData.booking_date).toLocaleDateString('en-US', { 
-                        weekday: 'long', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      })
+                      // For booking data from API response
+                      (() => {
+                        try {
+                          return new Date(bookingData.booking_date).toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          });
+                        } catch (e) {
+                          console.error('Error formatting date:', e);
+                          return bookingData.booking_date || "Date information not available";
+                        }
+                      })()
+                    ) : bookingData?.appointment_date ? (
+                      // For booking data with appointment_date
+                      (() => {
+                        try {
+                          return new Date(bookingData.appointment_date).toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          });
+                        } catch (e) {
+                          console.error('Error formatting appointment date:', e);
+                          return bookingData.appointment_date || "Date information not available";
+                        }
+                      })()
                     ) : date ? (
-                      new Date(date).toLocaleDateString('en-US', { 
-                        weekday: 'long', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      })
-                    ) : ''}
+                      // For local state date
+                      (() => {
+                        try {
+                          return new Date(date).toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          });
+                        } catch (e) {
+                          console.error('Error formatting local date:', e);
+                          return date || "Date information not available";
+                        }
+                      })()
+                    ) : "Date information not available"}
                   </p>
                 </div>
                 
@@ -526,16 +580,25 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
                   <p className="font-medium">
                     {bookingData?.booking_time ? (
                       availableTimes.find(t => t.id === bookingData.booking_time)?.label ||
+                      formatTimeSlot(bookingData.booking_time) ||
                       bookingData.booking_time
-                    ) : (
-                      availableTimes.find(t => t.id === timeSlot)?.label
-                    )}
+                    ) : bookingData?.appointment_time ? (
+                      availableTimes.find(t => t.id === bookingData.appointment_time)?.label ||
+                      formatTimeSlot(bookingData.appointment_time) ||
+                      bookingData.appointment_time
+                    ) : timeSlot ? (
+                      availableTimes.find(t => t.id === timeSlot)?.label ||
+                      formatTimeSlot(timeSlot) ||
+                      timeSlot
+                    ) : "Time information not available"}
                   </p>
                 </div>
                 
                 <div className="col-span-1 sm:col-span-2">
                   <p className="text-gray-500 mb-1">Address</p>
-                  <p className="font-medium">{bookingData?.address || address}</p>
+                  <p className="font-medium">
+                    {bookingData?.address || address || "Address information not available"}
+                  </p>
                 </div>
               </div>
             </div>
