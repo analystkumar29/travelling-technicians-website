@@ -75,7 +75,7 @@ export function normalizeBookingData(apiData: any): BookingData {
         phone: apiData.technician_phone,
       }
     } : {})
-  };
+  } as BookingData;
 }
 
 /**
