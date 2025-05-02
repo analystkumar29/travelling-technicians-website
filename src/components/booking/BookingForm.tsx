@@ -7,7 +7,7 @@ import { useBookingForm } from '@/hooks/useBookingForm';
 import { useBooking } from '@/context/BookingContext';
 import { formatTimeSlot, formatServiceType, getDeviceTypeDisplay } from '@/utils/formatters';
 import logger from '@/utils/logger';
-import StorageService, { STORAGE_KEYS } from '@/services/StorageService';
+import { StorageService, STORAGE_KEYS } from '@/services/StorageService';
 import { useRouter } from 'next/router';
 
 // Logger for this module
@@ -146,76 +146,97 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
         postalCode: state.locationInfo.postalCode
       };
       
+      bookingLogger.debug('Calling createNewBooking with form data', {
+        deviceType: formData.deviceType,
+        serviceType: formData.serviceType,
+        hasDate: !!formData.appointmentDate,
+        hasTime: !!formData.appointmentTime
+      });
+      
       // Use our context function to create a booking
       const bookingReference = await createNewBooking(formData);
       
-      if (bookingReference) {
-        bookingLogger.info('Booking created successfully:', { reference: bookingReference });
-        
-        // Store necessary information in localStorage for the confirmation page
-        StorageService.setItem(STORAGE_KEYS.BOOKING_REFERENCE, bookingReference);
-        
-        // Prepare formatted data for the confirmation page
-        const formattedData = {
-          ref: bookingReference,
-          device: getDeviceTypeDisplay(
-            state.deviceInfo.deviceType,
-            state.deviceInfo.deviceBrand,
-            state.deviceInfo.deviceModel
-          ),
-          service: formatServiceType(state.serviceInfo.serviceType),
-          date: state.appointmentInfo.date,
-          time: formatTimeSlot(state.appointmentInfo.timeSlot),
-          address: state.locationInfo.address,
-          email: state.customerInfo.email
-        };
-        
-        // Store formatted data for the confirmation page
-        StorageService.setItem(STORAGE_KEYS.FORMATTED_BOOKING_DATA, formattedData);
-        
-        dispatch({
-          type: 'SUBMIT_FORM_SUCCESS',
-          payload: {
-            bookingReference,
-            bookingData: formData
-          }
-        });
-        
-        bookingLogger.debug('Redirecting to confirmation page', { bookingReference });
-        
-        // Call onComplete callback if provided
-        if (onComplete) {
-          onComplete({
-            reference: bookingReference,
-            ...formData
-          });
-          return;
-        }
-        
-        // Use Next.js router to handle the redirection
-        router.push({
-          pathname: '/booking-confirmation',
-          query: {
-            ref: bookingReference,
-            device: formattedData.device,
-            service: formattedData.service,
-            date: formattedData.date,
-            time: formattedData.time,
-            address: formattedData.address,
-            email: formattedData.email
-          }
-        });
-      } else {
-        throw new Error('Failed to create booking');
+      if (!bookingReference) {
+        throw new Error('No booking reference returned');
       }
+      
+      bookingLogger.info('Booking created successfully:', { reference: bookingReference });
+      
+      // Store necessary information in localStorage for the confirmation page
+      StorageService.setItem(STORAGE_KEYS.BOOKING_REFERENCE, bookingReference);
+      
+      // Prepare formatted data for the confirmation page
+      const formattedData = {
+        ref: bookingReference,
+        device: getDeviceTypeDisplay(
+          state.deviceInfo.deviceType,
+          state.deviceInfo.deviceBrand,
+          state.deviceInfo.deviceModel
+        ),
+        service: formatServiceType(state.serviceInfo.serviceType),
+        date: state.appointmentInfo.date,
+        time: formatTimeSlot(state.appointmentInfo.timeSlot),
+        address: state.locationInfo.address,
+        email: state.customerInfo.email
+      };
+      
+      // Store formatted data for the confirmation page
+      StorageService.setItem(STORAGE_KEYS.BOOKING_DATA, formattedData);
+      
+      dispatch({
+        type: 'SUBMIT_FORM_SUCCESS',
+        payload: {
+          bookingReference,
+          bookingData: formData
+        }
+      });
+      
+      bookingLogger.debug('Redirecting to confirmation page', { bookingReference });
+      
+      // Call onComplete callback if provided
+      if (onComplete) {
+        onComplete({
+          reference: bookingReference,
+          ...formData
+        });
+        return;
+      }
+      
+      // Use Next.js router to handle the redirection
+      router.push({
+        pathname: '/booking-confirmation',
+        query: {
+          ref: bookingReference,
+          device: formattedData.device,
+          service: formattedData.service,
+          date: formattedData.date,
+          time: formattedData.time,
+          address: formattedData.address,
+          email: formattedData.email
+        }
+      });
     } catch (error) {
       bookingLogger.error('Form submission error', {
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
       });
+      
+      // Show a user-friendly error message
+      let errorMessage = 'Failed to submit booking. Please try again later.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('serviceable')) {
+          errorMessage = 'We currently do not service your area. Please check our service areas.';
+        } else if (error.message.toLowerCase().includes('network') || error.message.toLowerCase().includes('timeout')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
+        } else if (error.message.toLowerCase().includes('supabase')) {
+          errorMessage = 'We\'re experiencing database issues. Please try again later.';
+        }
+      }
       
       dispatch({
         type: 'SUBMIT_FORM_ERROR',
-        payload: error instanceof Error ? error.message : 'Failed to submit booking'
+        payload: errorMessage
       });
     }
   };

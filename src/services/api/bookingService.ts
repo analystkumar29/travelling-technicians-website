@@ -122,12 +122,24 @@ export const bookingService = {
    * Create a new booking
    */
   async createBooking(bookingData: CreateBookingRequest): Promise<BookingCreationResponse> {
-    apiLogger.debug('Creating booking with data:', bookingData);
-    
-    // Convert camelCase to snake_case for API
-    const apiBookingData = denormalizeBookingData(bookingData);
+    apiLogger.debug('Creating booking with data:', {
+      deviceType: bookingData.deviceType,
+      serviceType: bookingData.serviceType,
+      hasAppointmentDate: !!bookingData.appointmentDate,
+      hasAppointmentTime: !!bookingData.appointmentTime
+    });
     
     try {
+      // Convert camelCase to snake_case for API
+      const apiBookingData = denormalizeBookingData(bookingData);
+      
+      apiLogger.debug('Sending to API with transformed data', {
+        device_type: apiBookingData.device_type,
+        service_type: apiBookingData.service_type,
+        hasBookingDate: !!apiBookingData.booking_date,
+        hasBookingTime: !!apiBookingData.booking_time
+      });
+      
       const response = await fetch(`${API_BASE_URL}${ENDPOINTS.CREATE_BOOKING}`, {
         method: 'POST',
         headers: {
@@ -136,16 +148,68 @@ export const bookingService = {
         body: JSON.stringify(apiBookingData),
       });
       
-      const result = await handleResponse<BookingCreationResponse>(response);
-      apiLogger.info(`Booking created successfully. Reference: ${result.booking_reference}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        apiLogger.error('API response not OK', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText.substring(0, 200) // Log part of the response for debugging
+        });
+        
+        let parsedError;
+        try {
+          parsedError = JSON.parse(errorText);
+        } catch (e) {
+          // If it's not valid JSON, use the text directly
+          throw new BookingServiceError(
+            `API error (${response.status}): ${errorText.substring(0, 100)}`,
+            response.status
+          );
+        }
+        
+        throw new BookingServiceError(
+          `API error (${response.status}): ${parsedError.message || parsedError.details || 'Unknown error'}`,
+          response.status
+        );
+      }
       
+      const result = await response.json();
+      
+      // Validate the response structure
+      if (!result || typeof result !== 'object') {
+        throw new BookingServiceError('Invalid response format from server');
+      }
+      
+      // Ensure the response has all required fields
+      if (result.success === false) {
+        throw new BookingServiceError(
+          result.message || 'Booking creation failed',
+          response.status
+        );
+      }
+      
+      if (!result.booking_reference) {
+        apiLogger.warn('Missing booking reference in successful response', result);
+        // If we have a booking object with reference_number, use that instead
+        if (result.booking && result.booking.reference_number) {
+          result.booking_reference = result.booking.reference_number;
+        } else {
+          throw new BookingServiceError('Missing booking reference in response');
+        }
+      }
+      
+      apiLogger.info(`Booking created successfully. Reference: ${result.booking_reference}`);
       return result;
     } catch (error) {
       if (error instanceof BookingServiceError) {
         throw error;
       }
       
-      apiLogger.error('Booking creation failed:', error);
+      apiLogger.error('Booking creation failed:', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
       throw new BookingServiceError('Failed to create booking');
     }
   },

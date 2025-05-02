@@ -2,14 +2,7 @@ import React, { createContext, useContext, useState, ReactNode, useCallback, use
 import { BookingData, BookingStatus, CreateBookingRequest, BookingCreationResponse } from '../types/booking';
 import { bookingService } from '@/services/api/bookingService';
 import logger from '@/utils/logger';
-import StorageService from '@/services/StorageService';
-
-// Storage keys for consistent access
-export const STORAGE_KEYS = {
-  BOOKING_REFERENCE: 'bookingReference',
-  BOOKING_REFERENCES: 'bookingReferences', 
-  FORMATTED_BOOKING_DATA: 'formattedBookingData'
-};
+import { StorageService, STORAGE_KEYS } from '@/services/StorageService';
 
 // Logger for this module
 const contextLogger = logger.createModuleLogger('BookingContext');
@@ -92,7 +85,7 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
     // Only run on client-side
     if (typeof window !== 'undefined') {
       try {
-        const storedReference = StorageService.getItem(STORAGE_KEYS.BOOKING_REFERENCE, null);
+        const storedReference = StorageService.getItem<string>(STORAGE_KEYS.BOOKING_REFERENCE);
         if (storedReference) {
           setState(prev => ({ ...prev, bookingReference: storedReference }));
         }
@@ -123,31 +116,60 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
    * Create a new booking
    */
   const createNewBooking = useCallback(async (bookingData: CreateBookingRequest): Promise<string | null> => {
-    contextLogger.info('Creating new booking');
+    contextLogger.info('Creating new booking', {
+      deviceType: bookingData.deviceType,
+      serviceType: bookingData.serviceType
+    });
     setState(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
+      // Log the booking data being sent (with sensitive info redacted)
+      const redactedData = { 
+        ...bookingData, 
+        customerEmail: bookingData.customerEmail ? '***@***.com' : undefined,
+        customerPhone: bookingData.customerPhone ? '***-***-****' : undefined
+      };
+      contextLogger.debug('Sending booking data', redactedData);
+      
       const response = await bookingService.createBooking(bookingData);
       
+      // Log the response for debugging
+      contextLogger.debug('API response received', {
+        success: response.success,
+        hasReference: !!response.booking_reference,
+        error: response.error
+      });
+      
       if (response && response.success && response.booking_reference) {
-        saveBookingReference(response.booking_reference);
+        const reference = response.booking_reference;
+        saveBookingReference(reference);
         
         setState(prev => ({
           ...prev,
-          bookingReference: response.booking_reference,
+          bookingReference: reference,
           bookingStatus: 'pending',
           isLoading: false,
         }));
         
-        contextLogger.info(`Booking created successfully. Reference: ${response.booking_reference}`);
-        return response.booking_reference;
+        contextLogger.info(`Booking created successfully. Reference: ${reference}`);
+        return reference;
       } else {
-        throw new Error('Invalid response from booking creation');
+        // If response has an error message, use it
+        const errorMsg = response.error || 'Invalid response from booking creation';
+        contextLogger.error('Booking creation failed with API response', {
+          success: response.success,
+          error: errorMsg
+        });
+        throw new Error(errorMsg);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create booking';
       
-      contextLogger.error('Error creating booking:', error);
+      contextLogger.error('Error creating booking:', {
+        error: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -223,7 +245,7 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
     if (typeof window === 'undefined') return null;
     
     try {
-      const data = StorageService.getItem<FormattedBookingData>(STORAGE_KEYS.FORMATTED_BOOKING_DATA);
+      const data = StorageService.getItem<FormattedBookingData>(STORAGE_KEYS.BOOKING_DATA);
       return data;
     } catch (err) {
       contextLogger.error('Failed to get formatted booking data', { 
