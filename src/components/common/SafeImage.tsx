@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image, { ImageProps } from 'next/image';
 import { FaImage } from 'react-icons/fa';
 
@@ -17,12 +17,20 @@ const SafeImage = ({
   altText,
   ...props
 }: SafeImageProps) => {
-  const [imgSrc, setImgSrc] = useState(src);
+  const [imgSrc, setImgSrc] = useState<string | null>(null);
   const [hasError, setHasError] = useState(false);
 
+  // Set image source after component mount to avoid hydration issues
+  useEffect(() => {
+    setImgSrc(typeof src === 'string' ? src : '');
+  }, [src]);
+
   const handleError = () => {
+    console.warn(`Image failed to load: ${imgSrc}`);
     setHasError(true);
-    setImgSrc(fallbackSrc);
+    if (typeof fallbackSrc === 'string') {
+      setImgSrc(fallbackSrc);
+    }
   };
 
   // If we have a fallback component and there was an error, render that
@@ -31,12 +39,21 @@ const SafeImage = ({
   }
 
   // If we have a fallback path and there was an error, use that
-  if (hasError && !fallbackSrc.includes('/images/placeholder-image.jpg')) {
-    return <Image src={fallbackSrc} {...props} alt={altText} />;
+  if (hasError && fallbackSrc && fallbackSrc !== defaultFallbackSrc) {
+    return (
+      <div className={props.className || ''} style={{ position: 'relative', height: props.height, width: props.width }}>
+        <Image 
+          src={fallbackSrc} 
+          {...props} 
+          alt={altText}
+          unoptimized={!fallbackSrc.startsWith('/')} // Don't optimize external images
+        />
+      </div>
+    );
   }
 
   // If we've encountered an error and are using the default fallback
-  if (hasError) {
+  if (hasError || !imgSrc) {
     return (
       <div
         className={`flex items-center justify-center bg-gray-200 ${props.className || ''}`}
@@ -56,12 +73,15 @@ const SafeImage = ({
 
   // Normal case - render image with error handler
   return (
-    <Image
-      src={imgSrc}
-      {...props}
-      alt={altText}
-      onError={handleError}
-    />
+    <div className={props.className || ''} style={{ position: 'relative', height: props.height, width: props.width }}>
+      <Image
+        src={imgSrc}
+        {...props}
+        alt={altText}
+        onError={handleError}
+        unoptimized={typeof src === 'string' && !src.startsWith('/')} // Don't optimize external images
+      />
+    </div>
   );
 };
 

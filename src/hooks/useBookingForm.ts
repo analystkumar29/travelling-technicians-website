@@ -194,18 +194,32 @@ const validators = {
     const errors: Record<string, string> = {};
     const { address, isAddressValid, isValidPostalCode, serviceAreaResult } = state.locationInfo;
     
-    if (!address) {
-      errors.address = 'Please enter an address';
-    } else if (!isAddressValid) {
-      errors.address = 'Please enter a valid address';
-    }
-    
-    if (!isValidPostalCode) {
-      errors.postalCode = 'Please enter a valid postal code';
-    }
-    
-    if (!serviceAreaResult?.serviceable) {
-      errors.serviceArea = 'We don\'t currently service this area';
+    // For step 3, we only care about valid postal code and serviceable area
+    if (state.currentStep === 3) {
+      // Check if postal code is valid
+      if (!isValidPostalCode) {
+        errors.postalCode = 'Please enter a valid postal code';
+      }
+      
+      // Check if the area is serviceable
+      if (!serviceAreaResult?.serviceable) {
+        errors.serviceArea = 'We don\'t currently service this area';
+      }
+    } else {
+      // For later steps, validate address too
+      if (!address) {
+        errors.address = 'Please enter an address';
+      } else if (!isAddressValid) {
+        errors.address = 'Please enter a valid address';
+      }
+      
+      if (!isValidPostalCode) {
+        errors.postalCode = 'Please enter a valid postal code';
+      }
+      
+      if (!serviceAreaResult?.serviceable) {
+        errors.serviceArea = 'We don\'t currently service this area';
+      }
     }
     
     return {
@@ -434,18 +448,47 @@ export function useBookingForm() {
     const validationKey = getValidationKeyForStep(state.currentStep);
     if (!validationKey) return true;
 
-    const { isValid, errors } = validators[validationKey as keyof typeof validators](state);
+    // Map validation keys to their corresponding validator functions
+    const validatorMap: Record<string, string> = {
+      deviceInfoValid: 'deviceInfo',
+      serviceInfoValid: 'serviceInfo',
+      locationInfoValid: 'locationInfo',
+      appointmentInfoValid: 'appointmentInfo',
+      customerInfoValid: 'customerInfo'
+    };
+
+    // Only proceed with validation if we have a valid key
+    if (!Object.keys(validatorMap).includes(validationKey)) {
+      formLogger.error(`Invalid validation key: ${validationKey}`);
+      return false;
+    }
+
+    // Get the correct validator function name based on the validation key
+    const validatorKey = validatorMap[validationKey];
     
-    dispatch({ 
-      type: 'VALIDATE_STEP', 
-      payload: { 
-        step: state.currentStep,
-        isValid,
-        errors
-      } 
-    });
+    // Check that the validator function exists before calling it
+    if (!validatorKey || typeof validators[validatorKey as keyof typeof validators] !== 'function') {
+      formLogger.error(`Validator not found for key: ${validationKey}`);
+      return false;
+    }
     
-    return isValid;
+    try {
+      const { isValid, errors } = validators[validatorKey as keyof typeof validators](state);
+      
+      dispatch({ 
+        type: 'VALIDATE_STEP', 
+        payload: { 
+          step: state.currentStep,
+          isValid,
+          errors: errors || {}
+        } 
+      });
+      
+      return isValid;
+    } catch (err) {
+      formLogger.error(`Error in validation: ${err instanceof Error ? err.message : String(err)}`);
+      return false;
+    }
   }, [state]);
   
   /**
