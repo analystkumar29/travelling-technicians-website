@@ -26,6 +26,8 @@ const nextConfig = {
       },
     ];
   },
+  // Server external packages config
+  serverExternalPackages: [],
 };
 
 module.exports = nextConfig;
