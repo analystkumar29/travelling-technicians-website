@@ -1,193 +1,233 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
-import { FaCalendarAlt, FaCheckCircle, FaTimesCircle, FaSpinner } from 'react-icons/fa';
+import { format, addDays, isBefore } from 'date-fns';
+import { FaCheckCircle, FaTimesCircle, FaSpinner, FaCalendarAlt, FaClock } from 'react-icons/fa';
+import { createClient } from '@supabase/supabase-js';
 
-// Available dates (next 7 days)
-const getAvailableDates = () => {
+// Initialize Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Generate available dates (next 14 days)
+function getAvailableDates() {
   const dates = [];
   const today = new Date();
   
-  for (let i = 1; i <= 7; i++) {
-    const date = new Date(today);
-    date.setDate(today.getDate() + i);
-    
-    const dateString = date.toISOString().split('T')[0];
-    const displayDate = date.toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      month: 'short', 
-      day: 'numeric' 
+  // Start from tomorrow
+  const tomorrow = addDays(today, 1);
+  
+  // Generate dates for the next 14 days
+  for (let i = 0; i < 14; i++) {
+    const date = addDays(tomorrow, i);
+    dates.push({
+      date: format(date, 'yyyy-MM-dd'),
+      display: format(date, 'EEEE, MMMM d, yyyy'),
+      day: format(date, 'EEEE')
     });
-    
-    dates.push({ value: dateString, label: displayDate });
   }
   
   return dates;
-};
+}
 
-// Available times
-const availableTimes = [
-  { id: '09-11', label: '9:00 AM - 11:00 AM' },
-  { id: '11-13', label: '11:00 AM - 1:00 PM' },
-  { id: '13-15', label: '1:00 PM - 3:00 PM' },
-  { id: '15-17', label: '3:00 PM - 5:00 PM' },
-  { id: '17-19', label: '5:00 PM - 7:00 PM' },
-  { id: '19-21', label: '7:00 PM - 9:00 PM' },
+// Available time slots
+const availableTimeSlots = [
+  { id: '09:00-11:00', display: '9:00 AM - 11:00 AM' },
+  { id: '11:00-13:00', display: '11:00 AM - 1:00 PM' },
+  { id: '13:00-15:00', display: '1:00 PM - 3:00 PM' },
+  { id: '15:00-17:00', display: '3:00 PM - 5:00 PM' },
+  { id: '17:00-19:00', display: '5:00 PM - 7:00 PM' },
 ];
 
 export default function RescheduleBooking() {
   const router = useRouter();
-  const { reference, token } = router.query;
+  const { token, reference } = router.query;
   
-  // Form states
-  const [date, setDate] = useState('');
-  const [timeSlot, setTimeSlot] = useState('');
-  const [note, setNote] = useState('');
+  const [status, setStatus] = useState<'loading' | 'error' | 'ready' | 'success'>('loading');
+  const [message, setMessage] = useState('Verifying your booking information...');
+  
+  const [booking, setBooking] = useState<any>(null);
   const [email, setEmail] = useState('');
-  const [dateError, setDateError] = useState(false);
-  const [timeError, setTimeError] = useState(false);
-  const [emailError, setEmailError] = useState(false);
+  const [emailError, setEmailError] = useState('');
   
-  // Process states
-  const [status, setStatus] = useState<'loading' | 'ready' | 'submitting' | 'success' | 'error'>('loading');
-  const [message, setMessage] = useState('Loading your booking information...');
-  const [bookingInfo, setBookingInfo] = useState<any>(null);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedTime, setSelectedTime] = useState('');
+  const [dateError, setDateError] = useState('');
+  const [timeError, setTimeError] = useState('');
   
-  // Handle verification of token and reference
+  const [availableDates] = useState(getAvailableDates());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Load booking when reference is available
   useEffect(() => {
-    if (!reference || !token) return;
+    if (!reference) return;
     
-    const fetchBookingInfo = async () => {
+    const fetchBooking = async () => {
       try {
-        // In a production environment, we would verify the token first
-        // For now, we'll just check if the booking exists
-        const response = await fetch(`/api/bookings/findByReference?reference=${reference}`);
-        const data = await response.json();
+        // Fetch booking using the reference number
+        const { data, error } = await supabase
+          .from('bookings')
+          .select('*')
+          .eq('reference_number', reference)
+          .single();
+          
+        if (error || !data) {
+          setStatus('error');
+          setMessage('Booking not found. Please check your link or contact support.');
+          return;
+        }
         
-        if (data.success && data.booking) {
-          // Set booking info from database
-          setBookingInfo(data.booking);
-          
-          // Pre-populate email from booking data
-          if (data.booking.customer_email) {
-            setEmail(data.booking.customer_email);
-          }
-          
+        setBooking(data);
+        
+        // If we have token, status changes to ready
+        if (token) {
           setStatus('ready');
-          setMessage('');
+          setMessage('Please enter your email to verify and reschedule your booking.');
         } else {
           setStatus('error');
-          setMessage('Invalid or expired reschedule link. Please contact support.');
+          setMessage('Invalid verification link. Please check your email for the correct link.');
         }
       } catch (error) {
-        console.error('Error fetching booking information:', error);
+        console.error('Error fetching booking:', error);
         setStatus('error');
-        setMessage('Something went wrong while loading your booking. Please try again later.');
+        setMessage('Error retrieving booking information. Please try again later.');
       }
     };
     
-    fetchBookingInfo();
+    fetchBooking();
   }, [reference, token]);
   
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Handle email verification
+  const handleVerifySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate form
+    // Validate email
+    if (!email) {
+      setEmailError('Email is required for verification');
+      return;
+    }
+    
+    if (!token || !reference) {
+      setStatus('error');
+      setMessage('Missing verification data. Please check your link.');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Call verification API
+      const response = await fetch('/api/verify-booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, reference, email }),
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        setStatus('ready');
+        setMessage('Your identity is confirmed. Select a new date and time for your booking.');
+      } else {
+        setEmailError(result.message || 'Verification failed. Please check your email and try again.');
+      }
+    } catch (error) {
+      console.error('Error during verification:', error);
+      setEmailError('An error occurred during verification. Please try again later.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  // Handle reschedule form submission
+  const handleRescheduleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate selections
     let hasError = false;
     
-    if (!date) {
-      setDateError(true);
+    if (!selectedDate) {
+      setDateError('Please select a date');
       hasError = true;
     }
     
-    if (!timeSlot) {
-      setTimeError(true);
-      hasError = true;
-    }
-    
-    if (!email) {
-      setEmailError(true);
+    if (!selectedTime) {
+      setTimeError('Please select a time');
       hasError = true;
     }
     
     if (hasError) return;
     
-    // Start submission
-    setStatus('submitting');
+    setIsSubmitting(true);
     
     try {
-      // Call API to update booking in Supabase
-      const updateResponse = await fetch('/api/bookings/update', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          reference: reference,
-          appointmentDate: date,
-          appointmentTime: timeSlot,
-          notes: note || 'Booking rescheduled by customer',
-        }),
-      });
+      // Format the selected date for display
+      const selectedDateObj = new Date(selectedDate);
+      const formattedNewDate = format(selectedDateObj, 'EEEE, MMMM d, yyyy');
       
-      const updateData = await updateResponse.json();
+      // Find the time slot display
+      const timeSlot = availableTimeSlots.find(ts => ts.id === selectedTime);
+      const formattedNewTime = timeSlot ? timeSlot.display : selectedTime;
       
-      if (!updateResponse.ok || !updateData.success) {
-        throw new Error(updateData.error || 'Failed to update booking');
+      // Format the original booking date for display
+      const originalDate = new Date(booking.booking_date);
+      const formattedOriginalDate = format(originalDate, 'EEEE, MMMM d, yyyy');
+      
+      // Update booking in database
+      const { error: updateError } = await supabase
+        .from('bookings')
+        .update({
+          booking_date: selectedDate,
+          booking_time: selectedTime,
+          status: 'pending', // Reset to pending so it needs verification again
+          updated_at: new Date().toISOString()
+        })
+        .eq('reference_number', reference);
+      
+      if (updateError) {
+        throw new Error(updateError.message);
       }
-      
-      // Format dates for email
-      const formattedDate = date ? new Date(date).toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        month: 'long', 
-        day: 'numeric' 
-      }) : '';
-      
-      const formattedTime = availableTimes.find(t => t.id === timeSlot)?.label || '';
-      
-      // Format old date for comparison
-      const oldDate = bookingInfo.booking_date ? new Date(bookingInfo.booking_date).toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        month: 'long', 
-        day: 'numeric' 
-      }) : '';
       
       // Send reschedule confirmation email
       const emailResponse = await fetch('/api/send-reschedule-confirmation', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          to: email,
-          name: bookingInfo.customer_name || 'Customer',
-          bookingReference: bookingInfo.reference_number,
-          deviceType: bookingInfo.device_type,
-          brand: bookingInfo.device_brand,
-          model: bookingInfo.device_model,
-          service: bookingInfo.service_type,
-          oldDate: oldDate,
-          oldTime: bookingInfo.booking_time,
-          bookingDate: formattedDate,
-          bookingTime: formattedTime,
-          address: bookingInfo.address,
-          notes: note || '',
+          to: booking.customer_email,
+          name: booking.customer_name,
+          bookingReference: booking.reference_number,
+          deviceType: booking.device_type,
+          brand: booking.device_brand,
+          model: booking.device_model,
+          service: booking.service_type,
+          oldDate: formattedOriginalDate,
+          oldTime: booking.booking_time,
+          bookingDate: formattedNewDate,
+          bookingTime: formattedNewTime,
+          address: booking.address
         }),
       });
       
       if (!emailResponse.ok) {
-        console.warn('Failed to send reschedule confirmation email, but booking was updated');
+        console.warn('Failed to send reschedule email, but booking was updated');
       }
       
-      // Set success status
+      // Update status to success
       setStatus('success');
       setMessage('Your booking has been successfully rescheduled!');
+      setBooking({
+        ...booking,
+        booking_date: selectedDate,
+        booking_time: selectedTime
+      });
       
     } catch (error) {
       console.error('Error rescheduling booking:', error);
       setStatus('error');
-      setMessage(error instanceof Error ? error.message : 'Failed to reschedule your booking. Please try again.');
+      setMessage('An error occurred while rescheduling your booking. Please try again later or contact support.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
@@ -195,19 +235,15 @@ export default function RescheduleBooking() {
     <Layout title="Reschedule Booking | The Travelling Technicians">
       <div className="max-w-4xl mx-auto px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-          <div className="bg-primary-50 px-6 py-4 border-b border-primary-100">
-            <h1 className="text-2xl font-bold text-primary-800">Reschedule Your Booking</h1>
-          </div>
-          
-          <div className="px-6 py-5">
+          <div className="px-4 py-5 sm:p-6">
             {/* Loading State */}
             {status === 'loading' && (
-              <div className="flex flex-col items-center text-center py-10">
+              <div className="flex flex-col items-center text-center">
                 <div className="animate-pulse">
                   <div className="h-16 w-16 rounded-full bg-primary-200 flex items-center justify-center mb-4">
                     <div className="h-8 w-8 rounded-full bg-primary-500"></div>
                   </div>
-                  <h2 className="text-lg font-medium text-gray-800 mb-2">Verifying Your Booking</h2>
+                  <h2 className="text-2xl font-bold text-gray-800 mb-2">Loading</h2>
                   <p className="text-gray-600">{message}</p>
                 </div>
               </div>
@@ -215,17 +251,11 @@ export default function RescheduleBooking() {
             
             {/* Error State */}
             {status === 'error' && (
-              <div className="flex flex-col items-center text-center py-10">
+              <div className="flex flex-col items-center text-center">
                 <FaTimesCircle className="h-16 w-16 text-red-500 mb-4" />
-                <h2 className="text-xl font-bold text-gray-800 mb-2">Verification Failed</h2>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">Error</h2>
                 <p className="text-gray-600 mb-6">{message}</p>
                 <div className="flex space-x-4 mt-2">
-                  <button 
-                    onClick={() => router.push('/book-online')}
-                    className="btn-outline"
-                  >
-                    Book Again
-                  </button>
                   <button 
                     onClick={() => router.push('/contact')}
                     className="btn-primary"
@@ -236,178 +266,241 @@ export default function RescheduleBooking() {
               </div>
             )}
             
-            {/* Reschedule Form */}
-            {status === 'ready' && bookingInfo && (
-              <div>
-                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                  <h2 className="text-lg font-medium text-gray-900 mb-2">Current Booking Details</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <span className="text-gray-500">Reference:</span>
-                      <p className="font-medium">{bookingInfo.reference}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Service:</span>
-                      <p className="font-medium">{bookingInfo.issue}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Current Date:</span>
-                      <p className="font-medium">{bookingInfo.currentDate}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Current Time:</span>
-                      <p className="font-medium">{bookingInfo.currentTime}</p>
-                    </div>
-                    <div className="sm:col-span-2">
-                      <span className="text-gray-500">Address:</span>
-                      <p className="font-medium">{bookingInfo.address}</p>
-                    </div>
-                  </div>
-                </div>
+            {/* Email Verification */}
+            {status === 'ready' && !selectedDate && booking && (
+              <div className="flex flex-col items-center text-center">
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">Reschedule Your Booking</h2>
+                <p className="text-gray-600 mb-4">{message}</p>
                 
-                <form onSubmit={handleSubmit}>
-                  <h3 className="text-lg font-medium mb-4">Select New Date & Time</h3>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                {!email && (
+                  <form onSubmit={handleVerifySubmit} className="w-full max-w-md space-y-4">
                     <div>
-                      <label htmlFor="date" className="block text-gray-700 font-medium mb-2">
-                        New Date *
+                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 text-left mb-1">
+                        Email Address
                       </label>
-                      <select
-                        id="date"
-                        className={`w-full px-4 py-3 border ${dateError ? 'border-red-500 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
-                        value={date}
+                      <input
+                        type="email"
+                        id="email"
+                        value={email}
                         onChange={(e) => {
-                          setDate(e.target.value);
-                          setDateError(false);
+                          setEmail(e.target.value);
+                          setEmailError('');
                         }}
-                        required
-                      >
-                        <option value="">Select a date</option>
-                        {getAvailableDates().map((date) => (
-                          <option key={date.value} value={date.value}>
-                            {date.label}
-                          </option>
-                        ))}
-                      </select>
-                      {dateError && (
-                        <p className="mt-1 text-sm text-red-600">Please select a date</p>
+                        className={`w-full px-4 py-2 border rounded-md focus:ring-primary-500 focus:border-primary-500 ${
+                          emailError ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                        placeholder="Enter the email used for booking"
+                      />
+                      {emailError && (
+                        <p className="mt-1 text-sm text-red-600 text-left">{emailError}</p>
                       )}
                     </div>
                     
-                    <div>
-                      <label htmlFor="time" className="block text-gray-700 font-medium mb-2">
-                        New Time *
-                      </label>
-                      <select
-                        id="time"
-                        className={`w-full px-4 py-3 border ${timeError ? 'border-red-500 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
-                        value={timeSlot}
-                        onChange={(e) => {
-                          setTimeSlot(e.target.value);
-                          setTimeError(false);
-                        }}
-                        required
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="w-full btn-primary flex items-center justify-center"
                       >
-                        <option value="">Select a time</option>
-                        {availableTimes.map((time) => (
-                          <option key={time.id} value={time.id}>
-                            {time.label}
-                          </option>
-                        ))}
-                      </select>
-                      {timeError && (
-                        <p className="mt-1 text-sm text-red-600">Please select a time</p>
-                      )}
+                        {isSubmitting ? (
+                          <>
+                            <FaSpinner className="animate-spin mr-2" />
+                            Verifying...
+                          </>
+                        ) : (
+                          'Verify & Continue'
+                        )}
+                      </button>
                     </div>
+                  </form>
+                )}
+                
+                {email && (
+                  <div className="w-full max-w-md">
+                    <div className="bg-gray-50 p-4 rounded-lg mb-6 text-left">
+                      <h3 className="font-medium text-gray-900 mb-2">Current Booking Details</h3>
+                      <div className="grid grid-cols-1 gap-2 text-sm">
+                        <div>
+                          <span className="text-gray-500">Reference: </span>
+                          <span className="font-medium">{booking.reference_number}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Device: </span>
+                          <span className="font-medium">{booking.device_type} {booking.device_brand && `- ${booking.device_brand}`} {booking.device_model && booking.device_model}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Service: </span>
+                          <span className="font-medium">{booking.service_type}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Current Date: </span>
+                          <span className="font-medium">{new Date(booking.booking_date).toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Current Time: </span>
+                          <span className="font-medium">{booking.booking_time}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <form onSubmit={handleRescheduleSubmit} className="space-y-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                          <FaCalendarAlt className="mr-2 text-primary-500" />
+                          Select New Date
+                        </label>
+                        <div className="grid grid-cols-1 gap-2">
+                          {availableDates.map((dateOption) => (
+                            <div key={dateOption.date}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedDate(dateOption.date);
+                                  setDateError('');
+                                }}
+                                className={`w-full text-left px-4 py-2 border rounded-md ${
+                                  selectedDate === dateOption.date
+                                    ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-200'
+                                    : 'border-gray-300 hover:border-gray-400'
+                                }`}
+                              >
+                                {dateOption.display}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        {dateError && (
+                          <p className="mt-1 text-sm text-red-600">{dateError}</p>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                          <FaClock className="mr-2 text-primary-500" />
+                          Select New Time
+                        </label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {availableTimeSlots.map((timeSlot) => (
+                            <div key={timeSlot.id}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedTime(timeSlot.id);
+                                  setTimeError('');
+                                }}
+                                className={`w-full text-left px-4 py-2 border rounded-md ${
+                                  selectedTime === timeSlot.id
+                                    ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-200'
+                                    : 'border-gray-300 hover:border-gray-400'
+                                }`}
+                              >
+                                {timeSlot.display}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        {timeError && (
+                          <p className="mt-1 text-sm text-red-600">{timeError}</p>
+                        )}
+                      </div>
+                      
+                      <div className="pt-4">
+                        <button
+                          type="submit"
+                          disabled={isSubmitting || !selectedDate || !selectedTime}
+                          className="w-full btn-primary flex items-center justify-center"
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <FaSpinner className="animate-spin mr-2" />
+                              Rescheduling...
+                            </>
+                          ) : (
+                            'Confirm Reschedule'
+                          )}
+                        </button>
+                      </div>
+                    </form>
                   </div>
-                  
-                  <div className="mb-6">
-                    <label htmlFor="email" className="block text-gray-700 font-medium mb-2">
-                      Your Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      className={`w-full px-4 py-3 border ${emailError ? 'border-red-500 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
-                      placeholder="Enter your email for confirmation"
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        setEmailError(false);
-                      }}
-                      required
-                    />
-                    {emailError && (
-                      <p className="mt-1 text-sm text-red-600">Please enter your email address</p>
-                    )}
-                    <p className="mt-1 text-sm text-gray-500">
-                      You'll receive a confirmation email for your rescheduled booking
-                    </p>
-                  </div>
-                  
-                  <div className="mb-6">
-                    <label htmlFor="note" className="block text-gray-700 font-medium mb-2">
-                      Additional Notes (Optional)
-                    </label>
-                    <textarea
-                      id="note"
-                      rows={3}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      placeholder="Any special requests or information about your reschedule..."
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                    ></textarea>
-                  </div>
-                  
-                  <div className="flex justify-end">
-                    <button
-                      type="submit"
-                      className="btn-primary"
-                    >
-                      Confirm Reschedule
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-            
-            {/* Submitting State */}
-            {status === 'submitting' && (
-              <div className="flex flex-col items-center text-center py-10">
-                <FaSpinner className="h-16 w-16 text-primary-500 animate-spin mb-4" />
-                <h2 className="text-xl font-bold text-gray-800 mb-2">Processing Your Request</h2>
-                <p className="text-gray-600">Please wait while we update your booking...</p>
+                )}
               </div>
             )}
             
             {/* Success State */}
             {status === 'success' && (
-              <div className="flex flex-col items-center text-center py-10">
+              <div className="flex flex-col items-center text-center">
                 <FaCheckCircle className="h-16 w-16 text-green-500 mb-4" />
-                <h2 className="text-xl font-bold text-gray-800 mb-2">Booking Rescheduled!</h2>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">Booking Rescheduled</h2>
                 <p className="text-gray-600 mb-6">{message}</p>
-                <div className="bg-gray-50 p-4 rounded-lg w-full max-w-md mb-6">
-                  <div className="text-left">
-                    <p className="font-medium text-gray-900 mb-1">New Appointment:</p>
-                    <p className="text-gray-700">
-                      {date && new Date(date).toLocaleDateString('en-US', { 
-                        weekday: 'long', 
-                        month: 'long', 
-                        day: 'numeric'
-                      })}
-                    </p>
-                    <p className="text-gray-700">
-                      {availableTimes.find(t => t.id === timeSlot)?.label}
-                    </p>
+                
+                {booking && (
+                  <div className="bg-gray-50 p-4 rounded-lg mb-6 max-w-md w-full">
+                    <h3 className="font-medium text-gray-900 mb-2">New Booking Details</h3>
+                    <div className="grid grid-cols-1 gap-2 text-sm text-left">
+                      <div>
+                        <span className="text-gray-500">Reference: </span>
+                        <span className="font-medium">{booking.reference_number}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Device: </span>
+                        <span className="font-medium">
+                          {booking.device_type} 
+                          {booking.device_brand && ` - ${booking.device_brand}`} 
+                          {booking.device_model && ` ${booking.device_model}`}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Service: </span>
+                        <span className="font-medium">{booking.service_type}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">New Date: </span>
+                        <span className="font-medium">{new Date(booking.booking_date).toLocaleDateString('en-US', { 
+                          weekday: 'long', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">New Time: </span>
+                        <span className="font-medium">
+                          {(() => {
+                            const timeSlot = availableTimeSlots.find(ts => ts.id === booking.booking_time);
+                            return timeSlot ? timeSlot.display : booking.booking_time;
+                          })()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Status: </span>
+                        <span className="font-medium">Pending</span>
+                      </div>
+                    </div>
                   </div>
+                )}
+                
+                <p className="text-sm text-gray-500 mb-8">
+                  A confirmation email has been sent with your new booking details.
+                  Please check your email and verify your booking again.
+                </p>
+                
+                <div className="flex space-x-4 mt-2">
+                  <button 
+                    onClick={() => router.push('/')}
+                    className="btn-outline"
+                  >
+                    Return Home
+                  </button>
+                  <button 
+                    onClick={() => router.push('/contact')}
+                    className="btn-primary"
+                  >
+                    Contact Us
+                  </button>
                 </div>
-                <button 
-                  onClick={() => router.push('/')}
-                  className="btn-primary"
-                >
-                  Return Home
-                </button>
               </div>
             )}
           </div>
