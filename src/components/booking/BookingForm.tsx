@@ -7,7 +7,7 @@ import { useBookingForm } from '@/hooks/useBookingForm';
 import { useBooking } from '@/context/BookingContext';
 import { formatTimeSlot, formatServiceType, getDeviceTypeDisplay } from '@/utils/formatters';
 import logger from '@/utils/logger';
-import { StorageService, STORAGE_KEYS } from '@/services/StorageService';
+import StorageService, { STORAGE_KEYS } from '@/services/StorageService';
 import { useRouter } from 'next/router';
 
 // Logger for this module

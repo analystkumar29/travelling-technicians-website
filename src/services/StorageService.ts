@@ -12,7 +12,6 @@ export const STORAGE_KEYS = {
   FORM_STATE: 'travellingTechnicians_formState',
   LAST_VISIT: 'travellingTechnicians_lastVisit',
   RECENT_SEARCHES: 'travellingTechnicians_recentSearches',
-  FORMATTED_BOOKING_DATA: 'formattedBookingData',
 } as const;
 
 /**
@@ -54,7 +53,7 @@ const StorageService = {
   /**
    * Get an item from localStorage
    */
-  getItem: <T = StorageValue>(key: string, defaultValue: T = null as unknown as T): T => {
+  getItem: <T = StorageValue>(key: string, defaultValue: T | null = null): T | null => {
     if (!StorageService.isAvailable()) {
       return defaultValue;
     }

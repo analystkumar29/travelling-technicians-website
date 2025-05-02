@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, ReactNode, useCallback, use
 import { BookingData, BookingStatus, CreateBookingRequest, BookingCreationResponse } from '../types/booking';
 import { bookingService } from '@/services/api/bookingService';
 import logger from '@/utils/logger';
-import { StorageService, STORAGE_KEYS } from '@/services/StorageService';
+import StorageService, { STORAGE_KEYS } from '@/services/StorageService';
 
 // Logger for this module
 const contextLogger = logger.createModuleLogger('BookingContext');

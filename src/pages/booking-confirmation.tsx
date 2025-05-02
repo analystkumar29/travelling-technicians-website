@@ -2,8 +2,8 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { FaCheckCircle, FaEnvelope } from 'react-icons/fa';
 import Link from 'next/link';
-import { useBooking, STORAGE_KEYS } from '@/context/BookingContext';
-import StorageService from '@/services/StorageService';
+import { useBooking } from '@/context/BookingContext';
+import StorageService, { STORAGE_KEYS } from '@/services/StorageService';
 import logger from '@/utils/logger';
 
 // Create a logger for this module
