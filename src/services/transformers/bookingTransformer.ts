@@ -87,8 +87,8 @@ export function denormalizeBookingData(bookingData: Partial<CreateBookingRequest
     ...(bookingData.serviceType && { serviceType: bookingData.serviceType }),
     ...(bookingData.issueDescription && { issueDescription: bookingData.issueDescription }),
     
-    ...(bookingData.appointmentDate && { appointmentDate: bookingData.appointmentDate }),
-    ...(bookingData.appointmentTime && { appointmentTime: bookingData.appointmentTime }),
+    ...(bookingData.appointmentDate && { bookingDate: bookingData.appointmentDate }),
+    ...(bookingData.appointmentTime && { bookingTime: bookingData.appointmentTime }),
     
     ...(bookingData.customerName && { customerName: bookingData.customerName }),
     ...(bookingData.customerEmail && { customerEmail: bookingData.customerEmail }),
