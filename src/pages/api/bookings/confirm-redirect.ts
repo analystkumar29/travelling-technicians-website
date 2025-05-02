@@ -1,5 +1,4 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { formatInTimeZone } from 'date-fns-tz';
 import { format } from 'date-fns';
 import { getServiceDisplay } from '../../../utils/serviceHelpers';
 

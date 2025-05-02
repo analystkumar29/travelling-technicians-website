@@ -54,6 +54,18 @@ export default function AddressAutocomplete({
   const callbackName = useRef(`jsonp_callback_${Date.now()}_${Math.round(Math.random() * 100000)}`);
   const [extractedPostalCode, setExtractedPostalCode] = useState('');
   const [userEnteredAddress, setUserEnteredAddress] = useState('');
+  const [userEnteredStreetNumber, setUserEnteredStreetNumber] = useState('');
+
+  // Function to extract street number from input
+  useEffect(() => {
+    // Try to extract street number from the input value
+    const streetNumberMatch = inputValue.match(/^\d+/);
+    if (streetNumberMatch) {
+      setUserEnteredStreetNumber(streetNumberMatch[0]);
+    } else {
+      setUserEnteredStreetNumber('');
+    }
+  }, [inputValue]);
 
   // Debouncing search
   useEffect(() => {
@@ -205,7 +217,7 @@ export default function AddressAutocomplete({
         const result = checkServiceArea(postalCode);
         const isValid = !!(result && result.serviceable);
         console.log(`DEBUG - handleSuggestionClick - Calling onAddressSelect with: Address=${addressStr}, PostalCode=${postalCode}, Valid=${isValid}`);
-        onAddressSelect(addressStr, isValid, postalCode);
+        onAddressSelect(addressStr, postalCode, isValid);
       }
     } catch (error) {
       console.error("DEBUG - handleSuggestionClick - Error processing address selection:", error);
