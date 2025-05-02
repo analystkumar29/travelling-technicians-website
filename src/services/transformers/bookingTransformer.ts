@@ -2,7 +2,8 @@ import type {
   BookingData, 
   CreateBookingRequest, 
   DeviceType, 
-  BookingStatus
+  BookingStatus,
+  Appointment
 } from '../../types/booking';
 
 /**
@@ -50,7 +51,7 @@ export function normalizeBookingData(apiData: any): BookingData {
       date: apiData.booking_date || apiData.appointment_date,
       time: apiData.booking_time || apiData.appointment_time,
       confirmed: apiData.status !== 'pending',
-    },
+    } as Appointment,
     
     location: {
       address: apiData.address,
