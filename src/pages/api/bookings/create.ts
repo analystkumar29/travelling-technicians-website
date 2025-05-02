@@ -107,10 +107,18 @@ export default async function handler(
     const referenceNumber = generateReferenceNumber();
     console.log(`[bookings/create] Generated reference: ${referenceNumber}`);
 
+    // Map device type to database-acceptable value
+    let dbDeviceType = deviceType;
+    if (deviceType === 'tablet') {
+      // Map tablet to mobile as a workaround since the database constraint doesn't accept 'tablet'
+      console.log('[bookings/create] Mapping tablet device type to mobile for database compatibility');
+      dbDeviceType = 'mobile';
+    }
+
     // Prepare booking data
     const bookingData = {
       reference_number: referenceNumber,
-      device_type: deviceType,
+      device_type: dbDeviceType,
       device_brand: brand || null,
       device_model: model || null,
       service_type: serviceType,

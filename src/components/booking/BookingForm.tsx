@@ -422,6 +422,21 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
     return dates;
   };
   
+  // Add this helper function to the component
+  const getDeviceTypeDisplay = (dbDeviceType: string, deviceModel?: string, deviceBrand?: string) => {
+    const brandStr = deviceBrand ? `${deviceBrand} ` : '';
+    
+    // Check if it's a tablet based on model name
+    if (dbDeviceType === 'mobile' && deviceModel && 
+        (deviceModel.toLowerCase().includes('ipad') || 
+         deviceModel.toLowerCase().includes('tab') || 
+         deviceModel.toLowerCase().includes('surface'))) {
+      return `Tablet - ${brandStr}${deviceModel}`;
+    }
+    
+    return `${dbDeviceType === 'mobile' ? 'Mobile Phone' : 'Laptop'} - ${brandStr}${deviceModel || ''}`;
+  };
+  
   // Return JSX for Form
   if (bookingComplete) {
     // Show booking confirmation page when complete
@@ -447,9 +462,7 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
                   <p className="text-gray-500 mb-1">Device</p>
                   <p className="font-medium">
                     {bookingData ? (
-                      `${bookingData.device_type === 'mobile' ? 'Mobile Phone' : 
-                        bookingData.device_type === 'laptop' ? 'Laptop' : 'Tablet'} - 
-                        ${bookingData.device_brand || ''} ${bookingData.device_model || ''}`
+                      `${getDeviceTypeDisplay(bookingData.device_type, bookingData.device_model, bookingData.device_brand)}`
                     ) : (
                       `${deviceType === 'mobile' ? 'Mobile Phone' : 
                         deviceType === 'laptop' ? 'Laptop' : 'Tablet'} - ${brand} ${model}`
