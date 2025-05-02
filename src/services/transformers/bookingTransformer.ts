@@ -52,8 +52,6 @@ export function normalizeBookingData(apiData: any): BookingData | null {
     location: {
       address: apiData.address,
       postalCode: apiData.postal_code,
-      city: apiData.city,
-      province: apiData.province,
     },
     
     status: (apiData.status as BookingStatus) || 'pending',
