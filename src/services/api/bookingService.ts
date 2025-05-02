@@ -167,7 +167,13 @@ export const bookingService = {
       const result = await handleResponse<any>(response);
       
       // Convert snake_case to camelCase for frontend
-      return normalizeBookingData(result);
+      const normalizedData = normalizeBookingData(result);
+      
+      if (!normalizedData) {
+        throw new BookingServiceError('Failed to normalize booking data');
+      }
+      
+      return normalizedData;
     } catch (error) {
       if (error instanceof BookingServiceError) {
         throw error;

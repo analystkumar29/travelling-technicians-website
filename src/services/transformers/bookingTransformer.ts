@@ -12,9 +12,11 @@ import type {
  * the camelCase structured domain model, and normalizes field names
  * that may vary between API responses.
  */
-export function normalizeBookingData(apiData: any): BookingData | null {
+export function normalizeBookingData(apiData: any): BookingData {
   // Handle potential missing data
-  if (!apiData) return null;
+  if (!apiData) {
+    throw new Error('Cannot normalize empty booking data');
+  }
   
   // Normalize the device type (handle 'tablet' mapping)
   const normalizedDeviceType = determineDeviceType(
@@ -47,14 +49,18 @@ export function normalizeBookingData(apiData: any): BookingData | null {
     appointment: {
       date: apiData.booking_date || apiData.appointment_date,
       time: apiData.booking_time || apiData.appointment_time,
+      confirmed: apiData.status !== 'pending',
     },
     
     location: {
       address: apiData.address,
       postalCode: apiData.postal_code,
+      city: apiData.city,
+      province: apiData.province,
     },
     
     status: (apiData.status as BookingStatus) || 'pending',
+    notes: apiData.notes,
     
     createdAt: apiData.created_at,
     updatedAt: apiData.updated_at,
@@ -64,6 +70,7 @@ export function normalizeBookingData(apiData: any): BookingData | null {
       technician: {
         id: apiData.technician_id,
         name: apiData.technician_name || 'Assigned Technician',
+        phone: apiData.technician_phone,
       }
     } : {})
   };
@@ -87,8 +94,8 @@ export function denormalizeBookingData(bookingData: Partial<CreateBookingRequest
     ...(bookingData.serviceType && { serviceType: bookingData.serviceType }),
     ...(bookingData.issueDescription && { issueDescription: bookingData.issueDescription }),
     
-    ...(bookingData.appointmentDate && { bookingDate: bookingData.appointmentDate }),
-    ...(bookingData.appointmentTime && { bookingTime: bookingData.appointmentTime }),
+    ...(bookingData.appointmentDate && { appointmentDate: bookingData.appointmentDate }),
+    ...(bookingData.appointmentTime && { appointmentTime: bookingData.appointmentTime }),
     
     ...(bookingData.customerName && { customerName: bookingData.customerName }),
     ...(bookingData.customerEmail && { customerEmail: bookingData.customerEmail }),
