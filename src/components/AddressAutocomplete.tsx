@@ -165,41 +165,78 @@ export default function AddressAutocomplete({
         return;
       }
       
-      // The suggestion might have different structures depending on the source
-      let addressStr = '';
-      let postalCode = '';
+      // For Nominatim format suggestions (OpenStreetMap)
+      if (e.display_name) {
+        const displayName = e.display_name;
+        let postalCode = '';
+        
+        if (e.address && typeof e.address === 'object' && e.address.postcode) {
+          postalCode = e.address.postcode;
+        } else {
+          // Try to extract postal code from display_name using regex for Canadian postal codes
+          const postalCodeMatch = displayName.match(/[A-Z]\d[A-Z]\s?\d[A-Z]\d/i);
+          if (postalCodeMatch) {
+            postalCode = postalCodeMatch[0];
+          }
+        }
+        
+        console.log(`DEBUG - handleSuggestionClick - Using Nominatim format. Display name: ${displayName}, Postal code: ${postalCode}`);
+        
+        // Set the input value
+        setInputValue(displayName);
+        
+        // Close suggestions
+        setSuggestions([]);
+        setShowSuggestions(false);
+        
+        // Call the onAddressSelect callback
+        if (onAddressSelect && displayName) {
+          if (!postalCode) {
+            console.log("DEBUG - handleSuggestionClick - No postal code found in Nominatim suggestion");
+          }
+          
+          const result = checkServiceArea(postalCode);
+          const isValid = !!(result && result.serviceable);
+          console.log(`DEBUG - handleSuggestionClick - Calling onAddressSelect with: Address=${displayName}, PostalCode=${postalCode}, Valid=${isValid}`);
+          onAddressSelect(displayName, postalCode, isValid);
+        }
+        return;
+      }
       
-      // Handle different suggestion formats
+      // For other formats that might have address as a string
       if (e.address && typeof e.address === 'string') {
-        // Handle case where address is a string (original case)
         const addressParts = e.address.split(',');
         const streetNumber = userEnteredStreetNumber || '';
         const street = addressParts[0] || '';
         const combinedAddress = streetNumber ? `${streetNumber}, ${street}` : street;
         const restOfAddress = addressParts.slice(1).join(',');
-        addressStr = `${combinedAddress},${restOfAddress}`;
-        postalCode = e.postalCode || '';
-      } else if (e.display_name) {
-        // Handle OSM Nominatim format 
-        addressStr = e.display_name;
+        const addressStr = `${combinedAddress},${restOfAddress}`;
+        const postalCode = e.postalCode || '';
         
-        // Try to extract postal code from address components
-        if (e.address && typeof e.address === 'object' && e.address.postcode) {
-          postalCode = e.address.postcode;
-        } else {
-          // Try to extract postal code from display_name using regex for Canadian postal codes
-          const postalCodeMatch = addressStr.match(/[A-Z]\d[A-Z]\s?\d[A-Z]\d/i);
-          if (postalCodeMatch) {
-            postalCode = postalCodeMatch[0];
-          }
+        console.log(`DEBUG - handleSuggestionClick - Using string address format. Address: ${addressStr}, Postal code: ${postalCode}`);
+        
+        // Set the input value
+        setInputValue(addressStr);
+        
+        // Close suggestions
+        setSuggestions([]);
+        setShowSuggestions(false);
+        
+        // Call the onAddressSelect callback
+        if (onAddressSelect && addressStr) {
+          const result = checkServiceArea(postalCode);
+          const isValid = !!(result && result.serviceable);
+          console.log(`DEBUG - handleSuggestionClick - Calling onAddressSelect with: Address=${addressStr}, PostalCode=${postalCode}, Valid=${isValid}`);
+          onAddressSelect(addressStr, postalCode, isValid);
         }
-      } else {
-        // For other unknown formats, try to use whatever properties are available
-        addressStr = e.name || e.formatted_address || e.description || JSON.stringify(e);
-        postalCode = e.postal_code || e.postalCode || '';
+        return;
       }
       
-      console.log(`DEBUG - handleSuggestionClick - Processed address: ${addressStr}, Postal code: ${postalCode}`);
+      // Fallback for other formats
+      const addressStr = e.name || e.formatted_address || e.description || JSON.stringify(e);
+      const postalCode = e.postal_code || e.postalCode || '';
+      
+      console.log(`DEBUG - handleSuggestionClick - Using fallback format. Address: ${addressStr}, Postal code: ${postalCode}`);
       
       // Set the input value
       setInputValue(addressStr);
@@ -210,10 +247,6 @@ export default function AddressAutocomplete({
       
       // Call the onAddressSelect callback
       if (onAddressSelect && addressStr) {
-        if (!postalCode) {
-          console.log("DEBUG - handleSuggestionClick - No postal code found in suggestion");
-        }
-        
         const result = checkServiceArea(postalCode);
         const isValid = !!(result && result.serviceable);
         console.log(`DEBUG - handleSuggestionClick - Calling onAddressSelect with: Address=${addressStr}, PostalCode=${postalCode}, Valid=${isValid}`);
@@ -221,6 +254,7 @@ export default function AddressAutocomplete({
       }
     } catch (error) {
       console.error("DEBUG - handleSuggestionClick - Error processing address selection:", error);
+      setError('Error processing selected address. Please try another or enter manually.');
     }
   };
 
