@@ -196,7 +196,7 @@ export const bookingService = {
         return 'Please check your information and try again.';
       } else if (error.statusCode === 429) {
         return 'Too many requests. Please try again later.';
-      } else if (error.statusCode >= 500) {
+      } else if (error.statusCode && error.statusCode >= 500) {
         return 'We\'re experiencing technical difficulties. Please try again later.';
       }
       
