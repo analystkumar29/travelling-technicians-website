@@ -7,8 +7,10 @@ export interface BookingData {
   device_brand?: string;
   device_model?: string;
   service_type: string;
-  booking_date: string;
-  booking_time: string;
+  booking_date?: string;
+  booking_time?: string;
+  appointment_date?: string;
+  appointment_time?: string;
   address: string;
   postal_code?: string;
   customer_name: string;

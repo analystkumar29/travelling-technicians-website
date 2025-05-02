@@ -8,8 +8,10 @@ type BookingData = {
   device_brand: string;
   device_model: string;
   service_type: string;
-  appointment_date: string;
-  appointment_time: string;
+  booking_date?: string;
+  booking_time?: string;
+  appointment_date?: string;
+  appointment_time?: string;
   customer_name: string;
   customer_email: string;
   customer_phone: string;
@@ -34,35 +36,49 @@ export default async function handler(
       return res.status(400).json({ success: false, error: 'No booking data provided' });
     }
 
+    console.log('Confirm redirect - booking data:', bookingData);
+
     // Format date
     let formattedDate = '';
     try {
-      const dateParts = bookingData.appointment_date.split('-');
-      const dateObj = new Date(
-        parseInt(dateParts[0]), 
-        parseInt(dateParts[1]) - 1, 
-        parseInt(dateParts[2])
-      );
-      formattedDate = format(dateObj, 'EEEE, MMMM d, yyyy');
+      // Check which date field to use (booking_date or appointment_date)
+      const dateStr = bookingData.booking_date || bookingData.appointment_date;
+      if (!dateStr) {
+        formattedDate = 'Date not provided';
+      } else {
+        const dateParts = dateStr.split('-');
+        const dateObj = new Date(
+          parseInt(dateParts[0]), 
+          parseInt(dateParts[1]) - 1, 
+          parseInt(dateParts[2])
+        );
+        formattedDate = format(dateObj, 'EEEE, MMMM d, yyyy');
+      }
     } catch (e) {
       console.error('Error formatting date:', e);
-      formattedDate = bookingData.appointment_date;
+      formattedDate = bookingData.booking_date || bookingData.appointment_date || 'Date not provided';
     }
 
     // Format time
     let formattedTime = '';
     try {
-      const [start, end] = bookingData.appointment_time.split('-');
-      const startTime = parseInt(start) < 12 ? 
-        `${parseInt(start)}:00 AM` : 
-        `${parseInt(start) === 12 ? 12 : parseInt(start) - 12}:00 PM`;
-      const endTime = parseInt(end) < 12 ? 
-        `${parseInt(end)}:00 AM` : 
-        `${parseInt(end) === 12 ? 12 : parseInt(end) - 12}:00 PM`;
-      formattedTime = `${startTime} - ${endTime}`;
+      // Check which time field to use (booking_time or appointment_time)
+      const timeStr = bookingData.booking_time || bookingData.appointment_time;
+      if (!timeStr || !timeStr.includes('-')) {
+        formattedTime = timeStr || 'Time not provided';
+      } else {
+        const [start, end] = timeStr.split('-');
+        const startTime = parseInt(start) < 12 ? 
+          `${parseInt(start)}:00 AM` : 
+          `${parseInt(start) === 12 ? 12 : parseInt(start) - 12}:00 PM`;
+        const endTime = parseInt(end) < 12 ? 
+          `${parseInt(end)}:00 AM` : 
+          `${parseInt(end) === 12 ? 12 : parseInt(end) - 12}:00 PM`;
+        formattedTime = `${startTime} - ${endTime}`;
+      }
     } catch (e) {
       console.error('Error formatting time:', e);
-      formattedTime = bookingData.appointment_time;
+      formattedTime = bookingData.booking_time || bookingData.appointment_time || 'Time not provided';
     }
 
     // Format device info
@@ -118,7 +134,7 @@ export default async function handler(
       email: bookingData.customer_email
     });
 
-    const redirectUrl = `/confirmation.html?${params.toString()}`;
+    const redirectUrl = `/booking-confirmation?${params.toString()}`;
     
     return res.status(200).json({ 
       success: true, 

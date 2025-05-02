@@ -126,14 +126,25 @@ export default function BookingConfirmation() {
           contextBookingData.device_model
         ),
         service: formatServiceType(contextBookingData.service_type),
-        date: new Date(contextBookingData.booking_date).toLocaleDateString('en-US', {
-          weekday: 'long',
-          month: 'long',
-          day: 'numeric'
-        }),
-        time: formatTime(contextBookingData.booking_time),
-        address: contextBookingData.address,
-        email: contextBookingData.customer_email
+        date: contextBookingData.booking_date 
+          ? (() => {
+              try {
+                return new Date(contextBookingData.booking_date).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric'
+                });
+              } catch (e) {
+                console.error('Error formatting date:', e);
+                return contextBookingData.booking_date;
+              }
+            })()
+          : 'Date information not available',
+        time: contextBookingData.booking_time
+          ? formatTime(contextBookingData.booking_time)
+          : 'Time information not available',
+        address: contextBookingData.address || 'Address not provided',
+        email: contextBookingData.customer_email || 'Email not provided'
       } 
     : fallbackData;
   
