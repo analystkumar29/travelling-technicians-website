@@ -88,21 +88,21 @@ export function denormalizeBookingData(bookingData: Partial<CreateBookingRequest
   const apiDeviceType = bookingData.deviceType === 'tablet' ? 'mobile' : bookingData.deviceType;
   
   return {
-    ...(bookingData.deviceType && { deviceType: apiDeviceType }),
-    ...(bookingData.deviceBrand && { brand: bookingData.deviceBrand }),
-    ...(bookingData.deviceModel && { model: bookingData.deviceModel }),
-    ...(bookingData.serviceType && { serviceType: bookingData.serviceType }),
-    ...(bookingData.issueDescription && { issueDescription: bookingData.issueDescription }),
+    ...(bookingData.deviceType && { device_type: apiDeviceType }),
+    ...(bookingData.deviceBrand && { device_brand: bookingData.deviceBrand }),
+    ...(bookingData.deviceModel && { device_model: bookingData.deviceModel }),
+    ...(bookingData.serviceType && { service_type: bookingData.serviceType }),
+    ...(bookingData.issueDescription && { issue_description: bookingData.issueDescription }),
     
-    ...(bookingData.appointmentDate && { appointmentDate: bookingData.appointmentDate }),
-    ...(bookingData.appointmentTime && { appointmentTime: bookingData.appointmentTime }),
+    ...(bookingData.appointmentDate && { booking_date: bookingData.appointmentDate }),
+    ...(bookingData.appointmentTime && { booking_time: bookingData.appointmentTime }),
     
-    ...(bookingData.customerName && { customerName: bookingData.customerName }),
-    ...(bookingData.customerEmail && { customerEmail: bookingData.customerEmail }),
-    ...(bookingData.customerPhone && { customerPhone: bookingData.customerPhone }),
+    ...(bookingData.customerName && { customer_name: bookingData.customerName }),
+    ...(bookingData.customerEmail && { customer_email: bookingData.customerEmail }),
+    ...(bookingData.customerPhone && { customer_phone: bookingData.customerPhone }),
     
     ...(bookingData.address && { address: bookingData.address }),
-    ...(bookingData.postalCode && { postalCode: bookingData.postalCode }),
+    ...(bookingData.postalCode && { postal_code: bookingData.postalCode }),
   };
 }
 
