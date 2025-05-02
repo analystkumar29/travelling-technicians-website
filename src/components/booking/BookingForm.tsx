@@ -42,7 +42,11 @@ interface TimeSlot {
   label: string;
 }
 
-export default function BookingForm() {
+interface BookingFormProps {
+  onComplete?: (data: any) => void;
+}
+
+export default function BookingForm({ onComplete }: BookingFormProps) {
   // Use our custom hook for form state management
   const { 
     state, 
@@ -177,6 +181,21 @@ export default function BookingForm() {
         });
         
         bookingLogger.debug('Redirecting to confirmation page', { bookingReference });
+        
+        // Call onComplete callback if provided
+        if (onComplete) {
+          onComplete({
+            ...formData,
+            bookingReference,
+            ref: bookingReference,
+            date: state.appointmentInfo.date,
+            timeSlot: state.appointmentInfo.timeSlot,
+            contactEmail: state.customerInfo.email,
+            brand: state.deviceInfo.deviceBrand,
+            model: state.deviceInfo.deviceModel
+          });
+          return; // Don't redirect if onComplete is provided, let the parent component handle it
+        }
         
         // Use Next.js router to handle the redirection
         router.push({
