@@ -64,7 +64,6 @@ export function normalizeBookingData(apiData: any): BookingData | null {
       technician: {
         id: apiData.technician_id,
         name: apiData.technician_name || 'Assigned Technician',
-        phone: apiData.technician_phone,
       }
     } : {})
   };
