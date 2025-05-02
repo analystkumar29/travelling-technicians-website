@@ -42,7 +42,12 @@ interface TimeSlot {
   label: string;
 }
 
-export default function BookingForm() {
+// Props for BookingForm component
+interface BookingFormProps {
+  onComplete?: (data: any) => void;
+}
+
+export default function BookingForm({ onComplete }: BookingFormProps) {
   // Use our custom hook for form state management
   const { 
     state, 
@@ -177,6 +182,15 @@ export default function BookingForm() {
         });
         
         bookingLogger.debug('Redirecting to confirmation page', { bookingReference });
+        
+        // Call onComplete callback if provided
+        if (onComplete) {
+          onComplete({
+            reference: bookingReference,
+            ...formData
+          });
+          return;
+        }
         
         // Use Next.js router to handle the redirection
         router.push({
