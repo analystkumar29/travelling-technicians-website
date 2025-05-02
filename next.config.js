@@ -2,7 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['images.unsplash.com'],
     remotePatterns: [
       {
         protocol: 'https',
@@ -11,8 +10,6 @@ const nextConfig = {
       },
     ],
   },
-  // Self-host Google fonts to avoid network issues
-  optimizeFonts: true,
   // Configuration for handling static assets
   staticPageGenerationTimeout: 180,
   // Headers for better caching
@@ -28,10 +25,6 @@ const nextConfig = {
         ],
       },
     ];
-  },
-  // Use experimental configuration for network timeouts
-  experimental: {
-    timeoutMs: 60000, // 60 seconds for network requests
   },
 };
 
