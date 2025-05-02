@@ -363,6 +363,25 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
           const emailResult = await sendConfirmationEmail();
           console.log('DEBUG - Email confirmation result:', emailResult);
           
+          // Get redirect URL from the confirm-redirect API
+          const redirectResponse = await fetch('/api/bookings/confirm-redirect', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data.booking),
+          });
+          
+          const redirectData = await redirectResponse.json();
+          console.log('DEBUG - Redirect API response:', redirectData);
+          
+          if (redirectData.success && redirectData.redirectUrl) {
+            // Redirect to the static confirmation page
+            window.location.href = redirectData.redirectUrl;
+            return; // Stop execution since we're redirecting
+          }
+          
+          // Fallback if redirect fails
           if (emailResult) {
             // Complete booking process only if both database insertion AND email were successful
             console.log('DEBUG - Setting booking complete to true');
