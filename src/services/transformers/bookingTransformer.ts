@@ -55,7 +55,6 @@ export function normalizeBookingData(apiData: any): BookingData | null {
     },
     
     status: (apiData.status as BookingStatus) || 'pending',
-    notes: apiData.notes,
     
     createdAt: apiData.created_at,
     updatedAt: apiData.updated_at,
