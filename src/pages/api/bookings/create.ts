@@ -10,11 +10,13 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Generate reference number for bookings - format: TT-XXXXXX
+// Generate reference number for bookings - format: TTR-XXXXXX-YYY
 function generateReferenceNumber(): string {
-  // Generate a random string of 6 digits
-  const randomDigits = Math.floor(100000 + Math.random() * 900000).toString();
-  return `TT-${randomDigits}`;
+  // Generate a random string of 6 digits for the first part
+  const firstPart = Math.floor(100000 + Math.random() * 900000).toString();
+  // Generate a random string of 3 digits for the second part
+  const secondPart = Math.floor(100 + Math.random() * 900).toString();
+  return `TTR-${firstPart}-${secondPart}`;
 }
 
 export default async function handler(
@@ -28,6 +30,11 @@ export default async function handler(
   }
 
   try {
+    moduleLogger.info('Received booking creation request');
+    
+    // Log the request body for debugging
+    moduleLogger.debug('Request body received', req.body);
+    
     const { 
       customerName, 
       customerEmail, 
@@ -43,8 +50,17 @@ export default async function handler(
       bookingDate,
       bookingTime,
       deviceIssue,
-      notes 
+      notes,
+      // We'll extract but ignore any client-provided reference
+      bookingReference: clientProvidedReference 
     } = req.body;
+
+    // If a client-provided reference was found, log it but don't use it
+    if (clientProvidedReference) {
+      moduleLogger.info('Client provided a booking reference which will be ignored', { 
+        clientReference: clientProvidedReference 
+      });
+    }
 
     // Validate required fields
     if (!customerName || !customerEmail || !customerPhone || !address || !deviceType || 
@@ -61,18 +77,26 @@ export default async function handler(
       });
     }
 
-    // Generate reference number
+    // Generate server-side reference number - always use this one, ignoring any client-provided reference
     const referenceNumber = generateReferenceNumber();
 
     // Log booking attempt
-    moduleLogger.info('Creating new booking', { 
+    moduleLogger.info('Processing booking with postal code:', { postalCode });
+    moduleLogger.debug('Generated reference:', { reference: referenceNumber });
+    
+    // Map device type (for tablet, we may need to store as mobile for database compatibility)
+    const dbDeviceType = deviceType === 'tablet' ? 'mobile' : deviceType;
+    
+    // Debug log for the prepared booking data
+    moduleLogger.debug('Prepared booking data for insertion', {
       reference: referenceNumber,
-      email: customerEmail.substring(0, 3) + '***', // Partial email for privacy 
-      deviceType, 
-      serviceType
+      device_type: dbDeviceType,
+      service_type: serviceType
     });
 
     // Create booking in Supabase
+    moduleLogger.info('Inserting booking into database');
+    
     const { data: booking, error } = await supabase
       .from('bookings')
       .insert([
@@ -85,7 +109,7 @@ export default async function handler(
           city: city || '',
           province: province || '',
           postal_code: postalCode || '',
-          device_type: deviceType,
+          device_type: dbDeviceType,
           device_brand: deviceBrand || '',
           device_model: deviceModel || '',
           service_type: serviceType,
@@ -123,7 +147,7 @@ export default async function handler(
     const emailData: ConfirmationEmailData = {
       to: customerEmail,
       name: customerName,
-      bookingReference: referenceNumber,
+      bookingReference: referenceNumber, // Always use server-generated reference
       deviceType: `${deviceType}${deviceBrand ? ` - ${deviceBrand}` : ''}${deviceModel ? ` ${deviceModel}` : ''}`,
       service: serviceType,
       bookingDate: formattedDate,
@@ -132,22 +156,11 @@ export default async function handler(
     };
 
     // Debug log to verify email data is complete before sending
-    moduleLogger.info('Preparing email data', { 
-      reference: referenceNumber,
-      emailData: JSON.stringify({
-        to: emailData.to,
-        name: emailData.name,
-        bookingReference: emailData.bookingReference,
-        deviceType: emailData.deviceType,
-        service: emailData.service,
-        bookingDate: emailData.bookingDate,
-        bookingTime: emailData.bookingTime
-      })
-    });
-
+    moduleLogger.info('Sending confirmation email');
+    
     // Send confirmation email
     try {
-      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000'}/api/send-confirmation`, {
+      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || ''}/api/send-confirmation`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -158,9 +171,9 @@ export default async function handler(
       const emailResult = await emailResponse.json();
       
       if (emailResponse.ok) {
-        moduleLogger.info('Confirmation email sent', { 
+        moduleLogger.info('Confirmation email sent successfully', { 
           reference: referenceNumber,
-          emailSuccess: emailResult.success
+          to: customerEmail
         });
         
         // Update booking with verification data
@@ -188,11 +201,18 @@ export default async function handler(
     }
 
     // Return success with booking information
+    moduleLogger.info('Booking created successfully', {
+      reference: referenceNumber,
+      id: booking.id,
+      emailSent: true
+    });
+    
     return res.status(201).json({
       success: true,
       message: 'Booking created successfully',
       booking: {
         referenceNumber,
+        booking_reference: referenceNumber, // Include for backward compatibility
         customerName,
         customerEmail,
         bookingDate: formattedDate,
