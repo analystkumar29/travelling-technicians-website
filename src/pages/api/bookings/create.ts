@@ -111,8 +111,8 @@ export default async function handler(
     const bookingData = {
       reference_number: referenceNumber,
       device_type: deviceType,
-      brand: brand || null,
-      model: model || null,
+      device_brand: brand || null,
+      device_model: model || null,
       service_type: serviceType,
       booking_date: appointmentDate || bookingDate,
       booking_time: appointmentTime || bookingTime,
@@ -121,7 +121,7 @@ export default async function handler(
       customer_phone: customerPhone,
       address: address,
       postal_code: postalCode,
-      message: message || null,
+      issue_description: message || null,
       status: 'pending'
     };
 
