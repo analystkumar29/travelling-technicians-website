@@ -12,12 +12,21 @@ export const STORAGE_KEYS = {
   FORM_STATE: 'travellingTechnicians_formState',
   LAST_VISIT: 'travellingTechnicians_lastVisit',
   RECENT_SEARCHES: 'travellingTechnicians_recentSearches',
+  FORMATTED_BOOKING_DATA: 'formattedBookingData',
 } as const;
 
 /**
  * Type for storage keys
  */
 export type StorageKey = keyof typeof STORAGE_KEYS;
+
+// Type for storage
+type StorageValue = string | object | number | boolean | null;
+
+/**
+ * Check if we're in a browser environment
+ */
+const isBrowser = (): boolean => typeof window !== 'undefined';
 
 /**
  * Storage service for handling localStorage operations
@@ -26,7 +35,11 @@ const StorageService = {
   /**
    * Check if localStorage is available
    */
-  isAvailable(): boolean {
+  isAvailable: (): boolean => {
+    if (!isBrowser()) {
+      return false;
+    }
+    
     try {
       const testKey = '__storage_test__';
       localStorage.setItem(testKey, testKey);
@@ -41,19 +54,26 @@ const StorageService = {
   /**
    * Get an item from localStorage
    */
-  getItem<T>(key: string, defaultValue: T | null = null): T | null {
-    if (!this.isAvailable()) {
+  getItem: <T = StorageValue>(key: string, defaultValue: T = null as unknown as T): T => {
+    if (!StorageService.isAvailable()) {
       return defaultValue;
     }
-
+    
     try {
       const item = localStorage.getItem(key);
       if (item === null) {
         return defaultValue;
       }
-      return JSON.parse(item);
+      
+      try {
+        // Try to parse as JSON
+        return JSON.parse(item) as T;
+      } catch {
+        // If not valid JSON, return as is
+        return item as unknown as T;
+      }
     } catch (e) {
-      storageLogger.error(`Error getting item from localStorage (${key}):`, e);
+      storageLogger.warn(`Failed to get item from localStorage: ${key}`, e);
       return defaultValue;
     }
   },
@@ -61,16 +81,20 @@ const StorageService = {
   /**
    * Set an item in localStorage
    */
-  setItem<T>(key: string, value: T): boolean {
-    if (!this.isAvailable()) {
+  setItem: (key: string, value: StorageValue): boolean => {
+    if (!StorageService.isAvailable()) {
       return false;
     }
-
+    
     try {
-      localStorage.setItem(key, JSON.stringify(value));
+      if (typeof value === 'object' && value !== null) {
+        localStorage.setItem(key, JSON.stringify(value));
+      } else {
+        localStorage.setItem(key, String(value));
+      }
       return true;
     } catch (e) {
-      storageLogger.error(`Error setting item in localStorage (${key}):`, e);
+      storageLogger.warn(`Failed to set item in localStorage: ${key}`, e);
       return false;
     }
   },
@@ -78,16 +102,16 @@ const StorageService = {
   /**
    * Remove an item from localStorage
    */
-  removeItem(key: string): boolean {
-    if (!this.isAvailable()) {
+  removeItem: (key: string): boolean => {
+    if (!StorageService.isAvailable()) {
       return false;
     }
-
+    
     try {
       localStorage.removeItem(key);
       return true;
     } catch (e) {
-      storageLogger.error(`Error removing item from localStorage (${key}):`, e);
+      storageLogger.warn(`Failed to remove item from localStorage: ${key}`, e);
       return false;
     }
   },
@@ -95,8 +119,8 @@ const StorageService = {
   /**
    * Clear all items with a specific prefix
    */
-  clearWithPrefix(prefix: string): boolean {
-    if (!this.isAvailable()) {
+  clearWithPrefix: (prefix: string): boolean => {
+    if (!StorageService.isAvailable()) {
       return false;
     }
 
@@ -116,8 +140,8 @@ const StorageService = {
   /**
    * Clear all application storage
    */
-  clearAll(): boolean {
-    if (!this.isAvailable()) {
+  clearAll: (): boolean => {
+    if (!StorageService.isAvailable()) {
       return false;
     }
 
@@ -131,6 +155,23 @@ const StorageService = {
       return false;
     }
   },
+
+  /**
+   * Clear all items from localStorage
+   */
+  clear: (): boolean => {
+    if (!StorageService.isAvailable()) {
+      return false;
+    }
+    
+    try {
+      localStorage.clear();
+      return true;
+    } catch (e) {
+      storageLogger.warn('Failed to clear localStorage', e);
+      return false;
+    }
+  }
 };
 
 export default StorageService; 

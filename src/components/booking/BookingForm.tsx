@@ -6,8 +6,9 @@ import { availableTimes, serviceTypes, getAvailableDates } from '@/utils/booking
 import { useBookingForm } from '@/hooks/useBookingForm';
 import { useBooking } from '@/context/BookingContext';
 import { formatTimeSlot, formatServiceType, getDeviceTypeDisplay } from '@/utils/formatters';
-import { logger } from '@/utils/logger';
+import logger from '@/utils/logger';
 import StorageService, { STORAGE_KEYS } from '@/services/StorageService';
+import { useRouter } from 'next/router';
 
 // Logger for this module
 const bookingLogger = logger.createModuleLogger('BookingForm');
@@ -59,6 +60,9 @@ export default function BookingForm() {
 
   // Use our booking context
   const { createNewBooking } = useBooking();
+
+  // Use Next.js router
+  const router = useRouter();
 
   useEffect(() => {
     // Log when component mounts
@@ -172,21 +176,21 @@ export default function BookingForm() {
           }
         });
         
-        bookingLogger.debug('Redirecting to confirmation page');
+        bookingLogger.debug('Redirecting to confirmation page', { bookingReference });
         
-        // Use direct URL to ensure the page loads properly with query parameters
-        const params = new URLSearchParams({
-          ref: bookingReference,
-          device: formattedData.device,
-          service: formattedData.service,
-          date: formattedData.date,
-          time: formattedData.time,
-          address: formattedData.address,
-          email: formattedData.email
+        // Use Next.js router to handle the redirection
+        router.push({
+          pathname: '/booking-confirmation',
+          query: {
+            ref: bookingReference,
+            device: formattedData.device,
+            service: formattedData.service,
+            date: formattedData.date,
+            time: formattedData.time,
+            address: formattedData.address,
+            email: formattedData.email
+          }
         });
-        
-        // Redirect to confirmation page
-        window.location.href = `/booking-confirmation?${params.toString()}`;
       } else {
         throw new Error('Failed to create booking');
       }

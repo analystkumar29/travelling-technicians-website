@@ -233,4 +233,7 @@ class Logger {
 /**
  * Singleton instance of the logger
  */
-export const logger = new Logger(); 
+export const logger = new Logger();
+
+// Default export for compatibility
+export default logger; 

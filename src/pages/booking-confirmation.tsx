@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { FaCheckCircle, FaEnvelope } from 'react-icons/fa';
 import Link from 'next/link';
 import { useBooking, STORAGE_KEYS } from '@/context/BookingContext';
-import { StorageService } from '@/services/StorageService';
+import StorageService from '@/services/StorageService';
 import logger from '@/utils/logger';
 
 // Create a logger for this module
@@ -14,6 +14,7 @@ export default function BookingConfirmation() {
   const [loading, setLoading] = useState(true);
   const { bookingReference, getStoredFormattedData } = useBooking();
   const [bookingData, setBookingData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
   
   // Format time like "09-11" to "9:00 AM - 11:00 AM"
   const formatTime = (timeSlot: string) => {
@@ -124,6 +125,7 @@ export default function BookingConfirmation() {
             setBookingData({ reference: bookingReference });
           } else {
             pageLogger.warn('No booking data found');
+            setError('No booking information was found. Please try booking again.');
             setBookingData(null);
           }
         }
@@ -131,6 +133,7 @@ export default function BookingConfirmation() {
         pageLogger.error('Error initializing booking data', { 
           error: error instanceof Error ? error.message : String(error)
         });
+        setError('An error occurred while loading your booking information.');
         setBookingData(null);
       } finally {
         setLoading(false);
@@ -149,12 +152,14 @@ export default function BookingConfirmation() {
   }
   
   // If no booking data found, show error
-  if (!bookingData) {
+  if (!bookingData || error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-lg w-full text-center">
           <h1 className="text-2xl font-bold text-gray-800 mb-4">Booking Information Not Found</h1>
-          <p className="text-gray-600 mb-6">We couldn't find your booking information. This could happen if you refreshed the page or accessed this page directly.</p>
+          <p className="text-gray-600 mb-6">
+            {error || "We couldn't find your booking information. This could happen if you refreshed the page or accessed this page directly."}
+          </p>
           <Link href="/book-online">
             <span className="inline-block bg-primary-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-primary-700 transition cursor-pointer">
               Book A New Repair
@@ -248,13 +253,13 @@ export default function BookingConfirmation() {
                 
                 <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 justify-center">
                   <Link href="/">
-                    <span className="inline-block bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 transition cursor-pointer">
+                    <span className="inline-block bg-primary-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-primary-700 transition cursor-pointer">
                       Return to Home
                     </span>
                   </Link>
-                  <Link href="/contact">
-                    <span className="inline-block bg-gray-200 text-gray-800 py-3 px-6 rounded-lg font-medium hover:bg-gray-300 transition cursor-pointer">
-                      Contact Support
+                  <Link href="/services">
+                    <span className="inline-block bg-white text-primary-600 border border-primary-600 py-3 px-6 rounded-lg font-medium hover:bg-gray-50 transition cursor-pointer">
+                      Browse Services
                     </span>
                   </Link>
                 </div>
@@ -264,10 +269,10 @@ export default function BookingConfirmation() {
         </div>
       </main>
 
-      <footer className="bg-white border-t border-gray-200">
+      <footer className="bg-gray-800 text-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="text-center text-gray-500 text-sm">
-            © {new Date().getFullYear()} The Travelling Technicians. All rights reserved.
+          <div className="text-center text-sm">
+            <p>&copy; {new Date().getFullYear()} The Travelling Technicians. All rights reserved.</p>
           </div>
         </div>
       </footer>

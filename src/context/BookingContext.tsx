@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, ReactNode, useCallback, use
 import { BookingData, BookingStatus, CreateBookingRequest, BookingCreationResponse } from '../types/booking';
 import { bookingService } from '@/services/api/bookingService';
 import logger from '@/utils/logger';
-import { StorageService } from '@/services/StorageService';
+import StorageService from '@/services/StorageService';
 
 // Storage keys for consistent access
 export const STORAGE_KEYS = {
@@ -12,7 +12,7 @@ export const STORAGE_KEYS = {
 };
 
 // Logger for this module
-const bookingLogger = logger.createModuleLogger('BookingContext');
+const contextLogger = logger.createModuleLogger('BookingContext');
 
 /**
  * Types for the context state
@@ -26,6 +26,19 @@ interface BookingContextState {
 }
 
 /**
+ * Formatted booking data for display
+ */
+export interface FormattedBookingData {
+  ref: string;
+  device: string;
+  service: string;
+  date: string;
+  time: string;
+  address?: string;
+  email: string;
+}
+
+/**
  * Types for the context value
  */
 interface BookingContextValue extends BookingContextState {
@@ -34,6 +47,7 @@ interface BookingContextValue extends BookingContextState {
   clearBookingData: () => void;
   setBookingReference: (reference: string | null) => void;
   isBookingDataLoaded: boolean;
+  getStoredFormattedData: () => FormattedBookingData | null;
 }
 
 // Create the context with default values
@@ -48,6 +62,7 @@ const BookingContext = createContext<BookingContextValue>({
   fetchBookingByReference: async () => null,
   clearBookingData: () => {},
   setBookingReference: () => {},
+  getStoredFormattedData: () => null,
 });
 
 /**
@@ -66,20 +81,41 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
   // State for booking data
   const [state, setState] = useState<BookingContextState>({
     bookingData: null,
-    bookingReference: StorageService.getItem(STORAGE_KEYS.BOOKING_REFERENCE, null),
+    bookingReference: null,
     bookingStatus: null,
     isLoading: false,
     error: null,
   });
 
+  // Initialize booking reference from localStorage on client-side only
+  useEffect(() => {
+    // Only run on client-side
+    if (typeof window !== 'undefined') {
+      try {
+        const storedReference = StorageService.getItem(STORAGE_KEYS.BOOKING_REFERENCE, null);
+        if (storedReference) {
+          setState(prev => ({ ...prev, bookingReference: storedReference }));
+        }
+      } catch (err) {
+        contextLogger.error('Failed to get booking reference from storage', err);
+      }
+    }
+  }, []);
+
   /**
    * Save booking reference to storage
    */
   const saveBookingReference = useCallback((reference: string | null) => {
-    if (reference) {
-      StorageService.setItem(STORAGE_KEYS.BOOKING_REFERENCE, reference);
-    } else {
-      StorageService.removeItem(STORAGE_KEYS.BOOKING_REFERENCE);
+    if (typeof window === 'undefined') return;
+    
+    try {
+      if (reference) {
+        StorageService.setItem(STORAGE_KEYS.BOOKING_REFERENCE, reference);
+      } else {
+        StorageService.removeItem(STORAGE_KEYS.BOOKING_REFERENCE);
+      }
+    } catch (err) {
+      contextLogger.error('Failed to save booking reference to storage', err);
     }
   }, []);
 
@@ -87,7 +123,7 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
    * Create a new booking
    */
   const createNewBooking = useCallback(async (bookingData: CreateBookingRequest): Promise<string | null> => {
-    bookingLogger.info('Creating new booking');
+    contextLogger.info('Creating new booking');
     setState(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
@@ -103,7 +139,7 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
           isLoading: false,
         }));
         
-        bookingLogger.info(`Booking created successfully. Reference: ${response.booking_reference}`);
+        contextLogger.info(`Booking created successfully. Reference: ${response.booking_reference}`);
         return response.booking_reference;
       } else {
         throw new Error('Invalid response from booking creation');
@@ -111,7 +147,7 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create booking';
       
-      bookingLogger.error('Error creating booking:', error);
+      contextLogger.error('Error creating booking:', error);
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -126,7 +162,7 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
    * Fetch booking by reference
    */
   const fetchBookingByReference = useCallback(async (reference: string): Promise<BookingData | null> => {
-    bookingLogger.info(`Fetching booking with reference: ${reference}`);
+    contextLogger.info(`Fetching booking with reference: ${reference}`);
     setState(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
@@ -144,7 +180,7 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch booking';
       
-      bookingLogger.error(`Error fetching booking (${reference}):`, error);
+      contextLogger.error(`Error fetching booking (${reference}):`, error);
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -159,7 +195,7 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
    * Clear booking data
    */
   const clearBookingData = useCallback(() => {
-    bookingLogger.debug('Clearing booking data');
+    contextLogger.debug('Clearing booking data');
     saveBookingReference(null);
     
     setState({
@@ -175,10 +211,27 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
    * Set booking reference
    */
   const setBookingReference = useCallback((reference: string | null) => {
-    bookingLogger.debug(`Setting booking reference: ${reference}`);
+    contextLogger.debug(`Setting booking reference: ${reference}`);
     saveBookingReference(reference);
     setState(prev => ({ ...prev, bookingReference: reference }));
   }, [saveBookingReference]);
+
+  /**
+   * Get stored formatted data
+   */
+  const getStoredFormattedData = useCallback((): FormattedBookingData | null => {
+    if (typeof window === 'undefined') return null;
+    
+    try {
+      const data = StorageService.getItem<FormattedBookingData>(STORAGE_KEYS.FORMATTED_BOOKING_DATA);
+      return data;
+    } catch (err) {
+      contextLogger.error('Failed to get formatted booking data', { 
+        error: err instanceof Error ? err.message : String(err)
+      });
+      return null;
+    }
+  }, []);
 
   // The value provided to consumers of the context
   const value: BookingContextValue = {
@@ -188,6 +241,7 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
     clearBookingData,
     setBookingReference,
     isBookingDataLoaded: !!state.bookingData,
+    getStoredFormattedData
   };
 
   return (
