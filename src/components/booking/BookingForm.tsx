@@ -376,7 +376,24 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
           console.log('DEBUG - Redirect API response:', redirectData);
           
           if (redirectData.success && redirectData.redirectUrl) {
-            // Redirect to the static confirmation page
+            // Save booking data to localStorage before redirecting
+            try {
+              const booking = data.booking;
+              localStorage.setItem('last_booking', JSON.stringify({
+                reference: booking.reference_number,
+                date: booking.booking_date || booking.appointment_date,
+                time: booking.booking_time || booking.appointment_time,
+                device: getDeviceTypeDisplay(booking.device_type, booking.device_model, booking.device_brand),
+                service: booking.service_type,
+                address: booking.address,
+                email: booking.customer_email
+              }));
+              console.log('DEBUG - Saved booking data to localStorage');
+            } catch (e) {
+              console.error('DEBUG - Error saving booking to localStorage:', e);
+            }
+            
+            // Redirect to the confirmation page
             window.location.href = redirectData.redirectUrl;
             return; // Stop execution since we're redirecting
           }
@@ -458,7 +475,7 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
   
   // Add this helper function to format time slots
   const formatTimeSlot = (timeSlot: string): string => {
-    if (!timeSlot || !timeSlot.includes('-')) return '';
+    if (!timeSlot || !timeSlot.includes('-')) return timeSlot || '';
     
     const [start, end] = timeSlot.split('-');
     const startHour = parseInt(start);
