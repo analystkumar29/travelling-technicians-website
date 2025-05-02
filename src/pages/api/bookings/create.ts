@@ -1,5 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getServiceSupabase } from '@/utils/supabaseClient';
+import { logger } from '@/utils/logger';
+import { denormalizeBookingData } from '@/services/transformers/bookingTransformer';
+
+// Create module logger
+const apiLogger = logger.createModuleLogger('bookings/create');
 
 // Function to generate a reference number
 function generateReferenceNumber(): string {
@@ -15,10 +20,11 @@ export default async function handler(
 ) {
   // Only allow POST requests
   if (req.method !== 'POST') {
+    apiLogger.warn('Method not allowed', { method: req.method });
     return res.status(405).json({ success: false, message: 'Method not allowed' });
   }
 
-  console.log('[bookings/create] Received booking creation request');
+  apiLogger.info('Received booking creation request');
   
   try {
     // Check if Supabase environment variables are set
@@ -26,7 +32,7 @@ export default async function handler(
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('[bookings/create] Missing Supabase configuration');
+      apiLogger.error('Missing Supabase configuration');
       return res.status(500).json({ 
         success: false, 
         message: 'Server configuration error',
@@ -35,52 +41,41 @@ export default async function handler(
     }
 
     // Extract data from request body
-    const { 
-      deviceType, 
-      brand, 
-      model, 
-      serviceType, 
-      appointmentDate, 
-      appointmentTime, 
-      bookingDate,
-      bookingTime,
-      customerName, 
-      customerEmail, 
-      customerPhone,
-      address,
-      postalCode,
-      message
-    } = req.body;
-
-    console.log('[bookings/create] Request body:', {
-      deviceType, 
-      serviceType, 
-      appointmentDate: appointmentDate || bookingDate, 
-      appointmentTime: appointmentTime || bookingTime, 
-      customerName, 
-      customerEmail, 
-      customerPhone,
-      address,
-      postalCode
-    });
+    const requestBody = req.body;
+    apiLogger.debug('Request body received', { ...requestBody, customerEmail: '[REDACTED]' });
 
     // Validate required fields
-    const requiredFields = { 
-      deviceType, 
-      serviceType, 
-      appointmentOrBookingDate: appointmentDate || bookingDate, 
-      appointmentOrBookingTime: appointmentTime || bookingTime, 
-      customerName, 
-      customerEmail, 
-      customerPhone 
-    };
+    const requiredFields = [
+      'deviceType', 
+      'serviceType', 
+      'customerName', 
+      'customerEmail', 
+      'customerPhone',
+      'address',
+      'postalCode'
+    ];
     
-    const missingFields = Object.entries(requiredFields)
-      .filter(([_, value]) => !value)
-      .map(([key]) => key);
+    // Check for either appointmentDate/Time or bookingDate/Time
+    const hasAppointmentDate = !!requestBody.appointmentDate || !!requestBody.bookingDate;
+    const hasAppointmentTime = !!requestBody.appointmentTime || !!requestBody.bookingTime;
+    
+    if (!hasAppointmentDate || !hasAppointmentTime) {
+      const missingFields = [];
+      if (!hasAppointmentDate) missingFields.push('appointmentDate/bookingDate');
+      if (!hasAppointmentTime) missingFields.push('appointmentTime/bookingTime');
+      
+      apiLogger.warn('Missing appointment date/time fields', { missingFields });
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required appointment information',
+        details: { missingFields }
+      });
+    }
+    
+    const missingFields = requiredFields.filter(field => !requestBody[field]);
     
     if (missingFields.length > 0) {
-      console.error('[bookings/create] Missing required fields:', missingFields);
+      apiLogger.warn('Missing required fields', { missingFields });
       return res.status(400).json({ 
         success: false, 
         message: 'Missing required fields',
@@ -88,58 +83,60 @@ export default async function handler(
       });
     }
 
-    // Validate address and postal code
-    if (!address || !postalCode) {
-      console.error('[bookings/create] Missing address or postal code');
-      return res.status(400).json({
-        success: false,
-        message: 'Address and postal code are required',
-        details: {
-          address: !address,
-          postalCode: !postalCode
-        }
-      });
-    }
-
-    console.log(`[bookings/create] Processing booking with postal code: ${postalCode}`);
+    apiLogger.info(`Processing booking with postal code: ${requestBody.postalCode}`);
 
     // Generate a reference number
     const referenceNumber = generateReferenceNumber();
-    console.log(`[bookings/create] Generated reference: ${referenceNumber}`);
+    apiLogger.debug(`Generated reference: ${referenceNumber}`);
 
-    // Map device type to database-acceptable value
-    let dbDeviceType = deviceType;
-    if (deviceType === 'tablet') {
-      // Map tablet to mobile as a workaround since the database constraint doesn't accept 'tablet'
-      console.log('[bookings/create] Mapping tablet device type to mobile for database compatibility');
-      dbDeviceType = 'mobile';
-    }
+    // Use our transformer to normalize data
+    const bookingRequest = {
+      deviceType: requestBody.deviceType,
+      deviceBrand: requestBody.brand || requestBody.deviceBrand,
+      deviceModel: requestBody.model || requestBody.deviceModel,
+      serviceType: requestBody.serviceType,
+      issueDescription: requestBody.message || requestBody.issueDescription,
+      appointmentDate: requestBody.appointmentDate || requestBody.bookingDate,
+      appointmentTime: requestBody.appointmentTime || requestBody.bookingTime,
+      customerName: requestBody.customerName,
+      customerEmail: requestBody.customerEmail,
+      customerPhone: requestBody.customerPhone,
+      address: requestBody.address,
+      postalCode: requestBody.postalCode
+    };
 
-    // Prepare booking data
+    // Prepare booking data with our transformer
+    const denormalizedData = denormalizeBookingData(bookingRequest);
+    
+    // Prepare data for database insertion
     const bookingData = {
       reference_number: referenceNumber,
-      device_type: dbDeviceType,
-      device_brand: brand || null,
-      device_model: model || null,
-      service_type: serviceType,
-      booking_date: appointmentDate || bookingDate,
-      booking_time: appointmentTime || bookingTime,
-      customer_name: customerName,
-      customer_email: customerEmail,
-      customer_phone: customerPhone,
-      address: address,
-      postal_code: postalCode,
-      issue_description: message || null,
+      device_type: requestBody.deviceType === 'tablet' ? 'mobile' : requestBody.deviceType,
+      device_brand: bookingRequest.deviceBrand || null,
+      device_model: bookingRequest.deviceModel || null,
+      service_type: bookingRequest.serviceType,
+      booking_date: bookingRequest.appointmentDate,
+      booking_time: bookingRequest.appointmentTime,
+      customer_name: bookingRequest.customerName,
+      customer_email: bookingRequest.customerEmail,
+      customer_phone: bookingRequest.customerPhone,
+      address: bookingRequest.address,
+      postal_code: bookingRequest.postalCode,
+      issue_description: bookingRequest.issueDescription || null,
       status: 'pending'
     };
 
-    console.log('[bookings/create] Prepared booking data:', bookingData);
+    apiLogger.debug('Prepared booking data for insertion', {
+      reference: referenceNumber,
+      device_type: bookingData.device_type,
+      service_type: bookingData.service_type
+    });
 
     // Get Supabase client with service role
     const supabase = getServiceSupabase();
 
     // Insert booking into database
-    console.log('[bookings/create] Inserting booking into database');
+    apiLogger.info('Inserting booking into database');
     const { data, error } = await supabase
       .from('bookings')
       .insert(bookingData)
@@ -148,7 +145,12 @@ export default async function handler(
 
     // Handle database errors
     if (error) {
-      console.error('[bookings/create] Database error:', error);
+      apiLogger.error('Database error during booking creation', {
+        error: error.message,
+        code: error.code,
+        details: error.details
+      });
+      
       return res.status(500).json({
         success: false,
         message: 'Failed to create booking',
@@ -157,16 +159,24 @@ export default async function handler(
     }
 
     // Return success response
-    console.log('[bookings/create] Booking created successfully:', data);
+    apiLogger.info('Booking created successfully', {
+      reference: data.reference_number,
+      id: data.id
+    });
+    
     return res.status(201).json({
       success: true,
       message: 'Booking created successfully',
-      booking: data
+      booking: data,
+      booking_reference: referenceNumber
     });
 
   } catch (error) {
     // Handle unexpected errors
-    console.error('[bookings/create] Unexpected error:', error);
+    apiLogger.error('Unexpected error during booking creation', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
     return res.status(500).json({

@@ -428,111 +428,165 @@ export function useBookingForm() {
   const [state, dispatch] = useReducer(bookingFormReducer, initialState);
   
   /**
-   * Validate the current step of the form
+   * Validate the current step and show errors if needed
    */
-  const validateCurrentStep = useCallback(() => {
-    switch (state.currentStep) {
-      case 1:
-        {
-          const { isValid, errors } = validators.deviceInfo(state);
-          dispatch({ type: 'VALIDATE_STEP', payload: { step: 1, isValid, errors } });
-          return isValid;
-        }
-      case 2:
-        {
-          const { isValid, errors } = validators.serviceInfo(state);
-          dispatch({ type: 'VALIDATE_STEP', payload: { step: 2, isValid, errors } });
-          return isValid;
-        }
-      case 3:
-        {
-          const { isValid, errors } = validators.locationInfo(state);
-          dispatch({ type: 'VALIDATE_STEP', payload: { step: 3, isValid, errors } });
-          return isValid;
-        }
-      case 4:
-        {
-          const { isValid, errors } = validators.appointmentInfo(state);
-          dispatch({ type: 'VALIDATE_STEP', payload: { step: 4, isValid, errors } });
-          return isValid;
-        }
-      case 5:
-        {
-          const { isValid, errors } = validators.customerInfo(state);
-          dispatch({ type: 'VALIDATE_STEP', payload: { step: 5, isValid, errors } });
-          return isValid;
-        }
-      default:
-        return false;
-    }
+  const validateCurrentStep = useCallback((): boolean => {
+    const validationKey = getValidationKeyForStep(state.currentStep);
+    if (!validationKey) return true;
+
+    const { isValid, errors } = validators[validationKey as keyof typeof validators](state);
+    
+    dispatch({ 
+      type: 'VALIDATE_STEP', 
+      payload: { 
+        step: state.currentStep,
+        isValid,
+        errors
+      } 
+    });
+    
+    return isValid;
   }, [state]);
   
   /**
    * Move to the next step if the current step is valid
    */
-  const goToNextStep = useCallback(() => {
-    const isValid = validateCurrentStep();
-    
-    if (isValid) {
+  const goToNextStep = useCallback((): boolean => {
+    if (validateCurrentStep()) {
       dispatch({ type: 'NEXT_STEP' });
       return true;
-    } else {
-      dispatch({ type: 'SHOW_ERRORS', payload: true });
-      return false;
     }
+    return false;
   }, [validateCurrentStep]);
   
   /**
    * Move to the previous step
    */
-  const goToPrevStep = useCallback(() => {
+  const goToPreviousStep = useCallback(() => {
     dispatch({ type: 'PREV_STEP' });
   }, []);
   
   /**
-   * Create the form data object for submission
+   * Update device information
+   */
+  const setDeviceInfo = useCallback((data: Partial<BookingFormState['deviceInfo']>) => {
+    dispatch({ 
+      type: 'UPDATE_DEVICE_INFO', 
+      payload: data 
+    });
+  }, []);
+  
+  /**
+   * Update service information
+   */
+  const setServiceInfo = useCallback((data: Partial<BookingFormState['serviceInfo']>) => {
+    dispatch({ 
+      type: 'UPDATE_SERVICE_INFO', 
+      payload: data 
+    });
+  }, []);
+  
+  /**
+   * Update location information
+   */
+  const setLocationInfo = useCallback((data: Partial<BookingFormState['locationInfo']>) => {
+    dispatch({ 
+      type: 'UPDATE_LOCATION_INFO', 
+      payload: data 
+    });
+  }, []);
+  
+  /**
+   * Update appointment information
+   */
+  const setAppointmentInfo = useCallback((data: Partial<BookingFormState['appointmentInfo']>) => {
+    dispatch({ 
+      type: 'UPDATE_APPOINTMENT_INFO', 
+      payload: data 
+    });
+  }, []);
+  
+  /**
+   * Update customer information
+   */
+  const setCustomerInfo = useCallback((data: Partial<BookingFormState['customerInfo']>) => {
+    dispatch({ 
+      type: 'UPDATE_CUSTOMER_INFO', 
+      payload: data 
+    });
+  }, []);
+  
+  /**
+   * Submit the form
+   */
+  const submitForm = useCallback(async () => {
+    if (!validateCurrentStep()) {
+      dispatch({ type: 'SHOW_ERRORS', payload: true });
+      return false;
+    }
+
+    dispatch({ type: 'SUBMIT_FORM_START' });
+    
+    try {
+      // Implementation would go here to submit the form data
+      // and set the success or error state
+      return true;
+    } catch (error) {
+      dispatch({ 
+        type: 'SUBMIT_FORM_ERROR', 
+        payload: error instanceof Error ? error.message : 'An error occurred' 
+      });
+      return false;
+    }
+  }, [validateCurrentStep, state]);
+  
+  /**
+   * Get the complete form data
    */
   const getFormData = useCallback(() => {
-    const { deviceInfo, serviceInfo, locationInfo, appointmentInfo, customerInfo } = state;
-    
     return {
-      deviceType: deviceInfo.deviceType as DeviceType,
-      deviceBrand: deviceInfo.deviceBrand,
-      deviceModel: deviceInfo.deviceModel,
-      serviceType: serviceInfo.serviceType,
-      issueDescription: serviceInfo.issueDescription,
-      appointmentDate: appointmentInfo.date,
-      appointmentTime: appointmentInfo.timeSlot,
-      customerName: customerInfo.name,
-      customerEmail: customerInfo.email,
-      customerPhone: customerInfo.phone,
-      address: locationInfo.address,
-      postalCode: locationInfo.postalCode,
+      deviceType: state.deviceInfo.deviceType,
+      deviceBrand: state.deviceInfo.deviceBrand,
+      deviceModel: state.deviceInfo.deviceModel,
+      serviceType: state.serviceInfo.serviceType,
+      issueDescription: state.serviceInfo.issueDescription,
+      address: state.locationInfo.address,
+      postalCode: state.locationInfo.postalCode,
+      appointmentDate: state.appointmentInfo.date,
+      appointmentTime: state.appointmentInfo.timeSlot,
+      customerName: state.customerInfo.name,
+      customerEmail: state.customerInfo.email,
+      customerPhone: state.customerInfo.phone,
+      contactConsent: state.customerInfo.contactConsent
     };
   }, [state]);
   
   /**
-   * Check if the form is complete and ready for submission
+   * Check if the form is complete and valid
    */
-  const isFormComplete = useCallback(() => {
-    const { validation } = state;
-    
+  const isFormComplete = useCallback((): boolean => {
     return (
-      validation.deviceInfoValid &&
-      validation.serviceInfoValid &&
-      validation.locationInfoValid &&
-      validation.appointmentInfoValid &&
-      validation.customerInfoValid
+      state.validation.deviceInfoValid &&
+      state.validation.serviceInfoValid &&
+      state.validation.locationInfoValid &&
+      state.validation.appointmentInfoValid &&
+      state.validation.customerInfoValid
     );
-  }, [state]);
+  }, [state.validation]);
   
   return {
     state,
     dispatch,
-    goToNextStep,
-    goToPrevStep,
     validateCurrentStep,
+    goToNextStep,
+    goToPreviousStep,
+    setDeviceInfo,
+    setServiceInfo,
+    setLocationInfo,
+    setAppointmentInfo,
+    setCustomerInfo,
+    submitForm,
     getFormData,
-    isFormComplete,
+    isFormComplete
   };
 } 

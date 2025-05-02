@@ -8,7 +8,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import GlobalErrorHandler from '@/components/GlobalErrorHandler';
 import { useEffect } from 'react';
 import { setupGlobalErrorHandlers } from '@/utils/errorHandling';
-import { BookingProvider } from '@/lib/bookingContext';
+import { BookingProvider } from '@/context/BookingContext';
 
 // Import font configurations with fallbacks
 const inter = Inter({

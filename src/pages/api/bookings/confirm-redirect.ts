@@ -1,26 +1,110 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { format } from 'date-fns';
-import { getServiceDisplay } from '../../../utils/serviceHelpers';
+import { normalizeBookingData } from '@/services/transformers/bookingTransformer';
+import { logger } from '@/utils/logger';
 
-type BookingData = {
-  id?: string;
-  device_type: string;
-  device_brand: string;
-  device_model: string;
-  service_type: string;
-  booking_date?: string;
-  booking_time?: string;
-  appointment_date?: string;
-  appointment_time?: string;
-  customer_name: string;
-  customer_email: string;
-  customer_phone: string;
-  street_address?: string;
-  city?: string;
-  postal_code?: string;
-  province?: string;
-  notes?: string;
-};
+// Logger for this module
+const apiLogger = logger.createModuleLogger('bookings/confirm-redirect');
+
+/**
+ * Format a time slot from "09-11" format to "9:00 AM - 11:00 AM"
+ */
+function formatTimeSlot(timeSlot: string): string {
+  if (!timeSlot || !timeSlot.includes('-')) {
+    return timeSlot || 'Time not available';
+  }
+
+  try {
+    const [start, end] = timeSlot.split('-');
+    const startHour = parseInt(start);
+    const endHour = parseInt(end);
+    
+    if (isNaN(startHour) || isNaN(endHour)) {
+      return timeSlot;
+    }
+    
+    const startTime = startHour < 12 ? 
+      `${startHour}:00 AM` : 
+      `${startHour === 12 ? 12 : startHour - 12}:00 PM`;
+      
+    const endTime = endHour < 12 ? 
+      `${endHour}:00 AM` : 
+      `${endHour === 12 ? 12 : endHour - 12}:00 PM`;
+      
+    return `${startTime} - ${endTime}`;
+  } catch (e) {
+    apiLogger.error('Error formatting time slot', { timeSlot, error: e });
+    return timeSlot || 'Time not available';
+  }
+}
+
+/**
+ * Format a date string to a user-friendly format
+ */
+function formatDate(dateStr: string): string {
+  if (!dateStr) {
+    return 'Date not available';
+  }
+
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      // Try parsing alternative format
+      const [year, month, day] = dateStr.split('-').map(Number);
+      if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+        const newDate = new Date(year, month - 1, day);
+        return format(newDate, 'EEEE, MMMM d, yyyy');
+      }
+      return dateStr;
+    }
+    return format(date, 'EEEE, MMMM d, yyyy');
+  } catch (e) {
+    apiLogger.error('Error formatting date', { dateStr, error: e });
+    return dateStr || 'Date not available';
+  }
+}
+
+/**
+ * Get display name for a device type considering model name
+ */
+function getDeviceDisplay(deviceType: string, brand: string, model: string): string {
+  if (!deviceType) return 'Device information not available';
+  
+  // Check for tablet first based on model name
+  const modelLower = (model || '').toLowerCase();
+  const isTablet = deviceType === 'tablet' || 
+    (deviceType === 'mobile' && (
+      modelLower.includes('tab') || 
+      modelLower.includes('pad') ||
+      modelLower.includes('ipad') ||
+      modelLower.includes('surface')
+    ));
+  
+  if (isTablet) {
+    return `Tablet - ${brand || ''} ${model || ''}`.trim();
+  }
+  
+  if (deviceType === 'mobile') {
+    return `Mobile Phone - ${brand || ''} ${model || ''}`.trim();
+  }
+  
+  if (deviceType === 'laptop') {
+    return `Laptop - ${brand || ''} ${model || ''}`.trim();
+  }
+  
+  return `${brand || ''} ${model || ''}`.trim() || 'Device information not available';
+}
+
+/**
+ * Format service type from snake_case to display format
+ */
+function formatServiceType(serviceType: string): string {
+  if (!serviceType) return 'Service information not available';
+  
+  return serviceType
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, l => l.toUpperCase());
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -28,120 +112,77 @@ export default async function handler(
 ) {
   try {
     if (req.method !== 'POST') {
+      apiLogger.warn('Method not allowed', { method: req.method });
       return res.status(405).json({ success: false, error: 'Method not allowed' });
     }
 
-    const bookingData: BookingData = req.body;
-    if (!bookingData) {
+    const rawBookingData = req.body;
+    if (!rawBookingData) {
+      apiLogger.warn('No booking data provided');
       return res.status(400).json({ success: false, error: 'No booking data provided' });
     }
 
-    console.log('Confirm redirect - booking data:', bookingData);
+    apiLogger.info('Processing booking confirmation redirect', { 
+      reference: rawBookingData.reference_number || 'Not provided'
+    });
 
-    // Format date
-    let formattedDate = '';
-    try {
-      // Check which date field to use (booking_date or appointment_date)
-      const dateStr = bookingData.booking_date || bookingData.appointment_date;
-      if (!dateStr) {
-        formattedDate = 'Date not provided';
-      } else {
-        const dateParts = dateStr.split('-');
-        const dateObj = new Date(
-          parseInt(dateParts[0]), 
-          parseInt(dateParts[1]) - 1, 
-          parseInt(dateParts[2])
-        );
-        formattedDate = format(dateObj, 'EEEE, MMMM d, yyyy');
-      }
-    } catch (e) {
-      console.error('Error formatting date:', e);
-      formattedDate = bookingData.booking_date || bookingData.appointment_date || 'Date not provided';
+    // Normalize the booking data using our transformer
+    const normalizedData = normalizeBookingData(rawBookingData);
+    
+    if (!normalizedData) {
+      apiLogger.error('Failed to normalize booking data');
+      return res.status(400).json({ success: false, error: 'Invalid booking data format' });
     }
-
-    // Format time
-    let formattedTime = '';
-    try {
-      // Check which time field to use (booking_time or appointment_time)
-      const timeStr = bookingData.booking_time || bookingData.appointment_time;
-      if (!timeStr || !timeStr.includes('-')) {
-        formattedTime = timeStr || 'Time not provided';
-      } else {
-        const [start, end] = timeStr.split('-');
-        const startTime = parseInt(start) < 12 ? 
-          `${parseInt(start)}:00 AM` : 
-          `${parseInt(start) === 12 ? 12 : parseInt(start) - 12}:00 PM`;
-        const endTime = parseInt(end) < 12 ? 
-          `${parseInt(end)}:00 AM` : 
-          `${parseInt(end) === 12 ? 12 : parseInt(end) - 12}:00 PM`;
-        formattedTime = `${startTime} - ${endTime}`;
-      }
-    } catch (e) {
-      console.error('Error formatting time:', e);
-      formattedTime = bookingData.booking_time || bookingData.appointment_time || 'Time not provided';
-    }
-
-    // Format device info
-    let deviceInfo = '';
-    if (bookingData.device_type === 'tablet' || 
-        (bookingData.device_type === 'mobile' && 
-         (bookingData.device_model.toLowerCase().includes('tab') || 
-          bookingData.device_model.toLowerCase().includes('pad') ||
-          bookingData.device_model.toLowerCase().includes('ipad') ||
-          bookingData.device_model.toLowerCase().includes('surface')))) {
-      deviceInfo = `Tablet - ${bookingData.device_brand} ${bookingData.device_model}`;
-    } else if (bookingData.device_type === 'mobile') {
-      deviceInfo = `Mobile Phone - ${bookingData.device_brand} ${bookingData.device_model}`;
-    } else if (bookingData.device_type === 'laptop') {
-      deviceInfo = `Laptop - ${bookingData.device_brand} ${bookingData.device_model}`;
-    } else {
-      deviceInfo = `${bookingData.device_brand} ${bookingData.device_model}`;
-    }
-
-    // Format service info
-    let serviceInfo = '';
-    try {
-      serviceInfo = getServiceDisplay(bookingData.service_type);
-    } catch (e) {
-      console.error('Error formatting service:', e);
-      // Fallback formatting
-      serviceInfo = bookingData.service_type
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, l => l.toUpperCase());
-    }
-
+    
+    // Format date and time
+    const formattedDate = formatDate(
+      normalizedData.appointment.date
+    );
+    
+    const formattedTime = formatTimeSlot(
+      normalizedData.appointment.time
+    );
+    
+    // Format device display name
+    const deviceInfo = getDeviceDisplay(
+      normalizedData.device.type,
+      normalizedData.device.brand,
+      normalizedData.device.model
+    );
+    
+    // Format service type
+    const serviceInfo = formatServiceType(normalizedData.service.type);
+    
     // Format address
-    let address = '';
-    if (bookingData.street_address) {
-      address = `${bookingData.street_address}`;
-      if (bookingData.city) address += `, ${bookingData.city}`;
-      if (bookingData.province) address += `, ${bookingData.province}`;
-      if (bookingData.postal_code) address += `, ${bookingData.postal_code}`;
-      if (!address) address = 'Address information not provided';
-    }
-
-    // Generate a simple reference number
-    const reference = `TTR-${Date.now().toString().substring(5)}-${Math.floor(Math.random() * 1000)}`;
-
+    const address = normalizedData.location.address || 'Address not provided';
+    
     // Build the redirect URL with parameters
     const params = new URLSearchParams({
-      ref: reference,
+      ref: normalizedData.referenceNumber,
       device: deviceInfo,
       service: serviceInfo,
       date: formattedDate,
       time: formattedTime,
       address: address,
-      email: bookingData.customer_email
+      email: normalizedData.customer.email
     });
 
     const redirectUrl = `/booking-confirmation?${params.toString()}`;
     
+    apiLogger.info('Generated confirmation redirect', { 
+      reference: normalizedData.referenceNumber, 
+      redirectUrl 
+    });
+
     return res.status(200).json({ 
       success: true, 
       redirectUrl 
     });
   } catch (error) {
-    console.error('Error in confirm-redirect:', error);
+    apiLogger.error('Error generating confirmation redirect', {
+      error: error instanceof Error ? error.message : String(error)
+    });
+    
     return res.status(500).json({
       success: false,
       error: 'Failed to generate confirmation redirect',
