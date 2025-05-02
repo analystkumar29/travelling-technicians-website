@@ -2,10 +2,12 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { FaCheckCircle, FaEnvelope } from 'react-icons/fa';
 import Link from 'next/link';
+import { useBooking } from '@/lib/bookingContext';
 
 export default function BookingConfirmation() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const { bookingData: contextBookingData } = useBooking();
   
   // Format time like "09-11" to "9:00 AM - 11:00 AM"
   const formatTime = (timeSlot: string) => {
@@ -37,7 +39,7 @@ export default function BookingConfirmation() {
   };
   
   // Get device display name
-  const getDeviceDisplay = (deviceType: string, brand: string, model: string) => {
+  const getDeviceDisplay = (deviceType: string, brand?: string, model?: string) => {
     let deviceTypeDisplay = deviceType === 'mobile' ? 'Mobile Phone' : 
                            deviceType === 'laptop' ? 'Laptop' : 'Tablet';
     
@@ -49,12 +51,27 @@ export default function BookingConfirmation() {
       deviceTypeDisplay = 'Tablet';
     }
     
-    return `${deviceTypeDisplay} - ${brand} ${model}`;
+    const brandStr = brand ? `${brand} ` : '';
+    const modelStr = model || '';
+    
+    return `${deviceTypeDisplay} - ${brandStr}${modelStr}`.trim();
   };
   
-  // Get booking data from URL params or localStorage
-  const getBookingData = () => {
-    // First try to get data from URL parameters
+  useEffect(() => {
+    if (!router.isReady) return;
+    setLoading(false);
+  }, [router.isReady]);
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+  
+  // If no booking data in context, try to use URL parameters as fallback
+  const fallbackData = (() => {
     if (router.isReady) {
       const {
         reference,
@@ -79,38 +96,11 @@ export default function BookingConfirmation() {
         };
       }
     }
-
-    // If URL parameters are not available, try to get data from localStorage
-    if (typeof window !== 'undefined') {
-      try {
-        const lastBookingStr = localStorage.getItem('last_booking');
-        if (lastBookingStr) {
-          return JSON.parse(lastBookingStr);
-        }
-      } catch (e) {
-        console.error('Error retrieving booking data from localStorage:', e);
-      }
-    }
-
     return null;
-  };
+  })();
   
-  useEffect(() => {
-    if (!router.isReady) return;
-    setLoading(false);
-  }, [router.isReady]);
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
-  
-  const bookingData = getBookingData();
-  
-  if (!bookingData) {
+  // If no booking data in context or URL, show error
+  if (!contextBookingData && !fallbackData) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-lg w-full text-center">
@@ -125,6 +115,25 @@ export default function BookingConfirmation() {
       </div>
     );
   }
+  
+  // Prepare display data from either context or fallback
+  const displayData = contextBookingData ? {
+    reference: contextBookingData.reference_number,
+    device: getDeviceDisplay(
+      contextBookingData.device_type, 
+      contextBookingData.device_brand, 
+      contextBookingData.device_model
+    ),
+    service: formatServiceType(contextBookingData.service_type),
+    date: new Date(contextBookingData.booking_date).toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric'
+    }),
+    time: formatTime(contextBookingData.booking_time),
+    address: contextBookingData.address,
+    email: contextBookingData.customer_email
+  } : fallbackData;
   
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
@@ -156,33 +165,33 @@ export default function BookingConfirmation() {
                 
                 <div className="bg-gray-50 p-6 rounded-lg mb-8 text-left">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">
-                    Booking Reference: <span className="text-blue-600 font-bold">{bookingData.reference}</span>
+                    Booking Reference: <span className="text-blue-600 font-bold">{displayData.reference}</span>
                   </h3>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div className="col-span-1 sm:col-span-2">
                       <p className="text-gray-500 mb-1">Device</p>
-                      <p className="font-medium">{bookingData.device}</p>
+                      <p className="font-medium">{displayData.device}</p>
                     </div>
                     
                     <div className="col-span-1 sm:col-span-2">
                       <p className="text-gray-500 mb-1">Service</p>
-                      <p className="font-medium">{bookingData.service}</p>
+                      <p className="font-medium">{displayData.service}</p>
                     </div>
                     
                     <div>
                       <p className="text-gray-500 mb-1">Date</p>
-                      <p className="font-medium">{bookingData.date}</p>
+                      <p className="font-medium">{displayData.date}</p>
                     </div>
                     
                     <div>
                       <p className="text-gray-500 mb-1">Time</p>
-                      <p className="font-medium">{bookingData.time}</p>
+                      <p className="font-medium">{displayData.time}</p>
                     </div>
                     
                     <div className="col-span-1 sm:col-span-2">
                       <p className="text-gray-500 mb-1">Address</p>
-                      <p className="font-medium">{bookingData.address}</p>
+                      <p className="font-medium">{displayData.address}</p>
                     </div>
                   </div>
                 </div>
@@ -193,7 +202,7 @@ export default function BookingConfirmation() {
                       <FaEnvelope className="h-5 w-5" />
                     </div>
                     <span className="text-gray-700">
-                      Confirmation email sent to {bookingData.email}
+                      Confirmation email sent to {displayData.email}
                     </span>
                   </div>
                   

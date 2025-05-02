@@ -8,6 +8,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import GlobalErrorHandler from '@/components/GlobalErrorHandler';
 import { useEffect } from 'react';
 import { setupGlobalErrorHandlers } from '@/utils/errorHandling';
+import { BookingProvider } from '@/lib/bookingContext';
 
 // Import font configurations with fallbacks
 const inter = Inter({
@@ -40,12 +41,14 @@ export default function App({ Component, pageProps }: AppProps) {
         <title>The Travelling Technicians | Mobile & Laptop Repair at Your Doorstep</title>
         <meta name="description" content="Expert mobile phone and laptop repair services right at your doorstep across the Lower Mainland, BC. Book online for convenient tech repair that comes to you." />
       </Head>
-      <div className={`${inter.variable} ${poppins.variable}`}>
-        <ErrorBoundary>
-          <Component {...pageProps} />
-          <GlobalErrorHandler />
-        </ErrorBoundary>
-      </div>
+      <BookingProvider>
+        <div className={`${inter.variable} ${poppins.variable}`}>
+          <ErrorBoundary>
+            <Component {...pageProps} />
+            <GlobalErrorHandler />
+          </ErrorBoundary>
+        </div>
+      </BookingProvider>
     </>
   );
 } 

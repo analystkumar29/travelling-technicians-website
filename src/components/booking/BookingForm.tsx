@@ -4,6 +4,7 @@ import PostalCodeChecker from '@/components/PostalCodeChecker';
 import { ServiceAreaType, checkServiceArea } from '@/utils/locationUtils';
 import DeviceModelSelector from './DeviceModelSelector';
 import AddressAutocomplete from './AddressAutocomplete';
+import { useBooking, BookingData } from '@/lib/bookingContext';
 
 // Device types
 const deviceTypes = [
@@ -121,6 +122,9 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
   const [emailError2, setEmailError2] = useState<string | null>(null);
   // Add a new state to store the booking details from the API response
   const [bookingData, setBookingData] = useState<any>(null);
+  
+  // Add our booking context
+  const { setBookingData: setContextBookingData } = useBooking();
   
   // Handle successful postal code check
   const handlePostalCodeSuccess = (result: ServiceAreaType, code: string) => {
@@ -363,6 +367,25 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
           const emailResult = await sendConfirmationEmail();
           console.log('DEBUG - Email confirmation result:', emailResult);
           
+          // Store booking data in the global context
+          const booking = data.booking;
+          setContextBookingData({
+            reference_number: booking.reference_number,
+            device_type: booking.device_type,
+            device_brand: booking.device_brand,
+            device_model: booking.device_model,
+            service_type: booking.service_type,
+            booking_date: booking.booking_date,
+            booking_time: booking.booking_time,
+            address: booking.address,
+            postal_code: booking.postal_code,
+            customer_name: booking.customer_name,
+            customer_email: booking.customer_email,
+            customer_phone: booking.customer_phone,
+            issue_description: booking.issue_description,
+            status: booking.status
+          });
+          
           // Get redirect URL from the confirm-redirect API
           const redirectResponse = await fetch('/api/bookings/confirm-redirect', {
             method: 'POST',
@@ -376,24 +399,7 @@ export default function BookingForm({ onComplete }: BookingFormProps) {
           console.log('DEBUG - Redirect API response:', redirectData);
           
           if (redirectData.success && redirectData.redirectUrl) {
-            // Save booking data to localStorage before redirecting
-            try {
-              const booking = data.booking;
-              localStorage.setItem('last_booking', JSON.stringify({
-                reference: booking.reference_number,
-                date: booking.booking_date || booking.appointment_date,
-                time: booking.booking_time || booking.appointment_time,
-                device: getDeviceTypeDisplay(booking.device_type, booking.device_model, booking.device_brand),
-                service: booking.service_type,
-                address: booking.address,
-                email: booking.customer_email
-              }));
-              console.log('DEBUG - Saved booking data to localStorage');
-            } catch (e) {
-              console.error('DEBUG - Error saving booking to localStorage:', e);
-            }
-            
-            // Redirect to the confirmation page
+            // Redirect to the confirmation page (no need for localStorage, using context now)
             window.location.href = redirectData.redirectUrl;
             return; // Stop execution since we're redirecting
           }
