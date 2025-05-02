@@ -47,10 +47,31 @@ export default async function handler(
   try {
     const data = req.body as ConfirmationEmailData;
     
+    // Additional debug logging to see what's coming in
+    moduleLogger.info('Received confirmation email request', {
+      hasTo: !!data.to,
+      hasName: !!data.name,
+      hasReference: !!data.bookingReference,
+      hasDeviceType: !!data.deviceType,
+      hasService: !!data.service,
+      hasDate: !!data.bookingDate,
+      hasTime: !!data.bookingTime,
+      reference: data.bookingReference || 'MISSING',
+      rawBody: JSON.stringify(req.body)
+    });
+    
     // Verify we have all required data
     if (!data.to || !data.name || !data.bookingReference || !data.deviceType || 
         !data.service || !data.bookingDate || !data.bookingTime) {
-      moduleLogger.warn('Missing required email data', { data });
+      moduleLogger.warn('Missing required email data', { 
+        missing: !data.to ? 'email' : 
+                !data.name ? 'name' : 
+                !data.bookingReference ? 'reference' : 
+                !data.deviceType ? 'deviceType' : 
+                !data.service ? 'service' : 
+                !data.bookingDate ? 'date' : 'time',
+        receivedData: JSON.stringify(data)
+      });
       return res.status(400).json({ success: false, message: 'Missing required email data' });
     }
 

@@ -131,6 +131,20 @@ export default async function handler(
       bookingAddress: address
     };
 
+    // Debug log to verify email data is complete before sending
+    moduleLogger.info('Preparing email data', { 
+      reference: referenceNumber,
+      emailData: JSON.stringify({
+        to: emailData.to,
+        name: emailData.name,
+        bookingReference: emailData.bookingReference,
+        deviceType: emailData.deviceType,
+        service: emailData.service,
+        bookingDate: emailData.bookingDate,
+        bookingTime: emailData.bookingTime
+      })
+    });
+
     // Send confirmation email
     try {
       const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000'}/api/send-confirmation`, {
