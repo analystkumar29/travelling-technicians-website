@@ -28,6 +28,7 @@ export interface CreateBookingRequest {
   deviceType: DeviceType;
   deviceBrand: string;
   deviceModel: string;
+  customBrand?: string; // Custom brand name when "other" is selected
   serviceType: string;
   issueDescription?: string;
   

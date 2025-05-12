@@ -129,7 +129,7 @@ const deviceModels: DeviceModelsType = {
 };
 
 interface DeviceModelSelectorProps {
-  deviceType: string;
+  deviceType: DeviceType | string; // Accept string but will cast to DeviceType internally
   brand: string;
   value: string;
   onChange: (model: string) => void;
@@ -146,6 +146,9 @@ export default function DeviceModelSelector({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedModel, setSelectedModel] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Debug props
+  console.log('DeviceModelSelector props:', { deviceType, brand, value });
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -198,9 +201,13 @@ export default function DeviceModelSelector({
     }
     
     try {
-      // Type assertion to make TypeScript happy
+      // Type assertion to make TypeScript happy - ensure deviceType is a valid key
       const deviceTypeKey = deviceType as DeviceType;
       const brandKey = brand as BrandType;
+      
+      // Debug the access to ensure it's correctly finding the models
+      console.log('Accessing models for:', deviceTypeKey, brandKey);
+      console.log('Available models:', deviceModels[deviceTypeKey]?.[brandKey] || []);
       
       return deviceModels[deviceTypeKey]?.[brandKey] || [];
     } catch (error) {

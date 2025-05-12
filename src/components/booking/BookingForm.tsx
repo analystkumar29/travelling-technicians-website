@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
 import DeviceModelSelector from './DeviceModelSelector';
 // Comment out the non-existent imports for now
@@ -30,6 +30,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     deviceType: initialData.deviceType || 'mobile',
     deviceBrand: initialData.deviceBrand || '',
     deviceModel: initialData.deviceModel || '',
+    customBrand: initialData.customBrand || '',
     serviceType: initialData.serviceType || '',
     issueDescription: initialData.issueDescription || '',
     appointmentDate: initialData.appointmentDate || '',
@@ -55,8 +56,27 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   }
 
   const methods = useForm<CreateBookingRequest>({
-    defaultValues
+    defaultValues,
+    mode: 'onChange' // Enable validation on change
   });
+
+  // Watch for deviceBrand changes to apply conditional validation for customBrand
+  const deviceBrand = methods.watch('deviceBrand');
+  
+  // Apply conditional validation for customBrand
+  useEffect(() => {
+    const { unregister, register } = methods;
+    
+    // When deviceBrand is 'other', make customBrand required
+    if (deviceBrand === 'other') {
+      register('customBrand', { 
+        required: 'Brand name is required' 
+      });
+    } else {
+      // Unregister to remove validation when not needed
+      unregister('customBrand');
+    }
+  }, [deviceBrand, methods]);
 
   // Placeholder step titles
   const steps = [
@@ -77,11 +97,29 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   };
 
   const handleSubmit = (data: CreateBookingRequest) => {
+    // If "other" brand is selected, use customBrand as the actual brand name
+    if (data.deviceBrand === 'other' && data.customBrand) {
+      data.brand = data.customBrand; // For DB triggers
+    } else {
+      data.brand = data.deviceBrand;
+    }
+    
+    // Set model for DB triggers
+    data.model = data.deviceModel;
+    
     onSubmit(data);
   };
   
   // Render the Device Type step
   const renderDeviceTypeStep = () => {
+    const deviceType = methods.watch('deviceType');
+    
+    // Debug output - remove this after fixing the issue
+    console.log('Selected device type:', deviceType);
+    
+    // Force brand selection section to re-render when deviceType changes
+    const deviceKey = `device-${deviceType}`;
+    
     return (
       <div className="space-y-8">
         <div>
@@ -103,7 +141,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       className="sr-only"
                       value="mobile"
                       checked={field.value === 'mobile'}
-                      onChange={() => field.onChange('mobile')}
+                      onChange={() => {
+                        field.onChange('mobile');
+                        methods.setValue('deviceBrand', '');
+                        methods.setValue('deviceModel', '');
+                        console.log('Changed to mobile');
+                      }}
                     />
                   )}
                 />
@@ -133,7 +176,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       className="sr-only"
                       value="laptop"
                       checked={field.value === 'laptop'}
-                      onChange={() => field.onChange('laptop')}
+                      onChange={() => {
+                        field.onChange('laptop');
+                        methods.setValue('deviceBrand', '');
+                        methods.setValue('deviceModel', '');
+                        console.log('Changed to laptop');
+                      }}
                     />
                   )}
                 />
@@ -163,7 +211,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       className="sr-only"
                       value="tablet"
                       checked={field.value === 'tablet'}
-                      onChange={() => field.onChange('tablet')}
+                      onChange={() => {
+                        field.onChange('tablet');
+                        methods.setValue('deviceBrand', '');
+                        methods.setValue('deviceModel', '');
+                        console.log('Changed to tablet');
+                      }}
                     />
                   )}
                 />
@@ -185,188 +238,561 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             </div>
           </div>
           
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Brand <span className="text-red-500">*</span>
-            </label>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <label className="relative flex items-center">
-                <Controller
-                  name="deviceBrand"
-                  control={methods.control}
-                  render={({ field }) => (
-                    <input
-                      type="radio"
-                      className="sr-only"
-                      value="apple"
-                      checked={field.value === 'apple'}
-                      onChange={() => field.onChange('apple')}
-                    />
-                  )}
-                />
-                <div className={`
-                  p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
-                  ${methods.watch('deviceBrand') === 'apple' 
-                    ? 'border-primary-500 bg-primary-50' 
-                    : 'border-gray-300 hover:border-gray-400'
-                  }
-                `}>
-                  <span className="font-medium text-gray-900">Apple iPhone</span>
-                </div>
+          {deviceType && (
+            <div className="mb-4" key={deviceKey}>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Brand <span className="text-red-500">*</span>
               </label>
               
-              <label className="relative flex items-center">
-                <Controller
-                  name="deviceBrand"
-                  control={methods.control}
-                  render={({ field }) => (
-                    <input
-                      type="radio"
-                      className="sr-only"
-                      value="samsung"
-                      checked={field.value === 'samsung'}
-                      onChange={() => field.onChange('samsung')}
+              {/* Mobile device brands */}
+              {deviceType === 'mobile' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <label className="relative flex items-center">
+                    <Controller
+                      name="deviceBrand"
+                      control={methods.control}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          value="apple"
+                          checked={field.value === 'apple'}
+                          onChange={() => {
+                            field.onChange('apple');
+                            methods.setValue('deviceModel', '');
+                          }}
+                        />
+                      )}
                     />
-                  )}
-                />
-                <div className={`
-                  p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
-                  ${methods.watch('deviceBrand') === 'samsung' 
-                    ? 'border-primary-500 bg-primary-50' 
-                    : 'border-gray-300 hover:border-gray-400'
-                  }
-                `}>
-                  <span className="font-medium text-gray-900">Samsung Galaxy</span>
-                </div>
-              </label>
-              
-              <label className="relative flex items-center">
-                <Controller
-                  name="deviceBrand"
-                  control={methods.control}
-                  render={({ field }) => (
-                    <input
-                      type="radio"
-                      className="sr-only"
-                      value="google"
-                      checked={field.value === 'google'}
-                      onChange={() => field.onChange('google')}
+                    <div className={`
+                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      ${methods.watch('deviceBrand') === 'apple' 
+                        ? 'border-primary-500 bg-primary-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                      }
+                    `}>
+                      <span className="font-medium text-gray-900">Apple iPhone</span>
+                    </div>
+                  </label>
+                  
+                  <label className="relative flex items-center">
+                    <Controller
+                      name="deviceBrand"
+                      control={methods.control}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          value="samsung"
+                          checked={field.value === 'samsung'}
+                          onChange={() => {
+                            field.onChange('samsung');
+                            methods.setValue('deviceModel', '');
+                          }}
+                        />
+                      )}
                     />
-                  )}
-                />
-                <div className={`
-                  p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
-                  ${methods.watch('deviceBrand') === 'google' 
-                    ? 'border-primary-500 bg-primary-50' 
-                    : 'border-gray-300 hover:border-gray-400'
-                  }
-                `}>
-                  <span className="font-medium text-gray-900">Google Pixel</span>
-                </div>
-              </label>
-              
-              <label className="relative flex items-center">
-                <Controller
-                  name="deviceBrand"
-                  control={methods.control}
-                  render={({ field }) => (
-                    <input
-                      type="radio"
-                      className="sr-only"
-                      value="oneplus"
-                      checked={field.value === 'oneplus'}
-                      onChange={() => field.onChange('oneplus')}
+                    <div className={`
+                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      ${methods.watch('deviceBrand') === 'samsung' 
+                        ? 'border-primary-500 bg-primary-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                      }
+                    `}>
+                      <span className="font-medium text-gray-900">Samsung Galaxy</span>
+                    </div>
+                  </label>
+                  
+                  <label className="relative flex items-center">
+                    <Controller
+                      name="deviceBrand"
+                      control={methods.control}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          value="google"
+                          checked={field.value === 'google'}
+                          onChange={() => {
+                            field.onChange('google');
+                            methods.setValue('deviceModel', '');
+                          }}
+                        />
+                      )}
                     />
-                  )}
-                />
-                <div className={`
-                  p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
-                  ${methods.watch('deviceBrand') === 'oneplus' 
-                    ? 'border-primary-500 bg-primary-50' 
-                    : 'border-gray-300 hover:border-gray-400'
-                  }
-                `}>
-                  <span className="font-medium text-gray-900">OnePlus</span>
-                </div>
-              </label>
-              
-              <label className="relative flex items-center">
-                <Controller
-                  name="deviceBrand"
-                  control={methods.control}
-                  render={({ field }) => (
-                    <input
-                      type="radio"
-                      className="sr-only"
-                      value="xiaomi"
-                      checked={field.value === 'xiaomi'}
-                      onChange={() => field.onChange('xiaomi')}
+                    <div className={`
+                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      ${methods.watch('deviceBrand') === 'google' 
+                        ? 'border-primary-500 bg-primary-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                      }
+                    `}>
+                      <span className="font-medium text-gray-900">Google Pixel</span>
+                    </div>
+                  </label>
+                  
+                  <label className="relative flex items-center">
+                    <Controller
+                      name="deviceBrand"
+                      control={methods.control}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          value="oneplus"
+                          checked={field.value === 'oneplus'}
+                          onChange={() => {
+                            field.onChange('oneplus');
+                            methods.setValue('deviceModel', '');
+                          }}
+                        />
+                      )}
                     />
-                  )}
-                />
-                <div className={`
-                  p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
-                  ${methods.watch('deviceBrand') === 'xiaomi' 
-                    ? 'border-primary-500 bg-primary-50' 
-                    : 'border-gray-300 hover:border-gray-400'
-                  }
-                `}>
-                  <span className="font-medium text-gray-900">Xiaomi</span>
-                </div>
-              </label>
-              
-              <label className="relative flex items-center">
-                <Controller
-                  name="deviceBrand"
-                  control={methods.control}
-                  render={({ field }) => (
-                    <input
-                      type="radio"
-                      className="sr-only"
-                      value="other"
-                      checked={field.value === 'other'}
-                      onChange={() => field.onChange('other')}
+                    <div className={`
+                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      ${methods.watch('deviceBrand') === 'oneplus' 
+                        ? 'border-primary-500 bg-primary-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                      }
+                    `}>
+                      <span className="font-medium text-gray-900">OnePlus</span>
+                    </div>
+                  </label>
+                  
+                  <label className="relative flex items-center">
+                    <Controller
+                      name="deviceBrand"
+                      control={methods.control}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          value="xiaomi"
+                          checked={field.value === 'xiaomi'}
+                          onChange={() => {
+                            field.onChange('xiaomi');
+                            methods.setValue('deviceModel', '');
+                          }}
+                        />
+                      )}
                     />
-                  )}
-                />
-                <div className={`
-                  p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
-                  ${methods.watch('deviceBrand') === 'other' 
-                    ? 'border-primary-500 bg-primary-50' 
-                    : 'border-gray-300 hover:border-gray-400'
-                  }
-                `}>
-                  <span className="font-medium text-gray-900">Other Brand</span>
+                    <div className={`
+                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      ${methods.watch('deviceBrand') === 'xiaomi' 
+                        ? 'border-primary-500 bg-primary-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                      }
+                    `}>
+                      <span className="font-medium text-gray-900">Xiaomi</span>
+                    </div>
+                  </label>
+                  
+                  <label className="relative flex items-center">
+                    <Controller
+                      name="deviceBrand"
+                      control={methods.control}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          value="other"
+                          checked={field.value === 'other'}
+                          onChange={() => {
+                            field.onChange('other');
+                            methods.setValue('deviceModel', '');
+                          }}
+                        />
+                      )}
+                    />
+                    <div className={`
+                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      ${methods.watch('deviceBrand') === 'other' 
+                        ? 'border-primary-500 bg-primary-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                      }
+                    `}>
+                      <span className="font-medium text-gray-900">Other Brand</span>
+                    </div>
+                  </label>
                 </div>
-              </label>
-            </div>
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Model <span className="text-red-500">*</span>
-            </label>
-            
-            <Controller
-              name="deviceModel"
-              control={methods.control}
-              rules={{ required: "Model is required" }}
-              render={({ field, fieldState }) => (
-                <>
-                  <DeviceModelSelector
-                    deviceType={methods.watch('deviceType')}
-                    brand={methods.watch('deviceBrand')}
-                    value={field.value}
-                    onChange={field.onChange}
-                  />
-                  {fieldState.error && (
-                    <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                  )}
-                </>
               )}
-            />
-          </div>
+              
+              {/* Laptop device brands */}
+              {deviceType === 'laptop' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <label className="relative flex items-center">
+                    <Controller
+                      name="deviceBrand"
+                      control={methods.control}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          value="apple"
+                          checked={field.value === 'apple'}
+                          onChange={() => {
+                            field.onChange('apple');
+                            methods.setValue('deviceModel', '');
+                          }}
+                        />
+                      )}
+                    />
+                    <div className={`
+                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      ${methods.watch('deviceBrand') === 'apple' 
+                        ? 'border-primary-500 bg-primary-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                      }
+                    `}>
+                      <span className="font-medium text-gray-900">Apple MacBook</span>
+                    </div>
+                  </label>
+                  
+                  <label className="relative flex items-center">
+                    <Controller
+                      name="deviceBrand"
+                      control={methods.control}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          value="dell"
+                          checked={field.value === 'dell'}
+                          onChange={() => {
+                            field.onChange('dell');
+                            methods.setValue('deviceModel', '');
+                          }}
+                        />
+                      )}
+                    />
+                    <div className={`
+                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      ${methods.watch('deviceBrand') === 'dell' 
+                        ? 'border-primary-500 bg-primary-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                      }
+                    `}>
+                      <span className="font-medium text-gray-900">Dell</span>
+                    </div>
+                  </label>
+                  
+                  <label className="relative flex items-center">
+                    <Controller
+                      name="deviceBrand"
+                      control={methods.control}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          value="hp"
+                          checked={field.value === 'hp'}
+                          onChange={() => {
+                            field.onChange('hp');
+                            methods.setValue('deviceModel', '');
+                          }}
+                        />
+                      )}
+                    />
+                    <div className={`
+                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      ${methods.watch('deviceBrand') === 'hp' 
+                        ? 'border-primary-500 bg-primary-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                      }
+                    `}>
+                      <span className="font-medium text-gray-900">HP</span>
+                    </div>
+                  </label>
+                  
+                  <label className="relative flex items-center">
+                    <Controller
+                      name="deviceBrand"
+                      control={methods.control}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          value="lenovo"
+                          checked={field.value === 'lenovo'}
+                          onChange={() => {
+                            field.onChange('lenovo');
+                            methods.setValue('deviceModel', '');
+                          }}
+                        />
+                      )}
+                    />
+                    <div className={`
+                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      ${methods.watch('deviceBrand') === 'lenovo' 
+                        ? 'border-primary-500 bg-primary-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                      }
+                    `}>
+                      <span className="font-medium text-gray-900">Lenovo</span>
+                    </div>
+                  </label>
+                  
+                  <label className="relative flex items-center">
+                    <Controller
+                      name="deviceBrand"
+                      control={methods.control}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          value="asus"
+                          checked={field.value === 'asus'}
+                          onChange={() => {
+                            field.onChange('asus');
+                            methods.setValue('deviceModel', '');
+                          }}
+                        />
+                      )}
+                    />
+                    <div className={`
+                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      ${methods.watch('deviceBrand') === 'asus' 
+                        ? 'border-primary-500 bg-primary-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                      }
+                    `}>
+                      <span className="font-medium text-gray-900">ASUS</span>
+                    </div>
+                  </label>
+                  
+                  <label className="relative flex items-center">
+                    <Controller
+                      name="deviceBrand"
+                      control={methods.control}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          value="other"
+                          checked={field.value === 'other'}
+                          onChange={() => {
+                            field.onChange('other');
+                            methods.setValue('deviceModel', '');
+                          }}
+                        />
+                      )}
+                    />
+                    <div className={`
+                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      ${methods.watch('deviceBrand') === 'other' 
+                        ? 'border-primary-500 bg-primary-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                      }
+                    `}>
+                      <span className="font-medium text-gray-900">Other Brand</span>
+                    </div>
+                  </label>
+                </div>
+              )}
+              
+              {/* Tablet device brands */}
+              {deviceType === 'tablet' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <label className="relative flex items-center">
+                    <Controller
+                      name="deviceBrand"
+                      control={methods.control}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          value="apple"
+                          checked={field.value === 'apple'}
+                          onChange={() => {
+                            field.onChange('apple');
+                            methods.setValue('deviceModel', '');
+                          }}
+                        />
+                      )}
+                    />
+                    <div className={`
+                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      ${methods.watch('deviceBrand') === 'apple' 
+                        ? 'border-primary-500 bg-primary-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                      }
+                    `}>
+                      <span className="font-medium text-gray-900">Apple iPad</span>
+                    </div>
+                  </label>
+                  
+                  <label className="relative flex items-center">
+                    <Controller
+                      name="deviceBrand"
+                      control={methods.control}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          value="samsung"
+                          checked={field.value === 'samsung'}
+                          onChange={() => {
+                            field.onChange('samsung');
+                            methods.setValue('deviceModel', '');
+                          }}
+                        />
+                      )}
+                    />
+                    <div className={`
+                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      ${methods.watch('deviceBrand') === 'samsung' 
+                        ? 'border-primary-500 bg-primary-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                      }
+                    `}>
+                      <span className="font-medium text-gray-900">Samsung Galaxy Tab</span>
+                    </div>
+                  </label>
+                  
+                  <label className="relative flex items-center">
+                    <Controller
+                      name="deviceBrand"
+                      control={methods.control}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          value="microsoft"
+                          checked={field.value === 'microsoft'}
+                          onChange={() => {
+                            field.onChange('microsoft');
+                            methods.setValue('deviceModel', '');
+                          }}
+                        />
+                      )}
+                    />
+                    <div className={`
+                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      ${methods.watch('deviceBrand') === 'microsoft' 
+                        ? 'border-primary-500 bg-primary-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                      }
+                    `}>
+                      <span className="font-medium text-gray-900">Microsoft Surface</span>
+                    </div>
+                  </label>
+                  
+                  <label className="relative flex items-center">
+                    <Controller
+                      name="deviceBrand"
+                      control={methods.control}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          value="lenovo"
+                          checked={field.value === 'lenovo'}
+                          onChange={() => {
+                            field.onChange('lenovo');
+                            methods.setValue('deviceModel', '');
+                          }}
+                        />
+                      )}
+                    />
+                    <div className={`
+                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      ${methods.watch('deviceBrand') === 'lenovo' 
+                        ? 'border-primary-500 bg-primary-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                      }
+                    `}>
+                      <span className="font-medium text-gray-900">Lenovo</span>
+                    </div>
+                  </label>
+                  
+                  <label className="relative flex items-center">
+                    <Controller
+                      name="deviceBrand"
+                      control={methods.control}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          value="other"
+                          checked={field.value === 'other'}
+                          onChange={() => {
+                            field.onChange('other');
+                            methods.setValue('deviceModel', '');
+                          }}
+                        />
+                      )}
+                    />
+                    <div className={`
+                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      ${methods.watch('deviceBrand') === 'other' 
+                        ? 'border-primary-500 bg-primary-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                      }
+                    `}>
+                      <span className="font-medium text-gray-900">Other Brand</span>
+                    </div>
+                  </label>
+                </div>
+              )}
+              
+              {/* Custom Brand Input (when "Other Brand" is selected) */}
+              {methods.watch('deviceBrand') === 'other' && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Enter Brand Name <span className="text-red-500">*</span>
+                  </label>
+                  <Controller
+                    name="customBrand"
+                    control={methods.control}
+                    render={({ field, fieldState }) => (
+                      <>
+                        <input
+                          type="text"
+                          className={`
+                            block w-full px-4 py-3 border rounded-md shadow-sm placeholder-gray-400
+                            ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
+                            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
+                          `}
+                          placeholder={`Enter the brand of your ${deviceType}`}
+                          {...field}
+                        />
+                        {fieldState.error && (
+                          <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                        )}
+                      </>
+                    )}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+          
+          {methods.watch('deviceBrand') && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Model <span className="text-red-500">*</span>
+              </label>
+              
+              <Controller
+                name="deviceModel"
+                control={methods.control}
+                rules={{ required: "Model is required" }}
+                render={({ field, fieldState }) => (
+                  <>
+                    <DeviceModelSelector
+                      deviceType={methods.watch('deviceType')}
+                      brand={methods.watch('deviceBrand')}
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                    {fieldState.error && (
+                      <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                    )}
+                  </>
+                )}
+              />
+            </div>
+          )}
         </div>
         
         <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
@@ -954,7 +1380,13 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
 
   // Render the Confirmation step
   const renderConfirmationStep = () => {
-    const data = methods.getValues();
+    const formData = methods.getValues();
+    
+    // Get the display brand (use customBrand if deviceBrand is 'other')
+    const displayBrand = formData.deviceBrand === 'other' && formData.customBrand 
+      ? formData.customBrand 
+      : formData.deviceBrand;
+    
     const serviceTypeMap: Record<string, string> = {
       'screen-replacement': 'Screen Replacement',
       'battery-replacement': 'Battery Replacement',
@@ -1017,27 +1449,29 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         <div className="divide-y divide-gray-200">
           <div className="py-4">
             <h3 className="text-lg font-medium text-gray-900 mb-2">Device Details</h3>
-            <dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+            <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Device Type</dt>
-                <dd className="mt-1 text-sm text-gray-900 capitalize">{data.deviceType}</dd>
-            </div>
+                <dd className="mt-1 text-sm text-gray-900 capitalize">{formData.deviceType}</dd>
+              </div>
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Brand</dt>
-                <dd className="mt-1 text-sm text-gray-900">{data.deviceBrand}</dd>
-          </div>
-              <div className="sm:col-span-1">
-                <dt className="text-sm font-medium text-gray-500">Model</dt>
-                <dd className="mt-1 text-sm text-gray-900">{data.deviceModel}</dd>
-              </div>
-              <div className="sm:col-span-1">
-                <dt className="text-sm font-medium text-gray-500">Service</dt>
-                <dd className="mt-1 text-sm text-gray-900">{serviceTypeMap[data.serviceType] || data.serviceType}</dd>
+                <dd className="mt-1 text-sm text-gray-900 capitalize">{displayBrand}</dd>
               </div>
               <div className="sm:col-span-2">
-                <dt className="text-sm font-medium text-gray-500">Issue Description</dt>
-                <dd className="mt-1 text-sm text-gray-900">{data.issueDescription}</dd>
+                <dt className="text-sm font-medium text-gray-500">Model</dt>
+                <dd className="mt-1 text-sm text-gray-900">{formData.deviceModel}</dd>
               </div>
+              <div className="sm:col-span-2">
+                <dt className="text-sm font-medium text-gray-500">Service</dt>
+                <dd className="mt-1 text-sm text-gray-900">{serviceTypeMap[formData.serviceType] || formData.serviceType}</dd>
+              </div>
+              {formData.issueDescription && (
+                <div className="sm:col-span-2">
+                  <dt className="text-sm font-medium text-gray-500">Issue Description</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{formData.issueDescription}</dd>
+                </div>
+              )}
             </dl>
           </div>
           
@@ -1046,15 +1480,15 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             <dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Name</dt>
-                <dd className="mt-1 text-sm text-gray-900">{data.customerName}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{formData.customerName}</dd>
               </div>
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Phone</dt>
-                <dd className="mt-1 text-sm text-gray-900">{data.customerPhone}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{formData.customerPhone}</dd>
               </div>
               <div className="sm:col-span-2">
                 <dt className="text-sm font-medium text-gray-500">Email</dt>
-                <dd className="mt-1 text-sm text-gray-900">{data.customerEmail}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{formData.customerEmail}</dd>
               </div>
             </dl>
         </div>
@@ -1064,15 +1498,15 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             <dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <dt className="text-sm font-medium text-gray-500">Address</dt>
-                <dd className="mt-1 text-sm text-gray-900">{data.address}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{formData.address}</dd>
               </div>
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">City</dt>
-                <dd className="mt-1 text-sm text-gray-900">{data.city}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{formData.city}</dd>
               </div>
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Postal Code</dt>
-                <dd className="mt-1 text-sm text-gray-900">{data.postalCode}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{formData.postalCode}</dd>
               </div>
             </dl>
         </div>
@@ -1082,11 +1516,11 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             <dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Date</dt>
-                <dd className="mt-1 text-sm text-gray-900">{formatDate(data.appointmentDate)}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{formatDate(formData.appointmentDate)}</dd>
               </div>
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Time</dt>
-                <dd className="mt-1 text-sm text-gray-900">{formatTime(data.appointmentTime)}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{formatTime(formData.appointmentTime)}</dd>
               </div>
             </dl>
           </div>
@@ -1143,14 +1577,22 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
 
   // Override the handleSubmit function to check for terms agreement
   const handleFinalSubmit = () => {
-    if (currentStep === steps.length - 1 && !agreeToTerms) {
+    if (!agreeToTerms) {
       setSubmitAttempted(true);
       return;
     }
     
-    methods.handleSubmit((data) => {
-      onSubmit(data);
-    })();
+    const data = methods.getValues();
+    
+    // Process the data before submitting
+    const processedData: CreateBookingRequest = {
+      ...data,
+      // If using "other" brand, set the custom brand for database
+      brand: data.deviceBrand === 'other' && data.customBrand ? data.customBrand : data.deviceBrand,
+      model: data.deviceModel
+    };
+    
+    handleSubmit(processedData);
   };
 
   return (
