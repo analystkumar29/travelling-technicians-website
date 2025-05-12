@@ -1,142 +1,101 @@
 # The Travelling Technicians Website
 
-A modern, responsive website for a doorstep device repair service business serving the Lower Mainland area in British Columbia.
+A professional website for a mobile phone and laptop doorstep repair service operating in Lower Mainland, BC.
 
-## Project Overview
+## Features
 
-The Travelling Technicians website is designed to showcase a mobile phone and laptop repair service that differentiates itself by offering doorstep repair services. Customers can book repair services online, and technicians travel to the customer's location to perform repairs.
-
-### Key Features
-
-- ✅ **Doorstep Service Emphasis**: Clear communication of mobile repair services
-- ✅ **Comprehensive Services Pages**: Detailed mobile and laptop repair options
-- ✅ **Complete Online Booking System**: Multi-step booking form with verification
-- ✅ **Booking Verification System**: Secure token-based verification
-- ✅ **Self-Service Rescheduling**: Customer booking management
-- ✅ **Postal Code Checker**: Service area verification
-- ✅ **Interactive Map**: Visual representation of service areas
-- ✅ **Responsive Design**: Mobile-friendly interface
-- ✅ **Email Confirmation System**: Automated notifications via SendGrid
-
-## Tech Stack
-
-- **Frontend**: Next.js with TypeScript
-- **Styling**: Tailwind CSS
-- **Database**: Supabase
-- **Email Service**: SendGrid
-- **Deployment**: Vercel
-- **Maps**: Leaflet for interactive maps
-- **Forms**: React Hook Form
-- **Authentication**: Token-based verification system
+- Doorstep repair service booking
+- Device repair services (mobile phones and laptops)
+- Online booking system
+- Service area identification
+- Transparent pricing
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (v14 or later)
-- npm or yarn
-- Supabase account for database
-- SendGrid account for emails
-- Google Maps API key for address autocomplete
+- Node.js 18 or higher
+- Docker and Docker Compose (for containerized setup)
+- Supabase account (for database)
 
-### Installation
+### Local Development
 
-1. Clone the repository:
-   ```
-   git clone https://github.com/yourusername/travelling-technicians.git
-   cd travelling-technicians
+1. Clone the repository
+   ```bash
+   git clone <repository-url>
+   cd <repository-folder>
    ```
 
-2. Install dependencies:
-   ```
+2. Install dependencies
+   ```bash
    npm install
    ```
 
-3. Create a `.env.local` file in the root directory with the following variables:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-   SENDGRID_API_KEY=your_sendgrid_api_key
-   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
-   VERIFICATION_SECRET=your_verification_secret
-   FRONTEND_URL=http://localhost:3000
+3. Set up environment variables
+   ```bash
+   cp .env.example .env.local
+   # Edit .env.local to add your Supabase URL and anon key
    ```
 
-4. Start the development server:
-   ```
+4. Run the development server
+   ```bash
    npm run dev
    ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-## Project Structure
+### Docker Setup
 
-- `/src/pages` - Contains all pages of the website
-- `/src/components` - Reusable UI components
-- `/src/hooks` - Custom React hooks
-- `/src/lib` - Utility functions and libraries
-- `/src/services` - Service-related functionality
-- `/src/types` - TypeScript type definitions
-- `/src/styles` - Global styles and Tailwind configuration
-- `/public` - Static assets (images, fonts, etc.)
+1. Build and run using Docker Compose
+   ```bash
+   docker-compose up -d
+   ```
 
-## Key Pages
+2. Access the application at [http://localhost:3000](http://localhost:3000)
 
-- **Home**: Landing page with key value propositions
-- **Services**: Mobile and laptop repair service details
-- **Book Online**: Multi-step booking form
-- **Service Areas**: Map and postal code checker
-- **Verify Booking**: Token-based booking verification
-- **Reschedule Booking**: Self-service booking management
-- **Contact**: Contact form and business information
-- **About**: Company information and team
+3. To stop the containers
+   ```bash
+   docker-compose down
+   ```
 
-## API Endpoints
+## Database Setup
 
-- `/api/bookings/create` - Create new booking records
-- `/api/send-confirmation` - Send booking confirmation emails
-- `/api/verify-booking` - Verify booking tokens
-- `/api/send-reschedule-confirmation` - Send rescheduling confirmation emails
+The application uses Supabase for the database. The schema migrations are provided in the `./sql` directory.
 
-## Database Schema
+### Setting Up the Database
 
-The project uses Supabase with the following main tables:
-
-- **bookings** - Stores all booking information
-- **customers** - Customer contact information
-- **services** - Available repair services
-- **service_areas** - Geographical service coverage
+1. Create a new Supabase project
+2. Run the SQL scripts in the `./sql` directory in order
+3. Update your environment variables with the Supabase URL and anon key
 
 ## Deployment
 
-The site is deployed on Vercel and can be accessed at [travelling-technicians.ca](https://travelling-technicians.ca).
+### Deploy to Production
 
-### Deployment Process
+1. Build the Docker image
+   ```bash
+   docker build -t travelling-technicians .
+   ```
 
-1. Push changes to the main branch
-2. Vercel automatically builds and deploys the site
-3. Environment variables are configured in the Vercel dashboard
+2. Push to your container registry
+   ```bash
+   docker tag travelling-technicians:latest <registry-url>/travelling-technicians:latest
+   docker push <registry-url>/travelling-technicians:latest
+   ```
 
-## Contributing
+## Technology Stack
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature-name`
-3. Commit your changes: `git commit -m 'Add some feature'`
-4. Push to the branch: `git push origin feature/your-feature-name`
-5. Open a pull request
-
-## Future Enhancements
-
-- User accounts for customers
-- Technician profiles and selection
-- Real-time availability calendar
-- Blog system for device repair tips
-- Advanced analytics dashboard
-
-## Version
-
-Current version: 1.0.0
+- **Frontend:** Next.js, React, Tailwind CSS
+- **Backend:** Next.js API Routes
+- **Database:** PostgreSQL with Supabase
+- **Containerization:** Docker
+- **Booking System:** Custom implementation
 
 ## License
 
-This project is proprietary and not licensed for public use.
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Contact
+
+For any inquiries, please reach out to [contact@travellingtechnicians.com](mailto:contact@travellingtechnicians.com)
+
