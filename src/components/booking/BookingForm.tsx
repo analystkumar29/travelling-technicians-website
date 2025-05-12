@@ -1,825 +1,1057 @@
-import React, { useEffect, useState } from 'react';
-import { FaMapMarkerAlt, FaCalendarAlt, FaTools, FaUser, FaCheck, FaSpinner, FaArrowLeft, FaArrowRight } from 'react-icons/fa';
-import AddressAutocomplete from './AddressAutocomplete';
-import PostalCodeChecker from '@/components/PostalCodeChecker';
-import { availableTimes, serviceTypes, getAvailableDates } from '@/utils/bookingUtils';
-import { useBookingForm } from '@/hooks/useBookingForm';
-import { useBooking } from '@/context/BookingContext';
-import { formatTimeSlot, formatServiceType, getDeviceTypeDisplay } from '@/utils/formatters';
-import logger from '@/utils/logger';
-import StorageService, { STORAGE_KEYS } from '@/services/StorageService';
-import { useRouter } from 'next/router';
+import React, { useState } from 'react';
+import { useForm, FormProvider, Controller } from 'react-hook-form';
+// Comment out the non-existent imports for now
+// import { DeviceTypeStep } from './steps/DeviceTypeStep';
+// import { ServiceDetailsStep } from './steps/ServiceDetailsStep';
+// import { CustomerInfoStep } from './steps/CustomerInfoStep';
+// import { LocationStep } from './steps/LocationStep';
+// import { AppointmentStep } from './steps/AppointmentStep';
+// import { ConfirmationStep } from './steps/ConfirmationStep';
+import type { CreateBookingRequest } from '@/types/booking';
 
-// Logger for this module
-const bookingLogger = logger.createModuleLogger('BookingForm');
-
-type ServiceAreaType = {
-  city: string;
-  serviceable: boolean;
-  sameDay: boolean;
-  travelFee?: number;
-  responseTime: string;
-};
-
-// Type for service
-interface ServiceType {
-  id: string;
-  name: string;
-  price: string;
-  doorstep: boolean;
-}
-
-// Type for date option
-interface DateOption {
-  value: string;
-  dayOfWeek: string;
-  display: string;
-}
-
-// Type for time slot
-interface TimeSlot {
-  id: string;
-  label: string;
-}
-
-// Props for BookingForm component
 interface BookingFormProps {
-  onComplete?: (data: any) => void;
+  onSubmit: (data: CreateBookingRequest) => void;
+  onCancel?: () => void;
+  initialData?: Partial<CreateBookingRequest>;
 }
 
-export default function BookingForm({ onComplete }: BookingFormProps) {
-  // Use our custom hook for form state management
-  const { 
-    state, 
-    dispatch, 
-    validateCurrentStep,
-    goToNextStep, 
-    goToPreviousStep,
-    setDeviceInfo,
-    setServiceInfo,
-    setLocationInfo,
-    setAppointmentInfo,
-    setCustomerInfo,
-    submitForm
-  } = useBookingForm();
+/**
+ * Multi-step booking form component
+ * Now includes an implementation for the Device Type step
+ */
+export default function BookingForm({ onSubmit, onCancel, initialData = {} }: BookingFormProps) {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
-  // Use our booking context
-  const { createNewBooking } = useBooking();
+  const methods = useForm<CreateBookingRequest>({
+    defaultValues: {
+      deviceType: initialData.deviceType || 'mobile',
+      deviceBrand: initialData.deviceBrand || '',
+      deviceModel: initialData.deviceModel || '',
+      serviceType: initialData.serviceType || '',
+      issueDescription: initialData.issueDescription || '',
+      appointmentDate: initialData.appointmentDate || '',
+      appointmentTime: initialData.appointmentTime || '',
+      customerName: initialData.customerName || '',
+      customerEmail: initialData.customerEmail || '',
+      customerPhone: initialData.customerPhone || '',
+      address: initialData.address || '',
+      postalCode: initialData.postalCode || '',
+      city: initialData.city || 'Vancouver',
+      province: initialData.province || 'BC',
+    }
+  });
 
-  // Use Next.js router
-  const router = useRouter();
+  // Placeholder step titles
+  const steps = [
+    'Device Type',
+    'Service Details',
+    'Contact Info',
+    'Location',
+    'Appointment',
+    'Confirm',
+  ];
 
-  useEffect(() => {
-    // Log when component mounts
-    bookingLogger.debug('BookingForm mounted');
-    
-    return () => {
-      // Log when component unmounts
-      bookingLogger.debug('BookingForm unmounted');
-    };
-  }, []);
+  const nextStep = () => {
+    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+  };
 
-  // Handle successful postal code check
-  const handlePostalCodeSuccess = (result: ServiceAreaType, code: string) => {
-    bookingLogger.debug('Postal code check successful', { postalCode: code });
-    
-    setLocationInfo({
-      postalCode: code,
-      isValidPostalCode: true,
-      serviceAreaResult: result
-    });
+  const prevStep = () => {
+    setCurrentStep((prev) => Math.max(prev - 1, 0));
+  };
+
+  const handleSubmit = (data: CreateBookingRequest) => {
+    onSubmit(data);
   };
   
-  // Handle postal code check error
-  const handlePostalCodeError = (error: string) => {
-    bookingLogger.debug('Postal code check failed', { error });
-    
-    setLocationInfo({
-      isValidPostalCode: false,
-      serviceAreaResult: null
-    });
-  };
-
-  // Handle form step navigation
-  const handleContinue = () => {
-    bookingLogger.debug('handleContinue called at step', {
-      currentStep: state.currentStep,
-      locationInfo: state.locationInfo,
-      validationState: state.validation
-    });
-    
-    if (validateCurrentStep()) {
-      bookingLogger.debug('Validation passed, moving to next step');
-      goToNextStep();
-    } else {
-      // Show errors if validation fails
-      bookingLogger.debug('Validation failed, showing errors');
-      dispatch({ type: 'SHOW_ERRORS', payload: true });
-    }
-  };
-
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateCurrentStep()) {
-      dispatch({ type: 'SHOW_ERRORS', payload: true });
-      return;
-    }
-    
-    bookingLogger.info('Submitting booking form');
-    dispatch({ type: 'SUBMIT_FORM_START' });
-    
-    try {
-      const formData = {
-        deviceType: state.deviceInfo.deviceType || 'mobile',
-        deviceBrand: state.deviceInfo.deviceBrand,
-        deviceModel: state.deviceInfo.deviceModel,
-        serviceType: state.serviceInfo.serviceType,
-        issueDescription: state.serviceInfo.issueDescription,
-        appointmentDate: state.appointmentInfo.date,
-        appointmentTime: state.appointmentInfo.timeSlot,
-        customerName: state.customerInfo.name,
-        customerEmail: state.customerInfo.email,
-        customerPhone: state.customerInfo.phone,
-        address: state.locationInfo.address,
-        postalCode: state.locationInfo.postalCode
-      };
-      
-      bookingLogger.debug('Calling createNewBooking with form data', {
-        deviceType: formData.deviceType,
-        serviceType: formData.serviceType,
-        hasDate: !!formData.appointmentDate,
-        hasTime: !!formData.appointmentTime
-      });
-      
-      // Use our context function to create a booking
-      const bookingReference = await createNewBooking(formData);
-      
-      if (!bookingReference) {
-        throw new Error('No booking reference returned');
-      }
-      
-      bookingLogger.info('Booking created successfully:', { reference: bookingReference });
-      
-      // Store necessary information in localStorage for the confirmation page
-      StorageService.setItem(STORAGE_KEYS.BOOKING_REFERENCE, bookingReference);
-      
-      // Prepare formatted data for the confirmation page
-      const formattedData = {
-        ref: bookingReference,
-        device: getDeviceTypeDisplay(
-          state.deviceInfo.deviceType,
-          state.deviceInfo.deviceBrand,
-          state.deviceInfo.deviceModel
-        ),
-        service: formatServiceType(state.serviceInfo.serviceType),
-        date: state.appointmentInfo.date,
-        time: formatTimeSlot(state.appointmentInfo.timeSlot),
-        address: state.locationInfo.address,
-        email: state.customerInfo.email
-      };
-      
-      // Store formatted data for the confirmation page
-      StorageService.setItem(STORAGE_KEYS.BOOKING_DATA, formattedData);
-      
-      dispatch({
-        type: 'SUBMIT_FORM_SUCCESS',
-        payload: {
-          bookingReference,
-          bookingData: formData
-        }
-      });
-      
-      bookingLogger.debug('Redirecting to confirmation page', { bookingReference });
-      
-      // Call onComplete callback if provided
-      if (onComplete) {
-        onComplete({
-          reference: bookingReference,
-          ...formData
-        });
-        return;
-      }
-      
-      // Use Next.js router to handle the redirection
-      router.push({
-        pathname: '/booking-confirmation',
-        query: {
-          ref: bookingReference,
-          device: formattedData.device,
-          service: formattedData.service,
-          date: formattedData.date,
-          time: formattedData.time,
-          address: formattedData.address,
-          email: formattedData.email
-        }
-      });
-    } catch (error) {
-      bookingLogger.error('Form submission error', {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
-      });
-      
-      // Show a user-friendly error message
-      let errorMessage = 'Failed to submit booking. Please try again later.';
-      
-      if (error instanceof Error) {
-        if (error.message.includes('serviceable')) {
-          errorMessage = 'We currently do not service your area. Please check our service areas.';
-        } else if (error.message.toLowerCase().includes('network') || error.message.toLowerCase().includes('timeout')) {
-          errorMessage = 'Network error. Please check your internet connection and try again.';
-        } else if (error.message.toLowerCase().includes('supabase')) {
-          errorMessage = 'We\'re experiencing database issues. Please try again later.';
-        }
-      }
-      
-      dispatch({
-        type: 'SUBMIT_FORM_ERROR',
-        payload: errorMessage
-      });
-    }
-  };
-
-  // Determine which step content to show
-  const renderStepContent = () => {
-    switch (state.currentStep) {
-      case 1:
-        return renderDeviceSelection();
-      case 2:
-        return renderServiceSelection();
-      case 3:
-        return renderLocationCheck();
-      case 4:
-        return renderScheduleSelection();
-      case 5:
-        return renderContactInfo();
-      default:
-        return null;
-    }
-  };
-
-  // Step 1: Device Selection
-  const renderDeviceSelection = () => {
+  // Render the Device Type step
+  const renderDeviceTypeStep = () => {
     return (
-      <div>
-        <h2 className="text-2xl font-bold mb-6">Select Your Device</h2>
-        
-        {state.validation.showErrors && !state.validation.deviceInfoValid && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="text-sm font-medium text-red-800">
-              Please select all required device information:
-            </div>
-            <ul className="mt-2 text-sm text-red-700 list-disc pl-5">
-              {!state.deviceInfo.deviceType && <li>Device type is required</li>}
-              {!state.deviceInfo.deviceBrand && <li>Device brand is required</li>}
-              {!state.deviceInfo.deviceModel && <li>Device model is required</li>}
-            </ul>
-          </div>
-        )}
-        
-        <div className="mb-6">
-          <label className="block text-gray-700 font-medium mb-3">Device Type</label>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <button
-              type="button"
-              className={`flex items-center p-4 rounded-lg border-2 transition-all ${
-                state.deviceInfo.deviceType === 'mobile' 
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">Device Type</label>
+          <div className="flex flex-wrap gap-4">
+            <label className="relative flex items-center">
+              <Controller
+                name="deviceType"
+                control={methods.control}
+                render={({ field }) => (
+                  <input
+                    type="radio"
+                    className="sr-only"
+                    value="mobile"
+                    checked={field.value === 'mobile'}
+                    onChange={() => field.onChange('mobile')}
+                  />
+                )}
+              />
+              <div className={`
+                p-4 border-2 rounded-lg flex flex-col items-center cursor-pointer transition
+                ${methods.watch('deviceType') === 'mobile' 
                   ? 'border-primary-500 bg-primary-50' 
-                  : 'border-gray-200 hover:border-primary-200'
-              }`}
-              onClick={() => setDeviceInfo({ deviceType: 'mobile' })}
-            >
-              <div className="mr-3 rounded-full bg-gray-100 p-2">
-                <FaTools className="h-4 w-4 text-gray-600" />
+                  : 'border-gray-200 hover:border-gray-300'
+                }
+              `}>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                <span className="mt-2 font-medium">Mobile Phone</span>
               </div>
-              <span className="font-medium">Mobile Phone</span>
-            </button>
+            </label>
             
-            <button
-              type="button"
-              className={`flex items-center p-4 rounded-lg border-2 transition-all ${
-                state.deviceInfo.deviceType === 'tablet' 
+            <label className="relative flex items-center">
+              <Controller
+                name="deviceType"
+                control={methods.control}
+                render={({ field }) => (
+                  <input
+                    type="radio"
+                    className="sr-only"
+                    value="laptop"
+                    checked={field.value === 'laptop'}
+                    onChange={() => field.onChange('laptop')}
+                  />
+                )}
+              />
+              <div className={`
+                p-4 border-2 rounded-lg flex flex-col items-center cursor-pointer transition
+                ${methods.watch('deviceType') === 'laptop' 
                   ? 'border-primary-500 bg-primary-50' 
-                  : 'border-gray-200 hover:border-primary-200'
-              }`}
-              onClick={() => setDeviceInfo({ deviceType: 'tablet' })}
-            >
-              <div className="mr-3 rounded-full bg-gray-100 p-2">
-                <FaTools className="h-4 w-4 text-gray-600" />
+                  : 'border-gray-200 hover:border-gray-300'
+                }
+              `}>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <span className="mt-2 font-medium">Laptop</span>
               </div>
-              <span className="font-medium">Tablet</span>
-            </button>
+            </label>
             
-            <button
-              type="button"
-              className={`flex items-center p-4 rounded-lg border-2 transition-all ${
-                state.deviceInfo.deviceType === 'laptop' 
+            <label className="relative flex items-center">
+              <Controller
+                name="deviceType"
+                control={methods.control}
+                render={({ field }) => (
+                  <input
+                    type="radio"
+                    className="sr-only"
+                    value="tablet"
+                    checked={field.value === 'tablet'}
+                    onChange={() => field.onChange('tablet')}
+                  />
+                )}
+              />
+              <div className={`
+                p-4 border-2 rounded-lg flex flex-col items-center cursor-pointer transition
+                ${methods.watch('deviceType') === 'tablet' 
                   ? 'border-primary-500 bg-primary-50' 
-                  : 'border-gray-200 hover:border-primary-200'
-              }`}
-              onClick={() => setDeviceInfo({ deviceType: 'laptop' })}
-            >
-              <div className="mr-3 rounded-full bg-gray-100 p-2">
-                <FaTools className="h-4 w-4 text-gray-600" />
+                  : 'border-gray-200 hover:border-gray-300'
+                }
+              `}>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                <span className="mt-2 font-medium">Tablet</span>
               </div>
-              <span className="font-medium">Laptop</span>
-            </button>
+            </label>
           </div>
         </div>
         
-        {state.deviceInfo.deviceType && (
-          <>
-            <div className="mb-6">
-              <label htmlFor="brand" className="block text-gray-700 font-medium mb-2">
-                Brand
+        <div className="space-y-2">
+          <label htmlFor="deviceBrand" className="block text-sm font-medium text-gray-700">
+            Device Brand
               </label>
+          <Controller
+            name="deviceBrand"
+            control={methods.control}
+            rules={{ required: "Brand is required" }}
+            render={({ field, fieldState }) => (
+              <>
               <input
+                  id="deviceBrand"
                 type="text"
-                id="brand"
-                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className={`
+                    mt-1 block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
+                    ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
+                    focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
+                  `}
                 placeholder="e.g., Apple, Samsung, Dell"
-                value={state.deviceInfo.deviceBrand}
-                onChange={(e) => setDeviceInfo({ deviceBrand: e.target.value })}
+                  {...field}
+                />
+                {fieldState.error && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
+              </>
+            )}
               />
             </div>
             
-            <div className="mb-6">
-              <label htmlFor="model" className="block text-gray-700 font-medium mb-2">
-                Model
+        <div className="space-y-2">
+          <label htmlFor="deviceModel" className="block text-sm font-medium text-gray-700">
+            Device Model
               </label>
+          <Controller
+            name="deviceModel"
+            control={methods.control}
+            rules={{ required: "Model is required" }}
+            render={({ field, fieldState }) => (
+              <>
               <input
+                  id="deviceModel"
                 type="text"
-                id="model"
-                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className={`
+                    mt-1 block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
+                    ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
+                    focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
+                  `}
                 placeholder="e.g., iPhone 13, Galaxy S22, XPS 15"
-                value={state.deviceInfo.deviceModel}
-                onChange={(e) => setDeviceInfo({ deviceModel: e.target.value })}
+                  {...field}
               />
-            </div>
+                {fieldState.error && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
           </>
         )}
-        
-        <div className="flex justify-end mt-8">
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={handleContinue}
-          >
-            Continue
-          </button>
+          />
         </div>
       </div>
     );
   };
 
-  // Step 2: Service Selection
-  const renderServiceSelection = () => {
-    // Get service types based on device type
-    const services = state.deviceInfo.deviceType ? 
-      serviceTypes[state.deviceInfo.deviceType as keyof typeof serviceTypes] || [] : 
-      [];
+  // Render the Service Details step
+  const renderServiceDetailsStep = () => {
+    const deviceType = methods.watch('deviceType');
+    
+    // Define services based on device type
+    const services = {
+      mobile: [
+        { id: 'screen-replacement', label: 'Screen Replacement', doorstep: true },
+        { id: 'battery-replacement', label: 'Battery Replacement', doorstep: true },
+        { id: 'charging-port', label: 'Charging Port Repair', doorstep: true },
+        { id: 'speaker-mic', label: 'Speaker/Microphone Repair', doorstep: true },
+        { id: 'camera-repair', label: 'Camera Repair', doorstep: true },
+        { id: 'water-damage', label: 'Water Damage Diagnostics', doorstep: false },
+        { id: 'other-mobile', label: 'Other Issue', doorstep: false }
+      ],
+      laptop: [
+        { id: 'screen-replacement', label: 'Screen Replacement', doorstep: true },
+        { id: 'battery-replacement', label: 'Battery Replacement', doorstep: true },
+        { id: 'keyboard-repair', label: 'Keyboard Repair/Replacement', doorstep: true },
+        { id: 'trackpad-repair', label: 'Trackpad Repair', doorstep: true },
+        { id: 'ram-upgrade', label: 'RAM Upgrade', doorstep: true },
+        { id: 'storage-upgrade', label: 'HDD/SSD Replacement/Upgrade', doorstep: true },
+        { id: 'software-trouble', label: 'Software Troubleshooting', doorstep: true },
+        { id: 'virus-removal', label: 'Virus Removal', doorstep: true },
+        { id: 'cooling-repair', label: 'Cooling System Repair', doorstep: true },
+        { id: 'power-jack', label: 'Power Jack Repair', doorstep: true },
+        { id: 'other-laptop', label: 'Other Issue', doorstep: false }
+      ],
+      tablet: [
+        { id: 'screen-replacement', label: 'Screen Replacement', doorstep: true },
+        { id: 'battery-replacement', label: 'Battery Replacement', doorstep: true },
+        { id: 'charging-port', label: 'Charging Port Repair', doorstep: true },
+        { id: 'speaker-repair', label: 'Speaker Repair', doorstep: true },
+        { id: 'button-repair', label: 'Button Repair', doorstep: true },
+        { id: 'software-issue', label: 'Software Issue', doorstep: true },
+        { id: 'other-tablet', label: 'Other Issue', doorstep: false }
+      ]
+    };
+    
+    const availableServices = services[deviceType as keyof typeof services] || [];
     
     return (
-      <div>
-        <h2 className="text-2xl font-bold mb-6">Select Service</h2>
-        
-        {state.validation.showErrors && !state.validation.serviceInfoValid && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="text-sm font-medium text-red-800">
-              Please select a service type to continue
-            </div>
-          </div>
-        )}
-        
-        <div className="mb-6">
-          <label className="block text-gray-700 font-medium mb-3">Service Type</label>
-          <div className="grid grid-cols-1 gap-3">
-            {services.map((service: ServiceType) => (
-              <button
-                key={service.id}
-                type="button"
-                className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all ${
-                  state.serviceInfo.serviceType === service.id 
-                    ? 'border-primary-500 bg-primary-50' 
-                    : 'border-gray-200 hover:border-primary-200'
-                }`}
-                onClick={() => setServiceInfo({ serviceType: service.id })}
-              >
-                <div className="flex items-center">
-                  <div className="rounded-full bg-gray-100 p-2 mr-3">
-                    <FaTools className="h-4 w-4 text-gray-600" />
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">Select Service</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {availableServices.map(service => (
+              <label key={service.id} className="relative flex items-start p-4 border-2 rounded-lg cursor-pointer transition
+                hover:bg-gray-50 hover:border-gray-300">
+                <div className="flex items-center h-5">
+                  <Controller
+                    name="serviceType"
+                    control={methods.control}
+                    rules={{ required: "Please select a service" }}
+                    render={({ field }) => (
+                      <input
+                        type="radio"
+                        className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+                        value={service.id}
+                        checked={field.value === service.id}
+                        onChange={() => field.onChange(service.id)}
+                      />
+                    )}
+                  />
                   </div>
-                  <div className="text-left">
-                    <span className="font-medium block">{service.name}</span>
-                    {service.doorstep && (
-                      <span className="text-xs text-green-600">Available at Doorstep</span>
+                <div className="ml-3 flex-1">
+                  <span className="block text-sm font-medium text-gray-700">{service.label}</span>
+                  {service.doorstep ? (
+                    <span className="inline-flex items-center px-2 py-0.5 mt-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                      Doorstep Available
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 mt-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                      In-Shop Only
+                    </span>
                     )}
                   </div>
-                </div>
-                <div className="text-right text-gray-700 font-medium">
-                  {service.price}
-                </div>
-              </button>
+              </label>
             ))}
           </div>
+          {methods.formState.errors.serviceType && (
+            <p className="mt-1 text-sm text-red-600">{methods.formState.errors.serviceType.message}</p>
+          )}
         </div>
         
-        <div className="mb-6">
-          <label htmlFor="issueDescription" className="block text-gray-700 font-medium mb-2">
+        <div className="space-y-2">
+          <label htmlFor="issueDescription" className="block text-sm font-medium text-gray-700">
             Describe the Issue
           </label>
+          <Controller
+            name="issueDescription"
+            control={methods.control}
+            rules={{ required: "Please describe the issue" }}
+            render={({ field, fieldState }) => (
+              <>
           <textarea
             id="issueDescription"
             rows={4}
-            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            placeholder="Please provide additional details about the issue you're experiencing..."
-            value={state.serviceInfo.issueDescription}
-            onChange={(e) => setServiceInfo({ issueDescription: e.target.value })}
-          ></textarea>
-        </div>
-        
-        <div className="flex justify-between mt-8">
-          <button
-            type="button"
-            className="btn-outline"
-            onClick={goToPreviousStep}
-          >
-            Back
-          </button>
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={handleContinue}
-          >
-            Continue
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  // Step 3: Location Check
-  const renderLocationCheck = () => {
-    return (
-      <div>
-        <h2 className="text-2xl font-bold mb-6">Check Service Availability</h2>
-        
-        <div className="mb-6">
-          <div className="custom-postal-code-checker">
-            <PostalCodeChecker 
-              className="booking-form-checker"
-              variant="default"
-              onSuccess={handlePostalCodeSuccess}
-              onError={handlePostalCodeError}
-            />
-          </div>
-          
-          {state.locationInfo.serviceAreaResult && (
-            <div className="mt-8 text-center">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                <div className="flex items-center justify-center">
-                  <FaCheck className="h-6 w-6 text-green-500 mr-2" />
-                  <span className="font-medium text-green-800">
-                    {state.locationInfo.serviceAreaResult.city} is available for service! 
-                    {state.locationInfo.serviceAreaResult.sameDay && " Same-day service is available."}
-                  </span>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={handleContinue}
-              >
-                Continue to Schedule
-              </button>
-            </div>
-          )}
-          
-          <div className="mt-4 text-center">
-            <button
-              type="button"
-              className="btn-outline"
-              onClick={goToPreviousStep}
-            >
-              Back to Previous Step
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Step 4: Schedule Selection
-  const renderScheduleSelection = () => {
-    return (
-      <div>
-        <h2 className="text-2xl font-bold mb-6">Choose Appointment Time</h2>
-        
-        {state.validation.showErrors && !state.validation.appointmentInfoValid && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="text-sm font-medium text-red-800">
-              Please complete all required fields to continue:
-            </div>
-            <ul className="mt-2 text-sm text-red-700 list-disc pl-5">
-              {!state.locationInfo.address && <li>Service address is required</li>}
-              {state.locationInfo.address && !state.locationInfo.isAddressValid && 
-                <li>The provided address is outside our service area</li>}
-              {!state.appointmentInfo.date && <li>Appointment date is required</li>}
-              {!state.appointmentInfo.timeSlot && <li>Appointment time is required</li>}
-            </ul>
-          </div>
-        )}
-        
-        <div className="mb-6">
-          <label htmlFor="address" className="block text-gray-700 font-medium mb-2">
-            Service Address *
-          </label>
-          <AddressAutocomplete
-            onAddressSelect={(newAddress, isValid, postalCode) => {
-              bookingLogger.debug('Address selected', { 
-                address: newAddress, 
-                isValid, 
-                postalCode 
-              });
-              
-              setLocationInfo({
-                address: newAddress,
-                isAddressValid: isValid,
-                postalCode: postalCode || state.locationInfo.postalCode
-              });
-            }}
-            value={state.locationInfo.address}
-            error={state.validation.showErrors && !state.locationInfo.address}
-          />
-          {state.validation.showErrors && !state.locationInfo.address && (
-            <p className="mt-1 text-sm text-red-600">Service address is required</p>
-          )}
-          {state.validation.showErrors && state.locationInfo.address && !state.locationInfo.isAddressValid && (
-            <p className="mt-1 text-sm text-red-600">The provided address is outside our service area</p>
-          )}
-        </div>
-        
-        <div className="mb-6">
-          <label className="block text-gray-700 font-medium mb-3">
-            <div className="flex items-center">
-              <FaCalendarAlt className="mr-2 text-primary-600" />
-              Select Date *
-            </div>
-          </label>
-          
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {getAvailableDates().map((dateOption: DateOption) => (
-              <button
-                key={dateOption.value}
-                type="button"
-                className={`p-3 rounded-lg border-2 transition-all text-center ${
-                  dateOption.value === state.appointmentInfo.date 
-                    ? 'border-primary-500 bg-primary-50 text-primary-700' 
-                    : 'border-gray-200 hover:border-primary-200 text-gray-700'
-                }`}
-                onClick={() => setAppointmentInfo({ date: dateOption.value })}
-              >
-                <div className="text-xs font-medium mb-1">{dateOption.dayOfWeek}</div>
-                <div>{dateOption.display}</div>
-              </button>
-            ))}
-          </div>
-          {state.validation.showErrors && !state.appointmentInfo.date && (
-            <p className="mt-1 text-sm text-red-600">Please select an appointment date</p>
-          )}
-        </div>
-        
-        <div className="mb-6">
-          <label className="block text-gray-700 font-medium mb-3">
-            <div className="flex items-center">
-              <FaCalendarAlt className="mr-2 text-primary-600" />
-              Select Time *
-            </div>
-          </label>
-          
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {availableTimes.map((time: TimeSlot) => (
-              <button
-                key={time.id}
-                type="button"
-                disabled={!state.appointmentInfo.date}
-                className={`p-3 rounded-lg border-2 transition-all text-center ${
-                  time.id === state.appointmentInfo.timeSlot 
-                    ? 'border-primary-500 bg-primary-50 text-primary-700' 
-                    : 'border-gray-200 hover:border-primary-200 text-gray-700'
-                } ${!state.appointmentInfo.date ? 'cursor-not-allowed opacity-50' : ''}`}
-                onClick={() => setAppointmentInfo({ timeSlot: time.id })}
-              >
-                {time.label}
-              </button>
-            ))}
-          </div>
-          {state.validation.showErrors && !state.appointmentInfo.timeSlot && (
-            <p className="mt-1 text-sm text-red-600">Please select an appointment time</p>
-          )}
-          {!state.appointmentInfo.date && !state.validation.showErrors && (
-            <p className="mt-1 text-sm text-gray-500">Please select a date first</p>
-          )}
-        </div>
-        
-        <div className="flex justify-between mt-8">
-          <button
-            type="button"
-            className="btn-outline"
-            onClick={goToPreviousStep}
-          >
-            Back
-          </button>
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={handleContinue}
-          >
-            Continue
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  // Step 5: Contact Information
-  const renderContactInfo = () => {
-    return (
-      <div>
-        <h2 className="text-2xl font-bold mb-6">Your Contact Information</h2>
-        
-        {state.validation.showErrors && !state.validation.customerInfoValid && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="text-sm font-medium text-red-800">
-              Please provide the following required information:
-            </div>
-            <ul className="mt-2 text-sm text-red-700 list-disc pl-5">
-              {!state.customerInfo.name && <li>Your name is required</li>}
-              {!state.customerInfo.email && <li>Your email is required</li>}
-              {state.customerInfo.email && state.validation.formErrors.email && 
-                <li>{state.validation.formErrors.email}</li>}
-              {!state.customerInfo.phone && <li>Your phone number is required</li>}
-            </ul>
-          </div>
-        )}
-        
-        <div className="mb-6">
-          <label htmlFor="contactName" className="block text-gray-700 font-medium mb-2">
-            Your Name *
-          </label>
-          <input
-            type="text"
-            id="contactName"
-            className={`w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-              state.validation.showErrors && !state.customerInfo.name ? 'border-red-300' : 'border-gray-300'
-            }`}
-            placeholder="Full Name"
-            value={state.customerInfo.name}
-            onChange={(e) => setCustomerInfo({ name: e.target.value })}
-          />
-          {state.validation.showErrors && !state.customerInfo.name && (
-            <p className="mt-1 text-sm text-red-600">Your name is required</p>
-          )}
-        </div>
-        
-        <div className="mb-6">
-          <label htmlFor="contactEmail" className="block text-gray-700 font-medium mb-2">
-            Email Address *
-          </label>
-          <input
-            type="email"
-            id="contactEmail"
-            className={`w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-              state.validation.showErrors && (!state.customerInfo.email || state.validation.formErrors.email) 
-                ? 'border-red-300' : 'border-gray-300'
-            }`}
-            placeholder="email@example.com"
-            value={state.customerInfo.email}
-            onChange={(e) => setCustomerInfo({ email: e.target.value })}
-          />
-          {state.validation.showErrors && !state.customerInfo.email && (
-            <p className="mt-1 text-sm text-red-600">Email address is required</p>
-          )}
-          {state.validation.showErrors && state.customerInfo.email && state.validation.formErrors.email && (
-            <p className="mt-1 text-sm text-red-600">{state.validation.formErrors.email}</p>
-          )}
-        </div>
-        
-        <div className="mb-6">
-          <label htmlFor="contactPhone" className="block text-gray-700 font-medium mb-2">
-            Phone Number *
-          </label>
-          <input
-            type="tel"
-            id="contactPhone"
-            className={`w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-              state.validation.showErrors && !state.customerInfo.phone ? 'border-red-300' : 'border-gray-300'
-            }`}
-            placeholder="(123) 456-7890"
-            value={state.customerInfo.phone}
-            onChange={(e) => setCustomerInfo({ phone: e.target.value })}
-          />
-          {state.validation.showErrors && !state.customerInfo.phone && (
-            <p className="mt-1 text-sm text-red-600">Phone number is required</p>
-          )}
-        </div>
-        
-        <div className="mb-6">
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              checked={state.customerInfo.contactConsent}
-              onChange={(e) => setCustomerInfo({ contactConsent: e.target.checked })}
-            />
-            <span className="ml-2 text-gray-700">
-              I agree to receive updates about my repair via email and text
-            </span>
-          </label>
-        </div>
-        
-        {/* Booking Summary */}
-        <div className="mt-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <h3 className="font-medium text-gray-800 mb-3">Booking Summary</h3>
-          <div className="space-y-2 text-sm">
-            <p>
-              <span className="font-medium">Device:</span> {getDeviceTypeDisplay(
-                state.deviceInfo.deviceType,
-                state.deviceInfo.deviceBrand,
-                state.deviceInfo.deviceModel
-              )}
-            </p>
-            <p>
-              <span className="font-medium">Service:</span> {formatServiceType(state.serviceInfo.serviceType)}
-            </p>
-            <p>
-              <span className="font-medium">Date:</span> {state.appointmentInfo.date || 'Not selected'}
-            </p>
-            <p>
-              <span className="font-medium">Time:</span> {formatTimeSlot(state.appointmentInfo.timeSlot) || 'Not selected'}
-            </p>
-            <p>
-              <span className="font-medium">Address:</span> {state.locationInfo.address || 'Not provided'}
-            </p>
-          </div>
-        </div>
-        
-        {state.submission.submitError && (
-          <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-sm text-red-700">{state.submission.submitError}</p>
-          </div>
-        )}
-        
-        <div className="flex justify-between mt-8">
-          <button
-            type="button"
-            className="btn-outline"
-            onClick={goToPreviousStep}
-            disabled={state.submission.isSubmitting}
-          >
-            Back
-          </button>
-          <button
-            type="submit"
-            className="btn-primary"
-            onClick={handleSubmit}
-            disabled={state.submission.isSubmitting}
-          >
-            {state.submission.isSubmitting ? (
-              <span className="flex items-center">
-                <FaSpinner className="animate-spin mr-2" />
-                Submitting...
-              </span>
-            ) : (
-              'Complete Booking'
+                  className={`
+                    block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
+                    ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
+                    focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
+                  `}
+                  placeholder={`Please describe the issue with your ${deviceType}...`}
+                  {...field}
+                />
+                {fieldState.error && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
+              </>
             )}
-          </button>
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            The more details you provide, the better we can prepare for your repair.
+          </p>
         </div>
       </div>
     );
+  };
+
+  // Render the Customer Info step
+  const renderCustomerInfoStep = () => {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <label htmlFor="customerName" className="block text-sm font-medium text-gray-700">
+            Full Name
+          </label>
+          <Controller
+            name="customerName"
+            control={methods.control}
+            rules={{ required: "Name is required" }}
+            render={({ field, fieldState }) => (
+              <>
+                <input
+                  id="customerName"
+                  type="text"
+                  className={`
+                    block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
+                    ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
+                    focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
+                  `}
+                  placeholder="Your full name"
+                  {...field}
+                />
+                {fieldState.error && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
+              </>
+            )}
+            />
+          </div>
+          
+        <div className="space-y-2">
+          <label htmlFor="customerEmail" className="block text-sm font-medium text-gray-700">
+            Email Address
+          </label>
+          <Controller
+            name="customerEmail"
+            control={methods.control}
+            rules={{ 
+              required: "Email is required",
+              pattern: {
+                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                message: "Invalid email address"
+              }
+            }}
+            render={({ field, fieldState }) => (
+              <>
+                <input
+                  id="customerEmail"
+                  type="email"
+                  className={`
+                    block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
+                    ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
+                    focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
+                  `}
+                  placeholder="you@example.com"
+                  {...field}
+                />
+                {fieldState.error && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
+              </>
+            )}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            We'll send booking confirmation and updates to this email.
+          </p>
+        </div>
+        
+        <div className="space-y-2">
+          <label htmlFor="customerPhone" className="block text-sm font-medium text-gray-700">
+            Phone Number
+          </label>
+          <Controller
+            name="customerPhone"
+            control={methods.control}
+            rules={{ 
+              required: "Phone number is required",
+              pattern: {
+                value: process.env.NODE_ENV === 'production' 
+                  ? /^(\+?1-?)?(\([2-9]([0-9]{2})\)|[2-9]([0-9]{2}))-?[2-9]([0-9]{2})-?([0-9]{4})$/
+                  : /^.{2,}$/,
+                message: "Please enter a valid phone number"
+              }
+            }}
+            render={({ field, fieldState }) => (
+              <>
+                <input
+                  id="customerPhone"
+                  type="tel"
+                  className={`
+                    block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
+                    ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
+                    focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
+                  `}
+                  placeholder="(555) 123-4567"
+                  {...field}
+                />
+                {fieldState.error && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
+              </>
+            )}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Our technician will call you before arriving for the repair.
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  // Render the Location step
+  const renderLocationStep = () => {
+    return (
+      <div className="space-y-6">
+        <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-blue-700">
+                We service the entire Lower Mainland area including Vancouver, Burnaby, Surrey, Richmond, Coquitlam, and more.
+              </p>
+          </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+            Street Address
+          </label>
+          <Controller
+            name="address"
+            control={methods.control}
+            rules={{ required: "Address is required" }}
+            render={({ field, fieldState }) => (
+              <>
+                <input
+                  id="address"
+                  type="text"
+                  className={`
+                    block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
+                    ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
+                    focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
+                  `}
+                  placeholder="123 Main St, Apt 4B"
+                  {...field}
+                />
+                {fieldState.error && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
+              </>
+            )}
+          />
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label htmlFor="city" className="block text-sm font-medium text-gray-700">
+              City
+          </label>
+            <Controller
+              name="city"
+              control={methods.control}
+              rules={{ required: "City is required" }}
+              render={({ field, fieldState }) => (
+                <>
+                  <select
+                    id="city"
+                    className={`
+                      block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
+                      ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
+                      focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
+                    `}
+                    {...field}
+                  >
+                    <option value="Vancouver">Vancouver</option>
+                    <option value="Burnaby">Burnaby</option>
+                    <option value="Surrey">Surrey</option>
+                    <option value="Richmond">Richmond</option>
+                    <option value="Coquitlam">Coquitlam</option>
+                    <option value="North Vancouver">North Vancouver</option>
+                    <option value="West Vancouver">West Vancouver</option>
+                    <option value="New Westminster">New Westminster</option>
+                    <option value="Delta">Delta</option>
+                    <option value="Langley">Langley</option>
+                    <option value="White Rock">White Rock</option>
+                    <option value="Port Coquitlam">Port Coquitlam</option>
+                    <option value="Port Moody">Port Moody</option>
+                    <option value="Maple Ridge">Maple Ridge</option>
+                    <option value="Pitt Meadows">Pitt Meadows</option>
+                  </select>
+                  {fieldState.error && (
+                    <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                  )}
+                </>
+              )}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700">
+              Postal Code
+            </label>
+            <Controller
+              name="postalCode"
+              control={methods.control}
+              rules={{ 
+                required: "Postal code is required",
+                pattern: {
+                  value: process.env.NODE_ENV === 'production'
+                    ? /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/
+                    : /^.{2,}$/,
+                  message: "Please enter a valid Canadian postal code"
+                }
+              }}
+              render={({ field, fieldState }) => (
+                <>
+                  <input
+                    id="postalCode"
+                    type="text"
+                    className={`
+                      block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
+                      ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
+                      focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
+                    `}
+                    placeholder="V6B 1A1"
+                    {...field}
+                  />
+                  {fieldState.error && (
+                    <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                  )}
+                </>
+              )}
+            />
+        </div>
+            </div>
+        
+        <div className="space-y-2">
+          <label htmlFor="province" className="block text-sm font-medium text-gray-700">
+            Province
+          </label>
+          <Controller
+            name="province"
+            control={methods.control}
+            render={({ field }) => (
+              <input
+                id="province"
+                type="text"
+                className="bg-gray-100 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm sm:text-sm"
+                disabled
+                {...field}
+              />
+            )}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            We currently only service British Columbia's Lower Mainland.
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  // Render the Appointment step
+  const renderAppointmentStep = () => {
+    const currentDate = new Date();
+    const minDate = new Date(currentDate);
+    minDate.setDate(currentDate.getDate() + 1); // Start from tomorrow
+    
+    // Generate available dates (next 14 days)
+    const availableDates = Array.from({ length: 14 }, (_, i) => {
+      const date = new Date(minDate);
+      date.setDate(minDate.getDate() + i);
+      return date;
+    });
+    
+    // Format date for display
+    const formatDateForDisplay = (date: Date) => {
+      return new Intl.DateTimeFormat('en-CA', { 
+        weekday: 'long',
+        month: 'long', 
+        day: 'numeric' 
+      }).format(date);
+    };
+    
+    // Format date for value
+    const formatDateForValue = (date: Date) => {
+      return date.toISOString().split('T')[0]; // YYYY-MM-DD
+    };
+    
+    // Available time slots
+    const timeSlots = [
+      { value: '09:00', label: '9:00 AM' },
+      { value: '10:00', label: '10:00 AM' },
+      { value: '11:00', label: '11:00 AM' },
+      { value: '12:00', label: '12:00 PM' },
+      { value: '13:00', label: '1:00 PM' },
+      { value: '14:00', label: '2:00 PM' },
+      { value: '15:00', label: '3:00 PM' },
+      { value: '16:00', label: '4:00 PM' },
+      { value: '17:00', label: '5:00 PM' },
+    ];
+    
+    return (
+      <div className="space-y-6">
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700">
+                Please select your preferred date and time. Our technician will contact you to confirm the exact time on the appointment day.
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <label htmlFor="appointmentDate" className="block text-sm font-medium text-gray-700">
+            Select a Date
+          </label>
+          <Controller
+            name="appointmentDate"
+            control={methods.control}
+            rules={{ required: "Please select a date" }}
+            render={({ field, fieldState }) => (
+              <>
+                <select
+                  id="appointmentDate"
+                  className={`
+                    block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
+                    ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
+                    focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
+                  `}
+                  {...field}
+                >
+                  <option value="">Select a date</option>
+                  {availableDates.map((date) => (
+                    <option key={formatDateForValue(date)} value={formatDateForValue(date)}>
+                      {formatDateForDisplay(date)}
+                    </option>
+                  ))}
+                </select>
+                {fieldState.error && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
+              </>
+            )}
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <label htmlFor="appointmentTime" className="block text-sm font-medium text-gray-700">
+            Preferred Time
+          </label>
+          <Controller
+            name="appointmentTime"
+            control={methods.control}
+            rules={{ required: "Please select a time" }}
+            render={({ field, fieldState }) => (
+              <>
+                <select
+                  id="appointmentTime"
+                  className={`
+                    block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
+                    ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
+                    focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
+                  `}
+                  {...field}
+                >
+                  <option value="">Select a time</option>
+                  {timeSlots.map((slot) => (
+                    <option key={slot.value} value={slot.value}>
+                      {slot.label}
+                    </option>
+                  ))}
+                </select>
+                {fieldState.error && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
+              </>
+            )}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            All times are in Pacific Time (PT). Our technician will call to confirm the exact time.
+          </p>
+        </div>
+        
+        <div className="p-4 bg-gray-50 rounded-lg mt-4">
+          <h4 className="font-medium text-gray-700 mb-2">What to expect:</h4>
+          <ul className="text-sm text-gray-600 space-y-2">
+            <li className="flex items-start">
+              <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Confirmation email with booking details</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Call from technician on appointment day</span>
+            </li>
+            <li className="flex items-start">
+              <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Doorstep repair with upfront pricing</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    );
+  };
+
+  // Render the Confirmation step
+  const renderConfirmationStep = () => {
+    const data = methods.getValues();
+    const serviceTypeMap: Record<string, string> = {
+      'screen-replacement': 'Screen Replacement',
+      'battery-replacement': 'Battery Replacement',
+      'charging-port': 'Charging Port Repair',
+      'speaker-mic': 'Speaker/Microphone Repair',
+      'camera-repair': 'Camera Repair',
+      'water-damage': 'Water Damage Diagnostics',
+      'keyboard-repair': 'Keyboard Repair/Replacement',
+      'trackpad-repair': 'Trackpad Repair',
+      'ram-upgrade': 'RAM Upgrade',
+      'storage-upgrade': 'HDD/SSD Replacement/Upgrade',
+      'software-trouble': 'Software Troubleshooting',
+      'virus-removal': 'Virus Removal',
+      'cooling-repair': 'Cooling System Repair',
+      'power-jack': 'Power Jack Repair',
+      'button-repair': 'Button Repair',
+      'software-issue': 'Software Issue',
+      'other-mobile': 'Other Mobile Issue',
+      'other-laptop': 'Other Laptop Issue',
+      'other-tablet': 'Other Tablet Issue',
+    };
+    
+    // Format date for display
+    const formatDate = (dateString: string) => {
+      if (!dateString) return 'Not selected';
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('en-CA', { 
+        weekday: 'long',
+        month: 'long', 
+        day: 'numeric',
+        year: 'numeric'
+      }).format(date);
+    };
+    
+    // Format time for display
+    const formatTime = (timeString: string) => {
+      if (!timeString) return 'Not selected';
+      const [hours, minutes] = timeString.split(':');
+      const hour = parseInt(hours);
+      return `${hour > 12 ? hour - 12 : hour}:${minutes} ${hour >= 12 ? 'PM' : 'AM'}`;
+    };
+    
+    return (
+      <div className="space-y-6">
+        <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-green-700">
+                Please review your booking details below and click "Submit Booking" when ready.
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="divide-y divide-gray-200">
+          <div className="py-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Device Details</h3>
+            <dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+              <div className="sm:col-span-1">
+                <dt className="text-sm font-medium text-gray-500">Device Type</dt>
+                <dd className="mt-1 text-sm text-gray-900 capitalize">{data.deviceType}</dd>
+            </div>
+              <div className="sm:col-span-1">
+                <dt className="text-sm font-medium text-gray-500">Brand</dt>
+                <dd className="mt-1 text-sm text-gray-900">{data.deviceBrand}</dd>
+          </div>
+              <div className="sm:col-span-1">
+                <dt className="text-sm font-medium text-gray-500">Model</dt>
+                <dd className="mt-1 text-sm text-gray-900">{data.deviceModel}</dd>
+              </div>
+              <div className="sm:col-span-1">
+                <dt className="text-sm font-medium text-gray-500">Service</dt>
+                <dd className="mt-1 text-sm text-gray-900">{serviceTypeMap[data.serviceType] || data.serviceType}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-sm font-medium text-gray-500">Issue Description</dt>
+                <dd className="mt-1 text-sm text-gray-900">{data.issueDescription}</dd>
+              </div>
+            </dl>
+          </div>
+          
+          <div className="py-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Contact Details</h3>
+            <dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+              <div className="sm:col-span-1">
+                <dt className="text-sm font-medium text-gray-500">Name</dt>
+                <dd className="mt-1 text-sm text-gray-900">{data.customerName}</dd>
+              </div>
+              <div className="sm:col-span-1">
+                <dt className="text-sm font-medium text-gray-500">Phone</dt>
+                <dd className="mt-1 text-sm text-gray-900">{data.customerPhone}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-sm font-medium text-gray-500">Email</dt>
+                <dd className="mt-1 text-sm text-gray-900">{data.customerEmail}</dd>
+              </div>
+            </dl>
+        </div>
+        
+          <div className="py-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Location</h3>
+            <dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <dt className="text-sm font-medium text-gray-500">Address</dt>
+                <dd className="mt-1 text-sm text-gray-900">{data.address}</dd>
+              </div>
+              <div className="sm:col-span-1">
+                <dt className="text-sm font-medium text-gray-500">City</dt>
+                <dd className="mt-1 text-sm text-gray-900">{data.city}</dd>
+              </div>
+              <div className="sm:col-span-1">
+                <dt className="text-sm font-medium text-gray-500">Postal Code</dt>
+                <dd className="mt-1 text-sm text-gray-900">{data.postalCode}</dd>
+              </div>
+            </dl>
+        </div>
+        
+          <div className="py-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Appointment</h3>
+            <dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+              <div className="sm:col-span-1">
+                <dt className="text-sm font-medium text-gray-500">Date</dt>
+                <dd className="mt-1 text-sm text-gray-900">{formatDate(data.appointmentDate)}</dd>
+              </div>
+              <div className="sm:col-span-1">
+                <dt className="text-sm font-medium text-gray-500">Time</dt>
+                <dd className="mt-1 text-sm text-gray-900">{formatTime(data.appointmentTime)}</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+        
+        <div className="mt-6">
+          <div className="relative flex items-start">
+            <div className="flex items-center h-5">
+            <input
+                id="terms"
+              type="checkbox"
+                className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                checked={agreeToTerms}
+                onChange={(e) => setAgreeToTerms(e.target.checked)}
+              />
+        </div>
+            <div className="ml-3 text-sm">
+              <label htmlFor="terms" className="font-medium text-gray-700">I agree to the terms and conditions</label>
+              <p className="text-gray-500">By submitting this booking, you agree to our <a href="/terms" className="text-primary-600 hover:text-primary-500">Terms of Service</a> and <a href="/privacy" className="text-primary-600 hover:text-primary-500">Privacy Policy</a>.</p>
+              {submitAttempted && !agreeToTerms && (
+                <p className="mt-1 text-sm text-red-600">You must agree to the terms to proceed</p>
+              )}
+          </div>
+        </div>
+          </div>
+      </div>
+    );
+  };
+
+  // Render the appropriate step based on currentStep
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 0:
+        return renderDeviceTypeStep();
+      case 1:
+        return renderServiceDetailsStep();
+      case 2:
+        return renderCustomerInfoStep();
+      case 3:
+        return renderLocationStep();
+      case 4:
+        return renderAppointmentStep();
+      case 5:
+        return renderConfirmationStep();
+      default:
+        return (
+          <div className="text-center text-gray-500">
+            <p className="mb-2">This is a placeholder for the {steps[currentStep]} step.</p>
+            <p>Future implementation will include all necessary fields for this step.</p>
+      </div>
+    );
+    }
+  };
+
+  // Override the handleSubmit function to check for terms agreement
+  const handleFinalSubmit = () => {
+    if (currentStep === steps.length - 1 && !agreeToTerms) {
+      setSubmitAttempted(true);
+      return;
+    }
+    
+    methods.handleSubmit((data) => {
+      onSubmit(data);
+    })();
   };
 
   return (
-    <div className="booking-form-container">
+    <div className="bg-white rounded-lg shadow-lg p-6 max-w-3xl mx-auto">
+      <h2 className="text-2xl font-bold mb-6 text-center text-primary-600">Book Your Doorstep Repair</h2>
+      
+      {/* Step progress indicators */}
       <div className="mb-8">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Book Your Repair</h1>
-          <div className="text-sm text-gray-500">
-            Step {state.currentStep} of 5
+          {steps.map((step, index) => (
+            <div key={index} className="flex flex-col items-center">
+              <div 
+                className={`w-8 h-8 rounded-full flex items-center justify-center font-medium text-sm
+                  ${index === currentStep 
+                    ? 'bg-primary-600 text-white' 
+                    : index < currentStep 
+                      ? 'bg-green-500 text-white' 
+                      : 'bg-gray-200 text-gray-500'
+                  }`}
+              >
+                {index < currentStep ? '✓' : index + 1}
           </div>
+              <span className="text-xs mt-1 text-gray-500">{step}</span>
         </div>
-        <div className="w-full bg-gray-200 h-2 rounded-full mt-4">
+          ))}
+        </div>
+        <div className="relative mt-2">
+          <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-full h-1 bg-gray-200"></div>
           <div 
-            className="bg-primary-600 h-2 rounded-full transition-all duration-300" 
-            style={{ width: `${(state.currentStep / 5) * 100}%` }}
+            className="absolute left-0 top-1/2 transform -translate-y-1/2 h-1 bg-primary-600 transition-all" 
+            style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
           ></div>
         </div>
       </div>
       
-      <form>
+      <FormProvider {...methods}>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          if (currentStep === steps.length - 1) {
+            handleFinalSubmit();
+          } else {
+            nextStep();
+          }
+        }}>
+          {/* Step content */}
+          <div className="mb-6">
         {renderStepContent()}
+          </div>
+          
+          {/* Navigation buttons */}
+          <div className="flex justify-between mt-8">
+            {currentStep > 0 ? (
+              <button
+                type="button"
+                onClick={prevStep}
+                className="px-6 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition"
+              >
+                Previous
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onCancel}
+                className="px-6 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition"
+              >
+                Cancel
+              </button>
+            )}
+            
+            {currentStep < steps.length - 1 ? (
+              <button
+                type="button"
+                onClick={nextStep}
+                className="px-6 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 transition"
+              >
+                Next
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleFinalSubmit}
+                className="px-6 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 transition"
+                disabled={methods.formState.isSubmitting}
+              >
+                {methods.formState.isSubmitting ? 'Submitting...' : 'Submit Booking'}
+              </button>
+            )}
+          </div>
       </form>
+      </FormProvider>
     </div>
   );
-} 
+}

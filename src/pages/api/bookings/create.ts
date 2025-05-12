@@ -1,22 +1,42 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { createClient } from '@supabase/supabase-js';
+import { NextApiRequest, NextApiResponse } from 'next';
+import { getServiceSupabase } from '@/utils/supabaseClient';
+import { denormalizeBookingData } from '@/services/transformers/bookingTransformer';
 import { logger } from '@/utils/logger';
-import { ConfirmationEmailData } from '../send-confirmation';
+import { sendBookingConfirmationEmail } from '@/services/emailService';
 
-const moduleLogger = logger.createModuleLogger('bookings-create');
+// Create module logger
+const apiLogger = logger.createModuleLogger('bookings/create');
 
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Define the structure for the data being inserted into the DB
+interface FinalDbBookingData {
+  reference_number: string;
+  status: string;
+  device_type?: string;
+  device_brand?: string;
+  device_model?: string;
+  brand?: string; // Alias for device_brand for triggers/legacy
+  model?: string; // Alias for device_model for triggers/legacy
+  service_type?: string;
+  booking_date?: string;
+  booking_time?: string;
+  customer_name?: string;
+  customer_email?: string;
+  customer_phone?: string;
+  address?: string;
+  postal_code?: string;
+  city?: string;
+  province?: string;
+  issue_description?: string;
+  // Add any other fields that are part of your 'bookings' table schema
+  // and are set in finalBookingData or dbFieldsOnly
+}
 
-// Generate reference number for bookings - format: TTR-XXXXXX-YYY
+// Function to generate a reference number
 function generateReferenceNumber(): string {
-  // Generate a random string of 6 digits for the first part
-  const firstPart = Math.floor(100000 + Math.random() * 900000).toString();
-  // Generate a random string of 3 digits for the second part
-  const secondPart = Math.floor(100 + Math.random() * 900).toString();
-  return `TTR-${firstPart}-${secondPart}`;
+  const prefix = 'TTR';
+  const timestamp = Date.now().toString().slice(-6);
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `${prefix}-${timestamp}-${random}`;
 }
 
 export default async function handler(
@@ -25,212 +45,224 @@ export default async function handler(
 ) {
   // Only allow POST requests
   if (req.method !== 'POST') {
-    moduleLogger.warn('Method not allowed', { method: req.method });
+    apiLogger.warn('Method not allowed', { method: req.method });
     return res.status(405).json({ success: false, message: 'Method not allowed' });
   }
 
   try {
-    moduleLogger.info('Received booking creation request');
+    // Log that we received a booking creation request
+    apiLogger.info('Received booking creation request');
     
-    // Log the request body for debugging
-    moduleLogger.debug('Request body received', req.body);
+    // Extract booking data from request body
+    const bookingData = req.body;
     
-    const { 
-      customerName, 
-      customerEmail, 
-      customerPhone,
-      address,
-      city,
-      province,
-      postalCode,
-      deviceType,
-      deviceBrand,
-      deviceModel,
-      serviceType,
-      bookingDate,
-      bookingTime,
-      deviceIssue,
-      notes,
-      // We'll extract but ignore any client-provided reference
-      bookingReference: clientProvidedReference 
-    } = req.body;
-
-    // If a client-provided reference was found, log it but don't use it
-    if (clientProvidedReference) {
-      moduleLogger.info('Client provided a booking reference which will be ignored', { 
-        clientReference: clientProvidedReference 
-      });
-    }
-
-    // Validate required fields
-    if (!customerName || !customerEmail || !customerPhone || !address || !deviceType || 
-        !serviceType || !bookingDate || !bookingTime) {
-      moduleLogger.warn('Missing required booking fields', { 
-        missingFields: !customerName ? 'name' : !customerEmail ? 'email' : !customerPhone ? 'phone' : 
-                      !address ? 'address' : !deviceType ? 'deviceType' : !serviceType ? 'serviceType' : 
-                      !bookingDate ? 'date' : 'time'
-      });
-      
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Missing required booking information' 
-      });
-    }
-
-    // Generate server-side reference number - always use this one, ignoring any client-provided reference
-    const referenceNumber = generateReferenceNumber();
-
-    // Log booking attempt
-    moduleLogger.info('Processing booking with postal code:', { postalCode });
-    moduleLogger.debug('Generated reference:', { reference: referenceNumber });
-    
-    // Map device type (for tablet, we may need to store as mobile for database compatibility)
-    const dbDeviceType = deviceType === 'tablet' ? 'mobile' : deviceType;
-    
-    // Debug log for the prepared booking data
-    moduleLogger.debug('Prepared booking data for insertion', {
-      reference: referenceNumber,
-      device_type: dbDeviceType,
-      service_type: serviceType
+    // Log the request body (omitting sensitive fields)
+    apiLogger.debug('Request body received', {
+      ...bookingData,
+      customerEmail: bookingData.customerEmail ? '[REDACTED]' : undefined,
+      customer_email: bookingData.customer_email ? '[REDACTED]' : undefined,
     });
-
-    // Create booking in Supabase
-    moduleLogger.info('Inserting booking into database');
     
+    // Validate required fields - check for field name variations
+    const hasDeviceType = !!(bookingData.deviceType || bookingData.device_type);
+    const hasServiceType = !!(bookingData.serviceType || bookingData.service_type);
+    const hasCustomerName = !!(bookingData.customerName || bookingData.customer_name);
+    const hasCustomerEmail = !!(bookingData.customerEmail || bookingData.customer_email);
+    const hasCustomerPhone = !!(bookingData.customerPhone || bookingData.customer_phone);
+    const hasAddress = !!(bookingData.address);
+    const hasPostalCode = !!(bookingData.postalCode || bookingData.postal_code);
+    
+    // Check for any variation of appointment/booking date/time fields
+    const hasAppointmentDate = !!(
+      bookingData.appointmentDate || 
+      bookingData.bookingDate || 
+      bookingData.booking_date
+    );
+    
+    const hasAppointmentTime = !!(
+      bookingData.appointmentTime || 
+      bookingData.bookingTime || 
+      bookingData.booking_time
+    );
+    
+    // Collect all missing fields
+    const missingFields = [];
+    
+    if (!hasDeviceType) missingFields.push('deviceType');
+    if (!hasServiceType) missingFields.push('serviceType');
+    if (!hasCustomerName) missingFields.push('customerName');
+    if (!hasCustomerEmail) missingFields.push('customerEmail');
+    if (!hasCustomerPhone) missingFields.push('customerPhone');
+    if (!hasAddress) missingFields.push('address');
+    if (!hasPostalCode) missingFields.push('postalCode');
+    if (!hasAppointmentDate) missingFields.push('appointmentDate');
+    if (!hasAppointmentTime) missingFields.push('appointmentTime');
+    
+    if (missingFields.length > 0) {
+      apiLogger.warn('Missing required fields', { missingFields });
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields',
+        missingFields
+      });
+    }
+    
+    // Verify the postal code is serviceable
+    // This would call a service to check if we service this postal code
+    apiLogger.info('Processing booking with postal code:', { 
+      postalCode: bookingData.postalCode || bookingData.postal_code 
+    });
+    
+    // Generate a reference number for the booking
+    const referenceNumber = generateReferenceNumber();
+    apiLogger.debug('Generated reference:', { reference: referenceNumber });
+    
+    // Normalize booking data - handle all naming conventions
+    const normalizedBookingData = {
+      deviceType: bookingData.deviceType || bookingData.device_type,
+      deviceBrand: bookingData.deviceBrand || bookingData.device_brand || bookingData.brand,
+      deviceModel: bookingData.deviceModel || bookingData.device_model || bookingData.model,
+      serviceType: bookingData.serviceType || bookingData.service_type,
+      issueDescription: bookingData.issueDescription || bookingData.issue_description || bookingData.message,
+      appointmentDate: 
+        bookingData.appointmentDate || 
+        bookingData.bookingDate || 
+        bookingData.booking_date,
+      appointmentTime: 
+        bookingData.appointmentTime || 
+        bookingData.bookingTime || 
+        bookingData.booking_time,
+      customerName: bookingData.customerName || bookingData.customer_name,
+      customerEmail: bookingData.customerEmail || bookingData.customer_email,
+      customerPhone: bookingData.customerPhone || bookingData.customer_phone,
+      address: bookingData.address,
+      postalCode: bookingData.postalCode || bookingData.postal_code,
+      city: bookingData.city || 'Vancouver',
+      province: bookingData.province || 'BC'
+    };
+    
+    // For Development: Log all fields in the normalized data
+    if (process.env.NODE_ENV !== 'production') {
+      apiLogger.debug('Normalized data:', {
+        ...normalizedBookingData,
+        customerEmail: '[REDACTED]',
+        customerPhone: '[REDACTED]'
+      });
+    }
+    
+    // Transform the booking data to the format expected by the database
+    const dbBookingData = denormalizeBookingData(normalizedBookingData);
+    
+    // Add the reference number and default status
+    const finalBookingData = {
+      ...dbBookingData,
+      reference_number: referenceNumber,
+      status: 'pending',
+    } as FinalDbBookingData; // Cast to the new interface
+    
+    // IMPORTANT: Remove any fields that don't exist in the database schema
+    // This prevents errors like "Could not find the 'appointmentDate' column"
+    // With the cast above, dbFieldsOnly can be simplified or even removed if 
+    // FinalDbBookingData perfectly matches the DB schema and denormalizeBookingData is robust.
+    // For now, keeping dbFieldsOnly to be safe and explicit.
+    const dbFieldsOnly: Partial<FinalDbBookingData> = { // Use Partial if not all fields are guaranteed initially
+      reference_number: finalBookingData.reference_number,
+      device_type: finalBookingData.device_type,
+      device_brand: finalBookingData.device_brand,
+      device_model: finalBookingData.device_model,
+      brand: finalBookingData.brand,
+      model: finalBookingData.model,
+      service_type: finalBookingData.service_type,
+      booking_date: finalBookingData.booking_date,
+      booking_time: finalBookingData.booking_time,
+      customer_name: finalBookingData.customer_name,
+      customer_email: finalBookingData.customer_email,
+      customer_phone: finalBookingData.customer_phone,
+      address: finalBookingData.address,
+      postal_code: finalBookingData.postal_code,
+      city: finalBookingData.city,
+      province: finalBookingData.province,
+      issue_description: finalBookingData.issue_description,
+      status: finalBookingData.status
+    };
+    
+    // Log what we're about to insert (limited fields for brevity)
+    apiLogger.debug('Prepared booking data for insertion', {
+      reference: referenceNumber,
+      device_type: dbFieldsOnly.device_type,
+      service_type: dbFieldsOnly.service_type,
+      fields: Object.keys(dbFieldsOnly)
+    });
+    
+    // Get Supabase client with service role
+    const supabase = getServiceSupabase();
+    
+    // Insert the booking into the database
+    apiLogger.info('Inserting booking into database');
     const { data: booking, error } = await supabase
       .from('bookings')
-      .insert([
-        {
-          reference_number: referenceNumber,
-          customer_name: customerName,
-          customer_email: customerEmail,
-          customer_phone: customerPhone,
-          address: address,
-          city: city || '',
-          province: province || '',
-          postal_code: postalCode || '',
-          device_type: dbDeviceType,
-          device_brand: deviceBrand || '',
-          device_model: deviceModel || '',
-          service_type: serviceType,
-          booking_date: bookingDate,
-          booking_time: bookingTime,
-          device_issue: deviceIssue || '',
-          notes: notes || '',
-          status: 'pending'
-        }
-      ])
+      .insert(dbFieldsOnly)
       .select()
       .single();
-
+    
     if (error) {
-      moduleLogger.error('Database error creating booking', { 
-        error: error.message, 
-        reference: referenceNumber 
+      apiLogger.error('Database error during booking creation', {
+        error: error.message,
+        code: error.code,
+        details: error.details
       });
       
-      return res.status(500).json({ 
-        success: false, 
-        message: 'Failed to create booking',
-        error: error.message
+      return res.status(500).json({
+        success: false,
+        message: 'Error creating booking',
+        error: error.message,
+        code: error.code,
       });
     }
-
-    // Format booking date for email
-    const formattedDate = new Date(bookingDate).toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
+    
+    // Log the successful booking creation
+    apiLogger.info('Booking created successfully', {
+      reference: referenceNumber,
+      id: booking.id
     });
-
-    // Build the email data
-    const emailData: ConfirmationEmailData = {
-      to: customerEmail,
-      name: customerName,
-      bookingReference: referenceNumber, // Always use server-generated reference
-      deviceType: `${deviceType}${deviceBrand ? ` - ${deviceBrand}` : ''}${deviceModel ? ` ${deviceModel}` : ''}`,
-      service: serviceType,
-      bookingDate: formattedDate,
-      bookingTime: bookingTime,
-      bookingAddress: address
-    };
-
-    // Debug log to verify email data is complete before sending
-    moduleLogger.info('Sending confirmation email');
     
     // Send confirmation email
     try {
-      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || ''}/api/send-confirmation`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(emailData),
+      await sendBookingConfirmationEmail({
+        to: normalizedBookingData.customerEmail,
+        name: normalizedBookingData.customerName,
+        referenceNumber,
+        appointmentDate: normalizedBookingData.appointmentDate,
+        appointmentTime: normalizedBookingData.appointmentTime,
+        service: normalizedBookingData.serviceType,
       });
-
-      const emailResult = await emailResponse.json();
       
-      if (emailResponse.ok) {
-        moduleLogger.info('Confirmation email sent successfully', { 
-          reference: referenceNumber,
-          to: customerEmail
-        });
-        
-        // Update booking with verification data
-        if (emailResult.verifyUrl) {
-          await supabase
-            .from('bookings')
-            .update({
-              verification_link: emailResult.verifyUrl,
-              reschedule_link: emailResult.rescheduleUrl
-            })
-            .eq('reference_number', referenceNumber);
-        }
-      } else {
-        moduleLogger.warn('Failed to send confirmation email', { 
-          reference: referenceNumber,
-          emailError: emailResult.message
-        });
-      }
-    } catch (emailError: any) {
-      moduleLogger.error('Error during confirmation email', { 
-        error: emailError.message,
-        reference: referenceNumber
+      apiLogger.info('Confirmation email sent', { email: normalizedBookingData.customerEmail });
+    } catch (emailError) {
+      // Log the error but don't fail the request
+      apiLogger.error('Failed to send confirmation email', {
+        error: emailError instanceof Error ? emailError.message : 'Unknown error'
       });
-      // Continue despite email error - don't fail the booking creation
     }
-
-    // Return success with booking information
-    moduleLogger.info('Booking created successfully', {
-      reference: referenceNumber,
-      id: booking.id,
-      emailSent: true
-    });
     
+    // Return success with the booking reference
     return res.status(201).json({
       success: true,
       message: 'Booking created successfully',
-      booking: {
-        referenceNumber,
-        booking_reference: referenceNumber, // Include for backward compatibility
-        customerName,
-        customerEmail,
-        bookingDate: formattedDate,
-        bookingTime,
-        deviceType,
-        serviceType
-      }
+      reference: referenceNumber,
+      booking_reference: referenceNumber, // Add alias for compatibility
     });
-  } catch (error: any) {
-    moduleLogger.error('Unhandled error in booking creation', { 
-      error: error.message,
-      stack: error.stack
+  } catch (error) {
+    // Handle unexpected errors
+    apiLogger.error('Unexpected error during booking creation', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
     });
     
     return res.status(500).json({
       success: false,
-      message: 'An unexpected error occurred',
-      error: error.message
+      message: 'Server error during booking creation',
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 } 

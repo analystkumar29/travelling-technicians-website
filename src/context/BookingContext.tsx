@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-import { BookingData, BookingStatus, CreateBookingRequest, BookingCreationResponse } from '../types/booking';
-import { bookingService } from '@/services/api/bookingService';
-import logger from '@/utils/logger';
-import StorageService, { STORAGE_KEYS } from '@/services/StorageService';
+import { BookingData, BookingStatus, CreateBookingRequest } from '@/types/booking';
+import { bookingService } from '@/services/bookingService';
+import { logger } from '@/utils/logger';
+import SupabaseStorageService, { STORAGE_KEYS } from '@/services/SupabaseStorageService';
 
 // Logger for this module
 const contextLogger = logger.createModuleLogger('BookingContext');
@@ -27,7 +27,7 @@ export interface FormattedBookingData {
   service: string;
   date: string;
   time: string;
-  address?: string;
+  address: string;
   email: string;
 }
 
@@ -80,14 +80,28 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
     error: null,
   });
 
-  // Initialize booking reference from localStorage on client-side only
+  // Initialize booking reference from localStorage on client-side only - now using temp storage
+  // This is just for UI state persistence between page refreshes
+  const [formattedBookingData, setFormattedBookingData] = useState<FormattedBookingData | null>(null);
+  
   useEffect(() => {
     // Only run on client-side
     if (typeof window !== 'undefined') {
       try {
-        const storedReference = StorageService.getItem<string>(STORAGE_KEYS.BOOKING_REFERENCE);
-        if (storedReference) {
-          setState(prev => ({ ...prev, bookingReference: storedReference }));
+        // Try to get reference from URL query params first
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlReference = urlParams.get('reference');
+        
+        if (urlReference) {
+          setState(prev => ({ ...prev, bookingReference: urlReference }));
+          // If we find a reference in URL, auto-fetch that booking
+          fetchBookingByReference(urlReference);
+        } else {
+          // Fall back to local storage for UI persistence
+          const storedReference = SupabaseStorageService.getLocalItem<string>(STORAGE_KEYS.FORM_STATE);
+          if (storedReference) {
+            setState(prev => ({ ...prev, bookingReference: storedReference }));
+          }
         }
       } catch (err) {
         contextLogger.error('Failed to get booking reference from storage', err);
@@ -96,19 +110,19 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
   }, []);
 
   /**
-   * Save booking reference to storage
+   * Save booking reference to temporary storage for UI persistence
    */
-  const saveBookingReference = useCallback((reference: string | null) => {
+  const saveBookingReferenceLocally = useCallback((reference: string | null) => {
     if (typeof window === 'undefined') return;
     
     try {
       if (reference) {
-        StorageService.setItem(STORAGE_KEYS.BOOKING_REFERENCE, reference);
+        SupabaseStorageService.setLocalItem(STORAGE_KEYS.FORM_STATE, reference);
       } else {
-        StorageService.removeItem(STORAGE_KEYS.BOOKING_REFERENCE);
+        SupabaseStorageService.removeLocalItem(STORAGE_KEYS.FORM_STATE);
       }
     } catch (err) {
-      contextLogger.error('Failed to save booking reference to storage', err);
+      contextLogger.error('Failed to save booking reference to local storage', err);
     }
   }, []);
 
@@ -136,13 +150,13 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
       // Log the response for debugging
       contextLogger.debug('API response received', {
         success: response.success,
-        hasReference: !!response.booking_reference,
+        hasReference: !!response.reference,
         error: response.error
       });
       
-      if (response && response.success && response.booking_reference) {
-        const reference = response.booking_reference;
-        saveBookingReference(reference);
+      if (response && response.success && response.reference) {
+        const reference = response.reference;
+        saveBookingReferenceLocally(reference);
         
         setState(prev => ({
           ...prev,
@@ -178,27 +192,38 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
       
       return null;
     }
-  }, [saveBookingReference]);
+  }, [saveBookingReferenceLocally]);
 
   /**
-   * Fetch booking by reference
+   * Fetch booking by reference directly from Supabase
    */
   const fetchBookingByReference = useCallback(async (reference: string): Promise<BookingData | null> => {
     contextLogger.info(`Fetching booking with reference: ${reference}`);
     setState(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
-      const data = await bookingService.getBookingByReference(reference);
+      // 'data' here is BookingResponse from the service
+      const response = await bookingService.getBookingByReference(reference);
       
+      if (!response.success || !response.booking) {
+        throw new Error(response.message || response.error || 'Booking not found or invalid response');
+      }
+      
+      // Now, response.booking is the actual BookingData
+      const bookingDetails = response.booking;
+
       setState(prev => ({
         ...prev,
-        bookingData: data,
-        bookingStatus: data.status,
+        bookingData: bookingDetails, // Use the nested booking data
+        bookingStatus: bookingDetails.status, // Access status from bookingDetails
         bookingReference: reference,
         isLoading: false,
       }));
       
-      return data;
+      // Store reference in local storage for UI persistence
+      saveBookingReferenceLocally(reference);
+      
+      return bookingDetails; // Return the actual BookingData
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch booking';
       
@@ -211,14 +236,14 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
       
       return null;
     }
-  }, []);
+  }, [saveBookingReferenceLocally]);
 
   /**
    * Clear booking data
    */
   const clearBookingData = useCallback(() => {
     contextLogger.debug('Clearing booking data');
-    saveBookingReference(null);
+    saveBookingReferenceLocally(null);
     
     setState({
       bookingData: null,
@@ -227,47 +252,63 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
       isLoading: false,
       error: null,
     });
-  }, [saveBookingReference]);
+    
+    setFormattedBookingData(null);
+  }, [saveBookingReferenceLocally]);
 
   /**
    * Set booking reference
    */
   const setBookingReference = useCallback((reference: string | null) => {
     contextLogger.debug(`Setting booking reference: ${reference}`);
-    saveBookingReference(reference);
+    saveBookingReferenceLocally(reference);
     setState(prev => ({ ...prev, bookingReference: reference }));
-  }, [saveBookingReference]);
+  }, [saveBookingReferenceLocally]);
 
   /**
-   * Get stored formatted data
+   * Get stored formatted data for UI display
+   * This is just for temporary UI state between pages
    */
   const getStoredFormattedData = useCallback((): FormattedBookingData | null => {
+    // First check our state
+    if (formattedBookingData) {
+      return formattedBookingData;
+    }
+    
+    // If not in state, try to get from URL or storage
     if (typeof window === 'undefined') return null;
     
-    try {
-      const data = StorageService.getItem<FormattedBookingData>(STORAGE_KEYS.BOOKING_DATA);
+    // Try to construct from state
+    if (state.bookingData) {
+      const data: FormattedBookingData = {
+        ref: state.bookingReference || '',
+        device: `${state.bookingData.device.type} ${state.bookingData.device.brand} ${state.bookingData.device.model}`,
+        service: state.bookingData.service.type,
+        date: state.bookingData.appointment.date,
+        time: state.bookingData.appointment.time,
+        address: state.bookingData.location.address,
+        email: state.bookingData.customer.email
+      };
+      
+      setFormattedBookingData(data);
       return data;
-    } catch (err) {
-      contextLogger.error('Failed to get formatted booking data', { 
-        error: err instanceof Error ? err.message : String(err)
-      });
-      return null;
     }
-  }, []);
-
-  // The value provided to consumers of the context
-  const value: BookingContextValue = {
-    ...state,
-    createNewBooking,
-    fetchBookingByReference,
-    clearBookingData,
-    setBookingReference,
-    isBookingDataLoaded: !!state.bookingData,
-    getStoredFormattedData
-  };
+    
+    return null;
+  }, [formattedBookingData, state]);
 
   return (
-    <BookingContext.Provider value={value}>
+    <BookingContext.Provider
+      value={{
+        ...state,
+        isBookingDataLoaded: !!state.bookingData,
+        createNewBooking,
+        fetchBookingByReference,
+        clearBookingData,
+        setBookingReference,
+        getStoredFormattedData,
+      }}
+    >
       {children}
     </BookingContext.Provider>
   );

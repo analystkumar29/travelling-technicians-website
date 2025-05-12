@@ -1,65 +1,84 @@
-import { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Image, { ImageProps } from 'next/image';
 import { FaImage } from 'react-icons/fa';
+
+// Pattern to detect Unsplash URLs
+const UNSPLASH_PATTERN = /^https:\/\/images\.unsplash\.com/;
+
+// Default local placeholder
+const DEFAULT_PLACEHOLDER = '/images/placeholder.svg';
 
 interface SafeImageProps extends Omit<ImageProps, 'onError'> {
   fallbackSrc?: string;
   fallbackComponent?: React.ReactNode;
   altText: string;
+  sizes?: string;
+  className?: string;
 }
 
-const defaultFallbackSrc = '/images/placeholder-image.jpg';
-
-const SafeImage = ({
+/**
+ * SafeImage component that handles:
+ * 1. Always adds sizes attribute when fill prop is true
+ * 2. Provides fallback for external images (especially Unsplash)
+ */
+const SafeImage: React.FC<SafeImageProps> = ({
   src,
-  fallbackSrc = defaultFallbackSrc,
+  alt,
+  fill,
+  fallbackSrc = DEFAULT_PLACEHOLDER,
   fallbackComponent,
   altText,
-  ...props
-}: SafeImageProps) => {
-  const [imgSrc, setImgSrc] = useState<string | null>(null);
-  const [hasError, setHasError] = useState(false);
+  sizes,
+  className = '',
+  ...rest
+}) => {
+  // If fill is true but no sizes is provided, add a default sizes value
+  const imageSizes = fill && !sizes 
+    ? '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
+    : sizes;
+  
+  // Special handling for Unsplash images to prevent 404s
+  const actualSrc = typeof src === 'string' && UNSPLASH_PATTERN.test(src) && !src.includes('?')
+    ? `${src}?q=80&w=800` // Append quality and width params
+    : src;
 
-  // Set image source after component mount to avoid hydration issues
-  useEffect(() => {
-    setImgSrc(typeof src === 'string' ? src : '');
-  }, [src]);
-
-  const handleError = () => {
-    console.warn(`Image failed to load: ${imgSrc}`);
-    setHasError(true);
-    if (typeof fallbackSrc === 'string') {
-      setImgSrc(fallbackSrc);
-    }
-  };
+  // Handle error fallback
+  const [error, setError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // If we have a fallback component and there was an error, render that
-  if (hasError && fallbackComponent) {
+  if (error && fallbackComponent) {
     return <>{fallbackComponent}</>;
   }
 
   // If we have a fallback path and there was an error, use that
-  if (hasError && fallbackSrc && fallbackSrc !== defaultFallbackSrc) {
+  if (error && fallbackSrc && fallbackSrc !== DEFAULT_PLACEHOLDER) {
     return (
-      <div className={props.className || ''} style={{ position: 'relative', height: props.height, width: props.width }}>
+      <div className={`relative ${fill ? 'h-full w-full' : ''} ${isLoading ? 'animate-pulse bg-gray-200' : ''} ${className}`}>
         <Image 
           src={fallbackSrc} 
-          {...props} 
           alt={altText}
-          unoptimized={!fallbackSrc.startsWith('/')} // Don't optimize external images
+          fill={fill}
+          sizes={imageSizes}
+          onError={() => {
+            setError(true);
+          }}
+          onLoad={() => setIsLoading(false)}
+          className={`${className} ${error ? 'opacity-70' : ''}`}
+          {...rest}
         />
       </div>
     );
   }
 
   // If we've encountered an error and are using the default fallback
-  if (hasError || !imgSrc) {
+  if (error || !actualSrc) {
     return (
       <div
-        className={`flex items-center justify-center bg-gray-200 ${props.className || ''}`}
+        className={`flex items-center justify-center bg-gray-200 ${className}`}
         style={{ 
-          height: props.height ? `${props.height}px` : '100%', 
-          width: props.width ? `${props.width}px` : '100%',
+          height: fill ? '100%' : '100px', 
+          width: fill ? '100%' : '100%',
           minHeight: '100px' 
         }}
       >
@@ -73,13 +92,16 @@ const SafeImage = ({
 
   // Normal case - render image with error handler
   return (
-    <div className={props.className || ''} style={{ position: 'relative', height: props.height, width: props.width }}>
+    <div className={`relative ${fill ? 'h-full w-full' : ''} ${isLoading ? 'animate-pulse bg-gray-200' : ''} ${className}`}>
       <Image
-        src={imgSrc}
-        {...props}
-        alt={altText}
-        onError={handleError}
-        unoptimized={typeof src === 'string' && !src.startsWith('/')} // Don't optimize external images
+        src={error ? fallbackSrc : actualSrc}
+        alt={alt || "Image"}
+        fill={fill}
+        sizes={imageSizes}
+        className={`${className} ${error ? 'opacity-70' : ''}`}
+        onError={() => setError(true)}
+        onLoad={() => setIsLoading(false)}
+        {...rest}
       />
     </div>
   );
