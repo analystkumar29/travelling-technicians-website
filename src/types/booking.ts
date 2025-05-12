@@ -3,23 +3,31 @@
  * These types represent the domain model used throughout the application.
  */
 
-/**
- * Device types supported by the service
- */
-export type DeviceType = 'mobile' | 'laptop' | 'tablet';
+import type { ReactNode } from 'react';
 
 /**
- * Status values for bookings
+ * Possible device types
  */
-export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
+export type DeviceType = 'mobile' | 'laptop' | 'tablet' | 'unknown';
+
+/**
+ * Possible booking statuses
+ */
+export type BookingStatus = 
+  | 'pending'     // Booking is waiting for confirmation
+  | 'confirmed'   // Booking has been confirmed but not completed
+  | 'completed'   // Service has been completed
+  | 'cancelled'   // Booking was cancelled by the customer
+  | 'no_show'     // Customer did not show up
+  | 'rescheduled';  // Booking was rescheduled
 
 /**
  * Data needed to create a booking
  */
 export interface CreateBookingRequest {
-  deviceType: string;
-  deviceBrand?: string;
-  deviceModel?: string;
+  deviceType: DeviceType;
+  deviceBrand: string;
+  deviceModel: string;
   serviceType: string;
   issueDescription?: string;
   
@@ -32,12 +40,40 @@ export interface CreateBookingRequest {
   
   address: string;
   postalCode: string;
+  
+  // Fields needed for database schema alignment
+  city: string;      // Required for Supabase database
+  province: string;  // Required for Supabase database
+  brand?: string;  // Same as deviceBrand, needed for DB triggers
+  model?: string;  // Same as deviceModel, needed for DB triggers
+}
+
+/**
+ * API response structure for booking operations
+ */
+export interface BookingResponse {
+  success: boolean;
+  message?: string;
+  reference?: string;
+  booking?: BookingData;
+  error?: string;
+}
+
+/**
+ * Booking creation response
+ */
+export interface BookingCreationResponse {
+  success: boolean;
+  booking_reference?: string;
+  reference?: string;
+  message?: string;
 }
 
 /**
  * Customer information
  */
 export interface Customer {
+  id?: string;
   name: string;
   email: string;
   phone: string;
@@ -47,83 +83,76 @@ export interface Customer {
  * Device information
  */
 export interface Device {
+  id?: string;
   type: DeviceType;
   brand: string;
   model: string;
+  serialNumber?: string;
 }
 
 /**
  * Service information
  */
 export interface Service {
+  id?: string;
   type: string;
-  description?: string;
-  price?: string;
+  issueDescription?: string;
+  price?: number;
+  warrantyPeriod?: number;
 }
 
 /**
  * Appointment information
  */
 export interface Appointment {
+  id?: string;
   date: string;
   time: string;
-  confirmed: boolean;
+  status?: string;
 }
 
 /**
  * Location information
  */
 export interface Location {
+  id?: string;
   address: string;
   postalCode: string;
-  city?: string;
-  province?: string;
+  city: string;
+  province: string;
+  country?: string;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
 }
 
 /**
  * Complete booking information
  */
 export interface BookingData {
-  id: string;
+  id?: string;
   referenceNumber: string;
-  customer: {
-    name: string;
-    email: string;
-    phone: string;
-  };
-  device: {
-    type: string;
-    brand?: string;
-    model?: string;
-  };
-  service: {
-    type: string;
-    description?: string;
-  };
-  appointment: {
-    date: string;
-    time: string;
-  };
-  location: {
-    address: string;
-    postalCode: string;
-  };
+  customer: Customer;
+  device: Device;
+  service: Service;
+  appointment: Appointment;
+  location: Location;
   status: BookingStatus;
   technician?: {
-    id?: string;
-    name?: string;
+    id: string;
+    name: string;
+    phone?: string;
   };
+  notes?: string;
   createdAt?: string;
   updatedAt?: string;
 }
 
-/**
- * Response from booking creation
- */
-export interface BookingCreationResponse {
-  success: boolean;
-  booking_reference: string;
-  booking_id?: string;
-  status?: string;
-  error?: string;
+// Booking form types
+export interface BookingFormProps {
+  onSubmit: (data: CreateBookingRequest) => void;
+  onCancel?: () => void;
+  initialData?: Partial<CreateBookingRequest>;
+  children?: ReactNode;
 } 
