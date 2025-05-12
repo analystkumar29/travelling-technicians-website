@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 // Define types for device models
 type DeviceType = 'mobile' | 'laptop' | 'tablet';
@@ -145,6 +145,21 @@ export default function DeviceModelSelector({
   const [otherModel, setOtherModel] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedModel, setSelectedModel] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowModelList(false);
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Reset when device type or brand changes
   useEffect(() => {
@@ -163,6 +178,18 @@ export default function DeviceModelSelector({
       onChange(otherModel);
     }
   }, [selectedModel, otherModel, onChange]);
+
+  // Update the selected model when the value changes from outside
+  useEffect(() => {
+    if (value && !selectedModel && !otherModel) {
+      const models = getModelsForSelection();
+      if (models.includes(value)) {
+        setSelectedModel(value);
+      } else if (value) {
+        setOtherModel(value);
+      }
+    }
+  }, [value]);
 
   // Get models for the selected device type and brand
   const getModelsForSelection = () => {
@@ -187,18 +214,22 @@ export default function DeviceModelSelector({
     model => model.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Get placeholder text based on device type
+  const getPlaceholderText = () => {
+    if (!brand) return 'Select a brand first';
+    if (brand === 'other') {
+      return `Enter your ${deviceType} model`;
+    }
+    return `Select your ${brand} ${deviceType} model`;
+  };
+
   return (
-    <div className="mb-6">
-      <label htmlFor="device-model" className="block text-gray-700 font-medium mb-2">
-        Model *
-      </label>
-      
+    <div ref={dropdownRef} className="relative">
       {brand === 'other' ? (
         // For "Other Brand", just show a text input
         <input
           type="text"
-          id="device-model"
-          className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
           placeholder={`Enter your ${deviceType} model (e.g., ${
             deviceType === 'mobile' ? 'Motorola Edge 40' : 
             deviceType === 'laptop' ? 'Acer Swift 5' : 'Huawei MatePad Pro'
@@ -207,19 +238,20 @@ export default function DeviceModelSelector({
           onChange={(e) => setOtherModel(e.target.value)}
         />
       ) : (
-        <div>
+        <>
           {/* Button to show/hide model list */}
           <button
             type="button"
             onClick={() => setShowModelList(!showModelList)}
-            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 flex justify-between items-center"
+            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 flex justify-between items-center"
+            disabled={!brand}
           >
             <span className={selectedModel ? 'text-gray-900' : 'text-gray-500'}>
-              {selectedModel || 'Select your device model'}
+              {selectedModel || getPlaceholderText()}
             </span>
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
-              className={`h-5 w-5 transition-transform ${showModelList ? 'transform rotate-180' : ''}`} 
+              className={`h-5 w-5 text-gray-400 transition-transform ${showModelList ? 'transform rotate-180' : ''}`} 
               viewBox="0 0 20 20" 
               fill="currentColor"
             >
@@ -229,46 +261,55 @@ export default function DeviceModelSelector({
 
           {/* Model list dropdown */}
           {showModelList && (
-            <div className="mt-2 border border-gray-300 rounded-md shadow-sm overflow-hidden">
+            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg">
               {/* Search input */}
-              <div className="p-2 border-b border-gray-300">
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
-                  placeholder="Search for your model..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+              <div className="p-2 border-b border-gray-200">
+                <div className="relative">
+                  <input
+                    type="text"
+                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    placeholder="Search for your model..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                </div>
               </div>
 
               {/* Model list */}
               <div className="max-h-60 overflow-y-auto">
                 {filteredModels.length > 0 ? (
-                  filteredModels.map((model, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
-                        selectedModel === model ? 'bg-primary-50 text-primary-700' : 'text-gray-700'
-                      }`}
-                      onClick={() => {
-                        setSelectedModel(model);
-                        setOtherModel('');
-                        setShowModelList(false);
-                      }}
-                    >
-                      {model}
-                    </button>
-                  ))
+                  <div className="py-1">
+                    {filteredModels.map((model, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                          selectedModel === model ? 'bg-primary-50 text-primary-700' : 'text-gray-700'
+                        }`}
+                        onClick={() => {
+                          setSelectedModel(model);
+                          setOtherModel('');
+                          setShowModelList(false);
+                        }}
+                      >
+                        {model}
+                      </button>
+                    ))}
+                  </div>
                 ) : (
                   <div className="p-4 text-center text-gray-500">
-                    {searchTerm ? 'No models match your search' : 'No models available'}
+                    {searchTerm ? 'No models match your search' : 'No models available for this selection'}
                   </div>
                 )}
               </div>
 
               {/* Enter custom model option */}
-              <div className="p-2 border-t border-gray-300">
+              <div className="p-2 border-t border-gray-200">
                 <button
                   type="button"
                   className="w-full text-left px-3 py-2 text-primary-600 hover:bg-primary-50 rounded-md flex items-center"
@@ -277,9 +318,9 @@ export default function DeviceModelSelector({
                     setSelectedModel('');
                     // Set focus to the custom model input
                     setTimeout(() => {
-                      const customModelInput = document.getElementById('custom-model-input');
-                      if (customModelInput) {
-                        (customModelInput as HTMLInputElement).focus();
+                      const customInput = document.getElementById('custom-model-input');
+                      if (customInput) {
+                        customInput.focus();
                       }
                     }, 10);
                   }}
@@ -293,30 +334,20 @@ export default function DeviceModelSelector({
             </div>
           )}
 
-          {/* Custom model input */}
+          {/* Custom model input - shown when "My model isn't listed" is clicked */}
           {!showModelList && !selectedModel && (
             <div className="mt-2">
               <input
                 id="custom-model-input"
                 type="text"
-                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                 placeholder={`Enter your ${deviceType} model manually`}
                 value={otherModel}
                 onChange={(e) => setOtherModel(e.target.value)}
               />
             </div>
           )}
-        </div>
-      )}
-      
-      {/* Selected or entered model display */}
-      {(selectedModel || otherModel) && (
-        <div className="mt-2 flex items-center text-sm text-green-600">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-          </svg>
-          {selectedModel || otherModel}
-        </div>
+        </>
       )}
     </div>
   );

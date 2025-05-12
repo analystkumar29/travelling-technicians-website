@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
+import DeviceModelSelector from './DeviceModelSelector';
 // Comment out the non-existent imports for now
 // import { DeviceTypeStep } from './steps/DeviceTypeStep';
 // import { ServiceDetailsStep } from './steps/ServiceDetailsStep';
@@ -82,152 +83,326 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   // Render the Device Type step
   const renderDeviceTypeStep = () => {
     return (
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">Device Type</label>
-          <div className="flex flex-wrap gap-4">
-            <label className="relative flex items-center">
-              <Controller
-                name="deviceType"
-                control={methods.control}
-                render={({ field }) => (
-                  <input
-                    type="radio"
-                    className="sr-only"
-                    value="mobile"
-                    checked={field.value === 'mobile'}
-                    onChange={() => field.onChange('mobile')}
-                  />
-                )}
-              />
-              <div className={`
-                p-4 border-2 rounded-lg flex flex-col items-center cursor-pointer transition
-                ${methods.watch('deviceType') === 'mobile' 
-                  ? 'border-primary-500 bg-primary-50' 
-                  : 'border-gray-200 hover:border-gray-300'
-                }
-              `}>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-                <span className="mt-2 font-medium">Mobile Phone</span>
-              </div>
+      <div className="space-y-8">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Select Your Device</h2>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Device Type <span className="text-red-500">*</span>
             </label>
             
-            <label className="relative flex items-center">
-              <Controller
-                name="deviceType"
-                control={methods.control}
-                render={({ field }) => (
-                  <input
-                    type="radio"
-                    className="sr-only"
-                    value="laptop"
-                    checked={field.value === 'laptop'}
-                    onChange={() => field.onChange('laptop')}
-                  />
-                )}
-              />
-              <div className={`
-                p-4 border-2 rounded-lg flex flex-col items-center cursor-pointer transition
-                ${methods.watch('deviceType') === 'laptop' 
-                  ? 'border-primary-500 bg-primary-50' 
-                  : 'border-gray-200 hover:border-gray-300'
-                }
-              `}>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                <span className="mt-2 font-medium">Laptop</span>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <label className="relative flex items-center">
+                <Controller
+                  name="deviceType"
+                  control={methods.control}
+                  render={({ field }) => (
+                    <input
+                      type="radio"
+                      className="sr-only"
+                      value="mobile"
+                      checked={field.value === 'mobile'}
+                      onChange={() => field.onChange('mobile')}
+                    />
+                  )}
+                />
+                <div className={`
+                  p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
+                  ${methods.watch('deviceType') === 'mobile' 
+                    ? 'border-primary-500 bg-primary-50' 
+                    : 'border-gray-300 hover:border-gray-400'
+                  }
+                `}>
+                  <div className="bg-primary-100 rounded-md p-2 mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <span className="font-medium text-gray-900">Mobile Phone</span>
+                </div>
+              </label>
+              
+              <label className="relative flex items-center">
+                <Controller
+                  name="deviceType"
+                  control={methods.control}
+                  render={({ field }) => (
+                    <input
+                      type="radio"
+                      className="sr-only"
+                      value="laptop"
+                      checked={field.value === 'laptop'}
+                      onChange={() => field.onChange('laptop')}
+                    />
+                  )}
+                />
+                <div className={`
+                  p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
+                  ${methods.watch('deviceType') === 'laptop' 
+                    ? 'border-primary-500 bg-primary-50' 
+                    : 'border-gray-300 hover:border-gray-400'
+                  }
+                `}>
+                  <div className="bg-primary-100 rounded-md p-2 mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <span className="font-medium text-gray-900">Laptop</span>
+                </div>
+              </label>
+              
+              <label className="relative flex items-center">
+                <Controller
+                  name="deviceType"
+                  control={methods.control}
+                  render={({ field }) => (
+                    <input
+                      type="radio"
+                      className="sr-only"
+                      value="tablet"
+                      checked={field.value === 'tablet'}
+                      onChange={() => field.onChange('tablet')}
+                    />
+                  )}
+                />
+                <div className={`
+                  p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
+                  ${methods.watch('deviceType') === 'tablet' 
+                    ? 'border-primary-500 bg-primary-50' 
+                    : 'border-gray-300 hover:border-gray-400'
+                  }
+                `}>
+                  <div className="bg-primary-100 rounded-md p-2 mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <span className="font-medium text-gray-900">Tablet</span>
+                </div>
+              </label>
+            </div>
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Brand <span className="text-red-500">*</span>
             </label>
             
-            <label className="relative flex items-center">
-              <Controller
-                name="deviceType"
-                control={methods.control}
-                render={({ field }) => (
-                  <input
-                    type="radio"
-                    className="sr-only"
-                    value="tablet"
-                    checked={field.value === 'tablet'}
-                    onChange={() => field.onChange('tablet')}
-                  />
-                )}
-              />
-              <div className={`
-                p-4 border-2 rounded-lg flex flex-col items-center cursor-pointer transition
-                ${methods.watch('deviceType') === 'tablet' 
-                  ? 'border-primary-500 bg-primary-50' 
-                  : 'border-gray-200 hover:border-gray-300'
-                }
-              `}>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-                <span className="mt-2 font-medium">Tablet</span>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <label className="relative flex items-center">
+                <Controller
+                  name="deviceBrand"
+                  control={methods.control}
+                  render={({ field }) => (
+                    <input
+                      type="radio"
+                      className="sr-only"
+                      value="apple"
+                      checked={field.value === 'apple'}
+                      onChange={() => field.onChange('apple')}
+                    />
+                  )}
+                />
+                <div className={`
+                  p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                  ${methods.watch('deviceBrand') === 'apple' 
+                    ? 'border-primary-500 bg-primary-50' 
+                    : 'border-gray-300 hover:border-gray-400'
+                  }
+                `}>
+                  <span className="font-medium text-gray-900">Apple iPhone</span>
+                </div>
+              </label>
+              
+              <label className="relative flex items-center">
+                <Controller
+                  name="deviceBrand"
+                  control={methods.control}
+                  render={({ field }) => (
+                    <input
+                      type="radio"
+                      className="sr-only"
+                      value="samsung"
+                      checked={field.value === 'samsung'}
+                      onChange={() => field.onChange('samsung')}
+                    />
+                  )}
+                />
+                <div className={`
+                  p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                  ${methods.watch('deviceBrand') === 'samsung' 
+                    ? 'border-primary-500 bg-primary-50' 
+                    : 'border-gray-300 hover:border-gray-400'
+                  }
+                `}>
+                  <span className="font-medium text-gray-900">Samsung Galaxy</span>
+                </div>
+              </label>
+              
+              <label className="relative flex items-center">
+                <Controller
+                  name="deviceBrand"
+                  control={methods.control}
+                  render={({ field }) => (
+                    <input
+                      type="radio"
+                      className="sr-only"
+                      value="google"
+                      checked={field.value === 'google'}
+                      onChange={() => field.onChange('google')}
+                    />
+                  )}
+                />
+                <div className={`
+                  p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                  ${methods.watch('deviceBrand') === 'google' 
+                    ? 'border-primary-500 bg-primary-50' 
+                    : 'border-gray-300 hover:border-gray-400'
+                  }
+                `}>
+                  <span className="font-medium text-gray-900">Google Pixel</span>
+                </div>
+              </label>
+              
+              <label className="relative flex items-center">
+                <Controller
+                  name="deviceBrand"
+                  control={methods.control}
+                  render={({ field }) => (
+                    <input
+                      type="radio"
+                      className="sr-only"
+                      value="oneplus"
+                      checked={field.value === 'oneplus'}
+                      onChange={() => field.onChange('oneplus')}
+                    />
+                  )}
+                />
+                <div className={`
+                  p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                  ${methods.watch('deviceBrand') === 'oneplus' 
+                    ? 'border-primary-500 bg-primary-50' 
+                    : 'border-gray-300 hover:border-gray-400'
+                  }
+                `}>
+                  <span className="font-medium text-gray-900">OnePlus</span>
+                </div>
+              </label>
+              
+              <label className="relative flex items-center">
+                <Controller
+                  name="deviceBrand"
+                  control={methods.control}
+                  render={({ field }) => (
+                    <input
+                      type="radio"
+                      className="sr-only"
+                      value="xiaomi"
+                      checked={field.value === 'xiaomi'}
+                      onChange={() => field.onChange('xiaomi')}
+                    />
+                  )}
+                />
+                <div className={`
+                  p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                  ${methods.watch('deviceBrand') === 'xiaomi' 
+                    ? 'border-primary-500 bg-primary-50' 
+                    : 'border-gray-300 hover:border-gray-400'
+                  }
+                `}>
+                  <span className="font-medium text-gray-900">Xiaomi</span>
+                </div>
+              </label>
+              
+              <label className="relative flex items-center">
+                <Controller
+                  name="deviceBrand"
+                  control={methods.control}
+                  render={({ field }) => (
+                    <input
+                      type="radio"
+                      className="sr-only"
+                      value="other"
+                      checked={field.value === 'other'}
+                      onChange={() => field.onChange('other')}
+                    />
+                  )}
+                />
+                <div className={`
+                  p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                  ${methods.watch('deviceBrand') === 'other' 
+                    ? 'border-primary-500 bg-primary-50' 
+                    : 'border-gray-300 hover:border-gray-400'
+                  }
+                `}>
+                  <span className="font-medium text-gray-900">Other Brand</span>
+                </div>
+              </label>
+            </div>
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Model <span className="text-red-500">*</span>
             </label>
+            
+            <Controller
+              name="deviceModel"
+              control={methods.control}
+              rules={{ required: "Model is required" }}
+              render={({ field, fieldState }) => (
+                <>
+                  <DeviceModelSelector
+                    deviceType={methods.watch('deviceType')}
+                    brand={methods.watch('deviceBrand')}
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                  {fieldState.error && (
+                    <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                  )}
+                </>
+              )}
+            />
           </div>
         </div>
         
-        <div className="space-y-2">
-          <label htmlFor="deviceBrand" className="block text-sm font-medium text-gray-700">
-            Device Brand
-              </label>
-          <Controller
-            name="deviceBrand"
-            control={methods.control}
-            rules={{ required: "Brand is required" }}
-            render={({ field, fieldState }) => (
-              <>
-              <input
-                  id="deviceBrand"
-                type="text"
-                  className={`
-                    mt-1 block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
-                    ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
-                    focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
-                  `}
-                placeholder="e.g., Apple, Samsung, Dell"
-                  {...field}
-                />
-                {fieldState.error && (
-                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                )}
-              </>
-            )}
-              />
+        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Why Choose Our Doorstep Repair?</h3>
+          <div className="space-y-3">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 text-primary-500">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-gray-700"><strong>Convenience:</strong> We come to your home or office</p>
+              </div>
             </div>
-            
-        <div className="space-y-2">
-          <label htmlFor="deviceModel" className="block text-sm font-medium text-gray-700">
-            Device Model
-              </label>
-          <Controller
-            name="deviceModel"
-            control={methods.control}
-            rules={{ required: "Model is required" }}
-            render={({ field, fieldState }) => (
-              <>
-              <input
-                  id="deviceModel"
-                type="text"
-                  className={`
-                    mt-1 block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
-                    ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
-                    focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
-                  `}
-                placeholder="e.g., iPhone 13, Galaxy S22, XPS 15"
-                  {...field}
-              />
-                {fieldState.error && (
-                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                )}
-          </>
-        )}
-          />
+            <div className="flex items-start">
+              <div className="flex-shrink-0 text-primary-500">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-gray-700"><strong>Speed:</strong> Most repairs completed in 30-60 minutes</p>
+              </div>
+            </div>
+            <div className="flex items-start">
+              <div className="flex-shrink-0 text-primary-500">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-gray-700"><strong>Quality:</strong> High-quality parts & certified technicians</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
