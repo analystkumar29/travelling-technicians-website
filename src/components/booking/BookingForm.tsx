@@ -24,23 +24,37 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
 
+  // Create a properly typed defaultValues object
+  const defaultValues: Partial<CreateBookingRequest> = {
+    deviceType: initialData.deviceType || 'mobile',
+    deviceBrand: initialData.deviceBrand || '',
+    deviceModel: initialData.deviceModel || '',
+    serviceType: initialData.serviceType || '',
+    issueDescription: initialData.issueDescription || '',
+    appointmentDate: initialData.appointmentDate || '',
+    appointmentTime: initialData.appointmentTime || '',
+    customerName: initialData.customerName || '',
+    customerEmail: initialData.customerEmail || '',
+    customerPhone: initialData.customerPhone || '',
+    address: initialData.address || '',
+    postalCode: initialData.postalCode || '',
+  };
+  
+  // Add optional fields explicitly if they exist
+  if ('city' in initialData || initialData.city) {
+    defaultValues.city = initialData.city || 'Vancouver';
+  } else {
+    defaultValues.city = 'Vancouver';
+  }
+  
+  if ('province' in initialData || initialData.province) {
+    defaultValues.province = initialData.province || 'BC';
+  } else {
+    defaultValues.province = 'BC';
+  }
+
   const methods = useForm<CreateBookingRequest>({
-    defaultValues: {
-      deviceType: initialData.deviceType || 'mobile',
-      deviceBrand: initialData.deviceBrand || '',
-      deviceModel: initialData.deviceModel || '',
-      serviceType: initialData.serviceType || '',
-      issueDescription: initialData.issueDescription || '',
-      appointmentDate: initialData.appointmentDate || '',
-      appointmentTime: initialData.appointmentTime || '',
-      customerName: initialData.customerName || '',
-      customerEmail: initialData.customerEmail || '',
-      customerPhone: initialData.customerPhone || '',
-      address: initialData.address || '',
-      postalCode: initialData.postalCode || '',
-      city: initialData.city || 'Vancouver',
-      province: initialData.province || 'BC',
-    }
+    defaultValues
   });
 
   // Placeholder step titles
