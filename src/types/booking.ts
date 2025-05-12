@@ -155,4 +155,5 @@ export interface BookingFormProps {
   onCancel?: () => void;
   initialData?: Partial<CreateBookingRequest>;
   children?: ReactNode;
+  onComplete?: (data: any) => void;
 } 
