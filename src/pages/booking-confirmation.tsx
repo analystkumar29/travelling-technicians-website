@@ -36,7 +36,11 @@ export default function BookingConfirmation() {
           throw new Error('Booking not found');
         }
         
-        console.log('DEBUG - Booking confirmation fetched raw date:', data.appointment.date);
+        console.log('DEBUG - Booking confirmation raw data:', {
+          date: data.appointment.date,
+          time: data.appointment.time,
+          deviceType: data.device.type
+        });
         
         // Apply special handling to ensure date is correctly processed
         // Handle potential timezone issues by explicitly parsing the date
@@ -51,9 +55,34 @@ export default function BookingConfirmation() {
         
         console.log('DEBUG - Normalized date before formatting:', appointmentDate);
         
-        // Format the date properly to handle timezone issues
-        const formattedDate = formatDate(appointmentDate);
-        console.log('DEBUG - Formatted date for display:', formattedDate);
+        // Format the date directly using UTC to avoid any timezone shifting
+        let formattedDate = '';
+        
+        try {
+          if (appointmentDate) {
+            // Parse the YYYY-MM-DD format
+            const [year, month, day] = appointmentDate.split('-').map(Number);
+            
+            // Create a UTC date object (noon to avoid any day shifting)
+            const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+            
+            console.log('DEBUG - Created UTC date object:', date.toISOString());
+            
+            // Format the date using a UTC formatter
+            formattedDate = new Intl.DateTimeFormat('en-US', {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric',
+              timeZone: 'UTC' // Force UTC timezone
+            }).format(date);
+            
+            console.log('DEBUG - Final formatted date:', formattedDate);
+          }
+        } catch (dateError) {
+          console.error('Error formatting date:', dateError);
+          formattedDate = appointmentDate; // Fallback to the raw date
+        }
         
         setBookingData({
           ref: reference,
@@ -62,7 +91,8 @@ export default function BookingConfirmation() {
           date: formattedDate,
           time: formatTimeSlot(data.appointment.time),
           address: data.location.address,
-          email: data.customer.email
+          email: data.customer.email,
+          phone: data.customer.phone
         });
       } catch (err) {
         console.error('Error fetching booking:', err);
