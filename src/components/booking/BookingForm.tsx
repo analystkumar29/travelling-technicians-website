@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
 import DeviceModelSelector from './DeviceModelSelector';
 // Comment out the non-existent imports for now
@@ -1261,6 +1261,43 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     // Only show validation errors if this step has been validated
     const showValidationErrors = validatedSteps.includes(3);
     
+    // State to track if location data was pre-filled
+    const [locationWasPreFilled, setLocationWasPreFilled] = useState(false);
+    
+    // Check localStorage for saved address data when component mounts
+    useEffect(() => {
+      try {
+        const savedLocationData = localStorage.getItem('travellingTech_location');
+        
+        if (savedLocationData) {
+          const locationData = JSON.parse(savedLocationData);
+          console.log('Found saved location data:', locationData);
+          
+          // Check if the data is still fresh (less than 24 hours old)
+          const savedTime = new Date(locationData.timestamp).getTime();
+          const currentTime = new Date().getTime();
+          const hoursDiff = (currentTime - savedTime) / (1000 * 60 * 60);
+          
+          if (hoursDiff < 24 && locationData.serviceable) {
+            // Pre-populate the form fields with stored data
+            methods.setValue('address', methods.getValues('address') || ''); // Keep existing value if any
+            methods.setValue('postalCode', locationData.postalCode || '');
+            methods.setValue('city', locationData.city || 'Vancouver');
+            methods.setValue('province', locationData.province || 'BC');
+            
+            console.log('Pre-filled location fields from saved data');
+            setLocationWasPreFilled(true);
+          } else if (hoursDiff >= 24) {
+            // Data is old, remove it
+            localStorage.removeItem('travellingTech_location');
+            console.log('Removed outdated location data');
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing saved location data:', error);
+      }
+    }, []);
+    
     return (
       <div className="space-y-6">
         <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
@@ -1274,10 +1311,27 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <p className="text-sm text-blue-700">
                 We service the entire Lower Mainland area including Vancouver, Burnaby, Surrey, Richmond, Coquitlam, and more.
               </p>
-          </div>
+            </div>
           </div>
         </div>
-
+        
+        {locationWasPreFilled && (
+          <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-green-700">
+                  Your location information has been pre-filled based on your previous service area check. You can edit these details if needed.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div className="space-y-2">
           <label htmlFor="address" className="block text-sm font-medium text-gray-700">
             Street Address
