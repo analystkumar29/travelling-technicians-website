@@ -83,35 +83,9 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
   // Initialize booking reference from localStorage on client-side only - now using temp storage
   // This is just for UI state persistence between page refreshes
   const [formattedBookingData, setFormattedBookingData] = useState<FormattedBookingData | null>(null);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   
-  useEffect(() => {
-    // Only run on client-side
-    if (typeof window !== 'undefined') {
-      try {
-        // Try to get reference from URL query params first
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlReference = urlParams.get('reference');
-        
-        if (urlReference) {
-          setState(prev => ({ ...prev, bookingReference: urlReference }));
-          // If we find a reference in URL, auto-fetch that booking
-          fetchBookingByReference(urlReference);
-        } else {
-          // Fall back to local storage for UI persistence
-          const storedReference = SupabaseStorageService.getLocalItem<string>(STORAGE_KEYS.FORM_STATE);
-          if (storedReference) {
-            setState(prev => ({ ...prev, bookingReference: storedReference }));
-          }
-        }
-      } catch (err) {
-        contextLogger.error('Failed to get booking reference from storage', err);
-      }
-    }
-  }, []);
-
-  /**
-   * Save booking reference to temporary storage for UI persistence
-   */
+  // Save booking reference to temporary storage for UI persistence
   const saveBookingReferenceLocally = useCallback((reference: string | null) => {
     if (typeof window === 'undefined') return;
     
@@ -125,6 +99,79 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
       contextLogger.error('Failed to save booking reference to local storage', err);
     }
   }, []);
+
+  // Fetch booking by reference directly from Supabase
+  const fetchBookingByReference = useCallback(async (reference: string): Promise<BookingData | null> => {
+    contextLogger.info(`Fetching booking with reference: ${reference}`);
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
+    
+    try {
+      // 'data' here is BookingResponse from the service
+      const response = await bookingService.getBookingByReference(reference);
+      
+      if (!response.success || !response.booking) {
+        throw new Error(response.message || response.error || 'Booking not found or invalid response');
+      }
+      
+      // Now, response.booking is the actual BookingData
+      const bookingDetails = response.booking;
+
+      setState(prev => ({
+        ...prev,
+        bookingData: bookingDetails, // Use the nested booking data
+        bookingStatus: bookingDetails.status, // Access status from bookingDetails
+        bookingReference: reference,
+        isLoading: false,
+      }));
+      
+      // Store reference in local storage for UI persistence
+      saveBookingReferenceLocally(reference);
+      
+      return bookingDetails; // Return the actual BookingData
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch booking';
+      
+      contextLogger.error(`Error fetching booking (${reference}):`, error);
+      setState(prev => ({
+        ...prev,
+        isLoading: false,
+        error: errorMessage,
+      }));
+      
+      return null;
+    }
+  }, [saveBookingReferenceLocally]);
+
+  // Load initial data from URL or localStorage
+  useEffect(() => {
+    // Skip if we've already done the initial load or if not on client-side
+    if (initialLoadDone || typeof window === 'undefined') return;
+    
+    try {
+      // Try to get reference from URL query params first
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlReference = urlParams.get('reference');
+      
+      if (urlReference) {
+        contextLogger.debug('Found booking reference in URL', { reference: urlReference });
+        setState(prev => ({ ...prev, bookingReference: urlReference }));
+        // If we find a reference in URL, auto-fetch that booking
+        fetchBookingByReference(urlReference);
+      } else {
+        // Fall back to local storage for UI persistence
+        const storedReference = SupabaseStorageService.getLocalItem<string>(STORAGE_KEYS.FORM_STATE);
+        if (storedReference) {
+          contextLogger.debug('Found booking reference in local storage', { reference: storedReference });
+          setState(prev => ({ ...prev, bookingReference: storedReference }));
+        }
+      }
+    } catch (err) {
+      contextLogger.error('Failed to get booking reference from storage', err);
+    }
+    
+    // Mark initial load as done to prevent further renders
+    setInitialLoadDone(true);
+  }, [initialLoadDone, fetchBookingByReference]);
 
   /**
    * Create a new booking
@@ -184,50 +231,6 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
         stack: error instanceof Error ? error.stack : undefined
       });
       
-      setState(prev => ({
-        ...prev,
-        isLoading: false,
-        error: errorMessage,
-      }));
-      
-      return null;
-    }
-  }, [saveBookingReferenceLocally]);
-
-  /**
-   * Fetch booking by reference directly from Supabase
-   */
-  const fetchBookingByReference = useCallback(async (reference: string): Promise<BookingData | null> => {
-    contextLogger.info(`Fetching booking with reference: ${reference}`);
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
-    
-    try {
-      // 'data' here is BookingResponse from the service
-      const response = await bookingService.getBookingByReference(reference);
-      
-      if (!response.success || !response.booking) {
-        throw new Error(response.message || response.error || 'Booking not found or invalid response');
-      }
-      
-      // Now, response.booking is the actual BookingData
-      const bookingDetails = response.booking;
-
-      setState(prev => ({
-        ...prev,
-        bookingData: bookingDetails, // Use the nested booking data
-        bookingStatus: bookingDetails.status, // Access status from bookingDetails
-        bookingReference: reference,
-        isLoading: false,
-      }));
-      
-      // Store reference in local storage for UI persistence
-      saveBookingReferenceLocally(reference);
-      
-      return bookingDetails; // Return the actual BookingData
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch booking';
-      
-      contextLogger.error(`Error fetching booking (${reference}):`, error);
       setState(prev => ({
         ...prev,
         isLoading: false,

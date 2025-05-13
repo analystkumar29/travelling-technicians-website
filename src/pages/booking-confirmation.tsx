@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Layout from '@/components/layout/Layout';
+import Layout, { LayoutProps } from '@/components/layout/Layout';
 import { FaCheckCircle, FaCalendarAlt, FaMobile, FaWrench, FaMapMarkerAlt, FaEnvelope } from 'react-icons/fa';
 import { useRouter } from 'next/router';
 import SupabaseStorageService from '@/services/SupabaseStorageService';
@@ -63,18 +63,19 @@ export default function BookingConfirmation() {
             // Parse the YYYY-MM-DD format
             const [year, month, day] = appointmentDate.split('-').map(Number);
             
-            // Create a UTC date object (noon to avoid any day shifting)
+            // Create a UTC date object with noon UTC time to avoid any day shifting
+            // This ensures we're working with the exact date specified without timezone issues
             const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
             
             console.log('DEBUG - Created UTC date object:', date.toISOString());
             
-            // Format the date using a UTC formatter
+            // Format the date using a UTC formatter to ensure consistent display
             formattedDate = new Intl.DateTimeFormat('en-US', {
               weekday: 'long',
               month: 'long',
               day: 'numeric',
               year: 'numeric',
-              timeZone: 'UTC' // Force UTC timezone
+              timeZone: 'UTC' // Force UTC timezone to prevent any local timezone shifting
             }).format(date);
             
             console.log('DEBUG - Final formatted date:', formattedDate);

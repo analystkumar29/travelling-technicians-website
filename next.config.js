@@ -1,9 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  // Disable strict mode to prevent double rendering during development
+  reactStrictMode: false,
   output: 'standalone',
+  // Update image configuration to use only remotePatterns and not deprecated domains
   images: {
-    domains: ['images.unsplash.com'],
     remotePatterns: [
       {
         protocol: 'https',
@@ -12,9 +13,27 @@ const nextConfig = {
       },
     ],
   },
-  // Configuration for handling static assets
+  // Disable webpack disk cache and HMR to prevent ENOENT errors and continuous rebuilds
+  webpack: (config, { dev, isServer }) => {
+    // Disable persistent cache in development
+    if (dev) {
+      config.cache = false;
+      
+      // Disable HMR which is causing continuous reloads
+      if (!isServer) {
+        config.optimization.runtimeChunk = false;
+        config.plugins = config.plugins.filter(
+          (plugin) => 
+            plugin.constructor.name !== 'HotModuleReplacementPlugin' && 
+            plugin.constructor.name !== 'ReactRefreshPlugin'
+        );
+      }
+    }
+    return config;
+  },
+  // Increase timeout for static page generation
   staticPageGenerationTimeout: 180,
-  // Headers for better caching
+  // Configure header for better caching
   async headers() {
     return [
       {
@@ -28,8 +47,19 @@ const nextConfig = {
       },
     ];
   },
-  // Server external packages config
+  // Configuration for external packages
   serverExternalPackages: [],
+  // Prevent page reloads when encountering errors
+  onDemandEntries: {
+    // Keep the pages in memory longer between builds
+    maxInactiveAge: 60 * 60 * 1000,
+    // Increase the number of pages that should be kept in memory
+    pagesBufferLength: 5,
+  },
+  // Disable fast refresh entirely to prevent constant reloading
+  devIndicators: {
+    buildActivity: false,
+  },
 };
 
 module.exports = nextConfig;

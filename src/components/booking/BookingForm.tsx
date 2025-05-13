@@ -1436,7 +1436,6 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         setDetectingLocation(false);
       }
     };
-    
     // Function to handle address selection and set postal code attention flag if needed
     const handleAddressSelect = (address: string, isValid: boolean, postalCode?: string) => {
       // Update the form field value
@@ -1457,6 +1456,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         setNeedsPostalCodeAttention(true); // No postal code detected, need user input
       }
     };
+
     
     return (
       <div className="space-y-6">

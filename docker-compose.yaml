@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # Next.js application
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.local
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+      - NEXT_PUBLIC_WEBSITE_URL=http://localhost:3000
+    depends_on:
+      - db
+    volumes:
+      - ./:/app
+      - /app/node_modules
+      - /app/.next
+
+  # Supabase PostgreSQL database (local development only)
+  db:
+    image: postgres:14
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: travelling_technicians
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # Supabase functions (local development only)
+  supabase:
+    image: supabase/supabase-local:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+    ports:
+      - "8000:8000" # API
+      - "9000:9000" # Studio
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: db
+      STUDIO_API_URL: http://localhost:8000
+    volumes:
+      - ./supabase:/app/supabase
+      - ./database/schema.sql:/app/schema.sql
+
+volumes:
+  pgdata: 
