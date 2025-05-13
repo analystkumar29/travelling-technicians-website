@@ -88,8 +88,107 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     'Confirm',
   ];
 
-  const nextStep = () => {
-    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+  // Validate the current step's fields before moving to the next step
+  const validateStep = async (step: number): Promise<boolean> => {
+    // Get the current form values
+    const data = methods.getValues();
+    
+    // Define required fields for each step
+    switch (step) {
+      case 0: // Device Type
+        // Validate device type, brand, and model
+        if (!data.deviceType) {
+          methods.setError('deviceType', { type: 'required', message: 'Please select a device type' });
+          return false;
+        }
+        if (!data.deviceBrand) {
+          methods.setError('deviceBrand', { type: 'required', message: 'Please select a brand' });
+          return false;
+        }
+        // If brand is 'other', validate custom brand
+        if (data.deviceBrand === 'other' && !data.customBrand) {
+          methods.setError('customBrand', { type: 'required', message: 'Please enter a brand name' });
+          return false;
+        }
+        if (!data.deviceModel) {
+          methods.setError('deviceModel', { type: 'required', message: 'Please select or enter a model' });
+          return false;
+        }
+        return true;
+        
+      case 1: // Service Details
+        // Validate service type and issue description
+        return await methods.trigger(['serviceType', 'issueDescription']);
+        
+      case 2: // Contact Info
+        // Validate name, email, and phone
+        return await methods.trigger(['customerName', 'customerEmail', 'customerPhone']);
+        
+      case 3: // Location
+        // Validate address, city, and postal code
+        return await methods.trigger(['address', 'city', 'postalCode']);
+        
+      case 4: // Appointment
+        // Validate appointment date and time
+        return await methods.trigger(['appointmentDate', 'appointmentTime']);
+        
+      default:
+        return true;
+    }
+  };
+
+  const nextStep = async () => {
+    // Get current form values
+    const data = methods.getValues();
+    let isValid = true;
+    
+    // Validate fields based on current step
+    switch (currentStep) {
+      case 0: // Device Type
+        if (!data.deviceType) {
+          methods.setError('deviceType', { type: 'required', message: 'Please select a device type' });
+          isValid = false;
+        }
+        if (!data.deviceBrand) {
+          methods.setError('deviceBrand', { type: 'required', message: 'Please select a brand' });
+          isValid = false;
+        }
+        if (data.deviceBrand === 'other' && !data.customBrand) {
+          methods.setError('customBrand', { type: 'required', message: 'Please enter a brand name' });
+          isValid = false;
+        }
+        if (!data.deviceModel) {
+          methods.setError('deviceModel', { type: 'required', message: 'Please select or enter a model' });
+          isValid = false;
+        }
+        break;
+        
+      case 1: // Service Details
+        isValid = await methods.trigger(['serviceType', 'issueDescription']);
+        break;
+        
+      case 2: // Contact Info
+        isValid = await methods.trigger(['customerName', 'customerEmail', 'customerPhone']);
+        break;
+        
+      case 3: // Location
+        isValid = await methods.trigger(['address', 'city', 'postalCode']);
+        break;
+        
+      case 4: // Appointment
+        isValid = await methods.trigger(['appointmentDate', 'appointmentTime']);
+        break;
+    }
+    
+    if (isValid) {
+      setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+    } else {
+      // Scroll to the first error
+      const firstError = document.querySelector('.text-red-600');
+      if (firstError) {
+        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
   };
 
   const prevStep = () => {
@@ -135,6 +234,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 <Controller
                   name="deviceType"
                   control={methods.control}
+                  rules={{ required: "Please select a device type" }}
                   render={({ field }) => (
                     <input
                       type="radio"
@@ -154,7 +254,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
                   ${methods.watch('deviceType') === 'mobile' 
                     ? 'border-primary-500 bg-primary-50' 
-                    : 'border-gray-300 hover:border-gray-400'
+                    : methods.formState.errors.deviceType 
+                      ? 'border-red-300 hover:border-red-400' 
+                      : 'border-gray-300 hover:border-gray-400'
                   }
                 `}>
                   <div className="bg-primary-100 rounded-md p-2 mr-3">
@@ -170,6 +272,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 <Controller
                   name="deviceType"
                   control={methods.control}
+                  rules={{ required: "Please select a device type" }}
                   render={({ field }) => (
                     <input
                       type="radio"
@@ -189,7 +292,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
                   ${methods.watch('deviceType') === 'laptop' 
                     ? 'border-primary-500 bg-primary-50' 
-                    : 'border-gray-300 hover:border-gray-400'
+                    : methods.formState.errors.deviceType 
+                      ? 'border-red-300 hover:border-red-400' 
+                      : 'border-gray-300 hover:border-gray-400'
                   }
                 `}>
                   <div className="bg-primary-100 rounded-md p-2 mr-3">
@@ -205,6 +310,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 <Controller
                   name="deviceType"
                   control={methods.control}
+                  rules={{ required: "Please select a device type" }}
                   render={({ field }) => (
                     <input
                       type="radio"
@@ -224,7 +330,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
                   ${methods.watch('deviceType') === 'tablet' 
                     ? 'border-primary-500 bg-primary-50' 
-                    : 'border-gray-300 hover:border-gray-400'
+                    : methods.formState.errors.deviceType 
+                      ? 'border-red-300 hover:border-red-400' 
+                      : 'border-gray-300 hover:border-gray-400'
                   }
                 `}>
                   <div className="bg-primary-100 rounded-md p-2 mr-3">
@@ -236,6 +344,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 </div>
               </label>
             </div>
+            {methods.formState.errors.deviceType && (
+              <p className="mt-1 text-sm text-red-600">{methods.formState.errors.deviceType.message}</p>
+            )}
           </div>
           
           {deviceType && (
@@ -251,6 +362,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     <Controller
                       name="deviceBrand"
                       control={methods.control}
+                      rules={{ required: "Please select a brand" }}
                       render={({ field }) => (
                         <input
                           type="radio"
@@ -265,13 +377,15 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       )}
                     />
                     <div className={`
-                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
                       ${methods.watch('deviceBrand') === 'apple' 
                         ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-300 hover:border-gray-400'
+                        : methods.formState.errors.deviceBrand 
+                          ? 'border-red-300 hover:border-red-400' 
+                          : 'border-gray-300 hover:border-gray-400'
                       }
                     `}>
-                      <span className="font-medium text-gray-900">Apple iPhone</span>
+                      <span className="font-medium text-gray-900">Apple</span>
                     </div>
                   </label>
                   
@@ -279,6 +393,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     <Controller
                       name="deviceBrand"
                       control={methods.control}
+                      rules={{ required: "Please select a brand" }}
                       render={({ field }) => (
                         <input
                           type="radio"
@@ -293,13 +408,15 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       )}
                     />
                     <div className={`
-                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
                       ${methods.watch('deviceBrand') === 'samsung' 
                         ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-300 hover:border-gray-400'
+                        : methods.formState.errors.deviceBrand 
+                          ? 'border-red-300 hover:border-red-400' 
+                          : 'border-gray-300 hover:border-gray-400'
                       }
                     `}>
-                      <span className="font-medium text-gray-900">Samsung Galaxy</span>
+                      <span className="font-medium text-gray-900">Samsung</span>
                     </div>
                   </label>
                   
@@ -307,6 +424,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     <Controller
                       name="deviceBrand"
                       control={methods.control}
+                      rules={{ required: "Please select a brand" }}
                       render={({ field }) => (
                         <input
                           type="radio"
@@ -321,13 +439,15 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       )}
                     />
                     <div className={`
-                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
                       ${methods.watch('deviceBrand') === 'google' 
                         ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-300 hover:border-gray-400'
+                        : methods.formState.errors.deviceBrand 
+                          ? 'border-red-300 hover:border-red-400' 
+                          : 'border-gray-300 hover:border-gray-400'
                       }
                     `}>
-                      <span className="font-medium text-gray-900">Google Pixel</span>
+                      <span className="font-medium text-gray-900">Google</span>
                     </div>
                   </label>
                   
@@ -335,6 +455,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     <Controller
                       name="deviceBrand"
                       control={methods.control}
+                      rules={{ required: "Please select a brand" }}
                       render={({ field }) => (
                         <input
                           type="radio"
@@ -349,10 +470,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       )}
                     />
                     <div className={`
-                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
                       ${methods.watch('deviceBrand') === 'oneplus' 
                         ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-300 hover:border-gray-400'
+                        : methods.formState.errors.deviceBrand 
+                          ? 'border-red-300 hover:border-red-400' 
+                          : 'border-gray-300 hover:border-gray-400'
                       }
                     `}>
                       <span className="font-medium text-gray-900">OnePlus</span>
@@ -363,6 +486,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     <Controller
                       name="deviceBrand"
                       control={methods.control}
+                      rules={{ required: "Please select a brand" }}
                       render={({ field }) => (
                         <input
                           type="radio"
@@ -377,10 +501,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       )}
                     />
                     <div className={`
-                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
                       ${methods.watch('deviceBrand') === 'xiaomi' 
                         ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-300 hover:border-gray-400'
+                        : methods.formState.errors.deviceBrand 
+                          ? 'border-red-300 hover:border-red-400' 
+                          : 'border-gray-300 hover:border-gray-400'
                       }
                     `}>
                       <span className="font-medium text-gray-900">Xiaomi</span>
@@ -391,6 +517,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     <Controller
                       name="deviceBrand"
                       control={methods.control}
+                      rules={{ required: "Please select a brand" }}
                       render={({ field }) => (
                         <input
                           type="radio"
@@ -405,13 +532,15 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       )}
                     />
                     <div className={`
-                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
                       ${methods.watch('deviceBrand') === 'other' 
                         ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-300 hover:border-gray-400'
+                        : methods.formState.errors.deviceBrand 
+                          ? 'border-red-300 hover:border-red-400' 
+                          : 'border-gray-300 hover:border-gray-400'
                       }
                     `}>
-                      <span className="font-medium text-gray-900">Other Brand</span>
+                      <span className="font-medium text-gray-900">Other</span>
                     </div>
                   </label>
                 </div>
@@ -424,6 +553,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     <Controller
                       name="deviceBrand"
                       control={methods.control}
+                      rules={{ required: "Please select a brand" }}
                       render={({ field }) => (
                         <input
                           type="radio"
@@ -438,13 +568,15 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       )}
                     />
                     <div className={`
-                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
                       ${methods.watch('deviceBrand') === 'apple' 
                         ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-300 hover:border-gray-400'
+                        : methods.formState.errors.deviceBrand 
+                          ? 'border-red-300 hover:border-red-400' 
+                          : 'border-gray-300 hover:border-gray-400'
                       }
                     `}>
-                      <span className="font-medium text-gray-900">Apple MacBook</span>
+                      <span className="font-medium text-gray-900">Apple</span>
                     </div>
                   </label>
                   
@@ -452,6 +584,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     <Controller
                       name="deviceBrand"
                       control={methods.control}
+                      rules={{ required: "Please select a brand" }}
                       render={({ field }) => (
                         <input
                           type="radio"
@@ -466,10 +599,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       )}
                     />
                     <div className={`
-                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
                       ${methods.watch('deviceBrand') === 'dell' 
                         ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-300 hover:border-gray-400'
+                        : methods.formState.errors.deviceBrand 
+                          ? 'border-red-300 hover:border-red-400' 
+                          : 'border-gray-300 hover:border-gray-400'
                       }
                     `}>
                       <span className="font-medium text-gray-900">Dell</span>
@@ -480,6 +615,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     <Controller
                       name="deviceBrand"
                       control={methods.control}
+                      rules={{ required: "Please select a brand" }}
                       render={({ field }) => (
                         <input
                           type="radio"
@@ -494,10 +630,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       )}
                     />
                     <div className={`
-                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
                       ${methods.watch('deviceBrand') === 'hp' 
                         ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-300 hover:border-gray-400'
+                        : methods.formState.errors.deviceBrand 
+                          ? 'border-red-300 hover:border-red-400' 
+                          : 'border-gray-300 hover:border-gray-400'
                       }
                     `}>
                       <span className="font-medium text-gray-900">HP</span>
@@ -508,6 +646,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     <Controller
                       name="deviceBrand"
                       control={methods.control}
+                      rules={{ required: "Please select a brand" }}
                       render={({ field }) => (
                         <input
                           type="radio"
@@ -522,10 +661,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       )}
                     />
                     <div className={`
-                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
                       ${methods.watch('deviceBrand') === 'lenovo' 
                         ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-300 hover:border-gray-400'
+                        : methods.formState.errors.deviceBrand 
+                          ? 'border-red-300 hover:border-red-400' 
+                          : 'border-gray-300 hover:border-gray-400'
                       }
                     `}>
                       <span className="font-medium text-gray-900">Lenovo</span>
@@ -536,6 +677,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     <Controller
                       name="deviceBrand"
                       control={methods.control}
+                      rules={{ required: "Please select a brand" }}
                       render={({ field }) => (
                         <input
                           type="radio"
@@ -550,10 +692,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       )}
                     />
                     <div className={`
-                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
                       ${methods.watch('deviceBrand') === 'asus' 
                         ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-300 hover:border-gray-400'
+                        : methods.formState.errors.deviceBrand 
+                          ? 'border-red-300 hover:border-red-400' 
+                          : 'border-gray-300 hover:border-gray-400'
                       }
                     `}>
                       <span className="font-medium text-gray-900">ASUS</span>
@@ -564,6 +708,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     <Controller
                       name="deviceBrand"
                       control={methods.control}
+                      rules={{ required: "Please select a brand" }}
                       render={({ field }) => (
                         <input
                           type="radio"
@@ -578,13 +723,15 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       )}
                     />
                     <div className={`
-                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
                       ${methods.watch('deviceBrand') === 'other' 
                         ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-300 hover:border-gray-400'
+                        : methods.formState.errors.deviceBrand 
+                          ? 'border-red-300 hover:border-red-400' 
+                          : 'border-gray-300 hover:border-gray-400'
                       }
                     `}>
-                      <span className="font-medium text-gray-900">Other Brand</span>
+                      <span className="font-medium text-gray-900">Other</span>
                     </div>
                   </label>
                 </div>
@@ -597,6 +744,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     <Controller
                       name="deviceBrand"
                       control={methods.control}
+                      rules={{ required: "Please select a brand" }}
                       render={({ field }) => (
                         <input
                           type="radio"
@@ -611,13 +759,15 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       )}
                     />
                     <div className={`
-                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
                       ${methods.watch('deviceBrand') === 'apple' 
                         ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-300 hover:border-gray-400'
+                        : methods.formState.errors.deviceBrand 
+                          ? 'border-red-300 hover:border-red-400' 
+                          : 'border-gray-300 hover:border-gray-400'
                       }
                     `}>
-                      <span className="font-medium text-gray-900">Apple iPad</span>
+                      <span className="font-medium text-gray-900">Apple</span>
                     </div>
                   </label>
                   
@@ -625,6 +775,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     <Controller
                       name="deviceBrand"
                       control={methods.control}
+                      rules={{ required: "Please select a brand" }}
                       render={({ field }) => (
                         <input
                           type="radio"
@@ -639,13 +790,15 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       )}
                     />
                     <div className={`
-                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
                       ${methods.watch('deviceBrand') === 'samsung' 
                         ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-300 hover:border-gray-400'
+                        : methods.formState.errors.deviceBrand 
+                          ? 'border-red-300 hover:border-red-400' 
+                          : 'border-gray-300 hover:border-gray-400'
                       }
                     `}>
-                      <span className="font-medium text-gray-900">Samsung Galaxy Tab</span>
+                      <span className="font-medium text-gray-900">Samsung</span>
                     </div>
                   </label>
                   
@@ -653,6 +806,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     <Controller
                       name="deviceBrand"
                       control={methods.control}
+                      rules={{ required: "Please select a brand" }}
                       render={({ field }) => (
                         <input
                           type="radio"
@@ -667,13 +821,15 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       )}
                     />
                     <div className={`
-                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
                       ${methods.watch('deviceBrand') === 'microsoft' 
                         ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-300 hover:border-gray-400'
+                        : methods.formState.errors.deviceBrand 
+                          ? 'border-red-300 hover:border-red-400' 
+                          : 'border-gray-300 hover:border-gray-400'
                       }
                     `}>
-                      <span className="font-medium text-gray-900">Microsoft Surface</span>
+                      <span className="font-medium text-gray-900">Microsoft</span>
                     </div>
                   </label>
                   
@@ -681,6 +837,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     <Controller
                       name="deviceBrand"
                       control={methods.control}
+                      rules={{ required: "Please select a brand" }}
                       render={({ field }) => (
                         <input
                           type="radio"
@@ -695,10 +852,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       )}
                     />
                     <div className={`
-                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
                       ${methods.watch('deviceBrand') === 'lenovo' 
                         ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-300 hover:border-gray-400'
+                        : methods.formState.errors.deviceBrand 
+                          ? 'border-red-300 hover:border-red-400' 
+                          : 'border-gray-300 hover:border-gray-400'
                       }
                     `}>
                       <span className="font-medium text-gray-900">Lenovo</span>
@@ -709,6 +868,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     <Controller
                       name="deviceBrand"
                       control={methods.control}
+                      rules={{ required: "Please select a brand" }}
                       render={({ field }) => (
                         <input
                           type="radio"
@@ -723,16 +883,23 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       )}
                     />
                     <div className={`
-                      p-3 border-2 rounded-md flex items-center justify-center cursor-pointer transition w-full
+                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
                       ${methods.watch('deviceBrand') === 'other' 
                         ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-300 hover:border-gray-400'
+                        : methods.formState.errors.deviceBrand 
+                          ? 'border-red-300 hover:border-red-400' 
+                          : 'border-gray-300 hover:border-gray-400'
                       }
                     `}>
-                      <span className="font-medium text-gray-900">Other Brand</span>
+                      <span className="font-medium text-gray-900">Other</span>
                     </div>
                   </label>
                 </div>
+              )}
+              
+              {/* Error message for device brand */}
+              {methods.formState.errors.deviceBrand && (
+                <p className="mt-1 text-sm text-red-600">{methods.formState.errors.deviceBrand.message}</p>
               )}
               
               {/* Custom Brand Input (when "Other Brand" is selected) */}
@@ -751,9 +918,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                           className={`
                             block w-full px-4 py-3 border rounded-md shadow-sm placeholder-gray-400
                             ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
-                            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
+                            focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
                           `}
-                          placeholder={`Enter the brand of your ${deviceType}`}
+                          placeholder="Enter brand name..."
                           {...field}
                         />
                         {fieldState.error && (
@@ -767,7 +934,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             </div>
           )}
           
-          {methods.watch('deviceBrand') && (
+          {deviceType && (
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Model <span className="text-red-500">*</span>
@@ -1550,29 +1717,101 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     );
   };
 
-  // Render the appropriate step based on currentStep
-  const renderStepContent = () => {
+  // Helper to get all field errors for the current step
+  const getCurrentStepErrors = () => {
+    const errors = methods.formState.errors;
+    const errorFields: string[] = [];
+    
+    // Check for specific fields based on current step
     switch (currentStep) {
-      case 0:
-        return renderDeviceTypeStep();
-      case 1:
-        return renderServiceDetailsStep();
-      case 2:
-        return renderCustomerInfoStep();
-      case 3:
-        return renderLocationStep();
-      case 4:
-        return renderAppointmentStep();
-      case 5:
-        return renderConfirmationStep();
-      default:
-        return (
-          <div className="text-center text-gray-500">
-            <p className="mb-2">This is a placeholder for the {steps[currentStep]} step.</p>
-            <p>Future implementation will include all necessary fields for this step.</p>
+      case 0: // Device Type
+        if (errors.deviceType) errorFields.push('Device Type');
+        if (errors.deviceBrand) errorFields.push('Brand');
+        if (errors.customBrand) errorFields.push('Custom Brand');
+        if (errors.deviceModel) errorFields.push('Model');
+        break;
+      case 1: // Service Details
+        if (errors.serviceType) errorFields.push('Service Type');
+        if (errors.issueDescription) errorFields.push('Issue Description');
+        break;
+      case 2: // Contact Info
+        if (errors.customerName) errorFields.push('Full Name');
+        if (errors.customerEmail) errorFields.push('Email Address');
+        if (errors.customerPhone) errorFields.push('Phone Number');
+        break;
+      case 3: // Location
+        if (errors.address) errorFields.push('Address');
+        if (errors.city) errorFields.push('City');
+        if (errors.postalCode) errorFields.push('Postal Code');
+        break;
+      case 4: // Appointment
+        if (errors.appointmentDate) errorFields.push('Appointment Date');
+        if (errors.appointmentTime) errorFields.push('Appointment Time');
+        break;
+    }
+    
+    return errorFields;
+  };
+
+  // Render error summary for the current step if any errors
+  const renderErrorSummary = () => {
+    const errorFields = getCurrentStepErrors();
+    
+    if (errorFields.length === 0) return null;
+    
+    return (
+      <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-red-800">
+              Please fix the following issues:
+            </h3>
+            <ul className="mt-1 text-sm text-red-700 list-disc list-inside">
+              {errorFields.map((field, i) => (
+                <li key={i}>{field} is required</li>
+              ))}
+            </ul>
+          </div>
+        </div>
       </div>
     );
-    }
+  };
+
+  // Render the appropriate step based on currentStep
+  const renderStepContent = () => {
+    return (
+      <>
+        {renderErrorSummary()}
+        {(() => {
+          switch (currentStep) {
+            case 0:
+              return renderDeviceTypeStep();
+            case 1:
+              return renderServiceDetailsStep();
+            case 2:
+              return renderCustomerInfoStep();
+            case 3:
+              return renderLocationStep();
+            case 4:
+              return renderAppointmentStep();
+            case 5:
+              return renderConfirmationStep();
+            default:
+              return (
+                <div className="text-center text-gray-500">
+                  <p className="mb-2">This is a placeholder for the {steps[currentStep]} step.</p>
+                  <p>Future implementation will include all necessary fields for this step.</p>
+                </div>
+              );
+          }
+        })()}
+      </>
+    );
   };
 
   // Override the handleSubmit function to check for terms agreement
@@ -1629,17 +1868,17 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       </div>
       
       <FormProvider {...methods}>
-        <form onSubmit={(e) => {
+        <form onSubmit={async (e) => {
           e.preventDefault();
           if (currentStep === steps.length - 1) {
             handleFinalSubmit();
           } else {
-            nextStep();
+            await nextStep();
           }
         }}>
           {/* Step content */}
           <div className="mb-6">
-        {renderStepContent()}
+            {renderStepContent()}
           </div>
           
           {/* Navigation buttons */}
@@ -1665,7 +1904,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             {currentStep < steps.length - 1 ? (
               <button
                 type="button"
-                onClick={nextStep}
+                onClick={() => nextStep()}
                 className="px-6 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 transition"
               >
                 Next
@@ -1681,7 +1920,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               </button>
             )}
           </div>
-      </form>
+        </form>
       </FormProvider>
     </div>
   );
