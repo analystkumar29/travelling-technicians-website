@@ -51,7 +51,11 @@ function formatDeviceInfo(deviceType: string, brand?: string, model?: string): s
     // Only add a space between brand and model if both exist
     const separator = (displayBrand && displayModel) ? ' ' : '';
     
-    return `${displayType} - ${displayBrand}${separator}${displayModel}`.trim();
+    // Create the full device string without trailing dashes or spaces
+    const deviceString = `${displayType} - ${displayBrand}${separator}${displayModel}`;
+    
+    // Return the trimmed string
+    return deviceString.replace(/\s+-\s*$/, '').trim();
   }
   
   // Just return the device type without dash if no brand/model
