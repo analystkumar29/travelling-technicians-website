@@ -9,7 +9,13 @@ import DeviceModelSelector from './DeviceModelSelector';
 // import { AppointmentStep } from './steps/AppointmentStep';
 // import { ConfirmationStep } from './steps/ConfirmationStep';
 import type { CreateBookingRequest } from '@/types/booking';
-import { getCurrentLocationPostalCode, checkServiceArea } from '@/utils/locationUtils';
+import { 
+  checkServiceArea, 
+  getCurrentLocationPostalCode,
+  isValidPostalCodeFormat,
+  ServiceAreaType
+} from '@/utils/locationUtils';
+import AddressAutocomplete from './AddressAutocomplete';
 
 interface BookingFormProps {
   onSubmit: (data: CreateBookingRequest) => void;
@@ -31,22 +37,24 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   const [locationWasPreFilled, setLocationWasPreFilled] = useState(false);
   // Add the detectingLocation state at the component level
   const [detectingLocation, setDetectingLocation] = useState(false);
+  // Move needsPostalCodeAttention to component level
+  const [needsPostalCodeAttention, setNeedsPostalCodeAttention] = useState(false);
 
   // Create a properly typed defaultValues object
   const defaultValues: Partial<CreateBookingRequest> = {
-    deviceType: initialData.deviceType || 'mobile',
-    deviceBrand: initialData.deviceBrand || '',
-    deviceModel: initialData.deviceModel || '',
+      deviceType: initialData.deviceType || 'mobile',
+      deviceBrand: initialData.deviceBrand || '',
+      deviceModel: initialData.deviceModel || '',
     customBrand: initialData.customBrand || '',
-    serviceType: initialData.serviceType || '',
-    issueDescription: initialData.issueDescription || '',
-    appointmentDate: initialData.appointmentDate || '',
-    appointmentTime: initialData.appointmentTime || '',
-    customerName: initialData.customerName || '',
-    customerEmail: initialData.customerEmail || '',
-    customerPhone: initialData.customerPhone || '',
-    address: initialData.address || '',
-    postalCode: initialData.postalCode || '',
+      serviceType: initialData.serviceType || '',
+      issueDescription: initialData.issueDescription || '',
+      appointmentDate: initialData.appointmentDate || '',
+      appointmentTime: initialData.appointmentTime || '',
+      customerName: initialData.customerName || '',
+      customerEmail: initialData.customerEmail || '',
+      customerPhone: initialData.customerPhone || '',
+      address: initialData.address || '',
+      postalCode: initialData.postalCode || '',
   };
   
   // Add optional fields explicitly if they exist
@@ -93,7 +101,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       
       if (savedLocationData) {
         const locationData = JSON.parse(savedLocationData);
-        console.log('[ADDRESS_PREFILL] Found saved location data:', JSON.stringify(locationData, null, 2));
+        console.log('Found saved location data:', locationData);
         
         // Check if the data is still fresh (less than 24 hours old)
         const savedTime = new Date(locationData.timestamp).getTime();
@@ -101,52 +109,22 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         const hoursDiff = (currentTime - savedTime) / (1000 * 60 * 60);
         
         if (hoursDiff < 24 && locationData.serviceable) {
-          // Debug check - verify that the address data doesn't contain a phone number
-          if (locationData.address && locationData.address.includes('Service Area')) {
-            console.log('[ADDRESS_PREFILL_DEBUG] Warning: Address appears to be using the generic Service Area format:', locationData.address);
-          }
-          
-          if (locationData.address && /\d{10}/.test(locationData.address)) {
-            console.log('[ADDRESS_PREFILL_DEBUG] ⚠️ ALERT! Address field appears to contain what might be a phone number:', locationData.address);
-          }
-          
           // Pre-populate the form fields with stored data
-          console.log('[ADDRESS_PREFILL] Setting address field to:', locationData.address || '');
           methods.setValue('address', locationData.address || ''); // Use address from localStorage
-          console.log('[ADDRESS_PREFILL] Setting postalCode field to:', locationData.postalCode || '');
           methods.setValue('postalCode', locationData.postalCode || '');
-          console.log('[ADDRESS_PREFILL] Setting city field to:', locationData.city || 'Vancouver');
           methods.setValue('city', locationData.city || 'Vancouver');
-          console.log('[ADDRESS_PREFILL] Setting province field to:', locationData.province || 'BC');
           methods.setValue('province', locationData.province || 'BC');
           
-          console.log('[ADDRESS_PREFILL] Reading current form values after pre-fill:');
-          const formValues = methods.getValues();
-          console.log('[ADDRESS_PREFILL] address =', formValues.address);
-          console.log('[ADDRESS_PREFILL] postalCode =', formValues.postalCode);
-          console.log('[ADDRESS_PREFILL] city =', formValues.city);
-          console.log('[ADDRESS_PREFILL] province =', formValues.province);
-          
-          // Check if customerPhone has been set
-          if (formValues.customerPhone) {
-            console.log('[ADDRESS_PREFILL_DEBUG] ⚠️ Customer phone field is already set:', formValues.customerPhone);
-            console.log('[ADDRESS_PREFILL_DEBUG] Checking if phone number appears in address field...');
-            if (formValues.address && formValues.address.includes(formValues.customerPhone)) {
-              console.log('[ADDRESS_PREFILL_DEBUG] 🚨 CRITICAL! Phone number found in address field!');
-            }
-          }
-          
+          console.log('Pre-filled location fields from saved data');
           setLocationWasPreFilled(true);
         } else if (hoursDiff >= 24) {
           // Data is old, remove it
           localStorage.removeItem('travellingTech_location');
-          console.log('[ADDRESS_PREFILL] Removed outdated location data (older than 24 hours)');
-        }
-      } else {
-        console.log('[ADDRESS_PREFILL] No saved location data found in localStorage');
+          console.log('Removed outdated location data');
+    }
       }
     } catch (error) {
-      console.error('[ADDRESS_PREFILL] Error parsing saved location data:', error);
+      console.error('Error parsing saved location data:', error);
     }
   }, [methods]);
 
@@ -262,7 +240,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     
     if (isValid) {
       // Increment the step
-      setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
       
       // Scroll to the top of the form container
       const formContainer = document.querySelector('.bg-white.rounded-lg.shadow-lg');
@@ -320,125 +298,125 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             </label>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <label className="relative flex items-center">
-                <Controller
-                  name="deviceType"
-                  control={methods.control}
+            <label className="relative flex items-center">
+              <Controller
+                name="deviceType"
+                control={methods.control}
                   rules={{ required: "Please select a device type" }}
-                  render={({ field }) => (
-                    <input
-                      type="radio"
-                      className="sr-only"
-                      value="mobile"
-                      checked={field.value === 'mobile'}
+                render={({ field }) => (
+                  <input
+                    type="radio"
+                    className="sr-only"
+                    value="mobile"
+                    checked={field.value === 'mobile'}
                       onChange={() => {
                         field.onChange('mobile');
                         methods.setValue('deviceBrand', '');
                         methods.setValue('deviceModel', '');
                         console.log('Changed to mobile');
                       }}
-                    />
-                  )}
-                />
-                <div className={`
+                  />
+                )}
+              />
+              <div className={`
                   p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                  ${methods.watch('deviceType') === 'mobile' 
-                    ? 'border-primary-500 bg-primary-50' 
+                ${methods.watch('deviceType') === 'mobile' 
+                  ? 'border-primary-500 bg-primary-50' 
                     : methods.formState.errors.deviceType 
                       ? 'border-red-300 hover:border-red-400' 
                       : 'border-gray-300 hover:border-gray-400'
-                  }
-                `}>
+                }
+              `}>
                   <div className="bg-primary-100 rounded-md p-2 mr-3">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
                   </div>
                   <span className="font-medium text-gray-900">Mobile Phone</span>
-                </div>
-              </label>
-              
-              <label className="relative flex items-center">
-                <Controller
-                  name="deviceType"
-                  control={methods.control}
+              </div>
+            </label>
+            
+            <label className="relative flex items-center">
+              <Controller
+                name="deviceType"
+                control={methods.control}
                   rules={{ required: "Please select a device type" }}
-                  render={({ field }) => (
-                    <input
-                      type="radio"
-                      className="sr-only"
-                      value="laptop"
-                      checked={field.value === 'laptop'}
+                render={({ field }) => (
+                  <input
+                    type="radio"
+                    className="sr-only"
+                    value="laptop"
+                    checked={field.value === 'laptop'}
                       onChange={() => {
                         field.onChange('laptop');
                         methods.setValue('deviceBrand', '');
                         methods.setValue('deviceModel', '');
                         console.log('Changed to laptop');
                       }}
-                    />
-                  )}
-                />
-                <div className={`
+                  />
+                )}
+              />
+              <div className={`
                   p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                  ${methods.watch('deviceType') === 'laptop' 
-                    ? 'border-primary-500 bg-primary-50' 
+                ${methods.watch('deviceType') === 'laptop' 
+                  ? 'border-primary-500 bg-primary-50' 
                     : methods.formState.errors.deviceType 
                       ? 'border-red-300 hover:border-red-400' 
                       : 'border-gray-300 hover:border-gray-400'
-                  }
-                `}>
+                }
+              `}>
                   <div className="bg-primary-100 rounded-md p-2 mr-3">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
                   </div>
                   <span className="font-medium text-gray-900">Laptop</span>
-                </div>
-              </label>
-              
-              <label className="relative flex items-center">
-                <Controller
-                  name="deviceType"
-                  control={methods.control}
+              </div>
+            </label>
+            
+            <label className="relative flex items-center">
+              <Controller
+                name="deviceType"
+                control={methods.control}
                   rules={{ required: "Please select a device type" }}
-                  render={({ field }) => (
-                    <input
-                      type="radio"
-                      className="sr-only"
-                      value="tablet"
-                      checked={field.value === 'tablet'}
+                render={({ field }) => (
+                  <input
+                    type="radio"
+                    className="sr-only"
+                    value="tablet"
+                    checked={field.value === 'tablet'}
                       onChange={() => {
                         field.onChange('tablet');
                         methods.setValue('deviceBrand', '');
                         methods.setValue('deviceModel', '');
                         console.log('Changed to tablet');
                       }}
-                    />
-                  )}
-                />
-                <div className={`
+                  />
+                )}
+              />
+              <div className={`
                   p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                  ${methods.watch('deviceType') === 'tablet' 
-                    ? 'border-primary-500 bg-primary-50' 
+                ${methods.watch('deviceType') === 'tablet' 
+                  ? 'border-primary-500 bg-primary-50' 
                     : methods.formState.errors.deviceType 
                       ? 'border-red-300 hover:border-red-400' 
                       : 'border-gray-300 hover:border-gray-400'
-                  }
-                `}>
+                }
+              `}>
                   <div className="bg-primary-100 rounded-md p-2 mr-3">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
                   </div>
                   <span className="font-medium text-gray-900">Tablet</span>
-                </div>
-              </label>
-            </div>
+              </div>
+            </label>
+          </div>
             {methods.formState.errors.deviceType && showValidationErrors && (
               <p className="mt-1 text-sm text-red-600">{methods.formState.errors.deviceType.message}</p>
             )}
-          </div>
-          
+        </div>
+        
           {deviceType && (
             <div className="mb-4" key={deviceKey}>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -449,9 +427,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               {deviceType === 'mobile' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                   <label className="relative flex items-center">
-                    <Controller
-                      name="deviceBrand"
-                      control={methods.control}
+          <Controller
+            name="deviceBrand"
+            control={methods.control}
                       rules={{ required: "Please select a brand" }}
                       render={({ field }) => (
                         <input
@@ -1001,25 +979,25 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   <Controller
                     name="customBrand"
                     control={methods.control}
-                    render={({ field, fieldState }) => (
-                      <>
-                        <input
-                          type="text"
-                          className={`
+            render={({ field, fieldState }) => (
+              <>
+              <input
+                type="text"
+                  className={`
                             block w-full px-4 py-3 border rounded-md shadow-sm placeholder-gray-400
-                            ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
-                            focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
-                          `}
+                    ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
+                    focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
+                  `}
                           placeholder="Enter brand name..."
-                          {...field}
-                        />
+                  {...field}
+                />
                         {fieldState.error && showValidationErrors && (
-                          <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                        )}
-                      </>
-                    )}
-                  />
-                </div>
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
+              </>
+            )}
+              />
+            </div>
               )}
             </div>
           )}
@@ -1030,24 +1008,24 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 Model <span className="text-red-500">*</span>
               </label>
               
-              <Controller
-                name="deviceModel"
-                control={methods.control}
-                rules={{ required: "Model is required" }}
-                render={({ field, fieldState }) => (
-                  <>
+          <Controller
+            name="deviceModel"
+            control={methods.control}
+            rules={{ required: "Model is required" }}
+            render={({ field, fieldState }) => (
+              <>
                     <DeviceModelSelector
                       deviceType={methods.watch('deviceType')}
                       brand={methods.watch('deviceBrand')}
                       value={field.value}
                       onChange={field.onChange}
-                    />
-                    {fieldState.error && showValidationErrors && (
-                      <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                    )}
-                  </>
-                )}
               />
+                    {fieldState.error && showValidationErrors && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
+          </>
+        )}
+          />
             </div>
           )}
         </div>
@@ -1190,9 +1168,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             rules={{}} 
             render={({ field, fieldState }) => (
               <>
-                <textarea
-                  id="issueDescription"
-                  rows={4}
+          <textarea
+            id="issueDescription"
+            rows={4}
                   className={`
                     block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
                     ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
@@ -1323,23 +1301,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
                   `}
                   placeholder="(555) 123-4567"
-                  onChange={(e) => {
-                    field.onChange(e);
-                    // Debug: Log when phone number changes
-                    console.log('[PHONE_FIELD_DEBUG] Phone number changed to:', e.target.value);
-                  }}
-                  onBlur={(e) => {
-                    field.onBlur();
-                    // Debug: Log when phone number field is blurred
-                    console.log('[PHONE_FIELD_DEBUG] Phone number field blurred. Value:', e.target.value);
-                    
-                    // Save current form values for debugging
-                    const formValues = methods.getValues();
-                    console.log('[PHONE_FIELD_DEBUG] Current form values after phone update:');
-                    console.log('- customerPhone:', formValues.customerPhone);
-                    console.log('- address (if set):', formValues.address || 'not set yet');
-                  }}
-                  value={field.value}
+                  {...field}
                 />
                 {fieldState.error && showValidationErrors && (
                   <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
@@ -1364,15 +1326,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     const detectCurrentLocation = async () => {
       try {
         setDetectingLocation(true);
-        console.log('[DETECT_LOCATION] Starting location detection process');
         
         // Get postal code from browser geolocation
         const postalCode = await getCurrentLocationPostalCode();
-        console.log('[DETECT_LOCATION] Retrieved postal code:', postalCode);
         
         // Check if this postal code is in our service area
         const serviceArea = checkServiceArea(postalCode);
-        console.log('[DETECT_LOCATION] Service area check result:', serviceArea);
         
         if (serviceArea && serviceArea.serviceable) {
           // Try to get a detailed address using reverse geocoding
@@ -1382,14 +1341,11 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           try {
             // If geolocation is available, try to get a more detailed address
             if (navigator.geolocation) {
-              console.log('[DETECT_LOCATION] Browser geolocation is available, requesting position');
               navigator.geolocation.getCurrentPosition(async (position) => {
                 const { latitude, longitude } = position.coords;
-                console.log('[DETECT_LOCATION] Got coordinates:', latitude, longitude);
                 
                 try {
                   // Use OpenStreetMap's Nominatim for reverse geocoding
-                  console.log('[DETECT_LOCATION] Making request to Nominatim API');
                   const response = await fetch(
                     `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18`,
                     { 
@@ -1403,12 +1359,11 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   
                   if (response.ok) {
                     const data = await response.json();
-                    console.log('[DETECT_LOCATION] Nominatim address data:', data);
+                    console.log('Nominatim address data:', data);
                     
                     // Build a detailed address from the address components
                     if (data.address) {
                       const addr = data.address;
-                      console.log('[DETECT_LOCATION] Address components:', addr);
                       
                       // Construct the detailed address
                       const streetNumber = addr.house_number || '';
@@ -1421,55 +1376,37 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                           : `${streetNumber} ${street}`;
                         
                         // Update the form with the more detailed address
-                        console.log('[DETECT_LOCATION] Setting detailed address:', detailedAddress);
                         methods.setValue('address', detailedAddress);
                         
                         // If city information is available, use it
                         if (addr.city || addr.town || addr.village || addr.suburb) {
                           city = addr.city || addr.town || addr.village || addr.suburb;
-                          console.log('[DETECT_LOCATION] Setting city from Nominatim:', city);
                           methods.setValue('city', city);
                         }
-                      } else {
-                        console.log('[DETECT_LOCATION] Could not construct detailed address from components - missing street number or street');
+                        
+                        console.log('Set detailed address from Nominatim:', detailedAddress);
                       }
                     }
-                  } else {
-                    console.error('[DETECT_LOCATION] Nominatim API error:', response.status, response.statusText);
                   }
                 } catch (error) {
-                  console.error('[DETECT_LOCATION] Error fetching detailed address:', error);
+                  console.error('Error fetching detailed address:', error);
                 }
               });
-            } else {
-              console.log('[DETECT_LOCATION] Browser geolocation is not available');
             }
           } catch (geoError) {
-            console.error('[DETECT_LOCATION] Error accessing geolocation for detailed address:', geoError);
+            console.error('Error accessing geolocation for detailed address:', geoError);
           }
           
           // Set the postal code (this is what we have most confidence in)
-          console.log('[DETECT_LOCATION] Setting postalCode field to:', postalCode);
           methods.setValue('postalCode', postalCode);
-          console.log('[DETECT_LOCATION] Setting city field to:', city);
           methods.setValue('city', city);
-          console.log('[DETECT_LOCATION] Setting province field to: BC');
           methods.setValue('province', 'BC');
           
           // If we couldn't get a detailed address, use a generic one with the postal code
           if (!detailedAddress) {
             const addressPlaceholder = `${postalCode} area`;
-            console.log('[DETECT_LOCATION] No detailed address found, using placeholder:', addressPlaceholder);
             methods.setValue('address', addressPlaceholder);
           }
-          
-          // Read back the form values to verify what was set
-          const currentFormValues = methods.getValues();
-          console.log('[DETECT_LOCATION] Current form values after setting:');
-          console.log('- address:', currentFormValues.address);
-          console.log('- postalCode:', currentFormValues.postalCode);
-          console.log('- city:', currentFormValues.city);
-          console.log('- province:', currentFormValues.province);
           
           // Create a location data object for more permanent storage
           const locationData = {
@@ -1482,18 +1419,41 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           };
           
           // Save to localStorage for future use
-          console.log('[DETECT_LOCATION] Saving location data to localStorage:', JSON.stringify(locationData, null, 2));
           localStorage.setItem('travellingTech_location', JSON.stringify(locationData));
           
           setLocationWasPreFilled(true);
+          setNeedsPostalCodeAttention(false);
         } else {
           alert("We couldn't determine if your location is within our service area. Please enter your address manually.");
+          setNeedsPostalCodeAttention(true);
         }
       } catch (error) {
-        console.error('[DETECT_LOCATION] Error detecting location:', error);
+        console.error('Error detecting location:', error);
         alert("Couldn't detect your location. Please enter your address manually.");
+        setNeedsPostalCodeAttention(true);
       } finally {
         setDetectingLocation(false);
+      }
+    };
+    
+    // Function to handle address selection and set postal code attention flag if needed
+    const handleAddressSelect = (address: string, isValid: boolean, postalCode?: string) => {
+      // Update the form field value
+      methods.setValue('address', address);
+      
+      if (postalCode) {
+        methods.setValue('postalCode', postalCode);
+        setNeedsPostalCodeAttention(!isValid); // If not valid, need attention
+        
+        // If postal code is not in service area, set an error
+        if (!isValid) {
+          methods.setError('postalCode', { 
+            type: 'validate', 
+            message: `Unfortunately, we don't service ${postalCode} at this time.` 
+          });
+        }
+      } else {
+        setNeedsPostalCodeAttention(true); // No postal code detected, need user input
       }
     };
     
@@ -1510,7 +1470,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <p className="text-sm text-blue-700">
                 We service the entire Lower Mainland area including Vancouver, Burnaby, Surrey, Richmond, Coquitlam, and more.
               </p>
-            </div>
+          </div>
           </div>
         </div>
         
@@ -1530,12 +1490,29 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             </div>
           </div>
         )}
-        
+
+        {needsPostalCodeAttention && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-yellow-700">
+                  <strong>Please ensure your postal code is correct.</strong> We need this to verify if you're in our service area.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-              Street Address
-            </label>
+          <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+            Street Address
+          </label>
             <button
               type="button"
               onClick={detectCurrentLocation}
@@ -1567,16 +1544,11 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             rules={{ required: "Address is required" }}
             render={({ field, fieldState }) => (
               <>
-                <input
-                  id="address"
-                  type="text"
-                  className={`
-                    block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
-                    ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
-                    focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
-                  `}
-                  placeholder="123 Main St, Apt 4B"
-                  {...field}
+                <AddressAutocomplete
+                  value={field.value}
+                  className=""
+                  onAddressSelect={handleAddressSelect}
+                  error={!!fieldState.error}
                 />
                 {fieldState.error && showValidationErrors && (
                   <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
@@ -1631,19 +1603,20 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           </div>
           
           <div className="space-y-2">
-            <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700">
-              Postal Code
+            <label htmlFor="postalCode" className={`block text-sm font-medium ${needsPostalCodeAttention ? 'text-yellow-700' : 'text-gray-700'}`}>
+              Postal Code {needsPostalCodeAttention && <span className="text-red-500">*</span>}
             </label>
             <Controller
               name="postalCode"
               control={methods.control}
               rules={{ 
                 required: "Postal code is required",
-                pattern: {
-                  value: process.env.NODE_ENV === 'production'
-                    ? /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/
-                    : /^.{2,}$/,
-                  message: "Please enter a valid Canadian postal code"
+                validate: {
+                  validFormat: (value) => isValidPostalCodeFormat(value) || "Please enter a valid postal code format (e.g., V6B 1A1)",
+                  inServiceArea: (value) => {
+                    const serviceArea = checkServiceArea(value);
+                    return serviceArea?.serviceable || "Unfortunately, we don't service this postal code area. Please contact us for special arrangements.";
+                  }
                 }
               }}
               render={({ field, fieldState }) => (
@@ -1653,11 +1626,23 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     type="text"
                     className={`
                       block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
-                      ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
+                      ${needsPostalCodeAttention ? 'bg-yellow-50 border-yellow-300' : fieldState.error ? 'border-red-300' : 'border-gray-300'}
                       focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
                     `}
                     placeholder="V6B 1A1"
                     {...field}
+                    onChange={(e) => {
+                      const value = e.target.value.toUpperCase();
+                      field.onChange(value);
+                      
+                      // If it's a valid postal code, remove the attention flag
+                      if (isValidPostalCodeFormat(value)) {
+                        const serviceArea = checkServiceArea(value);
+                        if (serviceArea?.serviceable) {
+                          setNeedsPostalCodeAttention(false);
+                        }
+                      }
+                    }}
                   />
                   {fieldState.error && showValidationErrors && (
                     <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
@@ -1665,8 +1650,10 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 </>
               )}
             />
+          </div>
         </div>
-            </div>
+
+        {/* Rest of your form fields... */}
         
         <div className="space-y-2">
           <label htmlFor="province" className="block text-sm font-medium text-gray-700">
@@ -1675,20 +1662,24 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           <Controller
             name="province"
             control={methods.control}
-            render={({ field }) => (
-              <input
-                id="province"
-                type="text"
-                className="bg-gray-100 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm sm:text-sm"
-                disabled
-                {...field}
-              />
+            rules={{ required: "Province is required" }}
+            render={({ field, fieldState }) => (
+              <>
+                <input
+                  id="province"
+                  type="text"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm bg-gray-100"
+                  disabled
+                  {...field}
+                />
+                {fieldState.error && showValidationErrors && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
+              </>
             )}
           />
-          <p className="text-xs text-gray-500 mt-1">
-            We currently only service British Columbia's Lower Mainland.
-          </p>
         </div>
+        
       </div>
     );
   };
@@ -1926,11 +1917,11 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Device Type</dt>
                 <dd className="mt-1 text-sm text-gray-900 capitalize">{formData.deviceType}</dd>
-              </div>
+            </div>
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Brand</dt>
                 <dd className="mt-1 text-sm text-gray-900 capitalize">{displayBrand}</dd>
-              </div>
+          </div>
               <div className="sm:col-span-2">
                 <dt className="text-sm font-medium text-gray-500">Model</dt>
                 <dd className="mt-1 text-sm text-gray-900">{formData.deviceModel}</dd>
@@ -1940,10 +1931,10 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 <dd className="mt-1 text-sm text-gray-900">{serviceTypeMap[formData.serviceType] || formData.serviceType}</dd>
               </div>
               {formData.issueDescription && (
-                <div className="sm:col-span-2">
-                  <dt className="text-sm font-medium text-gray-500">Issue Description</dt>
+              <div className="sm:col-span-2">
+                <dt className="text-sm font-medium text-gray-500">Issue Description</dt>
                   <dd className="mt-1 text-sm text-gray-900">{formData.issueDescription}</dd>
-                </div>
+              </div>
               )}
             </dl>
           </div>
@@ -2088,8 +2079,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 <li key={i}>{field} is required</li>
               ))}
             </ul>
-          </div>
         </div>
+          </div>
       </div>
     );
   };
@@ -2100,27 +2091,27 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       <>
         {renderErrorSummary()}
         {(() => {
-          switch (currentStep) {
-            case 0:
-              return renderDeviceTypeStep();
-            case 1:
-              return renderServiceDetailsStep();
-            case 2:
-              return renderCustomerInfoStep();
-            case 3:
-              return renderLocationStep();
-            case 4:
-              return renderAppointmentStep();
-            case 5:
-              return renderConfirmationStep();
-            default:
-              return (
-                <div className="text-center text-gray-500">
-                  <p className="mb-2">This is a placeholder for the {steps[currentStep]} step.</p>
-                  <p>Future implementation will include all necessary fields for this step.</p>
-                </div>
-              );
-          }
+    switch (currentStep) {
+      case 0:
+        return renderDeviceTypeStep();
+      case 1:
+        return renderServiceDetailsStep();
+      case 2:
+        return renderCustomerInfoStep();
+      case 3:
+        return renderLocationStep();
+      case 4:
+        return renderAppointmentStep();
+      case 5:
+        return renderConfirmationStep();
+      default:
+        return (
+          <div className="text-center text-gray-500">
+            <p className="mb-2">This is a placeholder for the {steps[currentStep]} step.</p>
+            <p>Future implementation will include all necessary fields for this step.</p>
+      </div>
+    );
+    }
         })()}
       </>
     );
@@ -2190,7 +2181,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         }}>
           {/* Step content */}
           <div className="mb-6">
-            {renderStepContent()}
+        {renderStepContent()}
           </div>
           
           {/* Navigation buttons */}
@@ -2232,7 +2223,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               </button>
             )}
           </div>
-        </form>
+      </form>
       </FormProvider>
     </div>
   );

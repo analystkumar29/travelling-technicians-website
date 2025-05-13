@@ -394,9 +394,22 @@ export default function AddressAutocomplete({
       validateAndSelectAddress(inputValue, extractedCode);
     } else {
       console.log('DEBUG - No valid postal code found in input');
-      setError('Please enter a valid Canadian postal code in the format A1A 1A1');
+      
+      // Instead of stopping here with an error, we'll still allow the user to proceed
+      // and ask them to enter a postal code separately in the next step
+      setError('No postal code detected in your address. You will need to enter it in the next step.');
+      
+      // Even without a postal code, we should call onAddressSelect to allow the user to proceed
+      // We'll pass a special flag (false for inServiceArea) to indicate postal code validation is needed
+      if (onAddressSelect) {
+        console.log('DEBUG - Proceeding without postal code validation');
+        // Use the address as entered, mark as not validated yet (third parameter false)
+        onAddressSelect(inputValue, '', false);
+      }
+      
+      // Inform parent about the error but don't block progress
       if (onError) {
-        onError('Please enter a valid Canadian postal code in the format A1A 1A1');
+        onError('No postal code detected. You will need to provide it separately.');
       }
     }
   };
@@ -407,9 +420,17 @@ export default function AddressAutocomplete({
     
     if (!postalCode || postalCode.trim().length < 6) {
       console.log('DEBUG - Invalid postal code format:', postalCode);
-      setError('Please enter a valid Canadian postal code in the format A1A 1A1');
+      
+      // Instead of stopping with an error, allow proceeding with a warning
+      setError('Invalid postal code format. You will need to enter a valid postal code in the next step.');
+      
+      // Still call onAddressSelect to allow user to proceed
+      if (onAddressSelect) {
+        onAddressSelect(address, '', false);
+      }
+      
       if (onError) {
-        onError('Invalid postal code format. Please enter a valid Canadian postal code.');
+        onError('Invalid postal code format. Please enter a valid Canadian postal code in the next step.');
       }
       return;
     }
@@ -431,6 +452,11 @@ export default function AddressAutocomplete({
       setError(`Unfortunately, we don't service ${cleanPostalCode} at this time.`);
       if (onError) {
         onError(`Unfortunately, we don't service ${cleanPostalCode} at this time.`);
+      }
+      
+      // Still allow user to proceed with the address (they might enter a different postal code later)
+      if (onAddressSelect) {
+        onAddressSelect(address, cleanPostalCode, false);
       }
     } else {
       setError('');
