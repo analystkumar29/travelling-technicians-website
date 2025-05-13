@@ -36,6 +36,28 @@ function generateVerificationToken(email: string, bookingReference: string): str
     .digest('hex');
 }
 
+/**
+ * Format device information for email display
+ */
+function formatDeviceInfo(deviceType: string, brand?: string, model?: string): string {
+  // Convert device type to proper display format
+  const displayType = deviceType === 'mobile' ? 'Mobile Phone' : 
+                      deviceType === 'laptop' ? 'Laptop' : 'Tablet';
+  
+  // Only add the dash and brand/model if they exist
+  if ((brand && brand !== 'other') || model) {
+    const displayBrand = (brand && brand !== 'other') ? brand : '';
+    const displayModel = model || '';
+    // Only add a space between brand and model if both exist
+    const separator = (displayBrand && displayModel) ? ' ' : '';
+    
+    return `${displayType} - ${displayBrand}${separator}${displayModel}`.trim();
+  }
+  
+  // Just return the device type without dash if no brand/model
+  return displayType;
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -109,6 +131,9 @@ export default async function handler(
       });
     }
 
+    // Format device information
+    const formattedDeviceInfo = formatDeviceInfo(deviceType, brand, model);
+
     // Create email message with SendGrid
     const msg: sgMail.MailDataRequired = {
       to,
@@ -128,9 +153,7 @@ export default async function handler(
         isRescheduled: false,
         name,
         bookingReference,
-        deviceType: deviceType === 'mobile' ? 'Mobile Phone' : deviceType === 'laptop' ? 'Laptop' : 'Tablet',
-        brand,
-        model,
+        deviceType: formattedDeviceInfo,
         service,
         bookingDate,
         bookingTime,

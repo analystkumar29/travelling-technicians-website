@@ -25,6 +25,13 @@ export interface BookingConfirmationEmailData {
   appointmentDate: string;
   appointmentTime: string;
   service: string;
+  deviceType?: string;
+  deviceBrand?: string;
+  deviceModel?: string;
+  address?: string;
+  city?: string;
+  postalCode?: string;
+  province?: string;
 }
 
 /**
@@ -32,7 +39,16 @@ export interface BookingConfirmationEmailData {
  */
 function formatDate(dateString: string): string {
   try {
-    const date = new Date(dateString);
+    // Ensure the date is parsed correctly without timezone issues
+    // For YYYY-MM-DD format, append the time to ensure it's interpreted as local time
+    const [year, month, day] = dateString.split('-').map(Number);
+    if (!year || !month || !day) {
+      return dateString; // Return original if format doesn't match expected
+    }
+    
+    // Create date with local values (month is 0-indexed in JS Date)
+    const date = new Date(year, month - 1, day);
+    
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'long',
@@ -84,6 +100,11 @@ export async function sendBookingConfirmationEmail(data: BookingConfirmationEmai
     const formattedDate = formatDate(data.appointmentDate);
     const formattedTime = formatTimeSlot(data.appointmentTime);
     
+    // Create formatted address if address components are available
+    const fullAddress = data.address ? 
+      `${data.address}, ${data.city || ''} ${data.postalCode || ''} ${data.province || ''}`.trim() : 
+      '';
+    
     // Prepare email data for SendGrid
     const emailData = {
       to: data.to,
@@ -92,7 +113,10 @@ export async function sendBookingConfirmationEmail(data: BookingConfirmationEmai
       bookingDate: formattedDate,
       bookingTime: formattedTime,
       service: data.service,
-      deviceType: 'mobile' // Assuming default device type
+      deviceType: data.deviceType || 'mobile', // Use provided device type or default to mobile
+      brand: data.deviceBrand, // Add brand information
+      model: data.deviceModel, // Add model information
+      address: fullAddress // Add the formatted address to the email data
     };
     
     // Get the proper base URL depending on environment

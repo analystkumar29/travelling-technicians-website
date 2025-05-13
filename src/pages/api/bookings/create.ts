@@ -235,6 +235,13 @@ export default async function handler(
         appointmentDate: normalizedBookingData.appointmentDate,
         appointmentTime: normalizedBookingData.appointmentTime,
         service: normalizedBookingData.serviceType,
+        deviceType: normalizedBookingData.deviceType,
+        deviceBrand: normalizedBookingData.deviceBrand,
+        deviceModel: normalizedBookingData.deviceModel,
+        address: normalizedBookingData.address,
+        city: normalizedBookingData.city,
+        postalCode: normalizedBookingData.postalCode,
+        province: normalizedBookingData.province
       });
       
       apiLogger.info('Confirmation email sent', { email: normalizedBookingData.customerEmail });
