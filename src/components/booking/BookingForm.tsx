@@ -26,6 +26,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [formTouched, setFormTouched] = useState(false);
   const [validatedSteps, setValidatedSteps] = useState<number[]>([]);
+  // Add state for location pre-fill at the component level
+  const [locationWasPreFilled, setLocationWasPreFilled] = useState(false);
 
   // Create a properly typed defaultValues object
   const defaultValues: Partial<CreateBookingRequest> = {
@@ -80,6 +82,40 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       unregister('customBrand');
     }
   }, [deviceBrand, methods]);
+
+  // Check localStorage for saved address data when component mounts
+  useEffect(() => {
+    try {
+      const savedLocationData = localStorage.getItem('travellingTech_location');
+      
+      if (savedLocationData) {
+        const locationData = JSON.parse(savedLocationData);
+        console.log('Found saved location data:', locationData);
+        
+        // Check if the data is still fresh (less than 24 hours old)
+        const savedTime = new Date(locationData.timestamp).getTime();
+        const currentTime = new Date().getTime();
+        const hoursDiff = (currentTime - savedTime) / (1000 * 60 * 60);
+        
+        if (hoursDiff < 24 && locationData.serviceable) {
+          // Pre-populate the form fields with stored data
+          methods.setValue('address', methods.getValues('address') || ''); // Keep existing value if any
+          methods.setValue('postalCode', locationData.postalCode || '');
+          methods.setValue('city', locationData.city || 'Vancouver');
+          methods.setValue('province', locationData.province || 'BC');
+          
+          console.log('Pre-filled location fields from saved data');
+          setLocationWasPreFilled(true);
+        } else if (hoursDiff >= 24) {
+          // Data is old, remove it
+          localStorage.removeItem('travellingTech_location');
+          console.log('Removed outdated location data');
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing saved location data:', error);
+    }
+  }, [methods]);
 
   // Placeholder step titles
   const steps = [
@@ -1260,43 +1296,6 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   const renderLocationStep = () => {
     // Only show validation errors if this step has been validated
     const showValidationErrors = validatedSteps.includes(3);
-    
-    // State to track if location data was pre-filled
-    const [locationWasPreFilled, setLocationWasPreFilled] = useState(false);
-    
-    // Check localStorage for saved address data when component mounts
-    useEffect(() => {
-      try {
-        const savedLocationData = localStorage.getItem('travellingTech_location');
-        
-        if (savedLocationData) {
-          const locationData = JSON.parse(savedLocationData);
-          console.log('Found saved location data:', locationData);
-          
-          // Check if the data is still fresh (less than 24 hours old)
-          const savedTime = new Date(locationData.timestamp).getTime();
-          const currentTime = new Date().getTime();
-          const hoursDiff = (currentTime - savedTime) / (1000 * 60 * 60);
-          
-          if (hoursDiff < 24 && locationData.serviceable) {
-            // Pre-populate the form fields with stored data
-            methods.setValue('address', methods.getValues('address') || ''); // Keep existing value if any
-            methods.setValue('postalCode', locationData.postalCode || '');
-            methods.setValue('city', locationData.city || 'Vancouver');
-            methods.setValue('province', locationData.province || 'BC');
-            
-            console.log('Pre-filled location fields from saved data');
-            setLocationWasPreFilled(true);
-          } else if (hoursDiff >= 24) {
-            // Data is old, remove it
-            localStorage.removeItem('travellingTech_location');
-            console.log('Removed outdated location data');
-          }
-        }
-      } catch (error) {
-        console.error('Error parsing saved location data:', error);
-      }
-    }, []);
     
     return (
       <div className="space-y-6">
