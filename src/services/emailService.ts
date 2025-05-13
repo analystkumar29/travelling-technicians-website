@@ -38,23 +38,27 @@ export interface BookingConfirmationEmailData {
  * Formats a date string (YYYY-MM-DD) to a user-friendly format
  */
 function formatDate(dateString: string): string {
+  if (!dateString) return '';
+  
   try {
-    // Ensure the date is parsed correctly without timezone issues
-    // For YYYY-MM-DD format, append the time to ensure it's interpreted as local time
+    // Format: YYYY-MM-DD
     const [year, month, day] = dateString.split('-').map(Number);
+    
     if (!year || !month || !day) {
       return dateString; // Return original if format doesn't match expected
     }
     
-    // Create date with local values (month is 0-indexed in JS Date)
-    const date = new Date(year, month - 1, day);
+    // Create date object with UTC methods to completely eliminate timezone issues
+    const date = new Date(Date.UTC(year, month - 1, day));
     
-    return date.toLocaleDateString('en-US', {
+    // Convert to weekday, month day, year format using UTC date
+    return new Intl.DateTimeFormat('en-US', {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
-      year: 'numeric'
-    });
+      year: 'numeric',
+      timeZone: 'UTC' // Force UTC timezone for consistent display
+    }).format(date);
   } catch (e) {
     emailLogger.warn('Error formatting date', { dateString, error: e });
     return dateString; // Return the original string if formatting fails

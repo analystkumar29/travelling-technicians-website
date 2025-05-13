@@ -15,6 +15,7 @@ import {
   isValidPostalCodeFormat,
   ServiceAreaType
 } from '@/utils/locationUtils';
+import { formatDate } from '@/utils/formatters';
 import AddressAutocomplete from './AddressAutocomplete';
 
 interface BookingFormProps {
@@ -1846,43 +1847,28 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   const renderConfirmationStep = () => {
     const formData = methods.getValues();
     
-    // Get the display brand (use customBrand if deviceBrand is 'other')
-    const displayBrand = formData.deviceBrand === 'other' && formData.customBrand 
+    // Set a more descriptive display name for the brand
+    const displayBrand = formData.deviceBrand === 'other' 
       ? formData.customBrand 
       : formData.deviceBrand;
     
+    // Service type display mapping
     const serviceTypeMap: Record<string, string> = {
       'screen-replacement': 'Screen Replacement',
       'battery-replacement': 'Battery Replacement',
-      'charging-port': 'Charging Port Repair',
-      'speaker-mic': 'Speaker/Microphone Repair',
+      'charging-port-repair': 'Charging Port Repair',
+      'speaker-repair': 'Speaker/Microphone Repair',
       'camera-repair': 'Camera Repair',
-      'water-damage': 'Water Damage Diagnostics',
+      'water-damage': 'Water Damage Assessment',
       'keyboard-repair': 'Keyboard Repair/Replacement',
       'trackpad-repair': 'Trackpad Repair',
       'ram-upgrade': 'RAM Upgrade',
-      'storage-upgrade': 'HDD/SSD Replacement/Upgrade',
-      'software-trouble': 'Software Troubleshooting',
+      'storage-upgrade': 'Storage (HDD/SSD) Upgrade',
+      'software-troubleshooting': 'Software Troubleshooting',
       'virus-removal': 'Virus Removal',
       'cooling-repair': 'Cooling System Repair',
-      'power-jack': 'Power Jack Repair',
-      'button-repair': 'Button Repair',
-      'software-issue': 'Software Issue',
-      'other-mobile': 'Other Mobile Issue',
-      'other-laptop': 'Other Laptop Issue',
-      'other-tablet': 'Other Tablet Issue',
-    };
-    
-    // Format date for display
-    const formatDate = (dateString: string) => {
-      if (!dateString) return 'Not selected';
-      const date = new Date(dateString);
-      return new Intl.DateTimeFormat('en-CA', { 
-        weekday: 'long',
-        month: 'long', 
-        day: 'numeric',
-        year: 'numeric'
-      }).format(date);
+      'power-jack-repair': 'Power Jack Repair',
+      'other': 'Other Repair'
     };
     
     // Format time for display

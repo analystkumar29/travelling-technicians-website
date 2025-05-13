@@ -75,17 +75,26 @@ export function getDeviceTypeDisplay(deviceType: string, brand?: string, model?:
 
 /**
  * Format a date string to a user-friendly format (Month Day, Year)
+ * Using UTC methods to avoid any timezone issues
  */
 export function formatDate(dateStr: string): string {
   if (!dateStr) return '';
   
   try {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
+    // Format: YYYY-MM-DD
+    const [year, month, day] = dateStr.split('-').map(Number);
+    
+    // Create date object with UTC methods to completely eliminate timezone issues
+    const date = new Date(Date.UTC(year, month - 1, day));
+    
+    // Convert to weekday, month day, year format using UTC date
+    return new Intl.DateTimeFormat('en-US', {
+      weekday: 'long',
       month: 'long',
       day: 'numeric',
-      year: 'numeric'
-    });
+      year: 'numeric',
+      timeZone: 'UTC' // Force UTC timezone for consistent display
+    }).format(date);
   } catch (e) {
     console.error('Error formatting date:', e);
     return dateStr;
