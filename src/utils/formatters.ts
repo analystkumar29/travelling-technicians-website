@@ -77,27 +77,40 @@ export function getDeviceTypeDisplay(deviceType: string, brand?: string, model?:
  * Format a date string to a user-friendly format (Month Day, Year)
  * Using UTC methods to avoid any timezone issues
  */
-export function formatDate(dateStr: string): string {
-  if (!dateStr) return '';
+export function formatDate(dateString: string): string {
+  if (!dateString) return '';
   
   try {
-    // Format: YYYY-MM-DD
-    const [year, month, day] = dateStr.split('-').map(Number);
+    console.log(`DEBUG - formatDate input:`, dateString);
     
-    // Create date object with UTC methods to completely eliminate timezone issues
-    const date = new Date(Date.UTC(year, month - 1, day));
+    // Format: YYYY-MM-DD
+    const [year, month, day] = dateString.split('-').map(Number);
+    
+    console.log(`DEBUG - formatDate parsed:`, { year, month, day });
+    
+    if (!year || !month || !day) {
+      console.log(`DEBUG - formatDate invalid format:`, dateString);
+      return dateString; // Return original if format doesn't match expected
+    }
+    
+    // Force the UTC date (this ensures no timezone shift)
+    const utcDate = new Date(Date.UTC(year, month - 1, day));
+    console.log(`DEBUG - formatDate utcDate:`, utcDate.toISOString());
     
     // Convert to weekday, month day, year format using UTC date
-    return new Intl.DateTimeFormat('en-US', {
+    const formatted = new Intl.DateTimeFormat('en-US', {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
       year: 'numeric',
       timeZone: 'UTC' // Force UTC timezone for consistent display
-    }).format(date);
+    }).format(utcDate);
+    
+    console.log(`DEBUG - formatDate result:`, formatted);
+    return formatted;
   } catch (e) {
     console.error('Error formatting date:', e);
-    return dateStr;
+    return dateString; // Return the original string if formatting fails
   }
 }
 
