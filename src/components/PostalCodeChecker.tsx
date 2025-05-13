@@ -86,7 +86,7 @@ export default function PostalCodeChecker({
         
         // Save to localStorage for use in the booking form
         localStorage.setItem('travellingTech_location', JSON.stringify(locationData));
-        console.log('[LOCATION_STORAGE] Manual postal code check - saved data:', JSON.stringify(locationData, null, 2));
+        console.log('Saved location data to localStorage:', locationData);
         
         // Call onSuccess callback with the result and postal code
         if (onSuccess) onSuccess(serviceArea, postalCode);
@@ -103,219 +103,203 @@ export default function PostalCodeChecker({
   };
   
   const detectLocation = async () => {
+    // Clear any previous errors and set loading state
     setLoadingLocation(true);
     setError(null);
-    setLocationErrorDetails(null);
+    setLocationErrorDetails('Please allow location access when prompted. This may take a few seconds...');
     
     try {
-      console.log('Detecting location...');
-      
-      // Show message to user - helpful especially on mobile
-      setLocationErrorDetails('Please allow location access when prompted. This may take a few seconds...');
-      
-      // Check if we're in a development environment
-      const isDevelopment = process.env.NODE_ENV === 'development';
-      if (isDevelopment) {
-        // In development, use a default postal code for testing
-        console.log('Development environment detected. Using hardcoded postal code V5C 6R9');
-        
+      // Check if we're in a development environment for testing
+      if (process.env.NODE_ENV === 'development') {
         // Wait a moment to simulate location detection
         await new Promise(resolve => setTimeout(resolve, 1500));
         
-        const defaultTestPostalCode = 'V5C 6R9';
-        setPostalCode(defaultTestPostalCode);
-        setLocationErrorDetails(null);
-        
-        // Auto-check the detected postal code
-        console.log('Checking service area for development test postal code:', defaultTestPostalCode);
-        const serviceArea = checkServiceArea(defaultTestPostalCode);
-        console.log('Service area result for development test postal code:', serviceArea);
-        
-        setResult(serviceArea);
-        setSearched(true);
-        
-        if (serviceArea && onSuccess) {
-          // Store the validated postal code and service area information in localStorage
-          const locationData = {
-            postalCode: defaultTestPostalCode.toUpperCase().replace(/\s+/g, ' ').trim(),
-            city: serviceArea.city,
-            province: 'BC', // Default province for all service areas
-            serviceable: serviceArea.serviceable,
-            timestamp: new Date().toISOString(),
-            // Add a generic address for development testing
-            address: `123 Example Street, ${serviceArea.city}, BC ${defaultTestPostalCode.toUpperCase().replace(/\s+/g, ' ').trim()}`
-          };
-          
-          // Save to localStorage for use in the booking form
-          localStorage.setItem('travellingTech_location', JSON.stringify(locationData));
-          console.log('[LOCATION_STORAGE] Dev environment - saved data:', JSON.stringify(locationData, null, 2));
-          
-          onSuccess(serviceArea, defaultTestPostalCode);
-        }
-        
-        setLoadingLocation(false);
-        return;
-      }
-
-      try {
-        let detectedPostalCode = '';
-        let detailedAddress = '';
-        let detectedCity = '';
-        
-        // Try to get a detailed location using the browser's geolocation
-        if (navigator.geolocation) {
-          await new Promise<void>((resolveLocation, rejectLocation) => {
-            navigator.geolocation.getCurrentPosition(
-              async (position) => {
-                try {
-                  const { latitude, longitude } = position.coords;
-                  console.log('Detected coordinates:', latitude, longitude);
-                  
-                  // Use OpenStreetMap's Nominatim for reverse geocoding
-                  const response = await fetch(
-                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18`,
-                    { 
-                      headers: { 
-                        'Accept-Language': 'en-US,en',
-                        'User-Agent': 'TheTravellingTechnicians/1.0' 
-                      },
-                      cache: 'no-cache'
-                    }
-                  );
-                  
-                  if (response.ok) {
-                    const data = await response.json();
-                    console.log('Nominatim address data:', data);
-                    
-                    // Extract postal code
-                    if (data.address?.postcode) {
-                      detectedPostalCode = data.address.postcode;
-                      console.log('Found postal code from Nominatim:', detectedPostalCode);
-                    }
-                    
-                    // Build a detailed address from the address components
-                    if (data.address) {
-                      const addr = data.address;
-                      
-                      // Construct the detailed address
-                      const streetNumber = addr.house_number || '';
-                      const street = addr.road || addr.street || addr.footway || addr.path || '';
-                      const unit = addr.unit || addr.apartment || '';
-                      
-                      if (streetNumber && street) {
-                        detailedAddress = unit 
-                          ? `${unit}-${streetNumber} ${street}` 
-                          : `${streetNumber} ${street}`;
-                        console.log('Found detailed address:', detailedAddress);
-                      }
-                      
-                      // Get city information if available
-                      detectedCity = addr.city || addr.town || addr.village || addr.suburb || '';
-                    }
-                  }
-                  
-                  resolveLocation();
-                } catch (error) {
-                  console.error('Error fetching address data:', error);
-                  rejectLocation(error);
-                }
-              },
-              (error) => {
-                console.error('Geolocation error:', error);
-                rejectLocation(error);
-              },
-              { 
-                enableHighAccuracy: true,
-                timeout: 15000
-              }
-            );
-          });
-        }
-        
-        // If we couldn't get the postal code from coordinates, try the utility function
-        if (!detectedPostalCode) {
-          detectedPostalCode = await getCurrentLocationPostalCode();
-        }
-        
-        console.log('Final detected postal code:', detectedPostalCode);
-        setPostalCode(detectedPostalCode);
-        setLocationErrorDetails(null);
-        
-        // Auto-check the detected postal code
-        console.log('Checking service area for detected postal code:', detectedPostalCode);
-        const serviceArea = checkServiceArea(detectedPostalCode);
-        console.log('Service area result for detected postal code:', serviceArea);
-        
-        setResult(serviceArea);
-        setSearched(true);
+        // Use test postal code
+        const testPostalCode = 'V5C 6R9';
+        const serviceArea = checkServiceArea(testPostalCode);
         
         if (!serviceArea) {
-          const errMsg = "We don't currently service this area. Please contact us for special arrangements.";
-          setError(errMsg);
-          if (onError) onError(errMsg);
-        } else {
-          // Use the detected city or fall back to the service area city
-          const cityToUse = detectedCity || serviceArea.city;
-          
-          // Store the validated postal code and service area information in localStorage
-          const locationData = {
-            postalCode: detectedPostalCode.toUpperCase().replace(/\s+/g, ' ').trim(),
-            city: cityToUse,
-            province: 'BC', // Default province for all service areas
-            serviceable: serviceArea.serviceable,
-            timestamp: new Date().toISOString(),
-            // Use detailed address if available, otherwise use a generic one
-            address: detailedAddress || `${cityToUse} area (${detectedPostalCode.toUpperCase().replace(/\s+/g, ' ').trim()})`
-          };
-          
-          // Save to localStorage for use in the booking form
-          localStorage.setItem('travellingTech_location', JSON.stringify(locationData));
-          console.log('[LOCATION_STORAGE] Auto-detected location - saved data:', JSON.stringify(locationData, null, 2));
-          console.log('[LOCATION_STORAGE] Detailed address found:', !!detailedAddress, 'Value:', detailedAddress);
-          
-          // Call onSuccess callback with the result and postal code
-          if (onSuccess) onSuccess(serviceArea, detectedPostalCode);
+          throw new Error("We don't currently service this test area.");
         }
-      } catch (locationError) {
-        // If location services fail, try IP-based approximation instead of showing an error
+        
+        // Store test data and update UI
+        setPostalCode(testPostalCode);
+        setResult(serviceArea);
+        setSearched(true);
+        setLocationErrorDetails(null);
+        
+        // Save to localStorage
+        const locationData = {
+          postalCode: testPostalCode.toUpperCase().replace(/\\s+/g, ' ').trim(),
+          city: serviceArea.city,
+          province: 'BC',
+          serviceable: serviceArea.serviceable,
+          timestamp: new Date().toISOString(),
+          address: `123 Example Street, ${serviceArea.city}, BC ${testPostalCode}`
+        };
+        
+        localStorage.setItem('travellingTech_location', JSON.stringify(locationData));
+        console.log('Saved test location data:', locationData);
+        
+        if (onSuccess) {
+          onSuccess(serviceArea, testPostalCode);
+        }
+        
+        return;
+      }
+      
+      // For production: try to get actual location
+      let detectedPostalCode = '';
+      let detailedAddress = '';
+      let detectedCity = '';
+      
+      // First, try to get coordinates from geolocation API
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 15000
+            });
+          });
+          
+          const { latitude, longitude } = position.coords;
+          console.log('Detected coordinates:', latitude, longitude);
+          
+          // Use these coordinates with OpenStreetMap API to get address details
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18`,
+            { 
+              headers: { 
+                'Accept-Language': 'en-US,en',
+                'User-Agent': 'TheTravellingTechnicians/1.0' 
+              },
+              cache: 'no-cache'
+            }
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Nominatim address data:', data);
+            
+            if (data.address) {
+              // Extract postal code if available
+              if (data.address.postcode) {
+                detectedPostalCode = data.address.postcode;
+              }
+              
+              // Build detailed address from components
+              const addr = data.address;
+              const streetNumber = addr.house_number || '';
+              const street = addr.road || addr.street || addr.footway || addr.path || '';
+              const unit = addr.unit || addr.apartment || '';
+              
+              if (streetNumber && street) {
+                detailedAddress = unit 
+                  ? `${unit}-${streetNumber} ${street}` 
+                  : `${streetNumber} ${street}`;
+              }
+              
+              // Get city information
+              detectedCity = addr.city || addr.town || addr.village || addr.suburb || '';
+            }
+          }
+        } catch (geoError) {
+          console.error('Geolocation error:', geoError);
+          // We'll continue with the fallback method
+        }
+      }
+      
+      // If we couldn't get postal code from coordinates, use utility function
+      if (!detectedPostalCode) {
+        try {
+          detectedPostalCode = await getCurrentLocationPostalCode();
+        } catch (error) {
+          console.error('Error getting postal code:', error);
+          throw new Error('Unable to detect your location. Please enter your postal code manually.');
+        }
+      }
+      
+      if (!detectedPostalCode) {
+        throw new Error('Unable to detect your postal code. Please enter it manually.');
+      }
+      
+      // Set the detected postal code in the input field
+      setPostalCode(detectedPostalCode);
+      setLocationErrorDetails(null);
+      
+      // Check if this postal code is in our service area
+      const serviceArea = checkServiceArea(detectedPostalCode);
+      setResult(serviceArea);
+      setSearched(true);
+      
+      if (!serviceArea) {
+        throw new Error("We don't currently service this area. Please contact us for special arrangements.");
+      }
+      
+      // Use detected city or fallback to service area city
+      const cityToUse = detectedCity || serviceArea.city;
+      
+      // Store location data in localStorage
+      const locationData = {
+        postalCode: detectedPostalCode.toUpperCase().replace(/\\s+/g, ' ').trim(),
+        city: cityToUse,
+        province: 'BC',
+        serviceable: serviceArea.serviceable,
+        timestamp: new Date().toISOString(),
+        address: detailedAddress || `${cityToUse} area (${detectedPostalCode})`
+      };
+      
+      localStorage.setItem('travellingTech_location', JSON.stringify(locationData));
+      console.log('Saved detected location data:', locationData);
+      
+      // Call success callback
+      if (onSuccess) {
+        onSuccess(serviceArea, detectedPostalCode);
+      }
+    } catch (error) {
+      console.error('Location detection error:', error);
+      
+      // Try fallback location as last resort
+      try {
         setLocationErrorDetails('Precise location failed. Using approximate location based on your network...');
         
-        // Use V5C 6R9 as a fallback for Burnaby
         const fallbackPostalCode = 'V5C 6R9';
         setPostalCode(fallbackPostalCode);
         
-        // Check service area with fallback postal code
         const serviceArea = checkServiceArea(fallbackPostalCode);
-        setResult(serviceArea);
-        setSearched(true);
-        
-        if (serviceArea && onSuccess) {
-          // Store the fallback postal code in localStorage
+        if (serviceArea) {
+          setResult(serviceArea);
+          setSearched(true);
+          
           const locationData = {
-            postalCode: fallbackPostalCode.toUpperCase().replace(/\s+/g, ' ').trim(),
+            postalCode: fallbackPostalCode,
             city: serviceArea.city,
-            province: 'BC', // Default province for all service areas
+            province: 'BC',
             serviceable: serviceArea.serviceable,
             timestamp: new Date().toISOString(),
-            // Add a generic address for the fallback location
-            address: `${serviceArea.city} area (${fallbackPostalCode.toUpperCase().replace(/\s+/g, ' ').trim()})`
+            address: `${serviceArea.city} area (${fallbackPostalCode})`
           };
           
-          // Save to localStorage for use in the booking form
           localStorage.setItem('travellingTech_location', JSON.stringify(locationData));
-          console.log('[LOCATION_STORAGE] Fallback location - saved data:', JSON.stringify(locationData, null, 2));
-          
           setLocationErrorDetails('Using approximate location. For more accurate results, please enter your postal code manually.');
-          onSuccess(serviceArea, fallbackPostalCode);
-        } else {
-          throw locationError; // Re-throw if even the fallback failed
+          
+          if (onSuccess) {
+            onSuccess(serviceArea, fallbackPostalCode);
+          }
+          
+          return;
         }
+      } catch (fallbackError) {
+        // Even fallback failed
+        console.error('Fallback location failed:', fallbackError);
       }
-    } catch (err: any) {
-      console.error('Location detection error:', err);
-      const errMsg = err.message || 'Failed to detect your location';
+      
+      // If we get here, both main and fallback approaches failed
+      const errMsg = error instanceof Error ? error.message : 'Failed to detect your location';
       setError(errMsg);
       setLocationErrorDetails('This could be due to browser permissions, network issues, or API limitations. Please try entering your postal code manually instead.');
+      
       if (onError) onError(errMsg);
     } finally {
       setLoadingLocation(false);
