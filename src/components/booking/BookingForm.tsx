@@ -9,6 +9,7 @@ import DeviceModelSelector from './DeviceModelSelector';
 // import { AppointmentStep } from './steps/AppointmentStep';
 // import { ConfirmationStep } from './steps/ConfirmationStep';
 import type { CreateBookingRequest } from '@/types/booking';
+import { getCurrentLocationPostalCode, checkServiceArea } from '@/utils/locationUtils';
 
 interface BookingFormProps {
   onSubmit: (data: CreateBookingRequest) => void;
@@ -28,6 +29,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   const [validatedSteps, setValidatedSteps] = useState<number[]>([]);
   // Add state for location pre-fill at the component level
   const [locationWasPreFilled, setLocationWasPreFilled] = useState(false);
+  // Add the detectingLocation state at the component level
+  const [detectingLocation, setDetectingLocation] = useState(false);
 
   // Create a properly typed defaultValues object
   const defaultValues: Partial<CreateBookingRequest> = {
@@ -90,7 +93,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       
       if (savedLocationData) {
         const locationData = JSON.parse(savedLocationData);
-        console.log('Found saved location data:', locationData);
+        console.log('[ADDRESS_PREFILL] Found saved location data:', JSON.stringify(locationData, null, 2));
         
         // Check if the data is still fresh (less than 24 hours old)
         const savedTime = new Date(locationData.timestamp).getTime();
@@ -98,22 +101,52 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         const hoursDiff = (currentTime - savedTime) / (1000 * 60 * 60);
         
         if (hoursDiff < 24 && locationData.serviceable) {
+          // Debug check - verify that the address data doesn't contain a phone number
+          if (locationData.address && locationData.address.includes('Service Area')) {
+            console.log('[ADDRESS_PREFILL_DEBUG] Warning: Address appears to be using the generic Service Area format:', locationData.address);
+          }
+          
+          if (locationData.address && /\d{10}/.test(locationData.address)) {
+            console.log('[ADDRESS_PREFILL_DEBUG] ⚠️ ALERT! Address field appears to contain what might be a phone number:', locationData.address);
+          }
+          
           // Pre-populate the form fields with stored data
-          methods.setValue('address', methods.getValues('address') || ''); // Keep existing value if any
+          console.log('[ADDRESS_PREFILL] Setting address field to:', locationData.address || '');
+          methods.setValue('address', locationData.address || ''); // Use address from localStorage
+          console.log('[ADDRESS_PREFILL] Setting postalCode field to:', locationData.postalCode || '');
           methods.setValue('postalCode', locationData.postalCode || '');
+          console.log('[ADDRESS_PREFILL] Setting city field to:', locationData.city || 'Vancouver');
           methods.setValue('city', locationData.city || 'Vancouver');
+          console.log('[ADDRESS_PREFILL] Setting province field to:', locationData.province || 'BC');
           methods.setValue('province', locationData.province || 'BC');
           
-          console.log('Pre-filled location fields from saved data');
+          console.log('[ADDRESS_PREFILL] Reading current form values after pre-fill:');
+          const formValues = methods.getValues();
+          console.log('[ADDRESS_PREFILL] address =', formValues.address);
+          console.log('[ADDRESS_PREFILL] postalCode =', formValues.postalCode);
+          console.log('[ADDRESS_PREFILL] city =', formValues.city);
+          console.log('[ADDRESS_PREFILL] province =', formValues.province);
+          
+          // Check if customerPhone has been set
+          if (formValues.customerPhone) {
+            console.log('[ADDRESS_PREFILL_DEBUG] ⚠️ Customer phone field is already set:', formValues.customerPhone);
+            console.log('[ADDRESS_PREFILL_DEBUG] Checking if phone number appears in address field...');
+            if (formValues.address && formValues.address.includes(formValues.customerPhone)) {
+              console.log('[ADDRESS_PREFILL_DEBUG] 🚨 CRITICAL! Phone number found in address field!');
+            }
+          }
+          
           setLocationWasPreFilled(true);
         } else if (hoursDiff >= 24) {
           // Data is old, remove it
           localStorage.removeItem('travellingTech_location');
-          console.log('Removed outdated location data');
+          console.log('[ADDRESS_PREFILL] Removed outdated location data (older than 24 hours)');
         }
+      } else {
+        console.log('[ADDRESS_PREFILL] No saved location data found in localStorage');
       }
     } catch (error) {
-      console.error('Error parsing saved location data:', error);
+      console.error('[ADDRESS_PREFILL] Error parsing saved location data:', error);
     }
   }, [methods]);
 
@@ -228,7 +261,14 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     }
     
     if (isValid) {
+      // Increment the step
       setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+      
+      // Scroll to the top of the form container
+      const formContainer = document.querySelector('.bg-white.rounded-lg.shadow-lg');
+      if (formContainer) {
+        formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     } else {
       // Scroll to the first error
       const firstError = document.querySelector('.text-red-600');
@@ -1141,7 +1181,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         
         <div className="space-y-2">
           <label htmlFor="issueDescription" className="block text-sm font-medium text-gray-700">
-            Describe the Issue
+            Describe the Issue <span className="text-gray-500 font-normal">(Recommended)</span>
           </label>
           <Controller
             name="issueDescription"
@@ -1158,7 +1198,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
                     focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
                   `}
-                  placeholder={`Please describe the issue with your ${deviceType}... (The more details you provide, the better we can prepare for your repair)`}
+                  placeholder={`Please describe your ${deviceType} issue in as much detail as possible. For example: "My screen is cracked and has black spots" or "Battery drains very quickly, only lasts 2 hours"`}
                   {...field}
                 />
                 {fieldState.error && showValidationErrors && (
@@ -1167,9 +1207,16 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               </>
             )}
           />
-          <p className="text-xs text-gray-500 mt-1">
-            <strong>Highly recommended:</strong> Providing a detailed description helps our technicians prepare properly and bring the right parts.
-          </p>
+          <div className="bg-blue-50 p-3 rounded-md mt-2">
+            <p className="text-sm text-blue-700 flex items-start">
+              <svg className="h-5 w-5 text-blue-400 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clipRule="evenodd" />
+              </svg>
+              <span>
+                <strong>Why this matters:</strong> A detailed description helps our technicians prepare properly, bring the right parts, and provide a more accurate estimate before arrival.
+              </span>
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -1276,7 +1323,23 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
                   `}
                   placeholder="(555) 123-4567"
-                  {...field}
+                  onChange={(e) => {
+                    field.onChange(e);
+                    // Debug: Log when phone number changes
+                    console.log('[PHONE_FIELD_DEBUG] Phone number changed to:', e.target.value);
+                  }}
+                  onBlur={(e) => {
+                    field.onBlur();
+                    // Debug: Log when phone number field is blurred
+                    console.log('[PHONE_FIELD_DEBUG] Phone number field blurred. Value:', e.target.value);
+                    
+                    // Save current form values for debugging
+                    const formValues = methods.getValues();
+                    console.log('[PHONE_FIELD_DEBUG] Current form values after phone update:');
+                    console.log('- customerPhone:', formValues.customerPhone);
+                    console.log('- address (if set):', formValues.address || 'not set yet');
+                  }}
+                  value={field.value}
                 />
                 {fieldState.error && showValidationErrors && (
                   <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
@@ -1296,6 +1359,143 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   const renderLocationStep = () => {
     // Only show validation errors if this step has been validated
     const showValidationErrors = validatedSteps.includes(3);
+    
+    // Function to detect current location and fill address fields
+    const detectCurrentLocation = async () => {
+      try {
+        setDetectingLocation(true);
+        console.log('[DETECT_LOCATION] Starting location detection process');
+        
+        // Get postal code from browser geolocation
+        const postalCode = await getCurrentLocationPostalCode();
+        console.log('[DETECT_LOCATION] Retrieved postal code:', postalCode);
+        
+        // Check if this postal code is in our service area
+        const serviceArea = checkServiceArea(postalCode);
+        console.log('[DETECT_LOCATION] Service area check result:', serviceArea);
+        
+        if (serviceArea && serviceArea.serviceable) {
+          // Try to get a detailed address using reverse geocoding
+          let detailedAddress = '';
+          let city = serviceArea.city;
+          
+          try {
+            // If geolocation is available, try to get a more detailed address
+            if (navigator.geolocation) {
+              console.log('[DETECT_LOCATION] Browser geolocation is available, requesting position');
+              navigator.geolocation.getCurrentPosition(async (position) => {
+                const { latitude, longitude } = position.coords;
+                console.log('[DETECT_LOCATION] Got coordinates:', latitude, longitude);
+                
+                try {
+                  // Use OpenStreetMap's Nominatim for reverse geocoding
+                  console.log('[DETECT_LOCATION] Making request to Nominatim API');
+                  const response = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18`,
+                    { 
+                      headers: { 
+                        'Accept-Language': 'en-US,en',
+                        'User-Agent': 'TheTravellingTechnicians/1.0' 
+                      },
+                      cache: 'no-cache'
+                    }
+                  );
+                  
+                  if (response.ok) {
+                    const data = await response.json();
+                    console.log('[DETECT_LOCATION] Nominatim address data:', data);
+                    
+                    // Build a detailed address from the address components
+                    if (data.address) {
+                      const addr = data.address;
+                      console.log('[DETECT_LOCATION] Address components:', addr);
+                      
+                      // Construct the detailed address
+                      const streetNumber = addr.house_number || '';
+                      const street = addr.road || addr.street || addr.footway || addr.path || '';
+                      const unit = addr.unit || addr.apartment || '';
+                      
+                      if (streetNumber && street) {
+                        detailedAddress = unit 
+                          ? `${unit}-${streetNumber} ${street}` 
+                          : `${streetNumber} ${street}`;
+                        
+                        // Update the form with the more detailed address
+                        console.log('[DETECT_LOCATION] Setting detailed address:', detailedAddress);
+                        methods.setValue('address', detailedAddress);
+                        
+                        // If city information is available, use it
+                        if (addr.city || addr.town || addr.village || addr.suburb) {
+                          city = addr.city || addr.town || addr.village || addr.suburb;
+                          console.log('[DETECT_LOCATION] Setting city from Nominatim:', city);
+                          methods.setValue('city', city);
+                        }
+                      } else {
+                        console.log('[DETECT_LOCATION] Could not construct detailed address from components - missing street number or street');
+                      }
+                    }
+                  } else {
+                    console.error('[DETECT_LOCATION] Nominatim API error:', response.status, response.statusText);
+                  }
+                } catch (error) {
+                  console.error('[DETECT_LOCATION] Error fetching detailed address:', error);
+                }
+              });
+            } else {
+              console.log('[DETECT_LOCATION] Browser geolocation is not available');
+            }
+          } catch (geoError) {
+            console.error('[DETECT_LOCATION] Error accessing geolocation for detailed address:', geoError);
+          }
+          
+          // Set the postal code (this is what we have most confidence in)
+          console.log('[DETECT_LOCATION] Setting postalCode field to:', postalCode);
+          methods.setValue('postalCode', postalCode);
+          console.log('[DETECT_LOCATION] Setting city field to:', city);
+          methods.setValue('city', city);
+          console.log('[DETECT_LOCATION] Setting province field to: BC');
+          methods.setValue('province', 'BC');
+          
+          // If we couldn't get a detailed address, use a generic one with the postal code
+          if (!detailedAddress) {
+            const addressPlaceholder = `${postalCode} area`;
+            console.log('[DETECT_LOCATION] No detailed address found, using placeholder:', addressPlaceholder);
+            methods.setValue('address', addressPlaceholder);
+          }
+          
+          // Read back the form values to verify what was set
+          const currentFormValues = methods.getValues();
+          console.log('[DETECT_LOCATION] Current form values after setting:');
+          console.log('- address:', currentFormValues.address);
+          console.log('- postalCode:', currentFormValues.postalCode);
+          console.log('- city:', currentFormValues.city);
+          console.log('- province:', currentFormValues.province);
+          
+          // Create a location data object for more permanent storage
+          const locationData = {
+            postalCode: postalCode,
+            city: city,
+            province: 'BC',
+            address: detailedAddress || `${postalCode} area`,
+            serviceable: true,
+            timestamp: new Date().toISOString()
+          };
+          
+          // Save to localStorage for future use
+          console.log('[DETECT_LOCATION] Saving location data to localStorage:', JSON.stringify(locationData, null, 2));
+          localStorage.setItem('travellingTech_location', JSON.stringify(locationData));
+          
+          setLocationWasPreFilled(true);
+        } else {
+          alert("We couldn't determine if your location is within our service area. Please enter your address manually.");
+        }
+      } catch (error) {
+        console.error('[DETECT_LOCATION] Error detecting location:', error);
+        alert("Couldn't detect your location. Please enter your address manually.");
+      } finally {
+        setDetectingLocation(false);
+      }
+    };
     
     return (
       <div className="space-y-6">
@@ -1324,7 +1524,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               </div>
               <div className="ml-3">
                 <p className="text-sm text-green-700">
-                  Your location information has been pre-filled based on your previous service area check. You can edit these details if needed.
+                  Your location information has been pre-filled based on your location. You can edit these details if needed.
                 </p>
               </div>
             </div>
@@ -1332,9 +1532,35 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         )}
         
         <div className="space-y-2">
-          <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-            Street Address
-          </label>
+          <div className="flex justify-between items-center">
+            <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+              Street Address
+            </label>
+            <button
+              type="button"
+              onClick={detectCurrentLocation}
+              disabled={detectingLocation}
+              className="text-sm flex items-center text-primary-600 hover:text-primary-700 font-medium focus:outline-none focus:underline"
+            >
+              {detectingLocation ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Detecting...
+                </>
+              ) : (
+                <>
+                  <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Detect my location
+                </>
+              )}
+            </button>
+          </div>
           <Controller
             name="address"
             control={methods.control}
