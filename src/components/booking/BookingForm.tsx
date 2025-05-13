@@ -24,6 +24,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   const [currentStep, setCurrentStep] = useState(0);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [formTouched, setFormTouched] = useState(false);
+  const [validatedSteps, setValidatedSteps] = useState<number[]>([]);
 
   // Create a properly typed defaultValues object
   const defaultValues: Partial<CreateBookingRequest> = {
@@ -57,7 +59,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
 
   const methods = useForm<CreateBookingRequest>({
     defaultValues,
-    mode: 'onChange' // Enable validation on change
+    mode: 'onChange', // Enable validation on change
+    reValidateMode: 'onSubmit' // Only revalidate when submitted (i.e., when Next is clicked)
   });
 
   // Watch for deviceBrand changes to apply conditional validation for customBrand
@@ -117,8 +120,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         return true;
         
       case 1: // Service Details
-        // Validate service type and issue description
-        return await methods.trigger(['serviceType', 'issueDescription']);
+        // Validate service type (issue description is optional)
+        return await methods.trigger(['serviceType']);
         
       case 2: // Contact Info
         // Validate name, email, and phone
@@ -138,6 +141,14 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   };
 
   const nextStep = async () => {
+    // Mark the form as touched when the user tries to go to the next step
+    setFormTouched(true);
+    
+    // Add current step to validated steps
+    if (!validatedSteps.includes(currentStep)) {
+      setValidatedSteps([...validatedSteps, currentStep]);
+    }
+    
     // Get current form values
     const data = methods.getValues();
     let isValid = true;
@@ -164,7 +175,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         break;
         
       case 1: // Service Details
-        isValid = await methods.trigger(['serviceType', 'issueDescription']);
+        isValid = await methods.trigger(['serviceType']);
         break;
         
       case 2: // Contact Info
@@ -218,6 +229,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     
     // Force brand selection section to re-render when deviceType changes
     const deviceKey = `device-${deviceType}`;
+    
+    // Only show validation errors if this step has been validated
+    const showValidationErrors = validatedSteps.includes(0);
     
     return (
       <div className="space-y-8">
@@ -344,7 +358,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 </div>
               </label>
             </div>
-            {methods.formState.errors.deviceType && (
+            {methods.formState.errors.deviceType && showValidationErrors && (
               <p className="mt-1 text-sm text-red-600">{methods.formState.errors.deviceType.message}</p>
             )}
           </div>
@@ -898,7 +912,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               )}
               
               {/* Error message for device brand */}
-              {methods.formState.errors.deviceBrand && (
+              {methods.formState.errors.deviceBrand && showValidationErrors && (
                 <p className="mt-1 text-sm text-red-600">{methods.formState.errors.deviceBrand.message}</p>
               )}
               
@@ -923,7 +937,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                           placeholder="Enter brand name..."
                           {...field}
                         />
-                        {fieldState.error && (
+                        {fieldState.error && showValidationErrors && (
                           <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
                         )}
                       </>
@@ -952,7 +966,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       value={field.value}
                       onChange={field.onChange}
                     />
-                    {fieldState.error && (
+                    {fieldState.error && showValidationErrors && (
                       <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
                     )}
                   </>
@@ -1042,6 +1056,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     
     const availableServices = services[deviceType as keyof typeof services] || [];
     
+    // Only show validation errors if this step has been validated
+    const showValidationErrors = validatedSteps.includes(1);
+    
     return (
       <div className="space-y-6">
         <div className="space-y-2">
@@ -1081,7 +1098,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               </label>
             ))}
           </div>
-          {methods.formState.errors.serviceType && (
+          {methods.formState.errors.serviceType && showValidationErrors && (
             <p className="mt-1 text-sm text-red-600">{methods.formState.errors.serviceType.message}</p>
           )}
         </div>
@@ -1093,28 +1110,29 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           <Controller
             name="issueDescription"
             control={methods.control}
-            rules={{ required: "Please describe the issue" }}
+            // Make issue description optional by removing the required rule
+            rules={{}} 
             render={({ field, fieldState }) => (
               <>
-          <textarea
-            id="issueDescription"
-            rows={4}
+                <textarea
+                  id="issueDescription"
+                  rows={4}
                   className={`
                     block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
                     ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
                     focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
                   `}
-                  placeholder={`Please describe the issue with your ${deviceType}...`}
+                  placeholder={`Please describe the issue with your ${deviceType}... (The more details you provide, the better we can prepare for your repair)`}
                   {...field}
                 />
-                {fieldState.error && (
+                {fieldState.error && showValidationErrors && (
                   <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
                 )}
               </>
             )}
           />
           <p className="text-xs text-gray-500 mt-1">
-            The more details you provide, the better we can prepare for your repair.
+            <strong>Highly recommended:</strong> Providing a detailed description helps our technicians prepare properly and bring the right parts.
           </p>
         </div>
       </div>
@@ -1123,6 +1141,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
 
   // Render the Customer Info step
   const renderCustomerInfoStep = () => {
+    // Only show validation errors if this step has been validated
+    const showValidationErrors = validatedSteps.includes(2);
+    
     return (
       <div className="space-y-6">
         <div className="space-y-2">
@@ -1146,7 +1167,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   placeholder="Your full name"
                   {...field}
                 />
-                {fieldState.error && (
+                {fieldState.error && showValidationErrors && (
                   <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
                 )}
               </>
@@ -1181,7 +1202,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   placeholder="you@example.com"
                   {...field}
                 />
-                {fieldState.error && (
+                {fieldState.error && showValidationErrors && (
                   <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
                 )}
               </>
@@ -1221,7 +1242,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   placeholder="(555) 123-4567"
                   {...field}
                 />
-                {fieldState.error && (
+                {fieldState.error && showValidationErrors && (
                   <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
                 )}
               </>
@@ -1237,6 +1258,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
 
   // Render the Location step
   const renderLocationStep = () => {
+    // Only show validation errors if this step has been validated
+    const showValidationErrors = validatedSteps.includes(3);
+    
     return (
       <div className="space-y-6">
         <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
@@ -1275,7 +1299,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   placeholder="123 Main St, Apt 4B"
                   {...field}
                 />
-                {fieldState.error && (
+                {fieldState.error && showValidationErrors && (
                   <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
                 )}
               </>
@@ -1319,7 +1343,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     <option value="Maple Ridge">Maple Ridge</option>
                     <option value="Pitt Meadows">Pitt Meadows</option>
                   </select>
-                  {fieldState.error && (
+                  {fieldState.error && showValidationErrors && (
                     <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
                   )}
                 </>
@@ -1356,7 +1380,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     placeholder="V6B 1A1"
                     {...field}
                   />
-                  {fieldState.error && (
+                  {fieldState.error && showValidationErrors && (
                     <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
                   )}
                 </>
@@ -1392,6 +1416,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
 
   // Render the Appointment step
   const renderAppointmentStep = () => {
+    // Only show validation errors if this step has been validated
+    const showValidationErrors = validatedSteps.includes(4);
+    
     const currentDate = new Date();
     const minDate = new Date(currentDate);
     minDate.setDate(currentDate.getDate() + 1); // Start from tomorrow
@@ -1473,7 +1500,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     </option>
                   ))}
                 </select>
-                {fieldState.error && (
+                {fieldState.error && showValidationErrors && (
                   <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
                 )}
               </>
@@ -1507,7 +1534,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     </option>
                   ))}
                 </select>
-                {fieldState.error && (
+                {fieldState.error && showValidationErrors && (
                   <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
                 )}
               </>
@@ -1722,6 +1749,11 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     const errors = methods.formState.errors;
     const errorFields: string[] = [];
     
+    // Only check for errors if this step has been validated
+    if (!validatedSteps.includes(currentStep)) {
+      return errorFields;
+    }
+    
     // Check for specific fields based on current step
     switch (currentStep) {
       case 0: // Device Type
@@ -1732,7 +1764,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         break;
       case 1: // Service Details
         if (errors.serviceType) errorFields.push('Service Type');
-        if (errors.issueDescription) errorFields.push('Issue Description');
+        // Remove issueDescription from the error fields since it's optional
         break;
       case 2: // Contact Info
         if (errors.customerName) errorFields.push('Full Name');
@@ -1757,7 +1789,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   const renderErrorSummary = () => {
     const errorFields = getCurrentStepErrors();
     
-    if (errorFields.length === 0) return null;
+    // Only show errors if the form has been touched (user has interacted with it)
+    if (errorFields.length === 0 || !formTouched) return null;
     
     return (
       <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
