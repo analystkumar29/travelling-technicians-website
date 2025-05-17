@@ -74,14 +74,17 @@ export default function PostalCodeChecker({
         if (onError) onError(errMsg);
       } else {
         // Store the validated postal code and service area information in localStorage
+        const formattedPostalCode = postalCode.toUpperCase().trim();
+        const formattedPostalCodeWithSpace = formattedPostalCode.replace(/\s+/g, ' ');
+        
         const locationData = {
-          postalCode: postalCode.toUpperCase().replace(/\s+/g, ' ').trim(),
+          postalCode: formattedPostalCodeWithSpace,
           city: serviceArea.city,
           province: 'BC', // Default province for all service areas
           serviceable: serviceArea.serviceable,
           timestamp: new Date().toISOString(),
           // Add a generic address using the postal code
-          address: `Service Area ${postalCode.toUpperCase().replace(/\s+/g, ' ').trim()}`
+          address: `Service Area ${formattedPostalCodeWithSpace}`
         };
         
         // Save to localStorage for use in the booking form
@@ -130,7 +133,7 @@ export default function PostalCodeChecker({
         
         // Save to localStorage
         const locationData = {
-          postalCode: testPostalCode.toUpperCase().replace(/\\s+/g, ' ').trim(),
+          postalCode: testPostalCode.toUpperCase().replace(/\s+/g, ' ').trim(),
           city: serviceArea.city,
           province: 'BC',
           serviceable: serviceArea.serviceable,
@@ -242,7 +245,7 @@ export default function PostalCodeChecker({
       
       // Store location data in localStorage
       const locationData = {
-        postalCode: detectedPostalCode.toUpperCase().replace(/\\s+/g, ' ').trim(),
+        postalCode: detectedPostalCode.toUpperCase().replace(/\s+/g, ' ').trim(),
         city: cityToUse,
         province: 'BC',
         serviceable: serviceArea.serviceable,
@@ -391,7 +394,7 @@ export default function PostalCodeChecker({
   };
 
   return (
-    <div className={`${variant === 'compact' ? '' : 'bg-white rounded-lg shadow-lg'} ${className}`}>
+    <div className={`max-w-md mx-auto ${className}`}>
       <div className={variant === 'compact' ? 'p-0' : 'p-6'}>
         {variant === 'default' && (
           <>
@@ -409,7 +412,11 @@ export default function PostalCodeChecker({
                 ref={inputRef}
                 type="text"
                 value={postalCode}
-                onChange={(e) => setPostalCode(e.target.value.toUpperCase())}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  const trimmed = value.replace(/\s+/g, ' ').trim();
+                  setPostalCode(trimmed);
+                }}
                 placeholder="Enter postal code (e.g., V6B 1A1)"
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500 pl-10 text-gray-800 placeholder-gray-400 font-medium"
                 aria-label="Postal Code"

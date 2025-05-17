@@ -161,11 +161,11 @@ export default function CategoryPage() {
               <Link 
                 key={index} 
                 href={index === 0 ? '/blog' : `/blog/category/${getCategorySlug(cat)}`}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors
-                  ${categoryName === cat
-                    ? 'bg-primary-600 text-white hover:bg-primary-700' 
-                    : 'bg-white text-gray-700 hover:bg-gray-200 border border-gray-200'
-                  }`}
+                className={`px-4 py-2 rounded-md text-gray-700 ${
+                  (cat === categoryName || (index === 0 && !categoryName))
+                    ? 'bg-primary-100 text-primary-700 font-medium' 
+                    : 'bg-white hover:bg-gray-100'
+                }`}
               >
                 {cat}
               </Link>

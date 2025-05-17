@@ -25,7 +25,8 @@ const UnsplashImage: React.FC<UnsplashImageProps> = ({
   ...rest
 }) => {
   // Construct the Unsplash URL with appropriate query parameters
-  const imageUrl = `https://images.unsplash.com/photo-${imageId}?q=${quality}&w=${imgWidth}${imgHeight ? `&h=${imgHeight}` : ''}`;
+  const heightParam = imgHeight ? `&h=${imgHeight}` : '';
+  const imageUrl = `https://images.unsplash.com/photo-${imageId}?q=${quality}&w=${imgWidth}${heightParam}`;
 
   return (
     <Image

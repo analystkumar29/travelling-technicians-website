@@ -54,7 +54,7 @@ const SafeImage: React.FC<SafeImageProps> = ({
   // If we have a fallback path and there was an error, use that
   if (error && fallbackSrc && fallbackSrc !== DEFAULT_PLACEHOLDER) {
     return (
-      <div className={`relative ${fill ? 'h-full w-full' : ''} ${isLoading ? 'animate-pulse bg-gray-200' : ''} ${className}`}>
+      <div className={`relative w-full h-full ${className}`}>
         <Image 
           src={fallbackSrc} 
           alt={altText}
@@ -64,7 +64,7 @@ const SafeImage: React.FC<SafeImageProps> = ({
             setError(true);
           }}
           onLoad={() => setIsLoading(false)}
-          className={`${className} ${error ? 'opacity-70' : ''}`}
+          className={`object-cover transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
           {...rest}
         />
       </div>
@@ -92,13 +92,13 @@ const SafeImage: React.FC<SafeImageProps> = ({
 
   // Normal case - render image with error handler
   return (
-    <div className={`relative ${fill ? 'h-full w-full' : ''} ${isLoading ? 'animate-pulse bg-gray-200' : ''} ${className}`}>
+    <div className={`relative w-full h-full ${className}`}>
       <Image
         src={error ? fallbackSrc : actualSrc}
         alt={alt || "Image"}
         fill={fill}
         sizes={imageSizes}
-        className={`${className} ${error ? 'opacity-70' : ''}`}
+        className={`object-cover transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
         onError={() => setError(true)}
         onLoad={() => setIsLoading(false)}
         {...rest}

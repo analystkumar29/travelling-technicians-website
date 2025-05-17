@@ -326,10 +326,10 @@ export default function FAQPage() {
                   {faqCategories.map((category) => (
                     <button
                       key={category.id}
-                      className={`flex items-center w-full text-left px-4 py-3 rounded-md transition-colors ${
-                        activeCategory === category.id
-                          ? 'bg-primary-50 text-primary-700 font-medium'
-                          : 'text-gray-600 hover:bg-gray-50'
+                      className={`flex items-center w-full px-4 py-2 text-left rounded-md ${
+                        activeCategory === category.id 
+                          ? 'bg-primary-100 text-primary-700 font-medium' 
+                          : 'text-gray-700 hover:bg-gray-100'
                       }`}
                       onClick={() => setActiveCategory(category.id)}
                     >

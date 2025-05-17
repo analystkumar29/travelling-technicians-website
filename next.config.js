@@ -2,7 +2,17 @@
 const nextConfig = {
   // Disable strict mode to prevent double rendering during development
   reactStrictMode: false,
+  
+  // Configure standalone output to include sharp
   output: 'standalone',
+  experimental: {
+    // Add packages to include in the standalone output
+    outputFileTracingRoot: __dirname,
+    outputFileTracingIncludes: {
+      '/': ['node_modules/sharp/**/*'],
+    },
+  },
+  
   // Update image configuration to use only remotePatterns and not deprecated domains
   images: {
     remotePatterns: [
@@ -23,12 +33,11 @@ const nextConfig = {
       if (!isServer) {
         config.optimization.runtimeChunk = false;
         config.plugins = config.plugins.filter(
-          (plugin) => 
-            plugin.constructor.name !== 'HotModuleReplacementPlugin' && 
-            plugin.constructor.name !== 'ReactRefreshPlugin'
+          (plugin) => !(plugin.constructor.name === 'HotModuleReplacementPlugin')
         );
       }
     }
+    
     return config;
   },
   // Increase timeout for static page generation
@@ -47,8 +56,6 @@ const nextConfig = {
       },
     ];
   },
-  // Configuration for external packages
-  serverExternalPackages: [],
   // Prevent page reloads when encountering errors
   onDemandEntries: {
     // Keep the pages in memory longer between builds

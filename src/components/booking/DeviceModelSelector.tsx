@@ -258,7 +258,7 @@ export default function DeviceModelSelector({
             </span>
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
-              className={`h-5 w-5 text-gray-400 transition-transform ${showModelList ? 'transform rotate-180' : ''}`} 
+              className={`h-5 w-5 text-gray-400 ${showModelList ? 'transform rotate-180' : ''}`} 
               viewBox="0 0 20 20" 
               fill="currentColor"
             >
@@ -295,9 +295,7 @@ export default function DeviceModelSelector({
                       <button
                         key={index}
                         type="button"
-                        className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
-                          selectedModel === model ? 'bg-primary-50 text-primary-700' : 'text-gray-700'
-                        }`}
+                        className={`w-full px-3 py-2 text-left hover:bg-gray-100 ${selectedModel === model ? 'bg-primary-50 text-primary-700' : 'text-gray-900'}`}
                         onClick={() => {
                           setSelectedModel(model);
                           setOtherModel('');

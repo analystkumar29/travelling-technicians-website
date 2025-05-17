@@ -92,13 +92,11 @@ export default function Header() {
                       <Link 
                         key={item.name}
                         href={item.href}
-                        className={`px-3 py-2 rounded-md text-sm font-medium ${
-                          item.highlight 
-                            ? 'text-white bg-primary-600 hover:bg-primary-700'
-                            : isActivePath(item.href)
-                              ? 'text-primary-600 bg-gray-100'
-                              : 'text-gray-700 hover:text-primary-600 hover:bg-gray-100'
-                        }`}
+                        className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                          isActivePath(item.href) 
+                            ? 'text-primary-600 bg-gray-50' 
+                            : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
+                        } ${item.highlight ? 'bg-primary-600 text-white hover:bg-primary-700 hover:text-white' : ''}`}
                       >
                         {item.name}
                       </Link>
@@ -106,10 +104,10 @@ export default function Header() {
                       <div key={item.name} className="relative">
                         <button
                           onClick={() => handleDropdownToggle(item.name)}
-                          className={`px-3 py-2 rounded-md text-sm font-medium flex items-center ${
-                            isAnySubmenuActive(item.submenu)
-                              ? 'text-primary-600 bg-gray-100'
-                              : 'text-gray-700 hover:text-primary-600 hover:bg-gray-100'
+                          className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                            isAnySubmenuActive(item.submenu) 
+                              ? 'text-primary-600 bg-gray-50' 
+                              : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
                           }`}
                         >
                           {item.name}
@@ -138,9 +136,9 @@ export default function Header() {
                                   key={subItem.name}
                                   href={subItem.href}
                                   className={`block px-4 py-2 text-sm ${
-                                    isActiveSubmenuItem(subItem.href)
-                                      ? 'bg-gray-100 text-primary-600 font-medium'
-                                      : 'text-gray-700 hover:bg-gray-100 hover:text-primary-600'
+                                    isActiveSubmenuItem(subItem.href) 
+                                      ? 'text-primary-600 bg-gray-50' 
+                                      : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
                                   }`}
                                   onClick={() => {
                                     if (item.name === 'Services') setIsServicesOpen(false);
@@ -160,11 +158,7 @@ export default function Header() {
                 <div className="ml-4 pl-4 border-l border-gray-200">
                   <Link 
                     href="/book-online/"
-                    className={`btn-accent text-sm px-4 py-2 ${
-                      isActivePath('/book-online')
-                        ? 'ring-2 ring-accent-300'
-                        : ''
-                    }`}
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 shadow-sm"
                   >
                     Book Online
                   </Link>
@@ -192,9 +186,9 @@ export default function Header() {
               <Link
                 href="/"
                 className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  isActivePath('/')
-                    ? 'text-primary-600 bg-gray-100'
-                    : 'text-gray-700 hover:text-primary-600 hover:bg-gray-100'
+                  isActivePath('/') 
+                    ? 'text-primary-600 bg-gray-50' 
+                    : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
                 }`}
               >
                 Home
@@ -205,18 +199,16 @@ export default function Header() {
                 {({ open }) => (
                   <>
                     <Disclosure.Button
-                      className={`flex justify-between w-full px-3 py-2 text-base font-medium rounded-md ${
-                        isAnySubmenuActive(navigation[1]?.submenu)
-                          ? 'text-primary-600 bg-gray-100'
-                          : 'text-gray-700 hover:text-primary-600 hover:bg-gray-100'
+                      className={`flex w-full items-center justify-between px-3 py-2 rounded-md text-base font-medium ${
+                        isAnySubmenuActive(navigation[1].submenu) 
+                          ? 'text-primary-600 bg-gray-50' 
+                          : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
                       }`}
                     >
                       <span>Services</span>
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className={`${
-                          open ? 'transform rotate-180' : ''
-                        } h-4 w-4 text-primary-600`}
+                        className={`${open ? 'transform rotate-180' : ''} h-5 w-5`}
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -234,10 +226,10 @@ export default function Header() {
                         <Link
                           key={subItem.name}
                           href={subItem.href}
-                          className={`block pl-3 pr-4 py-2 text-base font-medium rounded-md ${
-                            isActiveSubmenuItem(subItem.href)
-                              ? 'bg-gray-50 text-primary-600 font-medium'
-                              : 'text-gray-600 hover:text-primary-600 hover:bg-gray-50'
+                          className={`block px-3 py-2 rounded-md text-sm font-medium ${
+                            isActiveSubmenuItem(subItem.href) 
+                              ? 'text-primary-600 bg-gray-50' 
+                              : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
                           }`}
                         >
                           {subItem.name}
@@ -260,9 +252,9 @@ export default function Header() {
               <Link
                 href="/pricing"
                 className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  isActivePath('/pricing')
-                    ? 'text-primary-600 bg-gray-100'
-                    : 'text-gray-700 hover:text-primary-600 hover:bg-gray-100'
+                  isActivePath('/pricing') 
+                    ? 'text-primary-600 bg-gray-50' 
+                    : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
                 }`}
               >
                 Pricing
@@ -272,9 +264,9 @@ export default function Header() {
               <Link
                 href="/about"
                 className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  isActivePath('/about')
-                    ? 'text-primary-600 bg-gray-100'
-                    : 'text-gray-700 hover:text-primary-600 hover:bg-gray-100'
+                  isActivePath('/about') 
+                    ? 'text-primary-600 bg-gray-50' 
+                    : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
                 }`}
               >
                 About Us
@@ -284,9 +276,9 @@ export default function Header() {
               <Link
                 href="/service-areas"
                 className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  isActivePath('/service-areas')
-                    ? 'text-primary-600 bg-gray-100'
-                    : 'text-gray-700 hover:text-primary-600 hover:bg-gray-100'
+                  isActivePath('/service-areas') 
+                    ? 'text-primary-600 bg-gray-50' 
+                    : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
                 }`}
               >
                 Service Areas
@@ -296,9 +288,9 @@ export default function Header() {
               <Link
                 href="/faq"
                 className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  isActivePath('/faq')
-                    ? 'text-primary-600 bg-gray-100'
-                    : 'text-gray-700 hover:text-primary-600 hover:bg-gray-100'
+                  isActivePath('/faq') 
+                    ? 'text-primary-600 bg-gray-50' 
+                    : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
                 }`}
               >
                 FAQ
@@ -308,9 +300,9 @@ export default function Header() {
               <Link
                 href="/blog"
                 className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  isActivePath('/blog')
-                    ? 'text-primary-600 bg-gray-100'
-                    : 'text-gray-700 hover:text-primary-600 hover:bg-gray-100'
+                  isActivePath('/blog') 
+                    ? 'text-primary-600 bg-gray-50' 
+                    : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
                 }`}
               >
                 Blog
@@ -320,22 +312,18 @@ export default function Header() {
               <Link
                 href="/contact"
                 className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  isActivePath('/contact')
-                    ? 'text-primary-600 bg-gray-100'
-                    : 'text-gray-700 hover:text-primary-600 hover:bg-gray-100'
+                  isActivePath('/contact') 
+                    ? 'text-primary-600 bg-gray-50' 
+                    : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
                 }`}
               >
                 Contact
               </Link>
-
-              <div className="pt-3 mt-3 border-t border-gray-200">
-                <Link
-                  href="/book-online/"
-                  className={`w-full flex items-center justify-center px-4 py-2.5 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-accent-500 hover:bg-accent-600 ${
-                    isActivePath('/book-online')
-                      ? 'ring-2 ring-accent-300'
-                      : ''
-                  }`}
+              
+              <div className="pt-3 mt-4 border-t border-gray-200">
+                <Link 
+                  href="/book-online"
+                  className="w-full block px-3 py-2 rounded-md text-center text-base font-medium text-white bg-primary-600 hover:bg-primary-700 shadow-sm"
                 >
                   Book Online
                 </Link>

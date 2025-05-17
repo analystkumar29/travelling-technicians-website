@@ -196,27 +196,7 @@ export default async function handler(
     }
     
     // Now call the procedure to create the booking
-    const { data: bookingData, error: bookingError } = await supabase.rpc('execute_sql', {
-      sql_query: `
-        SELECT public.create_test_booking(
-          '${referenceNumber}',
-          '${requestBody.deviceType === 'tablet' ? 'mobile' : requestBody.deviceType}',
-          '${deviceBrand.replace(/'/g, "''")}',
-          '${deviceModel.replace(/'/g, "''")}',
-          '${requestBody.serviceType}',
-          '${appointmentDate}',
-          '${appointmentTime}',
-          '${requestBody.customerName.replace(/'/g, "''")}',
-          '${requestBody.customerEmail.replace(/'/g, "''")}',
-          '${requestBody.customerPhone.replace(/'/g, "''")}',
-          '${requestBody.address.replace(/'/g, "''")}',
-          '${requestBody.postalCode.replace(/'/g, "''")}',
-          '${issueDescription.replace(/'/g, "''")}'
-        ) as booking_id;
-        
-        SELECT * FROM bookings WHERE reference_number = '${referenceNumber}';
-      `
-    });
+    const { data: bookingData, error: bookingError } = await supabase.from('bookings').select('*').eq('reference_number', referenceNumber).single();
     
     if (bookingError) {
       apiLogger.error('Error creating booking:', bookingError);

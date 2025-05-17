@@ -114,7 +114,11 @@ export default function Home() {
               {/* Device Type Selector Tabs */}
               <div className="bg-primary-800 inline-flex rounded-lg p-1 mb-6">
                 <button 
-                  className={`px-4 py-2 rounded-md ${deviceType === 'mobile' ? 'bg-primary-600 text-white' : 'text-primary-200 hover:text-white'}`}
+                  className={`px-4 py-2 rounded-md text-sm font-medium ${
+                    deviceType === 'mobile' 
+                      ? 'bg-white text-primary-800' 
+                      : 'text-white hover:bg-primary-700'
+                  }`}
                   onClick={() => {
                     setDeviceType('mobile');
                     setSelectedBrand(null);
@@ -125,7 +129,11 @@ export default function Home() {
                   Mobile
                 </button>
                 <button 
-                  className={`px-4 py-2 rounded-md ${deviceType === 'laptop' ? 'bg-primary-600 text-white' : 'text-primary-200 hover:text-white'}`}
+                  className={`px-4 py-2 rounded-md text-sm font-medium ${
+                    deviceType === 'laptop' 
+                      ? 'bg-white text-primary-800' 
+                      : 'text-white hover:bg-primary-700'
+                  }`}
                   onClick={() => {
                     setDeviceType('laptop');
                     setSelectedBrand(null);
@@ -136,7 +144,11 @@ export default function Home() {
                   Laptop
                 </button>
                 <button 
-                  className={`px-4 py-2 rounded-md ${deviceType === 'tablet' ? 'bg-primary-600 text-white' : 'text-primary-200 hover:text-white'}`}
+                  className={`px-4 py-2 rounded-md text-sm font-medium ${
+                    deviceType === 'tablet' 
+                      ? 'bg-white text-primary-800' 
+                      : 'text-white hover:bg-primary-700'
+                  }`}
                   onClick={() => {
                     setDeviceType('tablet');
                     setSelectedBrand(null);
@@ -260,10 +272,10 @@ export default function Home() {
               {deviceBrands.map((brand) => (
                 <button
                   key={brand.id}
-                  className={`flex flex-col items-center p-4 rounded-lg border-2 transition-all ${
+                  className={`flex flex-col items-center justify-center p-4 border rounded-lg transition-colors ${
                     selectedBrand === brand.id 
                       ? 'border-primary-500 bg-primary-50' 
-                      : 'border-gray-200 hover:border-primary-200'
+                      : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
                   }`}
                   onClick={() => setSelectedBrand(brand.id)}
                 >
@@ -288,10 +300,10 @@ export default function Home() {
                   {commonIssues[deviceType].map((issue) => (
                     <button
                       key={issue.id}
-                      className={`flex flex-col items-center p-4 rounded-lg border-2 transition-all ${
+                      className={`flex flex-col items-center justify-center p-4 border rounded-lg transition-colors ${
                         selectedIssue === issue.id 
                           ? 'border-primary-500 bg-primary-50' 
-                          : 'border-gray-200 hover:border-primary-200'
+                          : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
                       }`}
                       onClick={() => setSelectedIssue(issue.id)}
                     >
@@ -430,7 +442,7 @@ export default function Home() {
             <div className="bg-white rounded-lg shadow-custom p-8 relative">
               <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 text-yellow-400 flex">
                 {[...Array(5)].map((_, i) => (
-                  <FaStar key={i} className={`h-10 w-10 ${i < testimonials[selectedTestimonial].rating ? 'text-yellow-400' : 'text-gray-300'}`} />
+                  <FaStar key={i} className="w-5 h-5" />
                 ))}
               </div>
               
@@ -451,7 +463,11 @@ export default function Home() {
                     {testimonials.map((_, idx) => (
                       <button 
                         key={idx}
-                        className={`w-3 h-3 rounded-full mx-1 ${idx === selectedTestimonial ? 'bg-primary-600' : 'bg-gray-300'}`}
+                        className={`w-3 h-3 mx-1 rounded-full ${
+                          selectedTestimonial === idx 
+                            ? 'bg-primary-600' 
+                            : 'bg-gray-300 hover:bg-primary-400'
+                        }`}
                         onClick={() => setSelectedTestimonial(idx)}
                       />
                     ))}

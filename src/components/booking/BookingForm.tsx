@@ -157,7 +157,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           return false;
         }
         // If brand is 'other', validate custom brand
-        if (data.deviceBrand === 'other' && !data.customBrand) {
+        if (data.deviceBrand === 'other' && data.customBrand) {
           methods.setError('customBrand', { type: 'required', message: 'Please enter a brand name' });
           return false;
         }
@@ -212,7 +212,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           methods.setError('deviceBrand', { type: 'required', message: 'Please select a brand' });
           isValid = false;
         }
-        if (data.deviceBrand === 'other' && !data.customBrand) {
+        if (data.deviceBrand === 'other' && data.customBrand) {
           methods.setError('customBrand', { type: 'required', message: 'Please enter a brand name' });
           isValid = false;
         }
@@ -319,15 +319,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   />
                 )}
               />
-              <div className={`
-                  p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                ${methods.watch('deviceType') === 'mobile' 
-                  ? 'border-primary-500 bg-primary-50' 
-                    : methods.formState.errors.deviceType 
-                      ? 'border-red-300 hover:border-red-400' 
-                      : 'border-gray-300 hover:border-gray-400'
-                }
-              `}>
+              <div className={`$1`}>
                   <div className="bg-primary-100 rounded-md p-2 mr-3">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -357,15 +349,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   />
                 )}
               />
-              <div className={`
-                  p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                ${methods.watch('deviceType') === 'laptop' 
-                  ? 'border-primary-500 bg-primary-50' 
-                    : methods.formState.errors.deviceType 
-                      ? 'border-red-300 hover:border-red-400' 
-                      : 'border-gray-300 hover:border-gray-400'
-                }
-              `}>
+              <div className={`$1`}>
                   <div className="bg-primary-100 rounded-md p-2 mr-3">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -395,15 +379,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   />
                 )}
               />
-              <div className={`
-                  p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                ${methods.watch('deviceType') === 'tablet' 
-                  ? 'border-primary-500 bg-primary-50' 
-                    : methods.formState.errors.deviceType 
-                      ? 'border-red-300 hover:border-red-400' 
-                      : 'border-gray-300 hover:border-gray-400'
-                }
-              `}>
+              <div className={`$1`}>
                   <div className="bg-primary-100 rounded-md p-2 mr-3">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -445,15 +421,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         />
                       )}
                     />
-                    <div className={`
-                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                      ${methods.watch('deviceBrand') === 'apple' 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : methods.formState.errors.deviceBrand 
-                          ? 'border-red-300 hover:border-red-400' 
-                          : 'border-gray-300 hover:border-gray-400'
-                      }
-                    `}>
+                    <div className={`$1`}>
                       <span className="font-medium text-gray-900">Apple</span>
                     </div>
                   </label>
@@ -476,15 +444,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         />
                       )}
                     />
-                    <div className={`
-                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                      ${methods.watch('deviceBrand') === 'samsung' 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : methods.formState.errors.deviceBrand 
-                          ? 'border-red-300 hover:border-red-400' 
-                          : 'border-gray-300 hover:border-gray-400'
-                      }
-                    `}>
+                    <div className={`$1`}>
                       <span className="font-medium text-gray-900">Samsung</span>
                     </div>
                   </label>
@@ -507,15 +467,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         />
                       )}
                     />
-                    <div className={`
-                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                      ${methods.watch('deviceBrand') === 'google' 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : methods.formState.errors.deviceBrand 
-                          ? 'border-red-300 hover:border-red-400' 
-                          : 'border-gray-300 hover:border-gray-400'
-                      }
-                    `}>
+                    <div className={`$1`}>
                       <span className="font-medium text-gray-900">Google</span>
                     </div>
                   </label>
@@ -538,15 +490,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         />
                       )}
                     />
-                    <div className={`
-                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                      ${methods.watch('deviceBrand') === 'oneplus' 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : methods.formState.errors.deviceBrand 
-                          ? 'border-red-300 hover:border-red-400' 
-                          : 'border-gray-300 hover:border-gray-400'
-                      }
-                    `}>
+                    <div className={`$1`}>
                       <span className="font-medium text-gray-900">OnePlus</span>
                     </div>
                   </label>
@@ -569,15 +513,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         />
                       )}
                     />
-                    <div className={`
-                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                      ${methods.watch('deviceBrand') === 'xiaomi' 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : methods.formState.errors.deviceBrand 
-                          ? 'border-red-300 hover:border-red-400' 
-                          : 'border-gray-300 hover:border-gray-400'
-                      }
-                    `}>
+                    <div className={`$1`}>
                       <span className="font-medium text-gray-900">Xiaomi</span>
                     </div>
                   </label>
@@ -600,15 +536,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         />
                       )}
                     />
-                    <div className={`
-                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                      ${methods.watch('deviceBrand') === 'other' 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : methods.formState.errors.deviceBrand 
-                          ? 'border-red-300 hover:border-red-400' 
-                          : 'border-gray-300 hover:border-gray-400'
-                      }
-                    `}>
+                    <div className={`$1`}>
                       <span className="font-medium text-gray-900">Other</span>
                     </div>
                   </label>
@@ -636,15 +564,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         />
                       )}
                     />
-                    <div className={`
-                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                      ${methods.watch('deviceBrand') === 'apple' 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : methods.formState.errors.deviceBrand 
-                          ? 'border-red-300 hover:border-red-400' 
-                          : 'border-gray-300 hover:border-gray-400'
-                      }
-                    `}>
+                    <div className={`$1`}>
                       <span className="font-medium text-gray-900">Apple</span>
                     </div>
                   </label>
@@ -667,15 +587,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         />
                       )}
                     />
-                    <div className={`
-                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                      ${methods.watch('deviceBrand') === 'dell' 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : methods.formState.errors.deviceBrand 
-                          ? 'border-red-300 hover:border-red-400' 
-                          : 'border-gray-300 hover:border-gray-400'
-                      }
-                    `}>
+                    <div className={`$1`}>
                       <span className="font-medium text-gray-900">Dell</span>
                     </div>
                   </label>
@@ -698,15 +610,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         />
                       )}
                     />
-                    <div className={`
-                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                      ${methods.watch('deviceBrand') === 'hp' 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : methods.formState.errors.deviceBrand 
-                          ? 'border-red-300 hover:border-red-400' 
-                          : 'border-gray-300 hover:border-gray-400'
-                      }
-                    `}>
+                    <div className={`$1`}>
                       <span className="font-medium text-gray-900">HP</span>
                     </div>
                   </label>
@@ -729,15 +633,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         />
                       )}
                     />
-                    <div className={`
-                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                      ${methods.watch('deviceBrand') === 'lenovo' 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : methods.formState.errors.deviceBrand 
-                          ? 'border-red-300 hover:border-red-400' 
-                          : 'border-gray-300 hover:border-gray-400'
-                      }
-                    `}>
+                    <div className={`$1`}>
                       <span className="font-medium text-gray-900">Lenovo</span>
                     </div>
                   </label>
@@ -760,15 +656,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         />
                       )}
                     />
-                    <div className={`
-                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                      ${methods.watch('deviceBrand') === 'asus' 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : methods.formState.errors.deviceBrand 
-                          ? 'border-red-300 hover:border-red-400' 
-                          : 'border-gray-300 hover:border-gray-400'
-                      }
-                    `}>
+                    <div className={`$1`}>
                       <span className="font-medium text-gray-900">ASUS</span>
                     </div>
                   </label>
@@ -791,15 +679,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         />
                       )}
                     />
-                    <div className={`
-                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                      ${methods.watch('deviceBrand') === 'other' 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : methods.formState.errors.deviceBrand 
-                          ? 'border-red-300 hover:border-red-400' 
-                          : 'border-gray-300 hover:border-gray-400'
-                      }
-                    `}>
+                    <div className={`$1`}>
                       <span className="font-medium text-gray-900">Other</span>
                     </div>
                   </label>
@@ -827,15 +707,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         />
                       )}
                     />
-                    <div className={`
-                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                      ${methods.watch('deviceBrand') === 'apple' 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : methods.formState.errors.deviceBrand 
-                          ? 'border-red-300 hover:border-red-400' 
-                          : 'border-gray-300 hover:border-gray-400'
-                      }
-                    `}>
+                    <div className={`$1`}>
                       <span className="font-medium text-gray-900">Apple</span>
                     </div>
                   </label>
@@ -858,15 +730,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         />
                       )}
                     />
-                    <div className={`
-                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                      ${methods.watch('deviceBrand') === 'samsung' 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : methods.formState.errors.deviceBrand 
-                          ? 'border-red-300 hover:border-red-400' 
-                          : 'border-gray-300 hover:border-gray-400'
-                      }
-                    `}>
+                    <div className={`$1`}>
                       <span className="font-medium text-gray-900">Samsung</span>
                     </div>
                   </label>
@@ -889,15 +753,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         />
                       )}
                     />
-                    <div className={`
-                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                      ${methods.watch('deviceBrand') === 'microsoft' 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : methods.formState.errors.deviceBrand 
-                          ? 'border-red-300 hover:border-red-400' 
-                          : 'border-gray-300 hover:border-gray-400'
-                      }
-                    `}>
+                    <div className={`$1`}>
                       <span className="font-medium text-gray-900">Microsoft</span>
                     </div>
                   </label>
@@ -920,15 +776,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         />
                       )}
                     />
-                    <div className={`
-                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                      ${methods.watch('deviceBrand') === 'lenovo' 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : methods.formState.errors.deviceBrand 
-                          ? 'border-red-300 hover:border-red-400' 
-                          : 'border-gray-300 hover:border-gray-400'
-                      }
-                    `}>
+                    <div className={`$1`}>
                       <span className="font-medium text-gray-900">Lenovo</span>
                     </div>
                   </label>
@@ -951,15 +799,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         />
                       )}
                     />
-                    <div className={`
-                      p-3 border-2 rounded-md flex items-center cursor-pointer transition w-full
-                      ${methods.watch('deviceBrand') === 'other' 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : methods.formState.errors.deviceBrand 
-                          ? 'border-red-300 hover:border-red-400' 
-                          : 'border-gray-300 hover:border-gray-400'
-                      }
-                    `}>
+                    <div className={`$1`}>
                       <span className="font-medium text-gray-900">Other</span>
                     </div>
                   </label>
@@ -984,11 +824,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <>
               <input
                 type="text"
-                  className={`
-                            block w-full px-4 py-3 border rounded-md shadow-sm placeholder-gray-400
-                    ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
-                    focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
-                  `}
+                  className={`$1`}
                           placeholder="Enter brand name..."
                   {...field}
                 />
@@ -1172,11 +1008,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           <textarea
             id="issueDescription"
             rows={4}
-                  className={`
-                    block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
-                    ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
-                    focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
-                  `}
+                  className={`$1`}
                   placeholder={`Please describe your ${deviceType} issue in as much detail as possible. For example: "My screen is cracked and has black spots" or "Battery drains very quickly, only lasts 2 hours"`}
                   {...field}
                 />
@@ -1221,11 +1053,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 <input
                   id="customerName"
                   type="text"
-                  className={`
-                    block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
-                    ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
-                    focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
-                  `}
+                  className={`$1`}
                   placeholder="Your full name"
                   {...field}
                 />
@@ -1256,11 +1084,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 <input
                   id="customerEmail"
                   type="email"
-                  className={`
-                    block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
-                    ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
-                    focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
-                  `}
+                  className={`$1`}
                   placeholder="you@example.com"
                   {...field}
                 />
@@ -1296,11 +1120,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 <input
                   id="customerPhone"
                   type="tel"
-                  className={`
-                    block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
-                    ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
-                    focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
-                  `}
+                  className={`$1`}
                   placeholder="(555) 123-4567"
                   {...field}
                 />
@@ -1572,11 +1392,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 <>
                   <select
                     id="city"
-                    className={`
-                      block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
-                      ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
-                      focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
-                    `}
+                    className={`$1`}
                     {...field}
                   >
                     <option value="Vancouver">Vancouver</option>
@@ -1604,7 +1420,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           </div>
           
           <div className="space-y-2">
-            <label htmlFor="postalCode" className={`block text-sm font-medium ${needsPostalCodeAttention ? 'text-yellow-700' : 'text-gray-700'}`}>
+            <label htmlFor="postalCode" className={`$1`}>
               Postal Code {needsPostalCodeAttention && <span className="text-red-500">*</span>}
             </label>
             <Controller
@@ -1625,11 +1441,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   <input
                     id="postalCode"
                     type="text"
-                    className={`
-                      block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
-                      ${needsPostalCodeAttention ? 'bg-yellow-50 border-yellow-300' : fieldState.error ? 'border-red-300' : 'border-gray-300'}
-                      focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
-                    `}
+                    className={`$1`}
                     placeholder="V6B 1A1"
                     {...field}
                     onChange={(e) => {
@@ -1757,11 +1569,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <>
                 <select
                   id="appointmentDate"
-                  className={`
-                    block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
-                    ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
-                    focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
-                  `}
+                  className={`$1`}
                   {...field}
                 >
                   <option value="">Select a date</option>
@@ -1791,11 +1599,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <>
                 <select
                   id="appointmentTime"
-                  className={`
-                    block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400
-                    ${fieldState.error ? 'border-red-300' : 'border-gray-300'}
-                    focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm
-                  `}
+                  className={`$1`}
                   {...field}
                 >
                   <option value="">Select a time</option>
@@ -2133,13 +1937,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           {steps.map((step, index) => (
             <div key={index} className="flex flex-col items-center">
               <div 
-                className={`w-8 h-8 rounded-full flex items-center justify-center font-medium text-sm
-                  ${index === currentStep 
-                    ? 'bg-primary-600 text-white' 
-                    : index < currentStep 
-                      ? 'bg-green-500 text-white' 
-                      : 'bg-gray-200 text-gray-500'
-                  }`}
+                className={`$1`}
               >
                 {index < currentStep ? '✓' : index + 1}
           </div>

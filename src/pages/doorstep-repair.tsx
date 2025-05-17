@@ -201,7 +201,9 @@ export default function DoorstepRepairPage() {
             
             <div className="space-y-12">
               {repairProcess.map((step, index) => (
-                <div key={step.id} className={`relative md:flex ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
+                <div key={step.id} className={`flex md:flex-row flex-col md:even:flex-row-reverse relative mb-8 ${
+                  index !== repairProcess.length - 1 ? 'pb-12' : ''
+                }`}>
                   {/* Circle on timeline */}
                   <div className="hidden md:block absolute left-1/2 top-0 w-10 h-10 bg-primary-600 rounded-full text-white font-bold flex items-center justify-center transform -translate-x-1/2">
                     {step.id}
@@ -213,7 +215,7 @@ export default function DoorstepRepairPage() {
                       {step.id}
                     </div>
                     
-                    <div className={`bg-white p-6 rounded-lg shadow-sm ${index % 2 === 0 ? 'md:text-right' : 'md:text-left'}`}>
+                    <div className="bg-white p-6 rounded-lg shadow-sm">
                       <h3 className="text-xl font-bold mb-2">{step.title}</h3>
                       <p className="text-gray-600">{step.description}</p>
                     </div>
