@@ -9,38 +9,55 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
           <div>
-            <h3 className="text-xl font-bold mb-4">The Travelling Technicians</h3>
+            <div className="mb-4">
+              {/* Logo implementation with SVG primary and PNG fallback */}
+              <picture className="inline-block">
+                <source srcSet="/images/logo.svg" type="image/svg+xml" />
+                <img 
+                  src="/images/logo.png" 
+                  alt="The Travelling Technicians Logo" 
+                  width={110} 
+                  height={40} 
+                  className="h-12 w-auto mb-2"
+                />
+              </picture>
+              <h3 className="text-xl font-bold mt-2">The Travelling Technicians</h3>
+            </div>
             <p className="text-gray-300 mb-4">
               Expert mobile phone and laptop repair services at your doorstep across the Lower Mainland.
             </p>
             <div className="space-y-2">
-              <div className="flex items-center">
-                <FaPhone className="text-primary-400 mr-2" />
-                <span>(604) 123-4567</span>
+              <div className="flex items-center group">
+                <FaPhone className="text-primary-400 mr-2 group-hover:text-primary-300 transition-colors duration-300" />
+                <a href="tel:6041234567" className="group-hover:text-primary-300 transition-colors duration-300">
+                  (604) 123-4567
+                </a>
               </div>
-              <div className="flex items-center">
-                <FaEnvelope className="text-primary-400 mr-2" />
-                <a href="mailto:info@travellingtechnicians.ca" className="hover:text-primary-300">
+              <div className="flex items-center group">
+                <FaEnvelope className="text-primary-400 mr-2 group-hover:text-primary-300 transition-colors duration-300" />
+                <a href="mailto:info@travellingtechnicians.ca" className="group-hover:text-primary-300 transition-colors duration-300">
                   info@travellingtechnicians.ca
                 </a>
               </div>
-              <div className="flex items-start">
-                <FaMapMarkerAlt className="text-primary-400 mr-2 mt-1" />
-                <span>Serving the entire Lower Mainland, BC</span>
+              <div className="flex items-start group">
+                <FaMapMarkerAlt className="text-primary-400 mr-2 mt-1 group-hover:text-primary-300 transition-colors duration-300" />
+                <a href="/service-areas" className="group-hover:text-primary-300 transition-colors duration-300">
+                  Serving the entire Lower Mainland, BC
+                </a>
               </div>
             </div>
             {/* Social Media */}
             <div className="flex space-x-4 mt-4">
-              <a href="#" className="text-gray-300 hover:text-primary-400">
+              <a href="#" className="text-gray-300 hover:text-primary-400 transition-colors duration-300 hover:scale-110 transform" aria-label="Facebook">
                 <FaFacebook size={22} />
               </a>
-              <a href="#" className="text-gray-300 hover:text-primary-400">
+              <a href="#" className="text-gray-300 hover:text-primary-400 transition-colors duration-300 hover:scale-110 transform" aria-label="Twitter">
                 <FaTwitter size={22} />
               </a>
-              <a href="#" className="text-gray-300 hover:text-primary-400">
+              <a href="#" className="text-gray-300 hover:text-primary-400 transition-colors duration-300 hover:scale-110 transform" aria-label="Instagram">
                 <FaInstagram size={22} />
               </a>
-              <a href="#" className="text-gray-300 hover:text-primary-400">
+              <a href="#" className="text-gray-300 hover:text-primary-400 transition-colors duration-300 hover:scale-110 transform" aria-label="LinkedIn">
                 <FaLinkedin size={22} />
               </a>
             </div>
@@ -48,41 +65,76 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-xl font-bold mb-4">Quick Links</h3>
+            <h3 className="text-xl font-bold mb-4 text-primary-400">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/" className="text-gray-300 hover:text-primary-300">
-                  Home
+                <Link href="/">
+                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
+                    <span>
+                      <span className="w-1 h-1 bg-primary-400 rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                      Home
+                    </span>
+                  </a>
                 </Link>
               </li>
               <li>
-                <Link href="/services/mobile" className="text-gray-300 hover:text-primary-300">
-                  Mobile Phone Repair
+                <Link href="/services/mobile">
+                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
+                    <span>
+                      <span className="w-1 h-1 bg-primary-400 rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                      Mobile Phone Repair
+                    </span>
+                  </a>
                 </Link>
               </li>
               <li>
-                <Link href="/services/laptop" className="text-gray-300 hover:text-primary-300">
-                  Laptop & Computer Repair
+                <Link href="/services/laptop">
+                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
+                    <span>
+                      <span className="w-1 h-1 bg-primary-400 rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                      Laptop & Computer Repair
+                    </span>
+                  </a>
                 </Link>
               </li>
               <li>
-                <Link href="/doorstep" className="text-gray-300 hover:text-primary-300">
-                  Doorstep Repair
+                <Link href="/doorstep">
+                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
+                    <span>
+                      <span className="w-1 h-1 bg-primary-400 rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                      Doorstep Repair
+                    </span>
+                  </a>
                 </Link>
               </li>
               <li>
-                <Link href="/pricing" className="text-gray-300 hover:text-primary-300">
-                  Pricing
+                <Link href="/pricing">
+                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
+                    <span>
+                      <span className="w-1 h-1 bg-primary-400 rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                      Pricing
+                    </span>
+                  </a>
                 </Link>
               </li>
               <li>
-                <Link href="/book-online" className="text-gray-300 hover:text-primary-300">
-                  Book Online
+                <Link href="/book-online">
+                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
+                    <span>
+                      <span className="w-1 h-1 bg-primary-400 rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                      Book Online
+                    </span>
+                  </a>
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="text-gray-300 hover:text-primary-300">
-                  Contact Us
+                <Link href="/contact">
+                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
+                    <span>
+                      <span className="w-1 h-1 bg-primary-400 rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                      Contact Us
+                    </span>
+                  </a>
                 </Link>
               </li>
             </ul>
@@ -90,61 +142,83 @@ export default function Footer() {
 
           {/* Service Areas */}
           <div>
-            <h3 className="text-xl font-bold mb-4">Service Areas</h3>
+            <h3 className="text-xl font-bold mb-4 text-primary-400">Service Areas</h3>
             <ul className="grid grid-cols-2 gap-x-2 gap-y-2">
               <li>
-                <Link href="/service-areas/vancouver" className="text-gray-300 hover:text-primary-300">
-                  Vancouver
+                <Link href="/service-areas/vancouver">
+                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                    Vancouver
+                  </a>
                 </Link>
               </li>
               <li>
-                <Link href="/service-areas/burnaby" className="text-gray-300 hover:text-primary-300">
-                  Burnaby
+                <Link href="/service-areas/burnaby">
+                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                    Burnaby
+                  </a>
                 </Link>
               </li>
               <li>
-                <Link href="/service-areas/surrey" className="text-gray-300 hover:text-primary-300">
-                  Surrey
+                <Link href="/service-areas/surrey">
+                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                    Surrey
+                  </a>
                 </Link>
               </li>
               <li>
-                <Link href="/service-areas/richmond" className="text-gray-300 hover:text-primary-300">
-                  Richmond
+                <Link href="/service-areas/richmond">
+                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                    Richmond
+                  </a>
                 </Link>
               </li>
               <li>
-                <Link href="/service-areas/coquitlam" className="text-gray-300 hover:text-primary-300">
-                  Coquitlam
+                <Link href="/service-areas/coquitlam">
+                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                    Coquitlam
+                  </a>
                 </Link>
               </li>
               <li>
-                <Link href="/service-areas/north-vancouver" className="text-gray-300 hover:text-primary-300">
-                  North Vancouver
+                <Link href="/service-areas/north-vancouver">
+                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                    North Vancouver
+                  </a>
                 </Link>
               </li>
               <li>
-                <Link href="/service-areas/west-vancouver" className="text-gray-300 hover:text-primary-300">
-                  West Vancouver
+                <Link href="/service-areas/west-vancouver">
+                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                    West Vancouver
+                  </a>
                 </Link>
               </li>
               <li>
-                <Link href="/service-areas/new-westminster" className="text-gray-300 hover:text-primary-300">
-                  New Westminster
+                <Link href="/service-areas/new-westminster">
+                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                    New Westminster
+                  </a>
                 </Link>
               </li>
               <li>
-                <Link href="/service-areas/delta" className="text-gray-300 hover:text-primary-300">
-                  Delta
+                <Link href="/service-areas/delta">
+                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                    Delta
+                  </a>
                 </Link>
               </li>
               <li>
-                <Link href="/service-areas/langley" className="text-gray-300 hover:text-primary-300">
-                  Langley
+                <Link href="/service-areas/langley">
+                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                    Langley
+                  </a>
                 </Link>
               </li>
               <li>
-                <Link href="/service-areas" className="text-primary-400 hover:text-primary-300">
-                  View All Areas
+                <Link href="/service-areas">
+                  <a className="text-primary-400 hover:text-primary-300 transition-colors duration-300 font-medium">
+                    View All Areas
+                  </a>
                 </Link>
               </li>
             </ul>
@@ -152,7 +226,7 @@ export default function Footer() {
 
           {/* Hours & Book Online */}
           <div>
-            <h3 className="text-xl font-bold mb-4">Business Hours</h3>
+            <h3 className="text-xl font-bold mb-4 text-primary-400">Business Hours</h3>
             <ul className="space-y-2 text-gray-300">
               <li className="flex justify-between">
                 <span>Monday - Friday:</span>
@@ -168,11 +242,10 @@ export default function Footer() {
               </li>
             </ul>
             <div className="mt-6">
-              <Link 
-                href="/book-online"
-                className="btn-accent w-full flex justify-center"
-              >
-                Book Your Repair
+              <Link href="/book-online">
+                <a className="w-full px-4 py-3 bg-accent-500 text-white rounded-md font-medium inline-block text-center hover:bg-accent-600 transition-all duration-300 hover:shadow-md hover:translate-y-[-1px]">
+                  Book Your Repair
+                </a>
               </Link>
             </div>
           </div>
@@ -187,14 +260,20 @@ export default function Footer() {
               &copy; {new Date().getFullYear()} The Travelling Technicians. All rights reserved.
             </p>
             <div className="flex space-x-4 mt-2 md:mt-0">
-              <Link href="/privacy-policy" className="text-gray-400 text-sm hover:text-primary-300">
-                Privacy Policy
+              <Link href="/privacy-policy">
+                <a className="text-gray-400 text-sm hover:text-primary-300 transition-colors duration-300">
+                  Privacy Policy
+                </a>
               </Link>
-              <Link href="/terms-conditions" className="text-gray-400 text-sm hover:text-primary-300">
-                Terms & Conditions
+              <Link href="/terms-conditions">
+                <a className="text-gray-400 text-sm hover:text-primary-300 transition-colors duration-300">
+                  Terms & Conditions
+                </a>
               </Link>
-              <Link href="/sitemap" className="text-gray-400 text-sm hover:text-primary-300">
-                Sitemap
+              <Link href="/sitemap">
+                <a className="text-gray-400 text-sm hover:text-primary-300 transition-colors duration-300">
+                  Sitemap
+                </a>
               </Link>
             </div>
           </div>

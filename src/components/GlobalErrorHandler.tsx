@@ -63,7 +63,7 @@ const GlobalErrorHandler: React.FC = () => {
   }
 
   return (
-    <React.Fragment>
+    <>
       <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-3 max-w-md">
         {errors.map((error) => (
           <div 
@@ -113,7 +113,7 @@ const GlobalErrorHandler: React.FC = () => {
           </div>
         ))}
       </div>
-    </React.Fragment>
+    </>
   );
 };
 
