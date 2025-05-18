@@ -12,21 +12,30 @@ module.exports = (phase, { defaultConfig }) => {
     webpack: (config, { dev, isServer }) => {
       // Only run in production build
       if (!dev && !isServer) {
-        // Ensure the manifest and favicon files are properly copied
-        config.plugins.push(
-          new (require('copy-webpack-plugin'))({
-            patterns: [
-              {
-                from: 'public/manifest.json',
-                to: '../public/manifest.json',
-              },
-              {
-                from: 'public/favicons',
-                to: '../public/favicons',
-              },
-            ],
-          })
-        );
+        try {
+          // Try to load the copy-webpack-plugin
+          const CopyWebpackPlugin = require('copy-webpack-plugin');
+          
+          // Ensure the manifest and favicon files are properly copied
+          config.plugins.push(
+            new CopyWebpackPlugin({
+              patterns: [
+                {
+                  from: 'public/manifest.json',
+                  to: '../public/manifest.json',
+                },
+                {
+                  from: 'public/favicons',
+                  to: '../public/favicons',
+                },
+              ],
+            })
+          );
+          console.log('Added copy-webpack-plugin to webpack config');
+        } catch (error) {
+          console.warn('copy-webpack-plugin not available, skipping file copy:', error.message);
+          // Continue with build even if the plugin is missing
+        }
       }
       return config;
     },
