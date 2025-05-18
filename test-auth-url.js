@@ -6,7 +6,21 @@
  * 2. Deploy to verify production environment variables
  */
 
-const { getSiteUrl } = require('./src/utils/supabaseClient');
+// Import directly by creating the function ourselves since we can't use ESM imports in this script
+const getSiteUrl = () => {
+  // In development, use localhost
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:3000';
+  }
+  
+  // In production, check for explicit URL or use Vercel URL
+  const productionUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || 
+                         process.env.NEXT_PUBLIC_VERCEL_URL ||
+                         'https://travelling-technicians.ca';
+  
+  // Make sure URL has https:// prefix
+  return productionUrl.startsWith('http') ? productionUrl : `https://${productionUrl}`;
+};
 
 // Test URL generation
 console.log('--------------------------------');

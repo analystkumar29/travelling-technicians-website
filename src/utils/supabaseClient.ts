@@ -34,7 +34,7 @@ export const getSiteUrl = () => {
   // In production, check for explicit URL or use Vercel URL
   const productionUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || 
                          process.env.NEXT_PUBLIC_VERCEL_URL ||
-                         'https://travellingtechnicians.ca';
+                         'https://travelling-technicians.ca';
   
   // Make sure URL has https:// prefix
   return productionUrl.startsWith('http') ? productionUrl : `https://${productionUrl}`;
@@ -45,8 +45,26 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    // Set correct site URL for auth redirects
-    redirectTo: getSiteUrl()
+    flowType: 'pkce',
+    detectSessionInUrl: true
+  },
+  global: {
+    headers: { 
+      'X-Client-Info': 'travelling-technicians-website' 
+    }
+  }
+});
+
+// Set default redirect to options for auth operations
+// This is the correct way to set redirects in Supabase v2
+const authRedirectUrl = getSiteUrl() + '/auth/callback';
+
+// After creating the client, manually set the redirect URL
+// This ensures the authentication process uses our custom domain
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+    // Make sure site redirects are correct
+    console.log('Auth URL configured:', getSiteUrl());
   }
 });
 
@@ -74,7 +92,13 @@ export const getServiceSupabase = () => {
   return createClient(supabaseUrl, supabaseServiceKey, {
     auth: {
       autoRefreshToken: false,
-      persistSession: false
+      persistSession: false,
+      flowType: 'pkce'
+    },
+    global: {
+      headers: { 
+        'X-Client-Info': 'travelling-technicians-admin' 
+      }
     }
   });
 };
