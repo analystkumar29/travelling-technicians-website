@@ -18,6 +18,8 @@ interface State {
  * and displays a fallback UI instead of crashing the whole app
  */
 class ErrorBoundary extends Component<Props, State> {
+  private errorRecoveryTimeout: NodeJS.Timeout | null = null;
+  
   constructor(props: Props) {
     super(props);
     this.state = {
@@ -30,6 +32,28 @@ class ErrorBoundary extends Component<Props, State> {
   static getDerivedStateFromError(error: Error) {
     // Update state so the next render will show the fallback UI
     return { hasError: true, error };
+  }
+
+  componentDidUpdate(prevProps: Props, prevState: State) {
+    // Set up automatic recovery only when error state changes to true
+    if (this.state.hasError && !prevState.hasError) {
+      // Clear any existing timeout
+      if (this.errorRecoveryTimeout) {
+        clearTimeout(this.errorRecoveryTimeout);
+      }
+      
+      // Set up automatic recovery after 5 seconds
+      this.errorRecoveryTimeout = setTimeout(() => {
+        this.resetError();
+      }, 5000);
+    }
+  }
+  
+  componentWillUnmount() {
+    // Clean up timeout when component unmounts
+    if (this.errorRecoveryTimeout) {
+      clearTimeout(this.errorRecoveryTimeout);
+    }
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -125,11 +149,6 @@ class ErrorBoundary extends Component<Props, State> {
               Try Again
             </button>
           </div>
-          
-          {/* Auto-recovery after a delay */}
-          {setTimeout(() => {
-            this.resetError();
-          }, 5000)}
         </div>
       );
     }
