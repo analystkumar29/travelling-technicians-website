@@ -53,6 +53,12 @@ const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
   const imageWidth = width || (needsDimension ? 1920 : undefined);
   const imageHeight = height || (needsDimension ? 1080 : undefined);
 
+  // Filter out fill prop to avoid passing it to the Image component
+  const restProps = {...rest};
+  if ('fill' in restProps) {
+    delete (restProps as any).fill;
+  }
+
   return (
     <Image 
       src={error ? fallbackSrc : actualSrc}
@@ -63,7 +69,7 @@ const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
       width={imageWidth}
       height={imageHeight}
       onError={() => setError(true)}
-      {...rest}
+      {...restProps}
     />
   );
 };

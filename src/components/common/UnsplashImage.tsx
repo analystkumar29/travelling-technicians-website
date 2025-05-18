@@ -1,6 +1,7 @@
 import React from 'react';
 import Image, { ImageProps } from 'next/image';
 
+// Props for UnsplashImage component
 interface UnsplashImageProps extends Omit<ImageProps, 'src'> {
   imageId: string;
   quality?: number;
@@ -39,25 +40,30 @@ const UnsplashImage: React.FC<UnsplashImageProps> = ({
     ? '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
     : sizes;
 
-  // Construct the Unsplash URL with appropriate query parameters
-  const heightParam = imgHeight ? `&h=${imgHeight}` : '';
-  const imageUrl = `https://images.unsplash.com/photo-${imageId}?q=${quality}&w=${imgWidth}${heightParam}`;
-
+  // Create the Unsplash URL with the correct format
+  const src = `https://images.unsplash.com/photo-${imageId}?q=${quality}&w=${imgWidth}${imgHeight ? `&h=${imgHeight}` : ''}`;
+  
   // In Next.js 12.3.4, we need to provide width/height if not using layout=fill
   const needsDimension = actualLayout !== 'fill' && !fill && (!width || !height);
   const imageWidth = width || (needsDimension ? imgWidth : undefined);
-  const imageHeight = height || (needsDimension ? imgHeight || Math.round(imgWidth * 0.75) : undefined);
-
+  const imageHeight = height || (needsDimension ? imgHeight || Math.round(imgWidth * 0.5625) : undefined);
+  
+  // Filter out fill prop to avoid passing it to the Image component
+  const restProps = {...rest};
+  if ('fill' in restProps) {
+    delete (restProps as any).fill;
+  }
+  
   return (
     <Image
-      src={imageUrl}
-      alt={alt || "Unsplash Image"}
+      src={src}
+      alt={alt || `Unsplash Image - ${imageId}`}
       layout={actualLayout}
       width={imageWidth}
       height={imageHeight}
       sizes={imageSizes}
       className={className}
-      {...rest}
+      {...restProps}
     />
   );
 };
