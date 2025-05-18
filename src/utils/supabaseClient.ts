@@ -32,7 +32,7 @@ export const getSiteUrl = () => {
   }
   
   // In production, check for explicit URL or use Vercel URL
-  const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+  const productionUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || 
                          process.env.NEXT_PUBLIC_VERCEL_URL ||
                          'https://travellingtechnicians.ca';
   

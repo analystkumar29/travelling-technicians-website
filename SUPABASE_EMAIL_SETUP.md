@@ -10,27 +10,27 @@ When users receive authentication emails (signup confirmation, password reset), 
 
 ### 1. Set Environment Variables
 
-Add the following environment variable to your production environment (Vercel):
+You already have the environment variable set in your production environment (Vercel):
 
 ```
-NEXT_PUBLIC_SITE_URL=https://travellingtechnicians.ca
+NEXT_PUBLIC_WEBSITE_URL=https://travelling-technicians.ca
 ```
 
 If you're using a different domain, replace it with your actual production domain.
 
-### 2. Vercel Project Settings
+### 2. Verify Vercel Project Settings
 
 1. Go to your project in the Vercel dashboard
 2. Navigate to Settings > Environment Variables
-3. Add the environment variable above
-4. Redeploy your application
+3. Confirm that `NEXT_PUBLIC_WEBSITE_URL` is set correctly
+4. Redeploy your application if necessary
 
 ### 3. Update Local Development Environment (Optional)
 
 For consistent behavior in development, add to your `.env.local` file:
 
 ```
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_WEBSITE_URL=http://localhost:3000
 ```
 
 ## Professional Email Templates
