@@ -123,11 +123,15 @@ export default function DoorstepRepairPage() {
                 Why travel to a repair shop when our certified technicians can come to you? Get your mobile phone or laptop repaired at your home, office, or anywhere in the Lower Mainland.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/book-online" className="btn-accent text-center">
-                  Book Doorstep Repair
+                <Link href="/book-online">
+                  <a className="btn-accent text-center">
+                    Book Your Doorstep Repair
+                  </a>
                 </Link>
-                <Link href="/pricing" className="btn-outline border-white text-white hover:bg-primary-600 text-center">
-                  View Pricing
+                <Link href="/pricing">
+                  <a className="btn-outline border-white text-white hover:bg-primary-600 text-center">
+                    View Pricing
+                  </a>
                 </Link>
               </div>
             </div>
@@ -136,7 +140,7 @@ export default function DoorstepRepairPage() {
                 <Image
                   src="https://images.unsplash.com/photo-1589939705384-5185137a7f0f"
                   alt="Technician repairing a device at customer location"
-                  fill
+                  layout="fill"
                   className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
@@ -276,9 +280,11 @@ export default function DoorstepRepairPage() {
                   </li>
                 </ul>
                 <div className="mt-6">
-                  <Link href="/services/mobile" className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
-                    View All Mobile Services
-                    <FaArrowRight className="ml-2 h-4 w-4" />
+                  <Link href="/services/mobile">
+                    <a className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
+                      View All Mobile Services
+                      <FaArrowRight className="ml-2 h-4 w-4" />
+                    </a>
                   </Link>
                 </div>
               </div>
@@ -320,9 +326,11 @@ export default function DoorstepRepairPage() {
                   </li>
                 </ul>
                 <div className="mt-6">
-                  <Link href="/services/laptop" className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
-                    View All Laptop Services
-                    <FaArrowRight className="ml-2 h-4 w-4" />
+                  <Link href="/services/laptop">
+                    <a className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
+                      View All Laptop Services
+                      <FaArrowRight className="ml-2 h-4 w-4" />
+                    </a>
                   </Link>
                 </div>
               </div>
@@ -356,7 +364,7 @@ export default function DoorstepRepairPage() {
                       <Image 
                         src={story.image} 
                         alt={story.name} 
-                        fill
+                        layout="fill"
                         className="object-cover"
                       />
                     </div>
@@ -404,7 +412,7 @@ export default function DoorstepRepairPage() {
                   <Image 
                     src="https://images.unsplash.com/photo-1520500807606-4ac9ae633574" 
                     alt="Lower Mainland Service Area Map" 
-                    fill
+                    layout="fill"
                     className="object-cover"
                   />
                   <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
@@ -453,8 +461,10 @@ export default function DoorstepRepairPage() {
             </div>
 
             <div className="text-center">
-              <Link href="/service-areas" className="btn-outline">
-                View All Service Areas
+              <Link href="/service-areas">
+                <a className="btn-outline">
+                  View All Service Areas
+                </a>
               </Link>
             </div>
           </div>
@@ -516,8 +526,10 @@ export default function DoorstepRepairPage() {
           </div>
           
           <div className="text-center mt-8">
-            <Link href="/faq" className="text-primary-600 hover:text-primary-700 font-medium">
-              View All FAQs
+            <Link href="/faq">
+              <a className="text-primary-600 hover:text-primary-700 font-medium">
+                View All FAQs
+              </a>
             </Link>
           </div>
         </div>
@@ -529,10 +541,12 @@ export default function DoorstepRepairPage() {
           <div className="text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready for a Repair at Your Doorstep?</h2>
             <p className="text-xl mb-8 max-w-3xl mx-auto">
-              Book your appointment now and get your device fixed without leaving your home or office.
+              Book your device repair today, and our technicians will come to your doorstep.
             </p>
-            <Link href="/book-online" className="btn-accent text-center inline-block">
-              Book Doorstep Repair
+            <Link href="/book-online">
+              <a className="btn-accent text-center inline-block">
+                Book Your Doorstep Repair
+              </a>
             </Link>
             <p className="mt-4 text-primary-100">
               Most repairs completed in 30-60 minutes with 90-day warranty
