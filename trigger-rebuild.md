@@ -5,6 +5,7 @@ This file serves as a trigger to force Vercel to rebuild and deploy the site wit
 ## Latest TypeScript Fixes
 
 1. Fixed TypeScript error in ErrorBoundary component where Element type needed to be cast to HTMLScriptElement
+2. Fixed TypeScript error where setTimeout was incorrectly used in JSX rendering (moved to componentDidUpdate)
 
 ## Build Error Fixes
 
