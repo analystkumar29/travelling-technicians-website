@@ -153,6 +153,19 @@ export default function App({ Component, pageProps }: AppProps) {
   // Set up global error handlers when the app mounts
   useEffect(() => {
     setupGlobalErrorHandlers();
+
+    // Register service worker
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => {
+            console.log('Service Worker registered successfully:', registration.scope);
+          })
+          .catch(error => {
+            console.warn('Service Worker registration failed:', error);
+          });
+      });
+    }
   }, []);
 
   // Track page views
@@ -178,14 +191,20 @@ export default function App({ Component, pageProps }: AppProps) {
                 <meta name="description" content="The Travelling Technicians - Mobile phone and laptop repair with doorstep service in Vancouver, Burnaby & the Lower Mainland. Same-day repairs by certified technicians." />
                 <meta name="theme-color" content="#0076be" />
                 <link rel="icon" href="/favicon.ico" />
+                <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png" />
+                <link rel="icon" type="image/png" sizes="192x192" href="/favicons/favicon-192x192.png" />
+                <link rel="apple-touch-icon" href="/favicons/favicon-192x192.png" />
+                <link rel="manifest" href="/manifest.json" />
                 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
                 <title>The Travelling Technicians | Mobile Doorstep Repair Service</title>
               </Head>
               
-              {/* Early router error prevention script */}
+              {/* Early error prevention scripts */}
               <Script id="next-router-fix" strategy="beforeInteractive">
                 {routerFixScript}
               </Script>
+              
+              <Script id="error-handler" src="/error-handler.js" strategy="beforeInteractive" />
               
               <RouterErrorGuard>
                 <NextjsRouterLoader />
