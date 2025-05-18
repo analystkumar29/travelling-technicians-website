@@ -141,220 +141,170 @@ export default function DeviceModelSelector({
   value,
   onChange
 }: DeviceModelSelectorProps) {
-  const [showModelList, setShowModelList] = useState(false);
-  const [otherModel, setOtherModel] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedModel, setSelectedModel] = useState('');
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [useCustomModel, setUseCustomModel] = useState(false);
+  const [customModel, setCustomModel] = useState('');
+  const selectRef = useRef<HTMLSelectElement>(null);
   
-  // Debug props
-  console.log('DeviceModelSelector props:', { deviceType, brand, value });
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowModelList(false);
-      }
-    }
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  // Reset when device type or brand changes
-  useEffect(() => {
-    setShowModelList(false);
-    setOtherModel('');
-    setSearchTerm('');
-    setSelectedModel('');
-    onChange('');
-  }, [deviceType, brand, onChange]);
-
-  // Set the model when selected model changes
-  useEffect(() => {
-    if (selectedModel) {
-      onChange(selectedModel);
-    } else if (otherModel) {
-      onChange(otherModel);
-    }
-  }, [selectedModel, otherModel, onChange]);
-
-  // Update the selected model when the value changes from outside
-  useEffect(() => {
-    if (value && !selectedModel && !otherModel) {
-      const models = getModelsForSelection();
-      if (models.includes(value)) {
-        setSelectedModel(value);
-      } else if (value) {
-        setOtherModel(value);
-      }
-    }
-  }, [value]);
+  // Normalize inputs
+  const normalizedDeviceType = deviceType?.toLowerCase() as DeviceType;
+  const normalizedBrand = brand?.toLowerCase() as BrandType;
 
   // Get models for the selected device type and brand
-  const getModelsForSelection = () => {
-    if (!deviceType || !brand || brand === 'other') {
+  const getAvailableModels = () => {
+    if (!deviceType || !brand || brand.toLowerCase() === 'other') {
       return [];
     }
     
     try {
-      // Type assertion to make TypeScript happy - ensure deviceType is a valid key
-      const deviceTypeKey = deviceType as DeviceType;
-      const brandKey = brand as BrandType;
+      const deviceTypeModels = deviceModels[normalizedDeviceType];
+      if (!deviceTypeModels) {
+        return [];
+      }
       
-      // Debug the access to ensure it's correctly finding the models
-      console.log('Accessing models for:', deviceTypeKey, brandKey);
-      console.log('Available models:', deviceModels[deviceTypeKey]?.[brandKey] || []);
+      const brandModels = deviceTypeModels[normalizedBrand];
+      if (!brandModels) {
+        return [];
+      }
       
-      return deviceModels[deviceTypeKey]?.[brandKey] || [];
+      return brandModels;
     } catch (error) {
       console.error('Error getting models:', error);
       return [];
     }
   };
 
-  // Filter models based on search term
-  const filteredModels = getModelsForSelection().filter(
-    model => model.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Available models
+  const availableModels = getAvailableModels();
+  
+  // Debug info
+  console.log('DeviceModelSelector:', {
+    deviceType: normalizedDeviceType,
+    brand: normalizedBrand,
+    value,
+    availableModels: availableModels.length
+  });
 
-  // Get placeholder text based on device type
+  // Effect to reset when device type or brand changes
+  useEffect(() => {
+    // If the current value is no longer in the available models, reset it
+    if (value && !availableModels.includes(value)) {
+      onChange('');
+      setUseCustomModel(false);
+      setCustomModel('');
+    }
+  }, [deviceType, brand, value, availableModels, onChange]);
+
+  // Effect to handle value changes from outside
+  useEffect(() => {
+    if (value && !availableModels.includes(value) && value !== customModel) {
+      setCustomModel(value);
+      setUseCustomModel(true);
+    }
+  }, [value, availableModels, customModel]);
+
+  // Handle selection change
+  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedValue = e.target.value;
+    
+    if (selectedValue === 'custom') {
+      setUseCustomModel(true);
+      // Don't change the model yet - wait for custom input
+    } else {
+      setUseCustomModel(false);
+      onChange(selectedValue);
+    }
+  };
+
+  // Handle custom model input
+  const handleCustomModelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setCustomModel(newValue);
+    onChange(newValue);
+  };
+
+  // For "Other" brand, just show a text input
+  if (brand && brand.toLowerCase() === 'other') {
+    return (
+      <input
+        type="text"
+        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+        placeholder={`Enter your ${deviceType} model (e.g., ${
+          deviceType === 'mobile' ? 'Motorola Edge 40' : 
+          deviceType === 'laptop' ? 'Acer Swift 5' : 'Huawei MatePad Pro'
+        })`}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    );
+  }
+
+  // Get placeholder text
   const getPlaceholderText = () => {
     if (!brand) return 'Select a brand first';
-    if (brand === 'other') {
-      return `Enter your ${deviceType} model`;
-    }
     return `Select your ${brand} ${deviceType} model`;
   };
 
   return (
-    <div ref={dropdownRef} className="relative">
-      {brand === 'other' ? (
-        // For "Other Brand", just show a text input
-        <input
-          type="text"
-          className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-          placeholder={`Enter your ${deviceType} model (e.g., ${
-            deviceType === 'mobile' ? 'Motorola Edge 40' : 
-            deviceType === 'laptop' ? 'Acer Swift 5' : 'Huawei MatePad Pro'
-          })`}
-          value={otherModel}
-          onChange={(e) => setOtherModel(e.target.value)}
-        />
-      ) : (
-        <>
-          {/* Button to show/hide model list */}
-          <button
-            type="button"
-            onClick={() => setShowModelList(!showModelList)}
-            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 flex justify-between items-center"
-            disabled={!brand}
-          >
-            <span className={selectedModel ? 'text-gray-900' : 'text-gray-500'}>
-              {selectedModel || getPlaceholderText()}
-            </span>
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className={`h-5 w-5 text-gray-400 transition-transform ${showModelList ? 'transform rotate-180' : ''}`} 
-              viewBox="0 0 20 20" 
-              fill="currentColor"
+    <div>
+      {/* Model selector */}
+      <select
+        ref={selectRef}
+        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+        value={useCustomModel ? 'custom' : value}
+        onChange={handleSelectChange}
+        disabled={!brand || availableModels.length === 0}
+      >
+        <option value="" disabled selected={!value && !useCustomModel}>
+          {getPlaceholderText()}
+        </option>
+        
+        {availableModels.map((model, index) => (
+          <option key={index} value={model}>
+            {model}
+          </option>
+        ))}
+        
+        <option value="custom">My model isn't listed</option>
+      </select>
+
+      {/* Custom model input - shown when "My model isn't listed" is selected */}
+      {useCustomModel && (
+        <div className="mt-2">
+          <input
+            type="text"
+            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+            placeholder={`Enter your ${deviceType} model manually`}
+            value={customModel}
+            onChange={handleCustomModelChange}
+            autoFocus
+          />
+        </div>
+      )}
+      
+      {/* Quick model links for common models */}
+      {!value && !useCustomModel && availableModels.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-2 text-xs">
+          {availableModels.slice(0, 3).map((model, idx) => (
+            <button
+              key={idx}
+              type="button"
+              className="text-primary-600 hover:text-primary-800 underline"
+              onClick={() => {
+                onChange(model);
+                if (selectRef.current) {
+                  selectRef.current.value = model;
+                }
+              }}
             >
-              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </button>
-
-          {/* Model list dropdown */}
-          {showModelList && (
-            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg">
-              {/* Search input */}
-              <div className="p-2 border-b border-gray-200">
-                <div className="relative">
-                  <input
-                    type="text"
-                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
-                    placeholder="Search for your model..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              {/* Model list */}
-              <div className="max-h-60 overflow-y-auto">
-                {filteredModels.length > 0 ? (
-                  <div className="py-1">
-                    {filteredModels.map((model, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
-                          selectedModel === model ? 'bg-primary-50 text-primary-700' : 'text-gray-700'
-                        }`}
-                        onClick={() => {
-                          setSelectedModel(model);
-                          setOtherModel('');
-                          setShowModelList(false);
-                        }}
-                      >
-                        {model}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-4 text-center text-gray-500">
-                    {searchTerm ? 'No models match your search' : 'No models available for this selection'}
-                  </div>
-                )}
-              </div>
-
-              {/* Enter custom model option */}
-              <div className="p-2 border-t border-gray-200">
-                <button
-                  type="button"
-                  className="w-full text-left px-3 py-2 text-primary-600 hover:bg-primary-50 rounded-md flex items-center"
-                  onClick={() => {
-                    setShowModelList(false);
-                    setSelectedModel('');
-                    // Set focus to the custom model input
-                    setTimeout(() => {
-                      const customInput = document.getElementById('custom-model-input');
-                      if (customInput) {
-                        customInput.focus();
-                      }
-                    }, 10);
-                  }}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                  </svg>
-                  My model isn't listed
-                </button>
-              </div>
-            </div>
+              {model}
+            </button>
+          ))}
+          {availableModels.length > 3 && (
+            <span className="text-gray-500">
+              + {availableModels.length - 3} more
+            </span>
           )}
-
-          {/* Custom model input - shown when "My model isn't listed" is clicked */}
-          {!showModelList && !selectedModel && (
-            <div className="mt-2">
-              <input
-                id="custom-model-input"
-                type="text"
-                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                placeholder={`Enter your ${deviceType} model manually`}
-                value={otherModel}
-                onChange={(e) => setOtherModel(e.target.value)}
-              />
-            </div>
-          )}
-        </>
+        </div>
       )}
     </div>
   );

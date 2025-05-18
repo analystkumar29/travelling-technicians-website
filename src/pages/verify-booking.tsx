@@ -135,9 +135,7 @@ export default function VerifyBooking() {
                           setEmail(e.target.value);
                           setEmailError('');
                         }}
-                        className={`w-full px-4 py-2 border rounded-md focus:ring-primary-500 focus:border-primary-500 ${
-                          emailError ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         placeholder="Enter the email used for booking"
                       />
                       {emailError && (

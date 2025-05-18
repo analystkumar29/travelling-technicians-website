@@ -257,7 +257,7 @@ export default function PricingPage() {
           <div className="lg:hidden">
             <div className="space-y-6">
               {repairServices.map((service) => (
-                <div key={service.id} className={`rounded-lg shadow-sm border border-gray-200 overflow-hidden ${service.popular ? 'border-l-4 border-l-primary-500' : ''}`}>
+                <div key={service.id} className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
                   <div className="px-4 py-5 sm:px-6 bg-gray-50 border-b border-gray-200">
                     <h3 className="text-lg leading-6 font-medium text-gray-900">
                       {service.name}

@@ -1,0 +1,52 @@
+/**
+ * white-screen-fix.css
+ * This file contains CSS fixes for preventing white screens on initial load
+ */
+
+/* Ensure body has visible content */
+body {
+  min-height: 100vh;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Make sure root div is always visible */
+#__next {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  min-height: 100vh;
+}
+
+/* Show a message if content fails to load after 5 seconds */
+body:not(.content-loaded)::after {
+  content: "Loading... If you see this message for more than a few seconds, please refresh the page.";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: sans-serif;
+  font-size: 16px;
+  color: #333;
+  background-color: #f8f8f8;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s ease;
+  z-index: 9999;
+  animation: showAfterDelay 5s forwards;
+}
+
+@keyframes showAfterDelay {
+  0%, 90% {
+    opacity: 0;
+    visibility: hidden;
+  }
+  100% {
+    opacity: 1;
+    visibility: visible;
+  }
+} 

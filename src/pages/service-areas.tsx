@@ -205,12 +205,16 @@ export default function ServiceAreasPage() {
             <p className="text-xl mb-8 text-primary-100">
               Our mobile repair technicians bring expert device repair services directly to your location throughout the Greater Vancouver area and beyond, from Whistler in the north to Chilliwack in the east.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/book-online" className="btn-accent text-center">
-                Book Doorstep Repair
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link href="/book-online">
+                <a className="btn-accent text-center">
+                  Book a Repair
+                </a>
               </Link>
-              <Link href="/contact" className="btn-outline border-white text-white hover:bg-primary-600 text-center">
-                Check Availability
+              <Link href="/contact">
+                <a className="btn-outline border-white text-white hover:bg-primary-600 text-center">
+                  Contact Us
+                </a>
               </Link>
             </div>
           </div>
@@ -260,12 +264,12 @@ export default function ServiceAreasPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {serviceAreas.map((area) => (
-              <div key={area.id} className={`card hover:shadow-custom-lg transition-shadow overflow-hidden ${area.popular ? 'border-l-4 border-l-primary-500' : ''}`}>
+              <div key={area.id} className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow">
                 <div className="relative h-48 w-full">
                   <Image 
                     src={area.image} 
                     alt={`${area.name}, BC`} 
-                    fill
+                    layout="fill"
                     className="object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
@@ -434,7 +438,7 @@ export default function ServiceAreasPage() {
                 <Image
                   src="https://images.unsplash.com/photo-1581094794329-c8112a89af12"
                   alt="Technician arriving at customer location"
-                  fill
+                  layout="fill"
                   className="object-cover"
                 />
               </div>
@@ -452,11 +456,15 @@ export default function ServiceAreasPage() {
               We bring expert repair service to your location across the Lower Mainland. Book your appointment now.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link href="/book-online" className="btn-accent text-center">
-                Book Now
+              <Link href="/book-online">
+                <a className="btn-accent text-center">
+                  Book Your Repair
+                </a>
               </Link>
-              <Link href="/contact" className="btn-outline border-white text-white hover:bg-primary-700 text-center">
-                Contact Us
+              <Link href="/contact">
+                <a className="btn-outline border-white text-white hover:bg-primary-700 text-center">
+                  Contact Our Team
+                </a>
               </Link>
             </div>
             <p className="text-primary-100 mt-6">

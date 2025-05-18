@@ -140,8 +140,10 @@ export default function CategoryPage() {
       <section className="pt-16 pb-20 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
         <div className="container-custom">
           <div className="text-center max-w-4xl mx-auto">
-            <Link href="/blog" className="inline-flex items-center text-primary-100 hover:text-white transition-colors mb-4">
-              <FaChevronLeft className="mr-2" /> Back to All Categories
+            <Link href="/blog">
+              <a className="inline-flex items-center text-primary-100 hover:text-white transition-colors mb-4">
+                <FaChevronLeft className="mr-2" /> Back to All Categories
+              </a>
             </Link>
             <h1 className="text-4xl md:text-5xl font-bold mb-6">
               {categoryName || 'Category Not Found'}
@@ -161,13 +163,14 @@ export default function CategoryPage() {
               <Link 
                 key={index} 
                 href={index === 0 ? '/blog' : `/blog/category/${getCategorySlug(cat)}`}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors
-                  ${categoryName === cat
-                    ? 'bg-primary-600 text-white hover:bg-primary-700' 
-                    : 'bg-white text-gray-700 hover:bg-gray-200 border border-gray-200'
-                  }`}
               >
-                {cat}
+                <a className={`px-4 py-2 rounded-md text-gray-700 ${
+                  (cat === categoryName || (index === 0 && !categoryName))
+                    ? 'bg-primary-100 text-primary-700 font-medium' 
+                    : 'bg-white hover:bg-gray-100'
+                }`}>
+                  {cat}
+                </a>
               </Link>
             ))}
           </div>
@@ -191,7 +194,7 @@ export default function CategoryPage() {
                         <Image 
                           src={post.image} 
                           alt={post.title} 
-                          fill
+                          layout="fill"
                           className="object-cover"
                         />
                       </div>
@@ -205,8 +208,10 @@ export default function CategoryPage() {
                           </span>
                         </div>
                         <h3 className="text-lg font-bold mb-2">
-                          <Link href={`/blog/${post.slug}`} className="text-gray-900 hover:text-primary-600 transition-colors">
-                            {post.title}
+                          <Link href={`/blog/${post.slug}`}>
+                            <a className="text-gray-900 hover:text-primary-600 transition-colors">
+                              {post.title}
+                            </a>
                           </Link>
                         </h3>
                         <p className="text-gray-600 text-sm mb-3 line-clamp-2">
@@ -217,8 +222,10 @@ export default function CategoryPage() {
                             <FaCalendarAlt className="inline-block mr-1" /> 
                             <span>{post.date}</span>
                           </div>
-                          <Link href={`/blog/${post.slug}`} className="text-primary-600 font-medium hover:text-primary-700 transition-colors">
-                            Read More
+                          <Link href={`/blog/${post.slug}`}>
+                            <a className="text-primary-600 font-medium hover:text-primary-700 transition-colors">
+                              Read More
+                            </a>
                           </Link>
                         </div>
                       </div>
@@ -228,8 +235,10 @@ export default function CategoryPage() {
               ) : (
                 <div className="text-center py-16">
                   <p className="text-xl text-gray-600 mb-6">No articles found in this category yet.</p>
-                  <Link href="/blog" className="btn-primary">
-                    Browse All Articles
+                  <Link href="/blog">
+                    <a className="btn-primary">
+                      Browse All Articles
+                    </a>
                   </Link>
                 </div>
               )}
@@ -237,8 +246,10 @@ export default function CategoryPage() {
           ) : (
             <div className="text-center py-16">
               <p className="text-xl text-gray-600 mb-6">The category you are looking for does not exist.</p>
-              <Link href="/blog" className="btn-primary">
-                Browse All Articles
+              <Link href="/blog">
+                <a className="btn-primary">
+                  Browse All Articles
+                </a>
               </Link>
             </div>
           )}
@@ -254,11 +265,15 @@ export default function CategoryPage() {
               Our technicians bring professional repair services directly to your doorstep across the Lower Mainland.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link href="/book-online" className="btn-accent text-center">
-                Book a Repair
+              <Link href="/book-online">
+                <a className="btn-accent text-center">
+                  Book a Repair
+                </a>
               </Link>
-              <Link href="/contact" className="btn-outline border-white text-white hover:bg-primary-700 text-center">
-                Contact Us
+              <Link href="/contact">
+                <a className="btn-outline border-white text-white hover:bg-primary-700 text-center">
+                  Contact Us
+                </a>
               </Link>
             </div>
           </div>

@@ -83,11 +83,15 @@ export default function AboutPage() {
                 We're a team of certified repair specialists bringing professional mobile and laptop repair services directly to your doorstep across the Lower Mainland.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/services/mobile" className="btn-accent text-center">
-                  Our Services
+                <Link href="/services/mobile">
+                  <a className="btn-accent text-center">
+                    Our Services
+                  </a>
                 </Link>
-                <Link href="/contact" className="btn-outline border-white text-white hover:bg-primary-600 text-center">
-                  Contact Us
+                <Link href="/contact">
+                  <a className="btn-outline border-white text-white hover:bg-primary-600 text-center">
+                    Contact Us
+                  </a>
                 </Link>
               </div>
             </div>
@@ -96,7 +100,7 @@ export default function AboutPage() {
                 <Image
                   src="/images/about/team-meeting.svg"
                   alt="The Travelling Technicians team"
-                  fill
+                  layout="fill"
                   className="object-contain"
                   priority
                 />
@@ -127,7 +131,7 @@ export default function AboutPage() {
                 <Image
                   src="/images/about/repair-process.svg"
                   alt="Our team working together"
-                  fill
+                  layout="fill"
                   className="object-contain"
                   priority
                 />
@@ -363,11 +367,15 @@ export default function AboutPage() {
               Join thousands of satisfied customers who've discovered the convenience of professional device repair that comes to you.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link href="/book-online" className="btn-accent text-center">
-                Book a Repair
+              <Link href="/book-online">
+                <a className="btn-accent text-center">
+                  Book a Repair
+                </a>
               </Link>
-              <Link href="/contact" className="btn-outline border-white text-white hover:bg-primary-700 text-center">
-                Contact Our Team
+              <Link href="/contact">
+                <a className="btn-outline border-white text-white hover:bg-primary-700 text-center">
+                  Contact Our Team
+                </a>
               </Link>
             </div>
           </div>

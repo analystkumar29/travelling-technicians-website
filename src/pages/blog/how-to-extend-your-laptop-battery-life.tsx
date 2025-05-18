@@ -46,7 +46,7 @@ export default function ExtendLaptopBatteryLifePost() {
               <Image 
                 src="https://images.unsplash.com/photo-1588872657578-7efd1f1555ed" 
                 alt="Laptop with battery indicator" 
-                fill
+                layout="fill"
                 className="object-cover"
               />
             </div>
@@ -391,7 +391,7 @@ export default function ExtendLaptopBatteryLifePost() {
                 <Image 
                   src="https://images.unsplash.com/photo-1588872657578-7efd1f1555ed" 
                   alt="Laptop Cleaning" 
-                  fill
+                  layout="fill"
                   className="object-cover"
                 />
               </div>
@@ -421,7 +421,7 @@ export default function ExtendLaptopBatteryLifePost() {
                 <Image 
                   src="https://images.unsplash.com/photo-1585399000684-d2f72660f092" 
                   alt="Repair or Replace" 
-                  fill
+                  layout="fill"
                   className="object-cover"
                 />
               </div>
@@ -451,7 +451,7 @@ export default function ExtendLaptopBatteryLifePost() {
                 <Image 
                   src="https://images.unsplash.com/photo-1563884072595-24fccfa2c5c2" 
                   alt="Water Damage" 
-                  fill
+                  layout="fill"
                   className="object-cover"
                 />
               </div>

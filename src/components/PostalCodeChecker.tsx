@@ -7,6 +7,7 @@ import {
   getCurrentLocationPostalCode, 
   ServiceAreaType 
 } from '@/utils/locationUtils';
+import { createSuccessConfetti } from '@/utils/ui-enhancements';
 
 interface PostalCodeCheckerProps {
   className?: string;
@@ -73,15 +74,25 @@ export default function PostalCodeChecker({
         setError(errMsg);
         if (onError) onError(errMsg);
       } else {
+        // Create confetti effect on successful validation
+        try {
+          createSuccessConfetti();
+        } catch (confettiError) {
+          console.error('Error creating confetti:', confettiError);
+        }
+        
         // Store the validated postal code and service area information in localStorage
+        const formattedPostalCode = postalCode.toUpperCase().trim();
+        const formattedPostalCodeWithSpace = formattedPostalCode.replace(/\s+/g, ' ');
+        
         const locationData = {
-          postalCode: postalCode.toUpperCase().replace(/\s+/g, ' ').trim(),
+          postalCode: formattedPostalCodeWithSpace,
           city: serviceArea.city,
           province: 'BC', // Default province for all service areas
           serviceable: serviceArea.serviceable,
           timestamp: new Date().toISOString(),
           // Add a generic address using the postal code
-          address: `Service Area ${postalCode.toUpperCase().replace(/\s+/g, ' ').trim()}`
+          address: `Service Area ${formattedPostalCodeWithSpace}`
         };
         
         // Save to localStorage for use in the booking form
@@ -130,7 +141,7 @@ export default function PostalCodeChecker({
         
         // Save to localStorage
         const locationData = {
-          postalCode: testPostalCode.toUpperCase().replace(/\\s+/g, ' ').trim(),
+          postalCode: testPostalCode.toUpperCase().replace(/\s+/g, ' ').trim(),
           city: serviceArea.city,
           province: 'BC',
           serviceable: serviceArea.serviceable,
@@ -237,12 +248,19 @@ export default function PostalCodeChecker({
         throw new Error("We don't currently service this area. Please contact us for special arrangements.");
       }
       
+      // Create confetti effect on successful validation
+      try {
+        createSuccessConfetti();
+      } catch (confettiError) {
+        console.error('Error creating confetti:', confettiError);
+      }
+      
       // Use detected city or fallback to service area city
       const cityToUse = detectedCity || serviceArea.city;
       
       // Store location data in localStorage
       const locationData = {
-        postalCode: detectedPostalCode.toUpperCase().replace(/\\s+/g, ' ').trim(),
+        postalCode: detectedPostalCode.toUpperCase().replace(/\s+/g, ' ').trim(),
         city: cityToUse,
         province: 'BC',
         serviceable: serviceArea.serviceable,
@@ -336,7 +354,7 @@ export default function PostalCodeChecker({
                 <div className="mt-4">
                   {!onSuccess && !onError ? (
                     <Link href="/contact/" className="text-sm font-medium text-red-800 hover:text-red-900">
-                      Contact us for special arrangements →
+                      <span>Contact us for special arrangements →</span>
                     </Link>
                   ) : (
                     <span className="text-sm font-medium text-red-800">
@@ -353,26 +371,26 @@ export default function PostalCodeChecker({
     
     // Show success result
     return (
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
+      <div className="postal-code-success mt-4">
         <div className="flex">
           <div className="flex-shrink-0">
-            <FaCheckCircle className="h-5 w-5 text-green-500" />
+            <FaCheckCircle className="h-5 w-5 postal-code-success-icon" />
           </div>
           <div className="ml-3">
-            <h3 className="text-sm font-medium text-green-800">Great news!</h3>
-            <div className="mt-2 text-sm text-green-700">
-              <p>We provide service in {result?.city || 'your area'}!</p>
+            <h3 className="postal-code-success-text">Great news!</h3>
+            <div className="mt-2">
+              <p className="postal-code-success-location">We provide service in {result?.city || 'your area'}!</p>
               {result?.sameDay && (
-                <p className="mt-1">
+                <p className="mt-1 text-sm text-green-700">
                   <span className="font-semibold">Same-day service available.</span> Typical response time: {result.responseTime}.
                 </p>
               )}
               {result?.travelFee && result.travelFee > 0 && (
-                <p className="mt-1">
+                <p className="mt-1 text-sm text-green-700">
                   <span className="font-semibold">Note:</span> A travel fee of ${result.travelFee} applies to this location.
                 </p>
               )}
-              <p className="mt-2 text-xs">
+              <p className="mt-2 text-xs text-green-700">
                 Your location has been saved for easier booking. When you proceed to book online, your address information will be pre-filled.
               </p>
             </div>
@@ -380,7 +398,9 @@ export default function PostalCodeChecker({
             {!onSuccess && !onError && (
               <div className="mt-4">
                 <Link href="/book-online" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                  Book a Repair Now <FaArrowRight className="ml-2" />
+                  <span className="inline-flex items-center">
+                    Book a Repair Now <FaArrowRight className="ml-2" />
+                  </span>
                 </Link>
               </div>
             )}
@@ -391,7 +411,7 @@ export default function PostalCodeChecker({
   };
 
   return (
-    <div className={`${variant === 'compact' ? '' : 'bg-white rounded-lg shadow-lg'} ${className}`}>
+    <div className={`max-w-md mx-auto ${className}`}>
       <div className={variant === 'compact' ? 'p-0' : 'p-6'}>
         {variant === 'default' && (
           <>
@@ -409,7 +429,11 @@ export default function PostalCodeChecker({
                 ref={inputRef}
                 type="text"
                 value={postalCode}
-                onChange={(e) => setPostalCode(e.target.value.toUpperCase())}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  const trimmed = value.replace(/\s+/g, ' ').trim();
+                  setPostalCode(trimmed);
+                }}
                 placeholder="Enter postal code (e.g., V6B 1A1)"
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500 pl-10 text-gray-800 placeholder-gray-400 font-medium"
                 aria-label="Postal Code"
