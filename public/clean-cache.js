@@ -98,4 +98,135 @@
       }
     }
   }, true);
+
+  // This script handles manifest.json caching issues and cleans up problematic service workers
+  function logMessage(message) {
+    console.log('[Cache Cleaner]', message);
+  }
+
+  // Check for and unregister any problematic service workers
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      if (registrations.length > 0) {
+        logMessage(`Found ${registrations.length} service worker(s). Attempting to unregister.`);
+        
+        registrations.forEach(registration => {
+          registration.unregister().then(success => {
+            if (success) {
+              logMessage('Successfully unregistered service worker');
+            } else {
+              logMessage('Failed to unregister service worker');
+            }
+          });
+        });
+      } else {
+        logMessage('No service workers found');
+      }
+    }).catch(err => {
+      logMessage('Error checking service workers: ' + err);
+    });
+  }
+
+  // Detect and fix manifest fetch errors by pre-fetching with proper credentials
+  function preloadManifest() {
+    try {
+      fetch('/manifest.json', { 
+        method: 'GET',
+        credentials: 'include',
+        cache: 'reload'
+      })
+      .then(response => {
+        if (response.ok) {
+          logMessage('Successfully pre-loaded manifest.json');
+          return response.json();
+        } else {
+          logMessage('Failed to pre-load manifest.json: ' + response.status);
+          // Try to force clear cache for this resource
+          caches.keys().then(cacheNames => {
+            cacheNames.forEach(cacheName => {
+              caches.open(cacheName).then(cache => {
+                cache.delete('/manifest.json').then(() => {
+                  logMessage('Deleted manifest.json from cache: ' + cacheName);
+                });
+              });
+            });
+          });
+        }
+      })
+      .catch(error => {
+        logMessage('Error pre-loading manifest.json: ' + error);
+      });
+    } catch (e) {
+      logMessage('Exception while handling manifest: ' + e);
+    }
+  }
+
+  // Clear any potential bad cache entries for critical resources
+  function clearBadCacheEntries() {
+    if ('caches' in window) {
+      const criticalPaths = [
+        '/manifest.json',
+        '/favicons/favicon-32x32.png',
+        '/favicons/favicon-192x192.png',
+        '/favicon.ico'
+      ];
+      
+      caches.keys().then(cacheNames => {
+        cacheNames.forEach(cacheName => {
+          logMessage('Processing cache: ' + cacheName);
+          caches.open(cacheName).then(cache => {
+            criticalPaths.forEach(path => {
+              cache.delete(path).then(success => {
+                if (success) {
+                  logMessage(`Deleted ${path} from cache: ${cacheName}`);
+                }
+              });
+            });
+          });
+        });
+      }).catch(err => {
+        logMessage('Error clearing cache entries: ' + err);
+      });
+    }
+  }
+
+  // Handle special cases for iOS/Safari
+  function handleSafariSpecialCases() {
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    
+    if (isSafari || isIOS) {
+      logMessage('Safari or iOS detected, applying special fixes');
+      
+      // Set a meta tag to help with geolocation permissions
+      const meta = document.createElement('meta');
+      meta.name = 'apple-mobile-web-app-capable';
+      meta.content = 'yes';
+      document.head.appendChild(meta);
+      
+      // Pre-load geolocation for better permission handling
+      if ('geolocation' in navigator) {
+        setTimeout(() => {
+          try {
+            navigator.geolocation.getCurrentPosition(
+              () => logMessage('Pre-loaded geolocation successfully'),
+              () => logMessage('Pre-loaded geolocation failed, but that\'s expected'),
+              { timeout: 1000, enableHighAccuracy: false }
+            );
+          } catch (e) {
+            logMessage('Error pre-loading geolocation: ' + e);
+          }
+        }, 2000);
+      }
+    }
+  }
+
+  // Run all cleanup functions
+  setTimeout(() => {
+    preloadManifest();
+    clearBadCacheEntries();
+    handleSafariSpecialCases();
+    logMessage('All cleanup tasks initiated');
+  }, 1000);
 })(); 

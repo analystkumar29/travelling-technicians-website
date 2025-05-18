@@ -25,10 +25,22 @@ class MyDocument extends Document {
           {process.env.NODE_ENV !== 'production' && (
             <meta name="robots" content="noindex" />
           )}
+          
+          {/* Web App Manifest */}
+          <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
+          
+          {/* Theme Color */}
+          <meta name="theme-color" content="#0d9488" />
+          
           {/* Favicon */}
           <link rel="icon" href="/favicon.ico" />
+          <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png" />
+          <link rel="icon" type="image/png" sizes="192x192" href="/favicons/favicon-192x192.png" />
+          <link rel="apple-touch-icon" sizes="192x192" href="/favicons/favicon-192x192.png" />
+          
           {/* Add the cache cleaning script */}
           <script src="/clean-cache.js" async></script>
+          
           {/* Add a fallback inline script that will ensure content is visible */}
           <script
             dangerouslySetInnerHTML={{

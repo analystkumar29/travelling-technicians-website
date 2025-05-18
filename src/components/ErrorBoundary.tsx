@@ -13,6 +13,10 @@ interface State {
   errorInfo: ErrorInfo | null;
 }
 
+/**
+ * Enhanced error boundary component that catches errors in any child component
+ * and displays a fallback UI instead of crashing the whole app
+ */
 class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
@@ -23,76 +27,112 @@ class ErrorBoundary extends Component<Props, State> {
     };
   }
 
-  static getDerivedStateFromError(error: Error): State {
-    // Update state so the next render will show the fallback UI.
-    return { hasError: true, error, errorInfo: null };
+  static getDerivedStateFromError(error: Error) {
+    // Update state so the next render will show the fallback UI
+    return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // You can log the error to an error reporting service
-    console.error('ErrorBoundary caught an error', error, errorInfo);
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // Log the error to the console for debugging
+    console.error('Error caught by ErrorBoundary:', error);
+    console.error('Component stack:', errorInfo.componentStack);
+
+    // Check for and handle specific types of errors
+    this.handleSpecificErrors(error);
+    
+    // Update state with error details
     this.setState({
-      error,
       errorInfo
     });
-    
-    // Here you could send the error to your analytics or error tracking service
-    // Example: reportError(error, errorInfo);
   }
 
-  render(): ReactNode {
+  // Handle specific types of errors with custom solutions
+  handleSpecificErrors(error: Error) {
+    // Clean up JSONP script tags that may be causing errors
+    if (error.message?.includes('jsonp_callback') || 
+        error.message?.includes('is not defined')) {
+      this.cleanupJSONPScriptTags();
+    }
+    
+    // Handle other specific error types as needed
+    if (error.message?.includes('CoreLocationProvider')) {
+      console.log('Location error detected, will use fallback system');
+    }
+  }
+  
+  // Clean up JSONP script tags that might be causing errors
+  cleanupJSONPScriptTags() {
+    try {
+      const scripts = document.querySelectorAll('script[src*="json_callback"]');
+      scripts.forEach(script => {
+        console.log('Removing problematic JSONP script:', script.src);
+        script.remove();
+      });
+    } catch (e) {
+      console.error('Error cleaning up JSONP scripts:', e);
+    }
+  }
+
+  // Reset the error state if possible
+  resetError = () => {
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null
+    });
+  }
+  
+  // Optional method to retry the failed operation
+  retry = () => {
+    this.resetError();
+    // You could add additional retry logic here
+    window.location.reload();
+  }
+
+  render() {
     if (this.state.hasError) {
-      // If a custom fallback is provided, use it
+      // Check if a custom fallback is provided
       if (this.props.fallback) {
         return this.props.fallback;
       }
-
+      
       // Default fallback UI
       return (
-        <div className="py-12 px-4">
-          <div className="max-w-3xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
-            <div className="p-6 border-b border-gray-200 bg-red-50">
-              <div className="flex items-center">
-                <div className="bg-red-100 p-3 rounded-full mr-4">
-                  <FaExclamationCircle className="text-3xl text-red-500" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-800">Something went wrong</h2>
-                  <p className="text-gray-600">We apologize for the inconvenience. Please try refreshing the page.</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="p-6">
-              <div className="mb-6">
-                <div className="text-sm text-gray-600 mb-2">Error details:</div>
-                <div className="bg-gray-100 p-3 rounded text-sm font-mono overflow-auto max-h-32">
-                  {this.state.error?.toString() || 'Unknown error'}
-                </div>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/">
-                  <a className="flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md font-medium transition-colors">
-                    <FaHome /> Go to Homepage
-                  </a>
-                </Link>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-                  </svg>
-                  Refresh Page
-                </button>
-              </div>
-            </div>
+        <div className="error-boundary-fallback" style={{
+          padding: '20px',
+          margin: '20px',
+          borderRadius: '4px',
+          backgroundColor: '#fff8f8',
+          border: '1px solid #ffebeb',
+          color: '#333'
+        }}>
+          <h3 style={{ color: '#e53e3e' }}>Something went wrong</h3>
+          <p>We're experiencing a technical issue. The application will recover automatically.</p>
+          <div style={{ marginTop: '20px' }}>
+            <button
+              onClick={this.retry}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#0d9488',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Try Again
+            </button>
           </div>
+          
+          {/* Auto-recovery after a delay */}
+          {setTimeout(() => {
+            this.resetError();
+          }, 5000)}
         </div>
       );
     }
 
+    // When there's no error, render children normally
     return this.props.children;
   }
 }
