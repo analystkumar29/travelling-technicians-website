@@ -146,11 +146,15 @@ export default function LaptopRepairPage() {
                 From screen replacements to performance upgrades, we bring professional laptop repair services directly to your location across the Lower Mainland.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/book-online" className="btn-accent text-center">
-                  Book Laptop Repair
+                <Link href="/book-online">
+                  <a className="btn-accent text-center">
+                    Book Laptop Repair
+                  </a>
                 </Link>
-                <Link href="/pricing" className="btn-outline border-white text-white hover:bg-primary-600 text-center">
-                  View Pricing
+                <Link href="/pricing">
+                  <a className="btn-outline border-white text-white hover:bg-primary-600 text-center">
+                    View Pricing
+                  </a>
                 </Link>
               </div>
             </div>
@@ -159,7 +163,7 @@ export default function LaptopRepairPage() {
                 <Image
                   src="/images/services/laptop-hero.svg"
                   alt="Laptop repair technician"
-                  fill
+                  layout="fill"
                   className="object-contain"
                   priority
                 />
@@ -224,9 +228,13 @@ export default function LaptopRepairPage() {
                       <p className="text-gray-600 mb-3">{service.description}</p>
                       <div className="flex justify-between items-center">
                         <span className="font-bold text-lg text-primary-600">{service.price}</span>
-                        <Link href="/book-online" className="btn-primary text-sm py-2">
-                          Book This Service
-                        </Link>
+                        <div className="flex justify-center mt-6">
+                          <Link href="/book-online">
+                            <a className="btn-primary text-sm py-2">
+                              Book This Service
+                            </a>
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -244,7 +252,7 @@ export default function LaptopRepairPage() {
                   <Image 
                     src={service.image} 
                     alt={service.name} 
-                    fill
+                    layout="fill"
                     className="object-contain"
                     priority
                   />
@@ -266,9 +274,13 @@ export default function LaptopRepairPage() {
                   <p className="text-gray-600 mb-4">{service.description}</p>
                   <div className="mt-auto flex justify-between items-center">
                     <span className="font-bold text-lg text-primary-600">{service.price}</span>
-                    <Link href="/book-online" className="btn-primary text-sm py-2">
-                      Book Now
-                    </Link>
+                    <div className="flex justify-center mt-6">
+                      <Link href="/book-online">
+                        <a className="btn-primary text-sm py-2">
+                          Book Now
+                        </a>
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -406,11 +418,15 @@ export default function LaptopRepairPage() {
               Book our doorstep laptop repair service and have your computer fixed without the hassle of going to a repair shop.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link href="/book-online" className="btn-accent text-center">
-                Book a Repair
+              <Link href="/book-online">
+                <a className="btn-accent text-center">
+                  Book Your Repair
+                </a>
               </Link>
-              <Link href="/contact" className="btn-outline border-white text-white hover:bg-primary-700 text-center">
-                Contact Us
+              <Link href="/contact">
+                <a className="btn-outline border-white text-white hover:bg-primary-700 text-center">
+                  Contact Us
+                </a>
               </Link>
             </div>
           </div>

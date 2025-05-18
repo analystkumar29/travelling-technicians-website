@@ -326,10 +326,10 @@ export default function FAQPage() {
                   {faqCategories.map((category) => (
                     <button
                       key={category.id}
-                      className={`flex items-center w-full text-left px-4 py-3 rounded-md transition-colors ${
-                        activeCategory === category.id
-                          ? 'bg-primary-50 text-primary-700 font-medium'
-                          : 'text-gray-600 hover:bg-gray-50'
+                      className={`flex items-center w-full px-4 py-2 text-left rounded-md ${
+                        activeCategory === category.id 
+                          ? 'bg-primary-100 text-primary-700 font-medium' 
+                          : 'text-gray-700 hover:bg-gray-100'
                       }`}
                       onClick={() => setActiveCategory(category.id)}
                     >
@@ -344,9 +344,13 @@ export default function FAQPage() {
                   <p className="text-sm text-gray-600 mb-4">
                     We're here to help. Contact our support team for assistance with any questions you may have.
                   </p>
-                  <Link href="/contact" className="btn-primary text-sm py-2 block text-center">
-                    Contact Support
-                  </Link>
+                  <div className="mt-6">
+                    <Link href="/contact">
+                      <a className="btn-primary text-sm py-2 block text-center">
+                        Contact Our Team
+                      </a>
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
@@ -378,12 +382,17 @@ export default function FAQPage() {
               <p className="text-gray-600 mb-6">
                 Can\'t find the answer you\'re looking for? Our friendly team is here to help you with any questions or concerns about our doorstep repair services.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/contact" className="btn-primary text-center">
-                  Contact Us
+              <div className="text-center mt-12">
+                <Link href="/contact">
+                  <a className="btn-primary text-center">
+                    Have More Questions? Contact Us
+                  </a>
                 </Link>
-                <Link href="/book-online" className="btn-outline text-center">
-                  Book a Repair
+                <span className="mx-3 text-gray-300">or</span>
+                <Link href="/book-online">
+                  <a className="btn-outline text-center">
+                    Book a Repair
+                  </a>
                 </Link>
               </div>
             </div>
@@ -399,8 +408,10 @@ export default function FAQPage() {
             <p className="text-xl mb-8 max-w-3xl mx-auto">
               Our technicians bring the repair shop to you – saving you time and hassle. Book your appointment now.
             </p>
-            <Link href="/book-online" className="btn-accent text-center inline-block">
-              Book Your Repair
+            <Link href="/book-online">
+              <a className="btn-accent text-center inline-block">
+                Book Your Repair Now
+              </a>
             </Link>
           </div>
         </div>

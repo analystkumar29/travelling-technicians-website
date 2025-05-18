@@ -68,6 +68,29 @@
   .card {
     @apply bg-white rounded-lg shadow-custom p-6;
   }
+  
+  /* Enhanced header styles */
+  .shadow-custom {
+    @apply shadow-md;
+  }
+  
+  .shadow-custom-lg {
+    @apply shadow-lg;
+  }
+  
+  /* Header animation effects */
+  .nav-item-hover {
+    @apply relative overflow-hidden;
+  }
+  
+  .nav-item-hover::after {
+    content: '';
+    @apply absolute bottom-0 left-0 w-0 h-0.5 bg-primary-500 transition-all duration-300 ease-in-out;
+  }
+  
+  .nav-item-hover:hover::after {
+    @apply w-full;
+  }
 }
 
 /* Custom animations */
@@ -85,4 +108,29 @@
 
 .animate-float {
   animation: float 3s ease-in-out infinite;
+}
+
+/* Header menu fade-in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.submenu-animation {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* Add a new CSS class for the text gradient effect in the logo text */
+.text-gradient {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  display: inline-block;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 } 

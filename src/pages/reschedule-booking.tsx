@@ -286,9 +286,7 @@ export default function RescheduleBooking() {
                           setEmail(e.target.value);
                           setEmailError('');
                         }}
-                        className={`w-full px-4 py-2 border rounded-md focus:ring-primary-500 focus:border-primary-500 ${
-                          emailError ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                         placeholder="Enter the email used for booking"
                       />
                       {emailError && (
@@ -362,10 +360,10 @@ export default function RescheduleBooking() {
                                   setSelectedDate(dateOption.date);
                                   setDateError('');
                                 }}
-                                className={`w-full text-left px-4 py-2 border rounded-md ${
+                                className={`w-full px-4 py-2 border rounded-md text-left ${
                                   selectedDate === dateOption.date
-                                    ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-200'
-                                    : 'border-gray-300 hover:border-gray-400'
+                                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                                    : 'border-gray-300 hover:bg-gray-50'
                                 }`}
                               >
                                 {dateOption.display}
@@ -392,10 +390,10 @@ export default function RescheduleBooking() {
                                   setSelectedTime(timeSlot.id);
                                   setTimeError('');
                                 }}
-                                className={`w-full text-left px-4 py-2 border rounded-md ${
+                                className={`w-full px-4 py-2 border rounded-md text-center ${
                                   selectedTime === timeSlot.id
-                                    ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-200'
-                                    : 'border-gray-300 hover:border-gray-400'
+                                    ? 'bg-primary-50 border-primary-500 text-primary-700'
+                                    : 'border-gray-300 hover:bg-gray-50'
                                 }`}
                               >
                                 {timeSlot.display}

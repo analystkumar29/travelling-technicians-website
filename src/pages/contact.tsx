@@ -219,9 +219,7 @@ export default function ContactPage() {
                         name="name"
                         value={formData.name}
                         onChange={handleInputChange}
-                        className={`w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                          formErrors.name ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         placeholder="Enter your full name"
                       />
                       {formErrors.name && (
@@ -236,9 +234,7 @@ export default function ContactPage() {
                         name="email"
                         value={formData.email}
                         onChange={handleInputChange}
-                        className={`w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                          formErrors.email ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         placeholder="Enter your email address"
                       />
                       {formErrors.email && (
@@ -267,9 +263,7 @@ export default function ContactPage() {
                         name="subject"
                         value={formData.subject}
                         onChange={handleInputChange}
-                        className={`w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                          formErrors.subject ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       >
                         <option value="">Select a subject</option>
                         <option value="general">General Inquiry</option>
@@ -293,9 +287,7 @@ export default function ContactPage() {
                       value={formData.message}
                       onChange={handleInputChange}
                       rows={6}
-                      className={`w-full px-4 py-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-                        formErrors.message ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       placeholder="Type your message here..."
                     ></textarea>
                     {formErrors.message && (
@@ -367,8 +359,10 @@ export default function ContactPage() {
                       <p className="text-gray-600 mb-4">
                         We provide doorstep repair services throughout the Lower Mainland. Check if we service your area:
                       </p>
-                      <Link href="/service-areas" className="btn-outline">
-                        View Service Areas
+                      <Link href="/service-areas">
+                        <a className="btn-outline">
+                          View Service Areas
+                        </a>
                       </Link>
                     </div>
                   </div>
@@ -416,44 +410,52 @@ export default function ContactPage() {
               <p className="text-gray-600 mb-4">
                 Learn about our convenient process for bringing repair services directly to your location.
               </p>
-              <Link href="/faq#process-1" className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
-                Read Answer
-                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+              <Link href="/faq#process-1">
+                <a className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
+                  Read Answer
+                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </a>
               </Link>
             </div>
 
             <div className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
               <h3 className="text-xl font-bold mb-2">What areas do you serve?</h3>
               <p className="text-gray-600 mb-4">
-                Check our coverage throughout the Lower Mainland and surrounding communities.
+                Find out which areas in the Lower Mainland we service with our doorstep repair.
               </p>
-              <Link href="/faq#locations-1" className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
-                Read Answer
-                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+              <Link href="/faq#locations-1">
+                <a className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
+                  Read Answer
+                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </a>
               </Link>
             </div>
 
             <div className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
               <h3 className="text-xl font-bold mb-2">How much do repairs cost?</h3>
               <p className="text-gray-600 mb-4">
-                Information about our transparent pricing structure and what's included in repair costs.
+                Get details about our competitive pricing, payment options, and warranty coverage.
               </p>
-              <Link href="/faq#pricing-1" className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
-                Read Answer
-                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+              <Link href="/faq#pricing-1">
+                <a className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
+                  Read Answer
+                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </a>
               </Link>
             </div>
           </div>
 
-          <div className="text-center mt-10">
-            <Link href="/faq" className="btn-outline">
-              View All FAQs
+          <div className="mt-8 text-center">
+            <Link href="/faq">
+              <a className="btn-outline">
+                View All FAQs
+              </a>
             </Link>
           </div>
         </div>
@@ -467,8 +469,10 @@ export default function ContactPage() {
             <p className="text-xl mb-8 max-w-3xl mx-auto">
               Skip the trip to a repair shop. Our technicians come to your location across the Lower Mainland.
             </p>
-            <Link href="/book-online" className="btn-accent text-center inline-block">
-              Book Doorstep Repair
+            <Link href="/book-online">
+              <a className="btn-accent text-center inline-block">
+                Book Doorstep Repair
+              </a>
             </Link>
           </div>
         </div>
