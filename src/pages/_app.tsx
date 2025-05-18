@@ -15,6 +15,7 @@ import FallbackContent from '@/components/FallbackContent';
 import { useEffect, useState } from 'react';
 import { setupGlobalErrorHandlers } from '@/utils/errorHandling';
 import { BookingProvider } from '@/context/BookingContext';
+import { AuthProvider } from '@/context/AuthContext';
 // Using require to bypass TypeScript errors for these modules
 // @ts-ignore
 const ErrorProvider = require('@/context/ErrorContext').ErrorProvider;
@@ -170,27 +171,29 @@ export default function App({ Component, pageProps }: AppProps) {
     <SafeHydrate>
       <CustomErrorBoundary>
         <ErrorProvider>
-          <BookingProvider>
-            <Head>
-              <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-              <meta name="description" content="The Travelling Technicians - Mobile phone and laptop repair with doorstep service in Vancouver, Burnaby & the Lower Mainland. Same-day repairs by certified technicians." />
-              <meta name="theme-color" content="#0076be" />
-              <link rel="icon" href="/favicon.ico" />
-              <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
-              <title>The Travelling Technicians | Mobile Doorstep Repair Service</title>
-            </Head>
-            
-            {/* Early router error prevention script */}
-            <Script id="next-router-fix" strategy="beforeInteractive">
-              {routerFixScript}
-            </Script>
-            
-            <RouterErrorGuard>
-              <NextjsRouterLoader />
-              <GlobalErrorHandler />
-              <Component {...pageProps} />
-            </RouterErrorGuard>
-          </BookingProvider>
+          <AuthProvider>
+            <BookingProvider>
+              <Head>
+                <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+                <meta name="description" content="The Travelling Technicians - Mobile phone and laptop repair with doorstep service in Vancouver, Burnaby & the Lower Mainland. Same-day repairs by certified technicians." />
+                <meta name="theme-color" content="#0076be" />
+                <link rel="icon" href="/favicon.ico" />
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+                <title>The Travelling Technicians | Mobile Doorstep Repair Service</title>
+              </Head>
+              
+              {/* Early router error prevention script */}
+              <Script id="next-router-fix" strategy="beforeInteractive">
+                {routerFixScript}
+              </Script>
+              
+              <RouterErrorGuard>
+                <NextjsRouterLoader />
+                <GlobalErrorHandler />
+                <Component {...pageProps} />
+              </RouterErrorGuard>
+            </BookingProvider>
+          </AuthProvider>
         </ErrorProvider>
       </CustomErrorBoundary>
     </SafeHydrate>

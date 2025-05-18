@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { Disclosure } from '@headlessui/react';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '@/context/AuthContext';
 
 // Updated navigation with some items potentially moved to a "More" dropdown
 const navigation = [
@@ -34,8 +35,10 @@ const navigation = [
 export default function Header() {
   const [isServicesOpen, setIsServicesOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const router = useRouter();
+  const { isAuthenticated, isLoading, userProfile, signOut } = useAuth();
   
   // Add scroll effect to header
   useEffect(() => {
@@ -76,9 +79,15 @@ export default function Header() {
     if (dropdownName === 'Services') {
       setIsServicesOpen(!isServicesOpen);
       if (isMoreOpen) setIsMoreOpen(false);
+      if (isUserMenuOpen) setIsUserMenuOpen(false);
     } else if (dropdownName === 'More') {
       setIsMoreOpen(!isMoreOpen);
       if (isServicesOpen) setIsServicesOpen(false);
+      if (isUserMenuOpen) setIsUserMenuOpen(false);
+    } else if (dropdownName === 'User') {
+      setIsUserMenuOpen(!isUserMenuOpen);
+      if (isServicesOpen) setIsServicesOpen(false);
+      if (isMoreOpen) setIsMoreOpen(false);
     }
   };
 
@@ -186,7 +195,80 @@ export default function Header() {
                     )
                   ))}
                 </div>
-                <div className="ml-4 pl-4 border-l border-gray-200">
+
+                {/* Account and Book Online buttons */}
+                <div className="ml-4 pl-4 border-l border-gray-200 flex items-center space-x-4">
+                  {/* User Account Menu */}
+                  {isLoading ? (
+                    <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>
+                  ) : isAuthenticated ? (
+                    <div className="relative">
+                      <button
+                        onClick={() => handleDropdownToggle('User')}
+                        className="flex items-center text-sm font-medium text-gray-700 hover:text-primary-600 focus:outline-none"
+                      >
+                        <span className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-semibold">
+                          {userProfile?.full_name ? userProfile.full_name.charAt(0).toUpperCase() : 'U'}
+                        </span>
+                        <svg 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          className={`h-4 w-4 ml-1 transition-transform duration-300 ${isUserMenuOpen ? 'rotate-180' : ''}`}
+                          fill="none" 
+                          viewBox="0 0 24 24" 
+                          stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+
+                      {isUserMenuOpen && (
+                        <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
+                          <div className="py-1">
+                            <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-100">
+                              {userProfile?.email}
+                            </div>
+                            <Link href="/account/profile">
+                              <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600">
+                                Your Profile
+                              </a>
+                            </Link>
+                            <Link href="/account/bookings">
+                              <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600">
+                                Your Bookings
+                              </a>
+                            </Link>
+                            <Link href="/my-warranties">
+                              <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600">
+                                Your Warranties
+                              </a>
+                            </Link>
+                            <button 
+                              onClick={signOut}
+                              className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-red-600"
+                            >
+                              Sign Out
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <Link href="/auth/login">
+                        <a className="text-sm font-medium text-gray-700 hover:text-primary-600">
+                          Sign In
+                        </a>
+                      </Link>
+                      <span className="text-gray-300">|</span>
+                      <Link href="/auth/register">
+                        <a className="text-sm font-medium text-gray-700 hover:text-primary-600">
+                          Register
+                        </a>
+                      </Link>
+                    </div>
+                  )}
+
+                  {/* Book Online button */}
                   <Link href="/book-online/">
                     <a className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary-600 text-white shadow-sm transition-all duration-300 hover:bg-primary-700 hover:shadow-lg hover:translate-y-[-2px] active:translate-y-0">
                       Book Online
@@ -209,9 +291,60 @@ export default function Header() {
             </div>
           </div>
 
-          {/* Mobile Menu - Update to include the "More" submenu items */}
+          {/* Mobile Menu - Update to include the "More" submenu items and user account */}
           <Disclosure.Panel className="lg:hidden">
             <div className="px-3 pt-3 pb-4 space-y-2 bg-white border-t border-gray-100 rounded-b-lg shadow-xl">
+              {/* User account section for mobile */}
+              {isAuthenticated ? (
+                <div className="px-4 py-3 bg-gray-50 rounded-lg mb-3">
+                  <div className="flex items-center">
+                    <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-semibold text-lg">
+                      {userProfile?.full_name ? userProfile.full_name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-gray-700">{userProfile?.full_name}</p>
+                      <p className="text-xs text-gray-500">{userProfile?.email}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 space-y-1">
+                    <Link href="/account/profile">
+                      <a className="block px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600">
+                        Your Profile
+                      </a>
+                    </Link>
+                    <Link href="/account/bookings">
+                      <a className="block px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600">
+                        Your Bookings
+                      </a>
+                    </Link>
+                    <Link href="/my-warranties">
+                      <a className="block px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600">
+                        Your Warranties
+                      </a>
+                    </Link>
+                    <button 
+                      onClick={signOut}
+                      className="w-full text-left block px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50 hover:text-red-600"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-lg mb-3">
+                  <Link href="/auth/login">
+                    <a className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                      Sign In
+                    </a>
+                  </Link>
+                  <Link href="/auth/register">
+                    <a className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                      Register
+                    </a>
+                  </Link>
+                </div>
+              )}
+
               {/* Home and first level items */}
               <Link href="/">
                 <a
