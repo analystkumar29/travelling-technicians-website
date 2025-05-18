@@ -4,15 +4,29 @@ import Link from 'next/link';
 import Layout from '@/components/layout/Layout';
 import { FaTools, FaClock, FaShieldAlt, FaCheckCircle, FaMapMarkerAlt, FaStar, FaArrowRight, FaMobile, FaLaptop, FaTabletAlt } from 'react-icons/fa';
 import PostalCodeChecker from '@/components/PostalCodeChecker';
+import { initUIEnhancements } from '@/utils/ui-enhancements';
+
+// Component to render device brand image with proper dimensions
+const BrandImage = ({ src, alt }: { src: string, alt: string }) => {
+  return (
+    <Image 
+      src={src} 
+      alt={alt}
+      width={200}
+      height={150}
+      className="object-contain w-full h-full"
+    />
+  );
+};
 
 // Device brands
 const deviceBrands = [
-  { id: 'apple', name: 'Apple', image: 'https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?q=80&w=200' },
-  { id: 'samsung', name: 'Samsung', image: 'https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?q=80&w=200' },
-  { id: 'google', name: 'Google', image: 'https://images.unsplash.com/photo-1604037502574-11207107f274?q=80&w=200' },
-  { id: 'xiaomi', name: 'Xiaomi', image: 'https://images.unsplash.com/photo-1571945153237-4929e783af4a?q=80&w=200' },
-  { id: 'oneplus', name: 'OnePlus', image: 'https://images.unsplash.com/photo-1584006682522-dc17d6c0272e?q=80&w=200' },
-  { id: 'huawei', name: 'Huawei', image: 'https://images.unsplash.com/photo-1612815452771-2c59c5206735?q=80&w=200' },
+  { id: 'apple', name: 'Apple', image: '/images/brands/apple.png' },
+  { id: 'samsung', name: 'Samsung', image: '/images/brands/samsung.png' },
+  { id: 'google', name: 'Google', image: '/images/brands/google.png' },
+  { id: 'xiaomi', name: 'Xiaomi', image: '/images/brands/xiaomi.png' },
+  { id: 'oneplus', name: 'OnePlus', image: '/images/brands/oneplus.png' },
+  { id: 'huawei', name: 'Huawei', image: '/images/brands/huawei.png' },
 ];
 
 // Common issues
@@ -97,88 +111,86 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
+  // Initialize UI enhancements
+  useEffect(() => {
+    // Initialize enhancements
+    initUIEnhancements();
+  }, []);
+
   return (
     <Layout>
-      {/* Hero Section with Device Selector */}
-      <section className="pt-16 pb-16 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
-        <div className="container-custom">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      {/* Hero Section */}
+      <section className="py-8 md:py-16 bg-gray-50">
+        <div className="container-custom hero-container">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <div>
-              <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+              <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">
                 Doorstep Mobile & Laptop Repair Services
               </h1>
-              <p className="text-xl mb-8 text-primary-100">
+              <p className="text-xl mb-8 text-gray-600">
                 Expert technicians come to your location in the Lower Mainland. Most repairs completed in under 60 minutes.
               </p>
               
-              {/* Device Type Selector Tabs */}
-              <div className="bg-primary-800 inline-flex rounded-lg p-1 mb-6">
-                <button 
-                  className={`px-4 py-2 rounded-md text-sm font-medium ${
-                    deviceType === 'mobile' 
-                      ? 'bg-white text-primary-800' 
-                      : 'text-white hover:bg-primary-700'
-                  }`}
-                  onClick={() => {
-                    setDeviceType('mobile');
-                    setSelectedBrand(null);
-                    setSelectedIssue(null);
-                  }}
-                >
-                  <FaMobile className="inline mr-2" />
-                  Mobile
-                </button>
-                <button 
-                  className={`px-4 py-2 rounded-md text-sm font-medium ${
-                    deviceType === 'laptop' 
-                      ? 'bg-white text-primary-800' 
-                      : 'text-white hover:bg-primary-700'
-                  }`}
-                  onClick={() => {
-                    setDeviceType('laptop');
-                    setSelectedBrand(null);
-                    setSelectedIssue(null);
-                  }}
-                >
-                  <FaLaptop className="inline mr-2" />
-                  Laptop
-                </button>
-                <button 
-                  className={`px-4 py-2 rounded-md text-sm font-medium ${
-                    deviceType === 'tablet' 
-                      ? 'bg-white text-primary-800' 
-                      : 'text-white hover:bg-primary-700'
-                  }`}
-                  onClick={() => {
-                    setDeviceType('tablet');
-                    setSelectedBrand(null);
-                    setSelectedIssue(null);
-                  }}
-                >
-                  <FaTabletAlt className="inline mr-2" />
-                  Tablet
-                </button>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <button 
+                    onClick={() => setDeviceType('mobile')}
+                    className={`w-full flex items-center justify-center p-3 rounded-lg border-2 ${
+                      deviceType === 'mobile' 
+                        ? 'bg-primary-600 text-white border-primary-600' 
+                        : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50'
+                    } transition-colors`}
+                  >
+                    <FaMobile className="mr-2" />
+                    Mobile
+                  </button>
+                </div>
+                <div className="flex-1">
+                  <button 
+                    onClick={() => setDeviceType('laptop')}
+                    className={`w-full flex items-center justify-center p-3 rounded-lg border-2 ${
+                      deviceType === 'laptop' 
+                        ? 'bg-primary-600 text-white border-primary-600' 
+                        : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50'
+                    } transition-colors`}
+                  >
+                    <FaLaptop className="mr-2" />
+                    Laptop
+                  </button>
+                </div>
+                <div className="flex-1">
+                  <button 
+                    onClick={() => setDeviceType('tablet')}
+                    className={`w-full flex items-center justify-center p-3 rounded-lg border-2 ${
+                      deviceType === 'tablet' 
+                        ? 'bg-primary-600 text-white border-primary-600' 
+                        : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50'
+                    } transition-colors`}
+                  >
+                    <FaTabletAlt className="mr-2" />
+                    Tablet
+                  </button>
+                </div>
               </div>
               
-              {/* Check Service Availability */}
-              <div className="bg-white rounded-lg p-4 shadow-lg">
-                <h3 className="text-primary-800 font-bold mb-2">Check Service Availability</h3>
-                <PostalCodeChecker variant="compact" className="text-gray-800" />
+              <div className="mt-8">
+                <h2 className="text-lg font-bold mb-4">Check Service Availability</h2>
+                <PostalCodeChecker />
               </div>
             </div>
             
-            <div className="relative">
-              <div className="relative h-[400px] w-full rounded-lg overflow-hidden shadow-custom-lg">
-                <Image
-                  src="https://images.unsplash.com/photo-1581092918056-0c4c3acd3789"
-                  alt="Technician repairing a device"
-                  fill
+            <div className="relative rounded-xl overflow-hidden shadow-lg">
+              <div className="aspect-w-4 aspect-h-3 hero-image">
+                <Image 
+                  src="/images/services/doorstep-repair-tech.jpg" 
+                  alt="Technician repairing a device at customer's doorstep" 
                   className="object-cover"
-                  priority
+                  layout="fill"
+                  priority={true}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
                   <div className="p-6">
-                    <div className="inline-block bg-accent-500 text-white text-sm px-3 py-1 rounded-full mb-3">
+                    <div className="inline-block bg-accent-500 text-white text-sm px-3 py-1 rounded-full mb-3 hero-badge">
                       Doorstep Service
                     </div>
                     <p className="text-white text-xl font-bold">
@@ -204,7 +216,7 @@ export default function Home() {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Step 1 */}
-            <div className="relative card hover:shadow-custom-lg transition-shadow text-center p-8">
+            <div className="relative card hover:shadow-custom-lg transition-shadow text-center p-8" data-step="1">
               <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-accent-500 text-white flex items-center justify-center text-xl font-bold">
                 1
               </div>
@@ -220,7 +232,7 @@ export default function Home() {
             </div>
             
             {/* Step 2 */}
-            <div className="relative card hover:shadow-custom-lg transition-shadow text-center p-8">
+            <div className="relative card hover:shadow-custom-lg transition-shadow text-center p-8" data-step="2">
               <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-accent-500 text-white flex items-center justify-center text-xl font-bold">
                 2
               </div>
@@ -237,7 +249,7 @@ export default function Home() {
             </div>
             
             {/* Step 3 */}
-            <div className="relative card hover:shadow-custom-lg transition-shadow text-center p-8">
+            <div className="relative card hover:shadow-custom-lg transition-shadow text-center p-8" data-step="3">
               <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full bg-accent-500 text-white flex items-center justify-center text-xl font-bold">
                 3
               </div>
@@ -268,7 +280,7 @@ export default function Home() {
           <div className="bg-white rounded-lg shadow-sm p-8">
             {/* Brands Selection */}
             <h3 className="text-2xl font-bold mb-6 text-center">Choose Your Brand</h3>
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-4 mb-8">
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-4 mb-8 brand-selection">
               {deviceBrands.map((brand) => (
                 <button
                   key={brand.id}
@@ -280,12 +292,7 @@ export default function Home() {
                   onClick={() => setSelectedBrand(brand.id)}
                 >
                   <div className="relative w-12 h-12 mb-2">
-                    <Image 
-                      src={brand.image} 
-                      alt={brand.name} 
-                      fill
-                      className="object-contain" 
-                    />
+                    <BrandImage src={brand.image} alt={brand.name} />
                   </div>
                   <span className="text-sm font-medium">{brand.name}</span>
                 </button>
@@ -332,11 +339,10 @@ export default function Home() {
                     deviceType === 'laptop' ? 'laptop' : 'tablet'
                   } {selectedIssue} issue at your doorstep!
                 </p>
-                <Link 
-                  href="/book-online/" 
-                  className="btn-primary text-lg inline-block"
-                >
-                  See Pricing & Book Now
+                <Link href="/book-online/">
+                  <a className="btn-primary text-lg inline-block">
+                    See Pricing & Book Now
+                  </a>
                 </Link>
               </div>
             )}
@@ -355,27 +361,27 @@ export default function Home() {
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div className="text-center">
+            <div className="text-center" data-stat="repairs">
               <div className="text-4xl md:text-5xl font-bold mb-2">5,000+</div>
               <p className="text-primary-100">Devices Repaired</p>
             </div>
-            <div className="text-center">
+            <div className="text-center" data-stat="sameDay">
               <div className="text-4xl md:text-5xl font-bold mb-2">92%</div>
               <p className="text-primary-100">Same Day Repairs</p>
             </div>
-            <div className="text-center">
+            <div className="text-center" data-stat="rating">
               <div className="text-4xl md:text-5xl font-bold mb-2">4.9</div>
               <p className="text-primary-100">Average Rating</p>
             </div>
-            <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold mb-2">90 Days</div>
-              <p className="text-primary-100">Warranty Period</p>
+            <div className="text-center" data-stat="warranty">
+              <div className="text-4xl md:text-5xl font-bold mb-2">90</div>
+              <p className="text-primary-100">Days Warranty</p>
             </div>
           </div>
         </div>
       </section>
       
-      {/* Benefits Section */}
+      {/* Advantages / Benefits */}
       <section className="py-16 bg-white">
         <div className="container-custom">
           <div className="text-center mb-12">
@@ -385,13 +391,13 @@ export default function Home() {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 benefits-container">
             <div className="card hover:shadow-custom-lg transition-shadow">
               <div className="p-6">
-                <div className="rounded-full bg-primary-100 w-16 h-16 flex items-center justify-center mb-4">
-                  <FaClock className="h-8 w-8 text-primary-600" />
+                <div className="rounded-full bg-primary-100 w-16 h-16 flex items-center justify-center mb-6">
+                  <FaClock className="h-8 w-8 text-primary-600 benefit-icon" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">Save Time</h3>
+                <h3 className="text-xl font-bold mb-4">Save Time</h3>
                 <p className="text-gray-600">
                   No need to travel to a repair shop or wait days for your device. Our technicians come to you and complete most repairs within an hour.
                 </p>
@@ -400,10 +406,10 @@ export default function Home() {
             
             <div className="card hover:shadow-custom-lg transition-shadow">
               <div className="p-6">
-                <div className="rounded-full bg-primary-100 w-16 h-16 flex items-center justify-center mb-4">
-                  <FaTools className="h-8 w-8 text-primary-600" />
+                <div className="rounded-full bg-primary-100 w-16 h-16 flex items-center justify-center mb-6">
+                  <FaTools className="h-8 w-8 text-primary-600 benefit-icon" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">Expert Technicians</h3>
+                <h3 className="text-xl font-bold mb-4">Expert Technicians</h3>
                 <p className="text-gray-600">
                   All our technicians are certified professionals with years of experience repairing a wide range of devices.
                 </p>
@@ -412,10 +418,10 @@ export default function Home() {
             
             <div className="card hover:shadow-custom-lg transition-shadow">
               <div className="p-6">
-                <div className="rounded-full bg-primary-100 w-16 h-16 flex items-center justify-center mb-4">
-                  <FaShieldAlt className="h-8 w-8 text-primary-600" />
+                <div className="rounded-full bg-primary-100 w-16 h-16 flex items-center justify-center mb-6">
+                  <FaShieldAlt className="h-8 w-8 text-primary-600 benefit-icon" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">Quality Guaranteed</h3>
+                <h3 className="text-xl font-bold mb-4">Quality Guaranteed</h3>
                 <p className="text-gray-600">
                   We use only high-quality replacement parts and back every repair with our 90-day warranty for your peace of mind.
                 </p>
@@ -426,10 +432,7 @@ export default function Home() {
       </section>
       
       {/* Testimonials */}
-      <section 
-        className="py-16 bg-gray-50"
-        ref={testimonialsRef}
-      >
+      <section className="py-16 bg-gray-50">
         <div className="container-custom">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">What Our Customers Say</h2>
@@ -438,48 +441,47 @@ export default function Home() {
             </p>
           </div>
           
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg shadow-custom p-8 relative">
-              <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 text-yellow-400 flex">
-                {[...Array(5)].map((_, i) => (
-                  <FaStar key={i} className="w-5 h-5" />
-                ))}
-              </div>
-              
-              <div className="pt-8">
-                <p className="text-lg text-gray-700 italic mb-6">
-                  "{testimonials[selectedTestimonial].comment}"
-                </p>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-bold text-gray-900">{testimonials[selectedTestimonial].name}</p>
-                    <p className="text-sm text-gray-500">
-                      {testimonials[selectedTestimonial].location} • {testimonials[selectedTestimonial].device}
-                    </p>
-                  </div>
-                  
-                  <div className="flex">
-                    {testimonials.map((_, idx) => (
-                      <button 
-                        key={idx}
-                        className={`w-3 h-3 mx-1 rounded-full ${
-                          selectedTestimonial === idx 
-                            ? 'bg-primary-600' 
-                            : 'bg-gray-300 hover:bg-primary-400'
-                        }`}
-                        onClick={() => setSelectedTestimonial(idx)}
+          <div className="relative testimonial-container">
+            <div className="flex flex-col md:flex-row gap-6">
+              {testimonials.slice(0, 2).map((testimonial) => (
+                <div key={testimonial.id} className="bg-white rounded-lg shadow-sm p-6 flex-1">
+                  <div className="flex items-center mb-4">
+                    {[...Array(5)].map((_, i) => (
+                      <FaStar 
+                        key={i} 
+                        className={`h-5 w-5 ${i < testimonial.rating ? 'text-yellow-400' : 'text-gray-300'}`} 
                       />
                     ))}
                   </div>
+                  <p className="text-gray-700 mb-4 testimonial-text">"{testimonial.comment}"</p>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="font-medium">{testimonial.name}</p>
+                      <p className="text-sm text-gray-500">{testimonial.location} • {testimonial.device}</p>
+                    </div>
+                  </div>
                 </div>
+              ))}
+            </div>
+            <div className="flex justify-center mt-8">
+              <div className="flex space-x-2">
+                {testimonials.map((_, i) => (
+                  <button
+                    key={i}
+                    className={`w-3 h-3 rounded-full transition-colors ${
+                      i === selectedTestimonial ? 'bg-primary-600' : 'bg-gray-300 hover:bg-gray-400'
+                    }`}
+                    onClick={() => setSelectedTestimonial(i)}
+                    aria-label={`View testimonial ${i + 1}`}
+                  />
+                ))}
               </div>
             </div>
           </div>
         </div>
       </section>
       
-      {/* Areas We Serve */}
+      {/* Service Areas */}
       <section className="py-16 bg-white">
         <div className="container-custom">
           <div className="text-center mb-12">
@@ -490,18 +492,30 @@ export default function Home() {
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-            {['Vancouver', 'Burnaby', 'Richmond', 'Surrey', 'Coquitlam', 'New Westminster', 'North Vancouver', 'West Vancouver', 'Delta', 'Langley'].map((area, index) => (
+            {[
+              { name: 'Vancouver', id: 'vancouver' },
+              { name: 'Burnaby', id: 'burnaby' },
+              { name: 'Richmond', id: 'richmond' },
+              { name: 'Surrey', id: 'surrey' },
+              { name: 'Coquitlam', id: 'coquitlam' },
+              { name: 'New Westminster', id: 'newWestminster' },
+              { name: 'North Vancouver', id: 'northVancouver' },
+              { name: 'West Vancouver', id: 'westVancouver' },
+              { name: 'Delta', id: 'delta' },
+              { name: 'Langley', id: 'langley' }
+            ].map((area, index) => (
               <div 
                 key={index}
+                data-area={area.id}
                 className="bg-gray-50 rounded-lg p-3 text-center hover:bg-primary-50 hover:text-primary-700 transition-colors"
               >
                 <FaMapMarkerAlt className="inline-block mr-1" />
-                {area}
+                {area.name}
               </div>
             ))}
           </div>
           
-          <div className="text-center">
+          <div className="text-center mt-8">
             <Link href="/service-areas" className="btn-outline inline-block">
               View All Service Areas
             </Link>
@@ -517,8 +531,10 @@ export default function Home() {
             <p className="text-xl mb-8 max-w-3xl mx-auto">
               Book now and get your device repaired at your doorstep by certified technicians.
             </p>
-            <Link href="/book-online/" className="btn-accent text-center inline-block text-lg">
-              Book Your Repair Now
+            <Link href="/book-online/">
+              <a className="btn-accent text-center inline-block text-lg">
+                Book Your Repair Now
+              </a>
             </Link>
             <p className="mt-4 text-primary-100">
               Most repairs completed in 30-60 minutes with 90-day warranty
