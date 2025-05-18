@@ -10,7 +10,7 @@ import { bookingService } from '@/services/bookingService';
 import type { CreateBookingRequest } from '@/types/booking';
 import { logger } from '@/utils/logger';
 import { supabase } from '@/utils/supabaseClient';
-import { generateReferenceNumber } from '@/utils/bookingUtils';
+import { generateBookingReference as generateReferenceNumber } from '@/utils/bookingUtils';
 import { useAuth } from '@/context/AuthContext';
 
 // Create a logger for this page
