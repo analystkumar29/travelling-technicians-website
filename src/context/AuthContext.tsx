@@ -142,6 +142,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Sign up with email and password
   const signUp = async (email: string, password: string, fullName: string, phone?: string) => {
     try {
+      // First check if the email already exists in user_profiles
+      const { data: existingProfiles } = await supabase
+        .from('user_profiles')
+        .select('email')
+        .eq('email', email)
+        .limit(1);
+        
+      if (existingProfiles && existingProfiles.length > 0) {
+        throw new Error('Email already exists. Please use a different email or sign in with your existing account.');
+      }
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -166,7 +177,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             phone: phone || null,
           });
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          // If it's a duplicate key error, provide a more user-friendly message
+          if (profileError.code === '23505') {
+            throw new Error('Email already exists. Please use a different email or sign in with your existing account.');
+          }
+          throw profileError;
+        }
         
         // Process any pending booking references
         const pendingBookingRef = sessionStorage.getItem('pendingBookingReference');

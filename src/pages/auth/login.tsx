@@ -17,11 +17,19 @@ const LoginPage = () => {
 
   // Check if user was redirected after registration
   useEffect(() => {
-    if (router.query.registered === 'true') {
+    // Fill email field if provided in query params
+    if (router.query.email && typeof router.query.email === 'string') {
+      setEmail(router.query.email);
+    }
+    
+    if (router.query.registrationSuccess === 'true') {
       setMessage('Registration successful! Please check your email to confirm your account before logging in.');
     }
     if (router.query.verified === 'true') {
       setMessage('Email verified! You can now log in.');
+    }
+    if (router.query.existingAccount === 'true') {
+      setMessage(`It looks like you already have an account with us. Please sign in with your password or use the password reset option if you've forgotten it.`);
     }
   }, [router.query]);
   

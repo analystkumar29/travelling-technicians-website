@@ -115,8 +115,23 @@ const RegisterPage = () => {
       }
       
     } catch (error: any) {
-      setRegistrationError(error.message || 'An error occurred during registration');
       console.error('Registration error:', error);
+      
+      // Check if it's a duplicate email error
+      if (error.message && (
+          error.message.includes('duplicate key value') ||
+          error.message.includes('already exists') ||
+          error.message.includes('already registered') ||
+          error.message.includes('Email already registered')
+      )) {
+        // Redirect to login page with a message
+        const loginRedirectUrl = `/auth/login?existingAccount=true&email=${encodeURIComponent(formData.email)}`;
+        router.push(loginRedirectUrl);
+        return;
+      }
+      
+      // Handle other errors
+      setRegistrationError(error.message || 'An error occurred during registration');
     } finally {
       setIsSubmitting(false);
     }
