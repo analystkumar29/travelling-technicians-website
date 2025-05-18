@@ -1,0 +1,402 @@
+<!-- 
+SUPABASE EMAIL TEMPLATES FOR THE TRAVELLING TECHNICIANS
+
+These email templates are designed to be used with Supabase Authentication.
+To apply these templates:
+1. Log into your Supabase dashboard
+2. Navigate to Authentication > Email Templates
+3. Customize each template by copying and pasting the respective HTML
+-->
+
+<!-- CONFIRMATION EMAIL TEMPLATE -->
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirm Your Email | The Travelling Technicians</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      line-height: 1.6;
+      color: #333333;
+      margin: 0;
+      padding: 0;
+      background-color: #f8fafc;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    .header {
+      text-align: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .logo {
+      max-width: 200px;
+      margin: 0 auto;
+      display: block;
+    }
+    .content {
+      padding: 30px 20px;
+    }
+    h1 {
+      color: #0076be;
+      font-size: 24px;
+      margin-top: 0;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    p {
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+    .button {
+      display: block;
+      width: 200px;
+      margin: 30px auto;
+      padding: 12px 24px;
+      background-color: #0076be;
+      color: #ffffff !important;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .button:hover {
+      background-color: #005a92;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #e5e7eb;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    .help {
+      margin-top: 25px;
+      font-size: 14px;
+      color: #6b7280;
+    }
+    @media only screen and (max-width: 600px) {
+      .container {
+        width: 100%;
+        border-radius: 0;
+      }
+      .button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="https://travellingtechnicians.ca/images/logo/tt-logo-dark.png" alt="The Travelling Technicians" class="logo">
+    </div>
+    
+    <div class="content">
+      <h1>Confirm Your Email Address</h1>
+      
+      <p>Hello,</p>
+      
+      <p>Thank you for creating an account with The Travelling Technicians! To complete your registration and access your account, please verify your email address by clicking the button below:</p>
+      
+      <a href="{{ .ConfirmationURL }}" class="button">Confirm Email Address</a>
+      
+      <p>This verification link will expire in 24 hours. If you did not create an account with us, you can safely ignore this email.</p>
+      
+      <p>Once verified, you'll be able to:</p>
+      <ul>
+        <li>View and manage your repair bookings</li>
+        <li>Track your repair status</li>
+        <li>Access exclusive promotions for our mobile and laptop repair services</li>
+      </ul>
+      
+      <p>We're excited to have you on board!</p>
+      
+      <div class="help">
+        <p>If the button above doesn't work, you can also copy and paste this link into your browser:</p>
+        <p style="word-break: break-all; font-size: 13px;">{{ .ConfirmationURL }}</p>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p>The Travelling Technicians | Doorstep Repair Service in Lower Mainland, BC</p>
+      <p>© 2023 The Travelling Technicians. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+
+<!-- PASSWORD RESET EMAIL TEMPLATE -->
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset Your Password | The Travelling Technicians</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      line-height: 1.6;
+      color: #333333;
+      margin: 0;
+      padding: 0;
+      background-color: #f8fafc;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    .header {
+      text-align: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .logo {
+      max-width: 200px;
+      margin: 0 auto;
+      display: block;
+    }
+    .content {
+      padding: 30px 20px;
+    }
+    h1 {
+      color: #0076be;
+      font-size: 24px;
+      margin-top: 0;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    p {
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+    .button {
+      display: block;
+      width: 200px;
+      margin: 30px auto;
+      padding: 12px 24px;
+      background-color: #0076be;
+      color: #ffffff !important;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .button:hover {
+      background-color: #005a92;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #e5e7eb;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    .help {
+      margin-top: 25px;
+      font-size: 14px;
+      color: #6b7280;
+    }
+    .security {
+      background-color: #f3f4f6;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 25px;
+      font-size: 14px;
+    }
+    @media only screen and (max-width: 600px) {
+      .container {
+        width: 100%;
+        border-radius: 0;
+      }
+      .button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="https://travellingtechnicians.ca/images/logo/tt-logo-dark.png" alt="The Travelling Technicians" class="logo">
+    </div>
+    
+    <div class="content">
+      <h1>Reset Your Password</h1>
+      
+      <p>Hello,</p>
+      
+      <p>We received a request to reset your password for your account with The Travelling Technicians. Click the button below to create a new password:</p>
+      
+      <a href="{{ .ConfirmationURL }}" class="button">Reset Password</a>
+      
+      <p>This password reset link will expire in 24 hours. If you did not request a password reset, you can safely ignore this email.</p>
+      
+      <div class="security">
+        <p><strong>Security Tip:</strong> For your account's security, please create a strong password that:</p>
+        <ul>
+          <li>Is at least 8 characters long</li>
+          <li>Contains a mix of uppercase and lowercase letters</li>
+          <li>Includes numbers and special characters</li>
+          <li>Is not used for other accounts</li>
+        </ul>
+      </div>
+      
+      <div class="help">
+        <p>If the button above doesn't work, you can also copy and paste this link into your browser:</p>
+        <p style="word-break: break-all; font-size: 13px;">{{ .ConfirmationURL }}</p>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p>The Travelling Technicians | Doorstep Repair Service in Lower Mainland, BC</p>
+      <p>© 2023 The Travelling Technicians. All rights reserved.</p>
+      <p>If you did not request this password reset, please contact us at <a href="mailto:support@travellingtechnicians.ca">support@travellingtechnicians.ca</a></p>
+    </div>
+  </div>
+</body>
+</html>
+
+<!-- MAGIC LINK EMAIL TEMPLATE -->
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In to Your Account | The Travelling Technicians</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      line-height: 1.6;
+      color: #333333;
+      margin: 0;
+      padding: 0;
+      background-color: #f8fafc;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    .header {
+      text-align: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .logo {
+      max-width: 200px;
+      margin: 0 auto;
+      display: block;
+    }
+    .content {
+      padding: 30px 20px;
+    }
+    h1 {
+      color: #0076be;
+      font-size: 24px;
+      margin-top: 0;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    p {
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+    .button {
+      display: block;
+      width: 200px;
+      margin: 30px auto;
+      padding: 12px 24px;
+      background-color: #0076be;
+      color: #ffffff !important;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .button:hover {
+      background-color: #005a92;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #e5e7eb;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    .help {
+      margin-top: 25px;
+      font-size: 14px;
+      color: #6b7280;
+    }
+    .security {
+      background-color: #f3f4f6;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 25px;
+      font-size: 14px;
+    }
+    @media only screen and (max-width: 600px) {
+      .container {
+        width: 100%;
+        border-radius: 0;
+      }
+      .button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="https://travellingtechnicians.ca/images/logo/tt-logo-dark.png" alt="The Travelling Technicians" class="logo">
+    </div>
+    
+    <div class="content">
+      <h1>Sign In to Your Account</h1>
+      
+      <p>Hello,</p>
+      
+      <p>You requested a magic link to sign in to your account with The Travelling Technicians. Click the button below to securely sign in:</p>
+      
+      <a href="{{ .ConfirmationURL }}" class="button">Sign In to My Account</a>
+      
+      <p>This link will expire in 24 hours and can only be used once. If you did not request this magic link, you can safely ignore this email.</p>
+      
+      <div class="security">
+        <p><strong>Security Note:</strong> This link provides direct access to your account. Do not share it with anyone.</p>
+      </div>
+      
+      <div class="help">
+        <p>If the button above doesn't work, you can also copy and paste this link into your browser:</p>
+        <p style="word-break: break-all; font-size: 13px;">{{ .ConfirmationURL }}</p>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p>The Travelling Technicians | Doorstep Repair Service in Lower Mainland, BC</p>
+      <p>© 2023 The Travelling Technicians. All rights reserved.</p>
+      <p>If you did not request this sign-in link, please contact us at <a href="mailto:support@travellingtechnicians.ca">support@travellingtechnicians.ca</a></p>
+    </div>
+  </div>
+</body>
+</html> 

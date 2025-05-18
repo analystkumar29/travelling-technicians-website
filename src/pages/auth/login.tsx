@@ -2,7 +2,7 @@ import React, { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-import { supabase } from '../../utils/supabaseClient';
+import { supabase, getSiteUrl } from '../../utils/supabaseClient';
 
 const LoginPage = () => {
   const router = useRouter();
@@ -93,7 +93,7 @@ const LoginPage = () => {
       setIsSubmitting(true);
       
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+        redirectTo: `${getSiteUrl()}/auth/reset-password`,
       });
 
       if (error) throw error;

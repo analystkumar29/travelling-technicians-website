@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/router';
-import { supabase } from '@/utils/supabaseClient';
+import { supabase, getSiteUrl } from '@/utils/supabaseClient';
 import { UserProfile } from '@/types/user';
 
 interface AuthContextType {
@@ -161,6 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             full_name: fullName,
             phone,
           },
+          emailRedirectTo: `${getSiteUrl()}/auth/callback`,
         },
       });
 

@@ -5,8 +5,11 @@ import { logger } from './logger';
 const supabaseLogger = logger.createModuleLogger('supabaseClient');
 
 // Supabase client configuration
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+// In development mode, use default test values if environment variables are not set
+const isDev = process.env.NODE_ENV === 'development';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || (isDev ? 'https://test-supabase-project.supabase.co' : '');
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || (isDev ? 'test-anon-key-for-development-only' : '');
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || (isDev ? 'test-service-key-for-development-only' : '');
 
 // Log supabase configuration (without exposing keys)
 if (!supabaseUrl) {
@@ -21,33 +24,54 @@ if (!supabaseAnonKey) {
   supabaseLogger.debug('NEXT_PUBLIC_SUPABASE_ANON_KEY is configured');
 }
 
+// Function to get the correct site URL for auth redirects
+export const getSiteUrl = () => {
+  // In development, use localhost
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:3000';
+  }
+  
+  // In production, check for explicit URL or use Vercel URL
+  const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+                         process.env.NEXT_PUBLIC_VERCEL_URL ||
+                         'https://travellingtechnicians.ca';
+  
+  // Make sure URL has https:// prefix
+  return productionUrl.startsWith('http') ? productionUrl : `https://${productionUrl}`;
+};
+
 // Create a single supabase client for the browser
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
+    // Set correct site URL for auth redirects
+    redirectTo: getSiteUrl()
   }
 });
 
 // Function to get admin client with service role (only use on the server)
 export const getServiceSupabase = () => {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-  
-  if (!serviceRoleKey) {
-    supabaseLogger.error('SUPABASE_SERVICE_ROLE_KEY is not set');
-  } else {
-    supabaseLogger.debug('SUPABASE_SERVICE_ROLE_KEY is configured');
-  }
-  
   if (!supabaseUrl) {
     throw new Error('NEXT_PUBLIC_SUPABASE_URL is not set');
   }
   
-  if (!serviceRoleKey) {
+  if (!supabaseServiceKey && !isDev) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set');
   }
   
-  return createClient(supabaseUrl, serviceRoleKey, {
+  // Log service role key status
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    if (isDev) {
+      supabaseLogger.warn('Using development fallback for SUPABASE_SERVICE_ROLE_KEY');
+    } else {
+      supabaseLogger.error('SUPABASE_SERVICE_ROLE_KEY is not set');
+    }
+  } else {
+    supabaseLogger.debug('SUPABASE_SERVICE_ROLE_KEY is configured');
+  }
+  
+  return createClient(supabaseUrl, supabaseServiceKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false
