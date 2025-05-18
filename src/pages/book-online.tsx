@@ -92,27 +92,36 @@ const BookOnlinePage: NextPage = () => {
       setIsSuccess(true);
       
       // Send confirmation email
-      await fetch('/api/bookings/confirmation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          bookingReference: referenceNumber,
-          customerName: data.customerName,
-          customerEmail: data.customerEmail,
-          deviceType: data.deviceType,
-          deviceBrand: data.deviceBrand === 'other' ? data.customBrand : data.deviceBrand,
-          deviceModel: data.deviceModel,
-          serviceType: data.serviceType,
-          appointmentDate: data.appointmentDate,
-          appointmentTime: data.appointmentTime,
-          address: data.address,
-          city: data.city,
-          province: data.province,
-          postalCode: data.postalCode
-        }),
-      });
+      try {
+        const emailResponse = await fetch('/api/bookings/confirmation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            bookingReference: referenceNumber,
+            customerName: data.customerName,
+            customerEmail: data.customerEmail,
+            deviceType: data.deviceType,
+            deviceBrand: data.deviceBrand === 'other' ? data.customBrand : data.deviceBrand,
+            deviceModel: data.deviceModel,
+            serviceType: data.serviceType,
+            appointmentDate: data.appointmentDate,
+            appointmentTime: data.appointmentTime,
+            address: data.address,
+            city: data.city,
+            province: data.province,
+            postalCode: data.postalCode
+          }),
+        });
+        
+        if (!emailResponse.ok) {
+          console.error('Failed to send confirmation email:', await emailResponse.text());
+        }
+      } catch (emailError) {
+        console.error('Error sending confirmation email:', emailError);
+        // Continue with booking process even if email fails
+      }
       
     } catch (err: any) {
       console.error('Booking error:', err);
