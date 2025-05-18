@@ -147,7 +147,7 @@ export default function BlogPage() {
                   <Image 
                     src={post.image} 
                     alt={post.title} 
-                    fill
+                    layout="fill"
                     className="object-cover"
                   />
                 </div>
@@ -198,7 +198,7 @@ export default function BlogPage() {
                   <Image 
                     src={post.image} 
                     alt={post.title} 
-                    fill
+                    layout="fill"
                     className="object-cover"
                   />
                 </div>
