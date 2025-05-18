@@ -64,9 +64,11 @@ class ErrorBoundary extends Component<Props, State> {
   cleanupJSONPScriptTags() {
     try {
       const scripts = document.querySelectorAll('script[src*="json_callback"]');
-      scripts.forEach(script => {
-        console.log('Removing problematic JSONP script:', script.src);
-        script.remove();
+      scripts.forEach((script: Element) => {
+        // Properly type the script element as HTMLScriptElement
+        const scriptElement = script as HTMLScriptElement;
+        console.log('Removing problematic JSONP script:', scriptElement.src);
+        scriptElement.remove();
       });
     } catch (e) {
       console.error('Error cleaning up JSONP scripts:', e);
