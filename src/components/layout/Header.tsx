@@ -93,16 +93,12 @@ export default function Header() {
                   {/* Logo with text beside it */}
                   <div className="flex items-center">
                     <div className="w-auto h-12 relative mr-3">
-                      <picture>
-                        <source srcSet="/images/logo.svg" type="image/svg+xml" />
-                        <img 
-                          src="/images/logo.png" 
-                          alt="The Travelling Technicians Logo" 
-                          width={110} 
-                          height={40} 
-                          className="h-full w-auto"
-                        />
-                      </picture>
+                      {/* Direct inline SVG logo for guaranteed display */}
+                      <svg xmlns="http://www.w3.org/2000/svg" width="110" height="40" viewBox="0 0 110 40" className="h-full w-auto">
+                        <rect x="5" y="8" width="24" height="24" rx="4" fill="#0d9488"/>
+                        <text x="37" y="24" fontFamily="Arial, sans-serif" fontSize="16" fontWeight="bold" fill="#1e293b">TT</text>
+                        <path d="M5 32 H 35" stroke="#1e293b" strokeWidth="2"/>
+                      </svg>
                     </div>
                     <span className="text-xl font-bold text-primary-600 hidden md:block">
                       The Travelling Technicians
