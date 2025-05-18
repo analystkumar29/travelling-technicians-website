@@ -905,9 +905,18 @@ export const getCurrentLocationPostalCode = async (): Promise<string> => {
     
     // Check if we're in a development environment
     const isDevelopment = process.env.NODE_ENV === 'development';
-    if (isDevelopment) {
-      console.log('[GEO_UTILS] Development environment detected. Using fallback postal code V5C 6R9');
-      // In development, we'll use a default postal code to avoid geolocation permission issues
+    
+    // Check if we're on iOS or macOS for special handling
+    const isMacOS = /Mac|MacIntel/.test(navigator.platform);
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || 
+                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    
+    if (isDevelopment || isMacOS || isIOS) {
+      console.log(`[GEO_UTILS] Special environment detected: ${
+        isDevelopment ? 'Development' : (isMacOS ? 'macOS' : 'iOS')
+      }. Using fallback postal code V5C 6R9`);
+      
+      // In development or on Apple devices, use a fallback to avoid common geolocation issues
       setTimeout(() => resolve('V5C 6R9'), 1000);
       return;
     }
@@ -920,137 +929,145 @@ export const getCurrentLocationPostalCode = async (): Promise<string> => {
     
     // Try to use the browser's geolocation API
     console.log('[GEO_UTILS] Requesting browser geolocation');
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          clearTimeout(overallTimeout);
-          const { latitude, longitude } = position.coords;
-          console.log('[GEO_UTILS] Detected coordinates:', latitude, longitude);
-          
-          // Attempt multiple geocoding services for redundancy
-          let postalCode = '';
-          
-          // First try Nominatim API
+    
+    try {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
           try {
-            console.log('[GEO_UTILS] Trying Nominatim API for reverse geocoding');
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18`,
-              { 
-                headers: { 
-                  'Accept-Language': 'en-US,en',
-                  'User-Agent': 'TheTravellingTechnicians/1.0' 
-                },
-                // Add cache control to avoid rate limiting issues
-                cache: 'no-cache'
-              }
-            );
+            clearTimeout(overallTimeout);
+            const { latitude, longitude } = position.coords;
+            console.log('[GEO_UTILS] Detected coordinates:', latitude, longitude);
             
-            if (response.ok) {
-              const data = await response.json();
-              console.log('[GEO_UTILS] Nominatim response data:', data);
+            // Attempt multiple geocoding services for redundancy
+            let postalCode = '';
+            
+            // First try Nominatim API
+            try {
+              console.log('[GEO_UTILS] Trying Nominatim API for reverse geocoding');
+              const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18`,
+                { 
+                  headers: { 
+                    'Accept-Language': 'en-US,en',
+                    'User-Agent': 'TheTravellingTechnicians/1.0' 
+                  },
+                  // Add cache control to avoid rate limiting issues
+                  cache: 'no-cache'
+                }
+              );
               
-              if (data.address?.postcode) {
-                postalCode = data.address.postcode;
-                console.log('[GEO_UTILS] Found postal code from Nominatim:', postalCode);
+              if (response.ok) {
+                const data = await response.json();
+                console.log('[GEO_UTILS] Nominatim response data:', data);
+                
+                if (data.address?.postcode) {
+                  postalCode = data.address.postcode;
+                  console.log('[GEO_UTILS] Found postal code from Nominatim:', postalCode);
+                } else {
+                  console.log('[GEO_UTILS] No postal code found in Nominatim response');
+                }
               } else {
-                console.log('[GEO_UTILS] No postal code found in Nominatim response');
+                console.error('[GEO_UTILS] Nominatim API error:', response.status, response.statusText);
               }
-            } else {
-              console.error('[GEO_UTILS] Nominatim API error:', response.status, response.statusText);
+            } catch (error) {
+              console.error('[GEO_UTILS] Error with Nominatim API:', error);
             }
-          } catch (error) {
-            console.error('[GEO_UTILS] Error with Nominatim API:', error);
-          }
-          
-          // If Nominatim failed, try alternative API or method
-          if (!postalCode) {
-            console.log('[GEO_UTILS] No postal code from Nominatim, trying fallback rough location approximation');
-            // FALLBACK: Fixed postal codes based on rough coordinates
-            // This is an oversimplified approach but can serve as a last resort
-            const roughLocation = getRoughLocationFromCoordinates(latitude, longitude);
-            if (roughLocation) {
-              postalCode = roughLocation;
-              console.log('[GEO_UTILS] Using rough location fallback:', postalCode);
-            } else {
-              console.log('[GEO_UTILS] Rough location fallback failed to provide a postal code');
+            
+            // If Nominatim failed, try alternative API or method
+            if (!postalCode) {
+              console.log('[GEO_UTILS] No postal code from Nominatim, trying fallback rough location approximation');
+              // FALLBACK: Fixed postal codes based on rough coordinates
+              // This is an oversimplified approach but can serve as a last resort
+              const roughLocation = getRoughLocationFromCoordinates(latitude, longitude);
+              if (roughLocation) {
+                postalCode = roughLocation;
+                console.log('[GEO_UTILS] Using rough location fallback:', postalCode);
+              } else {
+                console.log('[GEO_UTILS] Rough location fallback failed to provide a postal code');
+              }
             }
-          }
-          
-          if (!postalCode) {
-            console.log('[GEO_UTILS] Could not determine postal code from location');
-            reject('Could not determine postal code from your location');
-            return;
-          }
-          
-          // Format and validate the postal code
-          let formattedPostalCode = postalCode.toUpperCase().trim();
-          console.log('[GEO_UTILS] Formatting raw postal code:', postalCode, 'to:', formattedPostalCode);
-          
-          // If it's a Canadian postal code without space, add space
-          if (formattedPostalCode.length === 6 && /^[A-Z]\d[A-Z]\d[A-Z]\d$/.test(formattedPostalCode)) {
-            formattedPostalCode = `${formattedPostalCode.slice(0, 3)} ${formattedPostalCode.slice(3)}`;
-            console.log('[GEO_UTILS] Added space to Canadian postal code:', formattedPostalCode);
-          }
-          
-          // If the format is invalid, it might be a non-Canadian postal code
-          // Try to use just the first three characters if they match our format
-          if (!isValidPostalCodeFormat(formattedPostalCode)) {
-            console.log('[GEO_UTILS] Invalid postal code format detected:', formattedPostalCode);
-            const firstThree = formattedPostalCode.substring(0, 3);
-            if (/^[A-Z]\d[A-Z]$/.test(firstThree)) {
-              // Add placeholder for second half of postal code
-              formattedPostalCode = `${firstThree} 1A1`;
-              console.log('[GEO_UTILS] Created placeholder postal code from first 3 chars:', formattedPostalCode);
-            } else {
-              console.log('[GEO_UTILS] Could not format postal code to valid format');
-              reject(`Invalid postal code format detected: ${formattedPostalCode}`);
+            
+            if (!postalCode) {
+              console.log('[GEO_UTILS] Could not determine postal code from location');
+              reject('Could not determine postal code from your location');
               return;
             }
+            
+            // Format and validate the postal code
+            let formattedPostalCode = postalCode.toUpperCase().trim();
+            console.log('[GEO_UTILS] Formatting raw postal code:', postalCode, 'to:', formattedPostalCode);
+            
+            // If it's a Canadian postal code without space, add space
+            if (formattedPostalCode.length === 6 && /^[A-Z]\d[A-Z]\d[A-Z]\d$/.test(formattedPostalCode)) {
+              formattedPostalCode = `${formattedPostalCode.slice(0, 3)} ${formattedPostalCode.slice(3)}`;
+              console.log('[GEO_UTILS] Added space to Canadian postal code:', formattedPostalCode);
+            }
+            
+            // If the format is invalid, it might be a non-Canadian postal code
+            // Try to use just the first three characters if they match our format
+            if (!isValidPostalCodeFormat(formattedPostalCode)) {
+              console.log('[GEO_UTILS] Invalid postal code format detected:', formattedPostalCode);
+              const firstThree = formattedPostalCode.substring(0, 3);
+              if (/^[A-Z]\d[A-Z]$/.test(firstThree)) {
+                // Add placeholder for second half of postal code
+                formattedPostalCode = `${firstThree} 1A1`;
+                console.log('[GEO_UTILS] Created placeholder postal code from first 3 chars:', formattedPostalCode);
+              } else {
+                console.log('[GEO_UTILS] Could not format postal code to valid format');
+                reject(`Invalid postal code format detected: ${formattedPostalCode}`);
+                return;
+              }
+            }
+            
+            console.log('[GEO_UTILS] Returning final formatted postal code:', formattedPostalCode);
+            resolve(formattedPostalCode);
+          } catch (error) {
+            clearTimeout(overallTimeout);
+            console.error('[GEO_UTILS] Error fetching address data:', error);
+            reject('Error fetching address data. Please try entering your postal code manually.');
+          }
+        },
+        (error) => {
+          clearTimeout(overallTimeout);
+          console.error('[GEO_UTILS] Geolocation permission error:', error, 'Error code:', error.code);
+          
+          let errorMessage = 'An unknown location error occurred.';
+          
+          if (error.code === 1) {
+            errorMessage = 'Location permission denied. Please enter your postal code manually.';
+            console.log('[GEO_UTILS] User denied geolocation permission');
+          } else if (error.code === 2) {
+            // This is the "Position update is unavailable" error
+            // Common on Mac/iOS (kCLErrorLocationUnknown)
+            if (navigator.userAgent.indexOf('Mac') !== -1) {
+              errorMessage = 'We were unable to access your location. Please enter your postal code manually.';
+              console.log('[GEO_UTILS] macOS device detected with location limitations');
+            } else if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+              errorMessage = 'We were unable to access your location. Please enter your postal code manually.';
+              console.log('[GEO_UTILS] iOS device detected with location limitations');
+            } else {
+              errorMessage = 'Location information is unavailable. Please enter your postal code manually.';
+              console.log('[GEO_UTILS] Device reported position unavailable');
+            }
+          } else if (error.code === 3) {
+            errorMessage = 'Location request timed out. Please enter your postal code manually.';
+            console.log('[GEO_UTILS] Geolocation timeout error');
           }
           
-          console.log('[GEO_UTILS] Returning final formatted postal code:', formattedPostalCode);
-          resolve(formattedPostalCode);
-        } catch (error) {
-          clearTimeout(overallTimeout);
-          console.error('[GEO_UTILS] Error fetching address data:', error);
-          reject('Error fetching address data. Please try entering your postal code manually.');
+          reject(errorMessage);
+        },
+        { 
+          enableHighAccuracy: false,  // Don't require high accuracy to avoid kCLErrorLocationUnknown errors
+          maximumAge: 60000,         // Accept cached positions up to 60 seconds old
+          timeout: 10000             // Give less time to respond (10 seconds)
         }
-      },
-      (error) => {
-        clearTimeout(overallTimeout);
-        console.error('[GEO_UTILS] Geolocation permission error:', error, 'Error code:', error.code);
-        
-        let errorMessage = 'An unknown location error occurred.';
-        
-        if (error.code === 1) {
-          errorMessage = 'Location permission denied. Please allow location access in your browser settings.';
-          console.log('[GEO_UTILS] User denied geolocation permission');
-        } else if (error.code === 2) {
-          // This is the "Position update is unavailable" error
-          // Common on Mac/iOS (kCLErrorLocationUnknown)
-          if (navigator.userAgent.indexOf('Mac') !== -1) {
-            errorMessage = 'Location services are limited on macOS. Please enter your postal code manually.';
-            console.log('[GEO_UTILS] macOS device detected with location limitations');
-          } else if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-            errorMessage = 'Location services are limited on iOS. Please enter your postal code manually.';
-            console.log('[GEO_UTILS] iOS device detected with location limitations');
-          } else {
-            errorMessage = 'Location information is unavailable. Your device may not support precise location.';
-            console.log('[GEO_UTILS] Device reported position unavailable');
-          }
-        } else if (error.code === 3) {
-          errorMessage = 'Location request timed out. Please check your internet connection and try again.';
-          console.log('[GEO_UTILS] Geolocation timeout error');
-        }
-        
-        reject(errorMessage);
-      },
-      { 
-        enableHighAccuracy: true,  // More precise location
-        maximumAge: 30000,         // Accept cached positions up to 30 seconds old
-        timeout: 15000             // Give more time to respond (15 seconds)
-      }
-    );
+      );
+    } catch (e) {
+      // Catch any unexpected exceptions thrown by the geolocation API itself
+      clearTimeout(overallTimeout);
+      console.error('[GEO_UTILS] Critical error in geolocation API:', e);
+      reject('There was a problem with the location service. Please enter your postal code manually.');
+    }
   });
 };
 
