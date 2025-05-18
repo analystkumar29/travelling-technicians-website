@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
@@ -34,7 +34,24 @@ const navigation = [
 export default function Header() {
   const [isServicesOpen, setIsServicesOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const router = useRouter();
+  
+  // Add scroll effect to header
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
   
   // Function to check if the current path matches the navigation item
   const isActivePath = (path: string): boolean => {
@@ -66,20 +83,28 @@ export default function Header() {
   };
 
   return (
-    <Disclosure as="nav" className="bg-white shadow-md sticky top-0 z-50">
+    <Disclosure as="nav" className={`bg-white bg-opacity-95 backdrop-blur-sm sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'shadow-md py-1' : 'py-2'}`}>
       {({ open }) => (
         <>
           <div className="container-custom">
             <div className="flex justify-between items-center h-20">
               <div className="flex-shrink-0 flex items-center">
                 <Link href="/" className="flex items-center">
-                  {/* Placeholder for logo - replace with actual logo */}
-                  <div className="w-auto h-12 relative mr-3">
-                    <div className="flex items-center h-full">
-                      <span className="text-xl font-bold text-primary-600">
-                        The Travelling Technicians
-                      </span>
+                  {/* Logo with text beside it */}
+                  <div className="flex items-center">
+                    <div className="w-auto h-12 relative mr-3">
+                      <Image 
+                        src="/images/logo.svg" 
+                        alt="The Travelling Technicians Logo" 
+                        width={110} 
+                        height={40} 
+                        className="h-full w-auto"
+                        priority
+                      />
                     </div>
+                    <span className="text-xl font-bold text-primary-600 hidden md:block">
+                      The Travelling Technicians
+                    </span>
                   </div>
                 </Link>
               </div>
@@ -96,7 +121,7 @@ export default function Header() {
                           isActivePath(item.href) 
                             ? 'text-primary-600 bg-gray-50' 
                             : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
-                        } ${item.highlight ? 'bg-primary-600 text-white hover:bg-primary-700 hover:text-white' : ''}`}
+                        } ${item.highlight ? 'bg-accent-500 text-white hover:bg-accent-600 hover:text-white font-medium shadow-sm hover:shadow-md transition-all duration-300' : ''}`}
                       >
                         {item.name}
                       </Link>
@@ -158,7 +183,7 @@ export default function Header() {
                 <div className="ml-4 pl-4 border-l border-gray-200">
                   <Link 
                     href="/book-online/"
-                    className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 shadow-sm"
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 shadow-sm transition-all duration-300 hover:shadow-md hover:translate-y-[-1px]"
                   >
                     Book Online
                   </Link>
@@ -181,7 +206,7 @@ export default function Header() {
 
           {/* Mobile Menu - Update to include the "More" submenu items */}
           <Disclosure.Panel className="lg:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1.5">
+            <div className="px-2 pt-2 pb-3 space-y-1.5 bg-white border-t border-gray-100 rounded-b-lg shadow-lg">
               {/* Home and first level items */}
               <Link
                 href="/"
@@ -243,7 +268,7 @@ export default function Header() {
               {/* Doorstep Repair */}
               <Link
                 href="/doorstep"
-                className="block px-3 py-2 rounded-md text-base font-medium text-white bg-primary-600 hover:bg-primary-700"
+                className="block px-3 py-2 rounded-md text-base font-medium text-white bg-accent-500 hover:bg-accent-600 shadow-sm hover:shadow-md transition-all duration-300"
               >
                 Doorstep Repair
               </Link>
@@ -323,7 +348,7 @@ export default function Header() {
               <div className="pt-3 mt-4 border-t border-gray-200">
                 <Link 
                   href="/book-online"
-                  className="w-full block px-3 py-2 rounded-md text-center text-base font-medium text-white bg-primary-600 hover:bg-primary-700 shadow-sm"
+                  className="w-full block px-3 py-2 rounded-md text-center text-base font-medium text-white bg-primary-600 hover:bg-primary-700 shadow-sm transition-all duration-300 hover:shadow-md"
                 >
                   Book Online
                 </Link>
