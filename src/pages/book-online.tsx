@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { NextPage } from 'next';
 import Layout from '@/components/layout/Layout';
 import BookingForm from '@/components/booking/BookingForm';
@@ -11,7 +11,7 @@ import type { CreateBookingRequest } from '@/types/booking';
 import { logger } from '@/utils/logger';
 import { supabase } from '@/utils/supabaseClient';
 import { generateBookingReference as generateReferenceNumber } from '@/utils/bookingUtils';
-import { useAuth } from '@/context/AuthContext';
+import { AuthContext } from '@/context/AuthContext';
 
 // Create a logger for this page
 const pageLogger = logger.createModuleLogger('BookOnlinePage');
@@ -21,7 +21,8 @@ const BookOnlinePage: NextPage = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bookingData, setBookingData] = useState<any>(null);
-  const { isAuthenticated, user } = useAuth();
+  const auth = useContext(AuthContext);
+  const { isAuthenticated, user } = auth || {};
 
   // useEffect cleanup for any potential state updates that might happen after unmounting
   useEffect(() => {
@@ -136,6 +137,12 @@ const BookOnlinePage: NextPage = () => {
     window.location.href = '/';
   };
   
+  // Add a reset function for the booking form
+  const handleReset = () => {
+    setIsSuccess(false);
+    setBookingData(null);
+  };
+  
   // Format date for display
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
@@ -209,6 +216,7 @@ const BookOnlinePage: NextPage = () => {
               customerEmail={bookingData.customer_email}
               appointmentDate={bookingData.booking_date}
               appointmentTime={bookingData.booking_time}
+              onReset={handleReset}
             />
           ) : (
             <BookingForm 

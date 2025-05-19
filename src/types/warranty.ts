@@ -38,35 +38,45 @@ export interface Warranty {
 }
 
 /**
- * Simplified warranty information for display
+ * Summary of a warranty record, used in listings
  */
 export interface WarrantySummary {
+  id: string;
   warranty_code: string;
-  issue_date: ISODateString;
-  expiry_date: ISODateString;
-  status: WarrantyStatus;
   device_type: string;
   device_brand: string;
   device_model: string;
   service_type: string;
-  days_remaining: number;
+  service_date: string;
+  expiry_date: string;
+  status: 'active' | 'claimed' | 'expired' | 'void';
 }
 
 /**
- * Represents a warranty claim
+ * Detailed warranty information summary
+ */
+export interface WarrantyDetailSummary extends WarrantySummary {
+  customer_id: string;
+  customer_name: string;
+  customer_email: string;
+  technician_id?: string;
+  technician_name?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Warranty claim information
  */
 export interface WarrantyClaim {
-  id: UUID;
-  warranty_id: UUID;
-  claim_date: ISODateString;
-  issue_description: string;
+  id: string;
+  warranty_id: string;
+  claim_date: string;
+  description: string;
+  status: 'pending' | 'approved' | 'rejected' | 'completed';
   resolution?: string;
-  status: WarrantyClaimStatus;
-  assigned_technician_id?: UUID;
-  follow_up_date?: ISODateString;
-  technician_notes?: string;
-  created_at: ISODateString;
-  updated_at: ISODateString;
+  resolution_date?: string;
 }
 
 /**
