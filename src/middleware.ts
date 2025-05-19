@@ -10,15 +10,29 @@ import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
  * and ensures auth state doesn't become corrupted during navigation.
  */
 export async function middleware(req: NextRequest) {
+  // Create a response object that we'll modify as needed
   const res = NextResponse.next();
   
   try {
+    // Get the hostname for cookie domain management
+    const hostname = req.headers.get('host') || '';
+    const isDevEnvironment = process.env.NODE_ENV === 'development';
+    const isPreviewDeployment = Boolean(process.env.VERCEL_ENV === 'preview');
+    
     // Create a Supabase client for the middleware
     const supabase = createMiddlewareClient({ req, res });
     
     // Verify session is valid during navigation
-    const { data: { session } } = await supabase.auth.getSession();
-  
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    // If there was an error getting the session, log it
+    if (error) {
+      console.error('Middleware auth error:', error.message);
+      
+      // Add diagnostic headers (only visible to the application)
+      res.headers.set('x-auth-error', error.message);
+    }
+    
     // Get path from URL
     const path = req.nextUrl.pathname;
     
@@ -35,26 +49,57 @@ export async function middleware(req: NextRequest) {
       path.startsWith(protectedPath) || path === protectedPath
     );
 
-    // If path is protected but user is not authenticated, redirect to login
-    if (isProtectedPath && !session) {
-      // Store intended path for redirect after login
-      const redirectUrl = new URL('/auth/login', req.url);
-      redirectUrl.searchParams.set('redirect', path);
+    // For protected paths, verify authentication
+    if (isProtectedPath) {
+      // If no session or invalid session, redirect to login
+      if (!session || !session.user?.id) {
+        console.log(`Middleware: Protected path ${path} accessed without valid session, redirecting to login`);
+        
+        // Store intended path for redirect after login
+        const redirectUrl = new URL('/auth/login', req.url);
+        redirectUrl.searchParams.set('redirect', path);
+        
+        // Set cookies to help with debugging
+        res.cookies.set('auth_redirect_reason', 'protected_path_access', { 
+          path: '/',
+          sameSite: 'lax',
+          secure: !isDevEnvironment,
+          httpOnly: true
+        });
+        
+        return NextResponse.redirect(redirectUrl);
+      }
       
-      return NextResponse.redirect(redirectUrl);
+      // Add header to indicate this is an authenticated request
+      res.headers.set('x-auth-user-id', session.user.id);
     }
     
-    // If user is authenticated but session is invalid, redirect to error page
-    if (session && !session.user?.id) {
+    // If user is authenticated but session is corrupted, redirect to error page
+    if (session && (!session.user || !session.user.id || !session.user.email)) {
+      console.log('Middleware: Detected corrupted auth state', { 
+        userId: session.user?.id,
+        hasEmail: Boolean(session.user?.email)
+      });
+      
       // Session is corrupted - redirect to error page with reset option
       const errorUrl = new URL('/auth/error', req.url);
       errorUrl.searchParams.set('error', 'invalid_session');
       errorUrl.searchParams.set('action', 'reset');
       
+      // Set cookies to help with debugging
+      res.cookies.set('auth_error_reason', 'corrupted_session', { 
+        path: '/',
+        sameSite: 'lax',
+        secure: !isDevEnvironment,
+        httpOnly: true
+      });
+      
       return NextResponse.redirect(errorUrl);
     }
+    
+    return res;
   } catch (error) {
-    console.error('Middleware error:', error);
+    console.error('Middleware unexpected error:', error);
     
     // If there's an error in the middleware, don't block navigation
     // but add a header to indicate the auth check failed
@@ -62,8 +107,6 @@ export async function middleware(req: NextRequest) {
     response.headers.set('x-auth-validation-failed', 'true');
     return response;
   }
-  
-  return res;
 }
 
 // Define which paths this middleware should run on

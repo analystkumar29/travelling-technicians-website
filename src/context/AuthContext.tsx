@@ -39,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isStateCorrupted, setIsStateCorrupted] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
   const router = useRouter();
   const recoveryAttempts = useRef(0);
   const lastValidationTime = useRef<number>(Date.now());
@@ -357,27 +358,81 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [user, refreshSession]);
 
-  // Fetch user profile from database
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const { data: profileData, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+  // Fetch user profile whenever user changes
+  useEffect(() => {
+    // Skip on homepage to prevent reload loops
+    const isHomepage = router.pathname === '/';
+    const skipHomepageChecks = typeof window !== 'undefined' && sessionStorage.getItem('skipHomepageChecks') === 'true';
+    
+    if (!user || isHomepage || skipHomepageChecks) return;
+    
+    const fetchUserProfile = async () => {
+      try {
+        setProfileLoading(true);
         
-      if (error && error.code !== 'PGRST116') {
+        // Track profile fetch attempts for this session
+        const profileFetchAttempts = parseInt(sessionStorage.getItem('profileFetchAttempts') || '0', 10);
+        sessionStorage.setItem('profileFetchAttempts', (profileFetchAttempts + 1).toString());
+        
+        if (profileFetchAttempts > 3) {
+          // After 3 failed attempts, try alternative user profile fetch strategy
+          console.log('Using alternative profile fetch strategy after multiple failures');
+          
+          const serviceClient = supabase;
+          const { data: profileData, error } = await serviceClient
+            .from('user_profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+            
+          if (error) throw error;
+          
+          if (profileData) {
+            setUserProfile(profileData);
+            // Reset fetch attempts on success
+            sessionStorage.setItem('profileFetchAttempts', '0');
+            return;
+          }
+        }
+        
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        if (error) {
+          if (profileFetchAttempts >= 2) {
+            // Log more details for debugging
+            console.warn('User exists but profile fetch failed, possible corruption', { 
+              userId: user.id, 
+              error: error.message,
+              attempts: profileFetchAttempts
+            });
+            
+            // For security, avoid infinite loops from corrupted states
+            if (profileFetchAttempts >= 5) {
+              console.error('Too many profile fetch attempts, forcing sign out');
+              sessionStorage.setItem('emergency_signout_reason', 'profile_fetch_failure');
+              await forceSignOut();
+              return;
+            }
+          }
+          throw error;
+        }
+        
+        // Reset fetch attempts on success
+        sessionStorage.setItem('profileFetchAttempts', '0');
+        setUserProfile(data);
+      } catch (error) {
         console.error('Error fetching user profile:', error);
-        return null;
+      } finally {
+        setProfileLoading(false);
       }
-      
-      setUserProfile(profileData);
-      return profileData;
-    } catch (error) {
-      console.error('Error in fetchUserProfile:', error);
-      return null;
-    }
-  };
+    };
+    
+    fetchUserProfile();
+  }, [user, router.pathname]);
 
   // Refresh user profile data
   const refreshProfile = async () => {

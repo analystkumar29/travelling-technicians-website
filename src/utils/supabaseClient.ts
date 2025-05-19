@@ -31,13 +31,18 @@ export const getSiteUrl = () => {
     return 'http://localhost:3000';
   }
   
-  // In production, check for explicit URL or use Vercel URL
-  const productionUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || 
-                         process.env.NEXT_PUBLIC_VERCEL_URL ||
-                         'https://travelling-technicians.ca';
+  // In production, check for explicit URL or use Vercel URL with https://
+  const vercelUrl = process.env.NEXT_PUBLIC_VERCEL_URL;
+  const primaryDomain = 'travelling-technicians.ca';
+  const mainSiteUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || 'https://travelling-technicians.ca';
   
-  // Make sure URL has https:// prefix
-  return productionUrl.startsWith('http') ? productionUrl : `https://${productionUrl}`;
+  // If this is a Vercel preview deployment, use the Vercel URL
+  if (vercelUrl && process.env.VERCEL_ENV === 'preview') {
+    return `https://${vercelUrl}`;
+  }
+  
+  // For production, use the main site URL
+  return mainSiteUrl;
 };
 
 // Get the redirect URL for auth
@@ -49,7 +54,19 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     flowType: 'pkce',
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
+    cookieOptions: {
+      // Allow cookies to work on both main domain and preview domains
+      domain: typeof window !== 'undefined' 
+        ? window.location.hostname.includes('vercel.app') 
+          ? window.location.hostname 
+          : window.location.hostname.includes('travelling-technicians.ca') 
+            ? 'travelling-technicians.ca'
+            : undefined
+        : undefined,
+      sameSite: 'lax',
+      secure: true
+    }
   },
   global: {
     headers: { 
@@ -69,6 +86,11 @@ supabase.auth.onAuthStateChange((event, session) => {
     // Make sure site redirects are correct
     console.log('Auth state changed:', event);
     console.log('Auth URL configured:', getSiteUrl());
+    
+    // Debug cookie settings
+    if (typeof window !== 'undefined') {
+      console.log('Current domain:', window.location.hostname);
+    }
   }
 });
 
