@@ -75,8 +75,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     flowType: 'pkce',
-    detectSessionInUrl: true,
-    cookieOptions: getCookieSettings()  // Apply cookie settings directly
+    detectSessionInUrl: true
   },
   global: {
     headers: { 
@@ -108,10 +107,29 @@ supabase.auth.onAuthStateChange((event, session) => {
       if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && 
           session && !hostname.includes('localhost')) {
         try {
-          // Manually add an additional check cookie to verify domain settings are working
+          // Manually handle cross-domain cookies since cookieOptions is not available
           if (session.access_token) {
             console.log('Setting up cross-domain cookie support...');
-            document.cookie = `tt_auth_check=true; path=/; domain=${getCookieSettings().domain || hostname}; max-age=${60*60*24}; ${!isDev ? 'secure;' : ''} samesite=lax`;
+            
+            // Get the domain setting
+            const cookieSettings = getCookieSettings();
+            
+            // Set verification cookies with correct domain to support www and non-www
+            document.cookie = `tt_auth_check=true; path=/; ${cookieSettings.domain ? `domain=${cookieSettings.domain};` : ''} max-age=${60*60*24}; ${!isDev ? 'secure;' : ''} samesite=lax`;
+            
+            // Store domain in localStorage to help with auth recovery
+            localStorage.setItem('auth_domain', cookieSettings.domain || hostname);
+            localStorage.setItem('auth_session_active', 'true');
+            
+            // Force cookies to use the right domain by creating helper cookies
+            if (cookieSettings.domain && cookieSettings.domain === '.travelling-technicians.ca') {
+              // This helps maintain auth state across subdomains
+              try {
+                document.cookie = `tt_cross_domain=true; path=/; domain=${cookieSettings.domain}; max-age=${60*60*24*30}; ${!isDev ? 'secure;' : ''} samesite=lax`;
+              } catch (e) {
+                console.warn('Could not set cross-domain cookie:', e);
+              }
+            }
           }
         } catch (err) {
           console.error('Error setting up cross-domain cookies:', err);
