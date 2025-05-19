@@ -46,6 +46,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           // Fetch user profile
           await fetchUserProfile(sessionData.session.user.id);
+          
+          // Store minimal auth info to improve reliability
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('authUser', JSON.stringify({
+              id: sessionData.session.user.id,
+              email: sessionData.session.user.email
+            }));
+          }
         }
       } catch (error) {
         console.error('Error fetching user session:', error);
@@ -63,12 +71,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === 'SIGNED_OUT') {
         setUser(null);
         setUserProfile(null);
+        // Clear any locally stored authentication data
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('supabase.auth.token');
+          localStorage.removeItem('authUser');
+        }
       } else if (event === 'SIGNED_IN' && session) {
         setUser(session.user);
         await fetchUserProfile(session.user.id);
+        // Store minimal auth info to improve reliability
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('authUser', JSON.stringify({
+            id: session.user.id,
+            email: session.user.email
+          }));
+        }
       } else if (event === 'USER_UPDATED' && session) {
         setUser(session.user);
         await fetchUserProfile(session.user.id);
+        // Update minimal auth info 
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('authUser', JSON.stringify({
+            id: session.user.id,
+            email: session.user.email
+          }));
+        }
       } else if (event === 'TOKEN_REFRESHED' && session) {
         setUser(session.user);
       }
@@ -80,6 +107,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (authListener) authListener.subscription.unsubscribe();
     };
   }, []);
+  
+  // Add timeout to prevent infinite loading
+  useEffect(() => {
+    if (!isLoading) return;
+    
+    // Set a timeout to force exit loading state if it takes too long
+    const timeout = setTimeout(() => {
+      if (isLoading) {
+        console.warn('Auth loading state timed out, forcing reset');
+        setIsLoading(false);
+        
+        // Try to recover state from localStorage if available
+        if (typeof window !== 'undefined') {
+          const storedUser = localStorage.getItem('authUser');
+          if (storedUser) {
+            try {
+              const parsedUser = JSON.parse(storedUser);
+              // Only use this as minimal fallback
+              if (!user && parsedUser.id) {
+                console.log('Recovering minimal user state from localStorage');
+                setUser({ id: parsedUser.id, email: parsedUser.email });
+                fetchUserProfile(parsedUser.id);
+              }
+            } catch (e) {
+              console.error('Error parsing stored user:', e);
+            }
+          }
+        }
+      }
+    }, 5000); // 5 second timeout for loading state
+    
+    return () => clearTimeout(timeout);
+  }, [isLoading, user]);
 
   // Fetch user profile from database
   const fetchUserProfile = async (userId: string) => {
@@ -206,13 +266,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Sign out
+  // Sign out with improved error handling and state management
   const signOut = async () => {
     try {
+      setIsLoading(true);
+      
+      // Clear local storage auth data first
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('supabase.auth.token');
+        localStorage.removeItem('authUser');
+      }
+      
+      // Sign out from Supabase
       await supabase.auth.signOut();
-      router.push('/');
+      
+      // Reset state
+      setUser(null);
+      setUserProfile(null);
+      
+      // Add a small delay before redirecting to ensure state is cleared
+      setTimeout(() => {
+        router.push('/');
+      }, 50);
     } catch (error) {
       console.error('Sign out error:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
   

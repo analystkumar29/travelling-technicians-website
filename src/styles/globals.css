@@ -133,4 +133,38 @@
   color: transparent;
   display: inline-block;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Navigation state indicators */
+.loading-navigation {
+  cursor: progress;
+}
+
+.loading-navigation a, 
+.loading-navigation button {
+  pointer-events: none; /* Prevent further navigation while loading */
+}
+
+.navigation-stuck:after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: repeating-linear-gradient(
+    to right,
+    #0076be 0%,
+    #0076be 50%,
+    transparent 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: loading-gradient 2s linear infinite;
+  z-index: 9999;
+}
+
+@keyframes loading-gradient {
+  0% { background-position: 0 0; }
+  100% { background-position: -200% 0; }
 } 
