@@ -265,6 +265,74 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return false;
   };
   
+  // Add back fetchUserProfile function to fix build error
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      setProfileLoading(true);
+      
+      // Track profile fetch attempts for this session
+      const profileFetchAttempts = parseInt(sessionStorage.getItem('profileFetchAttempts') || '0', 10);
+      sessionStorage.setItem('profileFetchAttempts', (profileFetchAttempts + 1).toString());
+      
+      if (profileFetchAttempts > 3) {
+        // After 3 failed attempts, try alternative user profile fetch strategy
+        console.log('Using alternative profile fetch strategy after multiple failures');
+        
+        const serviceClient = supabase;
+        const { data: profileData, error } = await serviceClient
+          .from('user_profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+          
+        if (error) throw error;
+        
+        if (profileData) {
+          setUserProfile(profileData);
+          // Reset fetch attempts on success
+          sessionStorage.setItem('profileFetchAttempts', '0');
+          return profileData;
+        }
+      }
+      
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+        
+      if (error) {
+        if (profileFetchAttempts >= 2) {
+          // Log more details for debugging
+          console.warn('User exists but profile fetch failed, possible corruption', { 
+            userId, 
+            error: error.message,
+            attempts: profileFetchAttempts
+          });
+          
+          // For security, avoid infinite loops from corrupted states
+          if (profileFetchAttempts >= 5) {
+            console.error('Too many profile fetch attempts, forcing sign out');
+            sessionStorage.setItem('emergency_signout_reason', 'profile_fetch_failure');
+            await forceSignOut();
+            return null;
+          }
+        }
+        throw error;
+      }
+      
+      // Reset fetch attempts on success
+      sessionStorage.setItem('profileFetchAttempts', '0');
+      setUserProfile(data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      return null;
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+  
   // Add timeout to prevent infinite loading
   useEffect(() => {
     if (!isLoading) return;
