@@ -1,7 +1,10 @@
-import React, { useState, useEffect, FormEvent } from 'react';
+import React, { useState, useEffect, FormEvent, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { supabase } from '../../utils/supabaseClient';
+
+// Request timeout in milliseconds
+const REQUEST_TIMEOUT = 15000;
 
 const PasswordChangePage = () => {
   const router = useRouter();
@@ -13,30 +16,73 @@ const PasswordChangePage = () => {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong' | null>(null);
+  const [sessionStatus, setSessionStatus] = useState<'valid' | 'invalid' | 'checking'>('checking');
+  
+  // Ref to track timeout ID
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check authentication
   useEffect(() => {
     const checkAuth = async () => {
       try {
         setIsLoading(true);
+        setSessionStatus('checking');
+        
+        // Check network connectivity first
+        if (!navigator.onLine) {
+          setError('You appear to be offline. Please check your internet connection.');
+          setSessionStatus('invalid');
+          return;
+        }
         
         // Get current session
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          setError('Error checking your authentication status: ' + sessionError.message);
+          setSessionStatus('invalid');
+          return;
+        }
         
         if (!sessionData.session) {
           // Not logged in, redirect to login
+          console.log('No active session, redirecting to login');
+          setSessionStatus('invalid');
           router.push('/auth/login/?redirect=/account/password/');
           return;
         }
+        
+        // Verify session isn't expired
+        const expiresAt = sessionData.session.expires_at;
+        const currentTime = Math.floor(Date.now() / 1000);
+        
+        if (expiresAt && expiresAt < currentTime) {
+          console.log('Session expired, redirecting to login');
+          setSessionStatus('invalid');
+          router.push('/auth/login/?redirect=/account/password/');
+          return;
+        }
+        
+        console.log('Session valid, user authenticated');
+        setSessionStatus('valid');
       } catch (err: any) {
         console.error('Error in auth check:', err);
-        setError('An error occurred while loading your account');
+        setError('An error occurred while loading your account: ' + (err.message || 'Unknown error'));
+        setSessionStatus('invalid');
       } finally {
         setIsLoading(false);
       }
     };
     
     checkAuth();
+    
+    // Cleanup any pending timeouts on component unmount
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
   }, [router]);
 
   // Evaluate password strength when password changes
@@ -63,6 +109,18 @@ const PasswordChangePage = () => {
   const validateForm = () => {
     // Reset errors
     setError(null);
+    
+    // Check network connectivity
+    if (!navigator.onLine) {
+      setError('You appear to be offline. Please check your internet connection.');
+      return false;
+    }
+    
+    // Check session status
+    if (sessionStatus !== 'valid') {
+      setError('Your session appears to be invalid. Please refresh the page and try again.');
+      return false;
+    }
     
     // Check if all fields are filled
     if (!currentPassword) {
@@ -122,28 +180,79 @@ const PasswordChangePage = () => {
     
     if (!validateForm()) return;
     
+    // Set a timeout to abort the request if it takes too long
+    timeoutRef.current = setTimeout(() => {
+      if (isSubmitting) {
+        setIsSubmitting(false);
+        setError('Request timed out. Please try again.');
+        console.error('Password update request timed out after', REQUEST_TIMEOUT, 'ms');
+      }
+    }, REQUEST_TIMEOUT);
+    
     try {
       setIsSubmitting(true);
       setError(null);
       setSuccessMessage(null);
       
+      // Check network connectivity again right before submitting
+      if (!navigator.onLine) {
+        throw new Error('You appear to be offline. Please check your internet connection.');
+      }
+      
+      // Get current user info to verify session and get email
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !userData.user?.email) {
+        console.error('Error getting user data:', userError);
+        throw new Error('Unable to verify your account. Please try signing in again.');
+      }
+      
+      console.log('Verifying current password...');
+      
       // First verify the current password by attempting to sign in
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: (await supabase.auth.getUser()).data.user?.email || '',
+        email: userData.user.email,
         password: currentPassword,
       });
       
-      if (signInError || !signInData.session) {
-        setError('Current password is incorrect');
-        return;
+      if (signInError) {
+        console.error('Sign-in verification error:', signInError);
+        if (signInError.message.includes('rate limit')) {
+          throw new Error('Too many attempts. Please try again in a few minutes.');
+        } else {
+          throw new Error('Current password is incorrect');
+        }
       }
       
+      if (!signInData.session) {
+        console.error('No session returned after sign-in');
+        throw new Error('Authentication failed. Please refresh and try again.');
+      }
+      
+      console.log('Current password verified successfully, updating password...');
+      
       // Update the password
-      const { error: updateError } = await supabase.auth.updateUser({
+      const { data: updateData, error: updateError } = await supabase.auth.updateUser({
         password: newPassword
       });
       
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Password update error:', updateError);
+        throw updateError;
+      }
+      
+      if (!updateData.user) {
+        console.error('No user data returned after update');
+        throw new Error('Password update failed. Please try again.');
+      }
+      
+      console.log('Password updated successfully');
+      
+      // Clear the timeout since the operation completed successfully
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
       
       // Success
       setSuccessMessage('Your password has been updated successfully');
@@ -161,9 +270,37 @@ const PasswordChangePage = () => {
       console.error('Error changing password:', error);
       setError(error.message || 'Failed to update password. Please try again.');
     } finally {
+      // Clear the timeout in case it's still running
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      
       setIsSubmitting(false);
     }
   };
+
+  // Loading indicator with timeout for better UX
+  useEffect(() => {
+    let loadingTimeout: NodeJS.Timeout | null = null;
+    
+    if (isSubmitting) {
+      loadingTimeout = setTimeout(() => {
+        // If still submitting after 30 seconds, force reset the submitting state
+        if (isSubmitting) {
+          console.error('Force-resetting submission state after 30 seconds');
+          setIsSubmitting(false);
+          setError('The request is taking longer than expected. Please try again.');
+        }
+      }, 30000);
+    }
+    
+    return () => {
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout);
+      }
+    };
+  }, [isSubmitting]);
 
   if (isLoading) {
     return (
@@ -314,7 +451,7 @@ const PasswordChangePage = () => {
                   <div className="flex justify-end">
                     <button
                       type="button"
-                      onClick={() => router.push('/account/profile')}
+                      onClick={() => router.push('/account/profile/')}
                       className="mr-3 bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
                       Cancel
@@ -336,7 +473,7 @@ const PasswordChangePage = () => {
           
           <div className="mt-6">
             <a
-              href="/account/profile"
+              href="/account/profile/"
               className="text-sm font-medium text-blue-600 hover:text-blue-500"
             >
               &larr; Back to Profile
