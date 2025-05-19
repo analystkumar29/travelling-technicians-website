@@ -5,6 +5,7 @@ import Layout from '@/components/layout/Layout';
 import { FaTools, FaClock, FaShieldAlt, FaCheckCircle, FaMapMarkerAlt, FaStar, FaArrowRight, FaMobile, FaLaptop, FaTabletAlt } from 'react-icons/fa';
 import PostalCodeChecker from '@/components/PostalCodeChecker';
 import { initUIEnhancements } from '@/utils/ui-enhancements';
+import { testSupabaseConnection, supabase } from '@/utils/supabaseClient';
 
 // Component to render device brand image with proper dimensions
 const BrandImage = ({ src, alt }: { src: string, alt: string }) => {
@@ -113,6 +114,30 @@ export default function Home() {
 
   // Initialize UI enhancements and add anti-reload loop protection
   useEffect(() => {
+    // Test Supabase connection to diagnose auth issues
+    const testConnection = async () => {
+      try {
+        console.log('[HOME] Testing Supabase connection...');
+        const result = await testSupabaseConnection();
+        console.log('[HOME] Connection test result:', result);
+        
+        // If connection is successful but we're having auth issues, check session directly
+        if (result.success) {
+          const { data, error } = await supabase.auth.getSession();
+          if (error) {
+            console.error('[HOME] Session check error:', error.message);
+          } else {
+            console.log('[HOME] Current session state:', data.session ? 'Active' : 'No session');
+          }
+        }
+      } catch (err) {
+        console.error('[HOME] Connection test failed:', err);
+      }
+    };
+    
+    // Run the connection test
+    testConnection();
+    
     // Set a flag to prevent auth recovery on homepage
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('skipHomepageChecks', 'true');

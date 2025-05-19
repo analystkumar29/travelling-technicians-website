@@ -69,6 +69,19 @@ const getCookieSettings = () => {
   };
 };
 
+// Add enhanced logging
+const debug = {
+  log: (message: string, ...data: any[]) => {
+    console.log(`[SUPABASE] ${message}`, ...data);
+  },
+  error: (message: string, ...data: any[]) => {
+    console.error(`[SUPABASE] ${message}`, ...data);
+  },
+  warn: (message: string, ...data: any[]) => {
+    console.warn(`[SUPABASE] ${message}`, ...data);
+  }
+};
+
 // Create a single supabase client for the browser with correct cookie settings for auth
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -86,56 +99,36 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // Log the redirect URL on initialization in development
 if (isDev) {
-  console.log(`Auth redirect URL configured as: ${authRedirectUrl}`);
-  console.log('Cookie settings configured:', getCookieSettings());
+  debug.log(`Auth redirect URL configured as: ${authRedirectUrl}`);
+  debug.log('Cookie settings configured:', getCookieSettings());
 }
 
 // After creating the client, listen for auth state changes
 supabase.auth.onAuthStateChange((event, session) => {
-  if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-    // Make sure site redirects are correct
-    console.log('Auth state changed:', event);
-    console.log('Auth URL configured:', getSiteUrl());
+  debug.log('Auth state changed:', event);
+  
+  try {
+    // Get the hostname for domain handling
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
     
-    // Debug cookie settings
-    if (typeof window !== 'undefined') {
-      console.log('Current domain:', window.location.hostname);
+    // Configure auth URL based on current environment
+    const authUrl = hostname.includes('travelling-technicians.ca') 
+      ? 'https://travelling-technicians.ca' 
+      : authRedirectUrl;
+    
+    debug.log('Auth URL configured:', authUrl);
+    debug.log('Current domain:', hostname);
+    
+    // If we're in a cross-domain scenario (www vs non-www), set up cookie sharing
+    if (hostname.includes('travelling-technicians.ca')) {
+      debug.log('Setting up cross-domain cookie support...');
       
-      // For non-localhost environments, ensure cross-domain cookie support
-      const hostname = window.location.hostname;
-      
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && 
-          session && !hostname.includes('localhost')) {
-        try {
-          // Manually handle cross-domain cookies since cookieOptions is not available
-          if (session.access_token) {
-            console.log('Setting up cross-domain cookie support...');
-            
-            // Get the domain setting
-            const cookieSettings = getCookieSettings();
-            
-            // Set verification cookies with correct domain to support www and non-www
-            document.cookie = `tt_auth_check=true; path=/; ${cookieSettings.domain ? `domain=${cookieSettings.domain};` : ''} max-age=${60*60*24}; ${!isDev ? 'secure;' : ''} samesite=lax`;
-            
-            // Store domain in localStorage to help with auth recovery
-            localStorage.setItem('auth_domain', cookieSettings.domain || hostname);
-            localStorage.setItem('auth_session_active', 'true');
-            
-            // Force cookies to use the right domain by creating helper cookies
-            if (cookieSettings.domain && cookieSettings.domain === '.travelling-technicians.ca') {
-              // This helps maintain auth state across subdomains
-              try {
-                document.cookie = `tt_cross_domain=true; path=/; domain=${cookieSettings.domain}; max-age=${60*60*24*30}; ${!isDev ? 'secure;' : ''} samesite=lax`;
-              } catch (e) {
-                console.warn('Could not set cross-domain cookie:', e);
-              }
-            }
-          }
-        } catch (err) {
-          console.error('Error setting up cross-domain cookies:', err);
-        }
-      }
+      // Set cross-domain cookies with root domain (.travelling-technicians.ca)
+      document.cookie = 'tt_auth_check=true; path=/; domain=.travelling-technicians.ca; max-age=86400; SameSite=Lax; Secure';
+      document.cookie = 'tt_cross_domain=true; path=/; domain=.travelling-technicians.ca; max-age=86400; SameSite=Lax; Secure';
     }
+  } catch (err) {
+    debug.error('Error in auth state change handler:', err);
   }
 });
 
@@ -230,4 +223,29 @@ export type Review = {
   comment: string;
   service_type: string;
   visible: boolean;
+};
+
+// Export additional function to test Supabase connection
+export const testSupabaseConnection = async () => {
+  try {
+    const start = Date.now();
+    debug.log('Testing Supabase connection...');
+    
+    // Simple test query to check database connectivity
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .limit(1);
+    
+    if (error) {
+      debug.error('Connection test failed:', error.message);
+      return { success: false, error: error.message, latency: Date.now() - start };
+    }
+    
+    debug.log('Connection test successful, latency:', Date.now() - start, 'ms');
+    return { success: true, latency: Date.now() - start };
+  } catch (err) {
+    debug.error('Connection test exception:', err);
+    return { success: false, error: String(err), latency: -1 };
+  }
 }; 

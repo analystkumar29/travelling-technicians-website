@@ -292,45 +292,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserProfile = async (userId: string) => {
     try {
       if (!userId) {
-        console.error('Cannot fetch profile: userId is missing');
+        console.error('[PROFILE] Cannot fetch profile: userId is missing');
         return null;
       }
       
       setProfileLoading(true);
+      console.log(`[PROFILE] Starting profile fetch for user ${userId.slice(0,6)}...`);
       
       // Reset session storage counters when we successfully sign in
       if (user?.id && router.pathname.includes('/auth/callback')) {
+        console.log('[PROFILE] Auth callback detected, resetting fetch attempts');
         sessionStorage.removeItem('profileFetchAttempts');
       }
       
       // Track profile fetch attempts for this session
       const profileFetchAttempts = parseInt(sessionStorage.getItem('profileFetchAttempts') || '0', 10);
       sessionStorage.setItem('profileFetchAttempts', (profileFetchAttempts + 1).toString());
+      console.log(`[PROFILE] Fetch attempt ${profileFetchAttempts + 1}`);
 
       // Try more robust strategies earlier
       let profile = null;
       
-      // Try the RPC function first - it's more reliable
-      if (profileFetchAttempts >= 1) {
+      // Check if RPC function exists by making a test call
+      const hasRpcFunction = await testRpcFunctionExists();
+      
+      // Try the RPC function first - it's more reliable (if it exists)
+      if (hasRpcFunction) {
         try {
-          console.log('Using RPC profile fetch strategy');
+          console.log('[PROFILE] Using RPC profile fetch strategy');
           const { data: rpcData, error: rpcError } = await supabase.rpc('get_user_profile_by_id', {
             user_id: userId
           });
           
           if (rpcData && rpcData.length > 0) {
-            console.log('Successfully fetched profile via RPC');
+            console.log('[PROFILE] Successfully fetched profile via RPC');
             profile = rpcData[0];
           } else if (rpcError) {
-            console.error('RPC profile fetch error:', rpcError.message);
+            console.error('[PROFILE] RPC profile fetch error:', rpcError.message);
+          } else {
+            console.log('[PROFILE] RPC returned no data and no error');
           }
         } catch (rpcErr) {
-          console.error('RPC method error:', rpcErr);
+          console.error('[PROFILE] RPC method error:', rpcErr);
         }
+      } else {
+        console.log('[PROFILE] RPC function not available, skipping RPC method');
       }
       
       // If RPC didn't work, try the standard query
       if (!profile) {
+        console.log('[PROFILE] Trying standard profile query');
         const { data, error } = await supabase
           .from('user_profiles')
           .select('*')
@@ -338,29 +349,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .single();
           
         if (data) {
+          console.log('[PROFILE] Successfully fetched profile via standard query');
           profile = data;
         } else if (error) {
-          console.error('Profile fetch error:', error.message);
+          console.error('[PROFILE] Profile fetch error:', error.message);
         }
       }
       
-      // If we still don't have a profile after 2 attempts, try to create it
-      if (!profile && profileFetchAttempts >= 2) {
-        console.log('Profile not found after multiple attempts, attempting to create one');
+      // If we still don't have a profile, create one immediately without waiting for multiple attempts
+      if (!profile) {
+        console.log('[PROFILE] Profile not found, attempting to create one');
         
         try {
           // First check if user exists in auth.users
           const { data: userData } = await supabase.auth.getUser();
           
           if (userData?.user) {
+            console.log('[PROFILE] User exists in auth, creating profile');
             const { data: newProfile, error: insertError } = await supabase
               .from('user_profiles')
               .insert([
                 { 
                   id: userId,
                   email: userData.user.email,
-                  first_name: '',
-                  last_name: '',
+                  full_name: userData.user.user_metadata?.full_name || '',
                   created_at: new Date().toISOString()
                 }
               ])
@@ -368,19 +380,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               .single();
               
             if (newProfile) {
-              console.log('Successfully created new profile');
+              console.log('[PROFILE] Successfully created new profile');
               profile = newProfile;
             } else if (insertError) {
-              console.error('Error creating profile:', insertError.message);
+              console.error('[PROFILE] Error creating profile:', insertError.message);
             }
+          } else {
+            console.error('[PROFILE] Cannot create profile: user data unavailable');
           }
         } catch (createErr) {
-          console.error('Error in profile creation:', createErr);
+          console.error('[PROFILE] Error in profile creation:', createErr);
         }
       }
       
       // Update state if we have a profile
       if (profile) {
+        console.log('[PROFILE] Setting user profile in state');
         setUserProfile(profile);
         sessionStorage.removeItem('profileFetchAttempts'); // Reset counter on success
         
@@ -393,24 +408,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           document.cookie = 'tt_cross_domain=true; path=/; domain=.travelling-technicians.ca; max-age=86400; SameSite=Lax; Secure';
         }
         
+        console.log('[PROFILE] Profile fetch completed successfully');
         return profile;
       }
       
-      // If we've hit the maximum number of attempts, log the user out as a last resort
+      // Only attempt a forced sign out on protected pages, not on public or auth pages
       if (profileFetchAttempts >= 5) {
-        console.error('Maximum profile fetch attempts reached, logging out');
-        sessionStorage.removeItem('profileFetchAttempts');
-        supabase.auth.signOut().then(() => {
-          router.push('/auth/login');
-        });
+        const isProtectedPage = !['/auth/login', '/auth/register', '/auth/reset-password', '/'].some(p => 
+          router.pathname.startsWith(p) || router.pathname === p
+        );
+        
+        if (isProtectedPage) {
+          console.error('[PROFILE] Maximum profile fetch attempts reached on protected page, logging out');
+          sessionStorage.removeItem('profileFetchAttempts');
+          supabase.auth.signOut().then(() => {
+            router.push('/auth/login');
+          });
+        } else {
+          console.log('[PROFILE] Max attempts reached but on non-protected page, not logging out');
+          // Reset counter to avoid building up failed attempts
+          sessionStorage.setItem('profileFetchAttempts', '0');
+        }
       }
       
       return null;
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('[PROFILE] Error fetching user profile:', error);
       return null;
     } finally {
       setProfileLoading(false);
+    }
+  };
+  
+  // Helper function to test if the RPC function exists
+  const testRpcFunctionExists = async (): Promise<boolean> => {
+    try {
+      // Try to get the function definition from Supabase
+      const { data, error } = await supabase
+        .rpc('get_user_profile_by_id', { user_id: '00000000-0000-0000-0000-000000000000' })
+        .maybeSingle();
+      
+      // If we get data or a specific error NOT related to function existence, it exists
+      if (data || (error && !error.message.includes('does not exist'))) {
+        console.log('[PROFILE] RPC function exists');
+        return true;
+      }
+      
+      console.error('[PROFILE] RPC function does not exist:', error?.message);
+      return false;
+    } catch (err) {
+      console.error('[PROFILE] Error testing RPC function:', err);
+      return false;
     }
   };
   
