@@ -111,10 +111,47 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  // Initialize UI enhancements
+  // Initialize UI enhancements and add anti-reload loop protection
   useEffect(() => {
+    // Check if loop prevention is active, if so don't do anything else
+    if (typeof window !== 'undefined' && sessionStorage.getItem('homepageLoopPrevented') === 'true') {
+      console.log('Homepage reload loop prevention active, skipping initializations');
+      // Just clean up any problematic classes to be extra safe
+      document.body.classList.remove('loading-navigation');
+      document.body.classList.remove('navigation-stuck');
+      document.body.classList.remove('auth-corrupted');
+      return;
+    }
+    
     // Initialize enhancements
     initUIEnhancements();
+    
+    // Anti-reload loop protection specifically for homepage
+    // This helps prevent issues with the auth state detection
+    if (typeof window !== 'undefined') {
+      // Clear any problematic classes that might cause reload loops
+      document.body.classList.remove('loading-navigation');
+      document.body.classList.remove('navigation-stuck');
+      document.body.classList.remove('auth-corrupted');
+      
+      // Reset homepage reload counter on deliberate navigation
+      const resetReloadCount = () => {
+        sessionStorage.setItem('homepageReloadCount', '0');
+      };
+      
+      // Add event listener to links to reset the counter on deliberate navigation
+      const links = document.querySelectorAll('a');
+      links.forEach(link => {
+        link.addEventListener('click', resetReloadCount);
+      });
+      
+      return () => {
+        // Cleanup
+        links.forEach(link => {
+          link.removeEventListener('click', resetReloadCount);
+        });
+      };
+    }
   }, []);
 
   return (

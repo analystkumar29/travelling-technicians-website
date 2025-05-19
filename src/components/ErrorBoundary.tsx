@@ -74,8 +74,17 @@ class ErrorBoundary extends Component<Props, State> {
   handleSpecificErrors(error: Error) {
     // Clean up JSONP script tags that may be causing errors
     if (error.message?.includes('jsonp_callback') || 
-        error.message?.includes('is not defined')) {
+        error.message?.includes('is not defined') ||
+        error.message?.includes('Script error')) {
       this.cleanupJSONPScriptTags();
+    }
+    
+    // Handle booking-related errors
+    if (error.message?.includes('booking') || 
+        error.message?.includes('address') ||
+        error.message?.includes('location')) {
+      console.log('Booking process error detected, applying fixes');
+      this.handleBookingErrors();
     }
     
     // Handle other specific error types as needed
@@ -87,15 +96,53 @@ class ErrorBoundary extends Component<Props, State> {
   // Clean up JSONP script tags that might be causing errors
   cleanupJSONPScriptTags() {
     try {
-      const scripts = document.querySelectorAll('script[src*="json_callback"]');
-      scripts.forEach((script: Element) => {
-        // Properly type the script element as HTMLScriptElement
+      console.log('Cleaning up JSONP scripts to fix errors');
+      
+      // Remove all scripts with 'json_callback' in the URL
+      const jsonpScripts = document.querySelectorAll('script[src*="json_callback"]');
+      jsonpScripts.forEach((script: Element) => {
         const scriptElement = script as HTMLScriptElement;
         console.log('Removing problematic JSONP script:', scriptElement.src);
         scriptElement.remove();
       });
+      
+      // Also remove all scripts related to map/location services that might be causing issues
+      const locationScripts = document.querySelectorAll('script[src*="nominatim"]');
+      locationScripts.forEach((script: Element) => {
+        const scriptElement = script as HTMLScriptElement;
+        console.log('Removing location script:', scriptElement.src);
+        scriptElement.remove();
+      });
+      
+      // Clear any global JSONP callbacks
+      if (typeof window !== 'undefined') {
+        // Find and remove all jsonp callback functions in the global scope
+        Object.keys(window).forEach((key) => {
+          if (key.includes('jsonp_callback')) {
+            console.log('Removing global JSONP callback:', key);
+            delete (window as any)[key];
+          }
+        });
+      }
     } catch (e) {
       console.error('Error cleaning up JSONP scripts:', e);
+    }
+  }
+  
+  // Handle booking-related errors
+  handleBookingErrors() {
+    try {
+      // Reset any loading states that might be stuck
+      document.body.classList.remove('loading');
+      document.body.classList.remove('processing');
+      
+      // Remove any error overlay elements that might be present
+      const errorOverlays = document.querySelectorAll('.error-overlay');
+      errorOverlays.forEach((overlay) => overlay.remove());
+      
+      console.log('Applied booking error fixes');
+    } catch (e) {
+      console.error('Error handling booking errors:', e);
     }
   }
 

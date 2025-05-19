@@ -52,6 +52,8 @@ export default function AddressAutocomplete({
   const inputRef = useRef<HTMLInputElement>(null);
   const scriptRef = useRef<HTMLScriptElement | null>(null);
   const callbackName = useRef(`jsonp_callback_${Date.now()}_${Math.round(Math.random() * 100000)}`);
+  // Create a stable callback reference to prevent errors
+  const stableCallbackRef = useRef<Function | null>(null);
   const [extractedPostalCode, setExtractedPostalCode] = useState('');
   const [userEnteredAddress, setUserEnteredAddress] = useState('');
   const [userEnteredStreetNumber, setUserEnteredStreetNumber] = useState('');
@@ -88,25 +90,66 @@ export default function AddressAutocomplete({
     return () => clearTimeout(timeoutId);
   }, [inputValue]);
 
-  // Setup JSONP callback
+  // Setup JSONP callback with improved error handling
   useEffect(() => {
-    // Create a global callback function
-    (window as any)[callbackName.current] = (data: any) => {
+    // Clean up any existing callbacks first
+    if (typeof window !== 'undefined' && callbackName.current) {
+      delete (window as any)[callbackName.current];
+    }
+    
+    // Create a stable function reference
+    stableCallbackRef.current = (data: any) => {
       console.log("JSONP Suggestions received:", data);
-      setSuggestions(data || []);
-      setShowSuggestions(data && data.length > 0);
-      setLoading(false);
       
-      // Clean up the script tag
-      if (scriptRef.current && scriptRef.current.parentNode) {
-        scriptRef.current.parentNode.removeChild(scriptRef.current);
-        scriptRef.current = null;
+      // Safely handle the data
+      try {
+        setSuggestions(data || []);
+        setShowSuggestions(data && data.length > 0);
+      } catch (err) {
+        console.error("Error processing JSONP data:", err);
+        setSuggestions([]);
+        setShowSuggestions(false);
+      } finally {
+        setLoading(false);
+        
+        // Clean up the script tag
+        try {
+          if (scriptRef.current && scriptRef.current.parentNode) {
+            scriptRef.current.parentNode.removeChild(scriptRef.current);
+            scriptRef.current = null;
+          }
+        } catch (err) {
+          console.error("Error cleaning up script tag:", err);
+        }
+      }
+    };
+    
+    // Assign the callback globally
+    (window as any)[callbackName.current] = (...args: any[]) => {
+      // Use try-catch to prevent any uncaught exceptions
+      try {
+        if (stableCallbackRef.current) {
+          stableCallbackRef.current(...args);
+        }
+      } catch (err) {
+        console.error("Error in JSONP callback:", err);
+        setLoading(false);
       }
     };
     
     return () => {
-      // Clean up the callback
-      delete (window as any)[callbackName.current];
+      // Clean up the callback on unmount
+      try {
+        delete (window as any)[callbackName.current];
+        
+        // Clean up any lingering script tags
+        const scripts = document.querySelectorAll('script[src*="json_callback"]');
+        scripts.forEach((script) => {
+          script.parentNode?.removeChild(script);
+        });
+      } catch (e) {
+        console.error('Error cleaning up JSONP resources:', e);
+      }
     };
   }, []);
 
@@ -131,28 +174,51 @@ export default function AddressAutocomplete({
     setLoading(true);
     setError('');
     
-    // Remove any existing script tag
-    if (scriptRef.current && scriptRef.current.parentNode) {
-      scriptRef.current.parentNode.removeChild(scriptRef.current);
-    }
-    
-    // Create a new script tag for JSONP
-    const script = document.createElement('script');
-    script.src = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(inputValue)} British Columbia, Canada&countrycodes=ca&limit=5&addressdetails=1&json_callback=${callbackName.current}`;
-    document.body.appendChild(script);
-    scriptRef.current = script;
-    
-    // Set a timeout in case the JSONP request fails
-    setTimeout(() => {
-      if (loading) {
-        setLoading(false);
-        setError('Request timed out. Please try again.');
-        if (scriptRef.current && scriptRef.current.parentNode) {
-          scriptRef.current.parentNode.removeChild(scriptRef.current);
-          scriptRef.current = null;
-        }
+    try {
+      // Remove any existing script tag
+      if (scriptRef.current && scriptRef.current.parentNode) {
+        scriptRef.current.parentNode.removeChild(scriptRef.current);
+        scriptRef.current = null;
       }
-    }, 5000);
+      
+      // Also clean up any other lingering script tags from previous requests
+      const oldScripts = document.querySelectorAll('script[src*="json_callback"]');
+      oldScripts.forEach((script) => {
+        if (script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+      });
+      
+      // Create a new script tag for JSONP
+      const script = document.createElement('script');
+      script.src = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(inputValue)} British Columbia, Canada&countrycodes=ca&limit=5&addressdetails=1&json_callback=${callbackName.current}`;
+      script.onerror = () => {
+        console.error("JSONP script loading failed");
+        setLoading(false);
+        setError('Failed to load address suggestions. Please try again or enter manually.');
+        if (onError) onError('Failed to load address suggestions');
+      };
+      document.body.appendChild(script);
+      scriptRef.current = script;
+      
+      // Set a timeout in case the JSONP request fails
+      setTimeout(() => {
+        if (loading) {
+          setLoading(false);
+          setError('Request timed out. Please try again or enter address manually.');
+          if (scriptRef.current && scriptRef.current.parentNode) {
+            scriptRef.current.parentNode.removeChild(scriptRef.current);
+            scriptRef.current = null;
+          }
+          if (onError) onError('Address suggestion request timed out');
+        }
+      }, 5000);
+    } catch (error) {
+      console.error("Error setting up JSONP request:", error);
+      setLoading(false);
+      setError('Could not get address suggestions. Please enter your address manually.');
+      if (onError) onError('Error setting up address suggestions');
+    }
   };
 
   const handleSuggestionClick = (e: any) => {
