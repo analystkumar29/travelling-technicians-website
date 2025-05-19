@@ -20,6 +20,7 @@ export async function middleware(req: NextRequest) {
     const isPreviewDeployment = Boolean(process.env.VERCEL_ENV === 'preview');
     
     // Create a Supabase client for the middleware
+    // For your version of auth-helpers-nextjs, we need to use the standard syntax
     const supabase = createMiddlewareClient({ req, res });
     
     // Verify session is valid during navigation
@@ -60,12 +61,21 @@ export async function middleware(req: NextRequest) {
         redirectUrl.searchParams.set('redirect', path);
         
         // Set cookies to help with debugging
-        res.cookies.set('auth_redirect_reason', 'protected_path_access', { 
+        // For Cookie options, we'll set them directly
+        const cookieOptions = {
           path: '/',
-          sameSite: 'lax',
+          sameSite: 'lax' as 'lax',
           secure: !isDevEnvironment,
           httpOnly: true
-        });
+        };
+
+        // For Vercel previews or production, handle domain differently
+        if (!isDevEnvironment && !hostname.includes('vercel.app')) {
+          // @ts-ignore - TypeScript doesn't know about domain property
+          cookieOptions.domain = '.travelling-technicians.ca';
+        }
+        
+        res.cookies.set('auth_redirect_reason', 'protected_path_access', cookieOptions);
         
         return NextResponse.redirect(redirectUrl);
       }
@@ -87,12 +97,21 @@ export async function middleware(req: NextRequest) {
       errorUrl.searchParams.set('action', 'reset');
       
       // Set cookies to help with debugging
-      res.cookies.set('auth_error_reason', 'corrupted_session', { 
+      // For Cookie options, we'll set them directly
+      const cookieOptions = {
         path: '/',
-        sameSite: 'lax',
+        sameSite: 'lax' as 'lax',
         secure: !isDevEnvironment,
         httpOnly: true
-      });
+      };
+
+      // For Vercel previews or production, handle domain differently  
+      if (!isDevEnvironment && !hostname.includes('vercel.app')) {
+        // @ts-ignore - TypeScript doesn't know about domain property
+        cookieOptions.domain = '.travelling-technicians.ca';
+      }
+      
+      res.cookies.set('auth_error_reason', 'corrupted_session', cookieOptions);
       
       return NextResponse.redirect(errorUrl);
     }

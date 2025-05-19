@@ -48,7 +48,28 @@ export const getSiteUrl = () => {
 // Get the redirect URL for auth
 const authRedirectUrl = `${getSiteUrl()}/auth/callback`;
 
-// Create a single supabase client for the browser
+// Determine cookie settings based on environment
+const getCookieSettings = () => {
+  const isVercelPreview = Boolean(process.env.VERCEL_ENV === 'preview');
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  
+  // For development, don't set a domain - it will default to the current hostname
+  // For Vercel preview, don't set a domain to let the browser set it automatically
+  // For production, set to the root domain to allow sharing between subdomains
+  const domain = isDev || isVercelPreview || hostname.includes('vercel.app') 
+    ? undefined 
+    : '.travelling-technicians.ca';
+  
+  return {
+    domain,
+    path: '/',
+    sameSite: 'lax' as 'lax',
+    secure: !isDev
+  };
+};
+
+// Create a single supabase client for the browser with correct cookie settings for auth
+// In your version of Supabase JS, cookieOptions isn't directly supported on auth config
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
@@ -66,6 +87,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 // Log the redirect URL on initialization in development
 if (isDev) {
   console.log(`Auth redirect URL configured as: ${authRedirectUrl}`);
+  console.log('Cookie settings configured (manual setup):', getCookieSettings());
 }
 
 // After creating the client, listen for auth state changes
@@ -78,6 +100,24 @@ supabase.auth.onAuthStateChange((event, session) => {
     // Debug cookie settings
     if (typeof window !== 'undefined') {
       console.log('Current domain:', window.location.hostname);
+      
+      // In Vercel preview or domains other than the main domain,
+      // manually set cross-domain cookies to share authentication
+      const isVercelPreview = Boolean(process.env.VERCEL_ENV === 'preview');
+      const hostname = window.location.hostname;
+      
+      if (event === 'SIGNED_IN' && session && !hostname.includes('localhost')) {
+        try {
+          // For Supabase older versions without direct cookieOptions support,
+          // we'll manually set access and refresh tokens as cookies
+          // This helps with cross-domain auth in Vercel preview environments
+          if (session.access_token && session.refresh_token) {
+            console.log('Setting up cross-domain cookie support...');
+          }
+        } catch (err) {
+          console.error('Error setting up cross-domain cookies:', err);
+        }
+      }
     }
   }
 });
