@@ -20,12 +20,12 @@ const PasswordChangePage = () => {
   
   // Refs to track timeouts and auth subscription
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const authListenerRef = useRef<{data: {subscription: any}}>(); 
+  const authListenerRef = useRef<{ subscription: any } | null>(null);
 
   // Listen for auth state changes - especially password updates
   useEffect(() => {
     // Set up auth listener to detect password updates
-    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    const { subscription } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event);
       
       // When user is updated (password change occurs)
@@ -56,7 +56,7 @@ const PasswordChangePage = () => {
     });
     
     // Save reference to unsubscribe
-    authListenerRef.current = data;
+    authListenerRef.current = { subscription };
     
     // Cleanup auth listener on unmount
     return () => {
