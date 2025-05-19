@@ -34,6 +34,11 @@ export async function middleware(req: NextRequest) {
       res.headers.set('x-auth-error', error.message);
     }
     
+    // Check for custom auth cookie that we set in the client
+    // This helps with cross-domain authentication
+    const hasAuthCookie = req.cookies.get('tt_auth_check')?.value === 'true';
+    const hasAuthDomainInStorage = req.cookies.get('tt_cross_domain')?.value === 'true';
+    
     // Get path from URL
     const path = req.nextUrl.pathname;
     
@@ -52,8 +57,12 @@ export async function middleware(req: NextRequest) {
 
     // For protected paths, verify authentication
     if (isProtectedPath) {
+      // Enhanced session validation including our custom auth cookies
+      const isAuthenticated = (session && session.user?.id) || 
+                              (hasAuthCookie && hasAuthDomainInStorage);
+      
       // If no session or invalid session, redirect to login
-      if (!session || !session.user?.id) {
+      if (!isAuthenticated) {
         console.log(`Middleware: Protected path ${path} accessed without valid session, redirecting to login`);
         
         // Store intended path for redirect after login
@@ -66,7 +75,8 @@ export async function middleware(req: NextRequest) {
           path: '/',
           sameSite: 'lax' as 'lax',
           secure: !isDevEnvironment,
-          httpOnly: true
+          httpOnly: false, // Allow client-side access
+          maxAge: 60 * 5 // 5 minutes
         };
 
         // For Vercel previews or production, handle domain differently
@@ -80,8 +90,10 @@ export async function middleware(req: NextRequest) {
         return NextResponse.redirect(redirectUrl);
       }
       
-      // Add header to indicate this is an authenticated request
-      res.headers.set('x-auth-user-id', session.user.id);
+      // If authenticated, add header with user ID (if available)
+      if (session?.user?.id) {
+        res.headers.set('x-auth-user-id', session.user.id);
+      }
     }
     
     // If user is authenticated but session is corrupted, redirect to error page
@@ -91,29 +103,32 @@ export async function middleware(req: NextRequest) {
         hasEmail: Boolean(session.user?.email)
       });
       
-      // Session is corrupted - redirect to error page with reset option
-      const errorUrl = new URL('/auth/error', req.url);
-      errorUrl.searchParams.set('error', 'invalid_session');
-      errorUrl.searchParams.set('action', 'reset');
-      
-      // Set cookies to help with debugging
-      // For Cookie options, we'll set them directly
-      const cookieOptions = {
-        path: '/',
-        sameSite: 'lax' as 'lax',
-        secure: !isDevEnvironment,
-        httpOnly: true
-      };
-
-      // For Vercel previews or production, handle domain differently  
-      if (!isDevEnvironment && !hostname.includes('vercel.app')) {
-        // @ts-ignore - TypeScript doesn't know about domain property
-        cookieOptions.domain = '.travelling-technicians.ca';
+      // Only redirect to error if not on homepage (to prevent loops)
+      if (path !== '/' && path !== '') {
+        // Session is corrupted - redirect to error page with reset option
+        const errorUrl = new URL('/auth/error', req.url);
+        errorUrl.searchParams.set('error', 'invalid_session');
+        errorUrl.searchParams.set('action', 'reset');
+        
+        // Set cookies to help with debugging
+        const cookieOptions = {
+          path: '/',
+          sameSite: 'lax' as 'lax',
+          secure: !isDevEnvironment,
+          httpOnly: false,
+          maxAge: 60 * 5 // 5 minutes
+        };
+  
+        // For Vercel previews or production, handle domain differently  
+        if (!isDevEnvironment && !hostname.includes('vercel.app')) {
+          // @ts-ignore - TypeScript doesn't know about domain property
+          cookieOptions.domain = '.travelling-technicians.ca';
+        }
+        
+        res.cookies.set('auth_error_reason', 'corrupted_session', cookieOptions);
+        
+        return NextResponse.redirect(errorUrl);
       }
-      
-      res.cookies.set('auth_error_reason', 'corrupted_session', cookieOptions);
-      
-      return NextResponse.redirect(errorUrl);
     }
     
     return res;
