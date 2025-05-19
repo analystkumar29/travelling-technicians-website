@@ -18,8 +18,53 @@ const PasswordChangePage = () => {
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong' | null>(null);
   const [sessionStatus, setSessionStatus] = useState<'valid' | 'invalid' | 'checking'>('checking');
   
-  // Ref to track timeout ID
+  // Refs to track timeouts and auth subscription
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const authListenerRef = useRef<{data: {subscription: any}}>(); 
+
+  // Listen for auth state changes - especially password updates
+  useEffect(() => {
+    // Set up auth listener to detect password updates
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event);
+      
+      // When user is updated (password change occurs)
+      if (event === 'USER_UPDATED') {
+        console.log('Detected password update success from auth state');
+        
+        // Clear any timeout to prevent double-handling
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+        
+        // If we were in the process of submitting, confirm success
+        if (isSubmitting) {
+          setIsSubmitting(false);
+          setSuccessMessage('Your password has been updated successfully');
+          setCurrentPassword('');
+          setNewPassword('');
+          setConfirmPassword('');
+          setPasswordStrength(null);
+          
+          // Clear success message after a delay
+          setTimeout(() => {
+            setSuccessMessage(null);
+          }, 5000);
+        }
+      }
+    });
+    
+    // Save reference to unsubscribe
+    authListenerRef.current = data;
+    
+    // Cleanup auth listener on unmount
+    return () => {
+      if (authListenerRef.current?.subscription) {
+        authListenerRef.current.subscription.unsubscribe();
+      }
+    };
+  }, [isSubmitting]);
 
   // Check authentication
   useEffect(() => {
@@ -232,7 +277,8 @@ const PasswordChangePage = () => {
       console.log('Current password verified successfully, updating password...');
       
       // Update the password
-      const { data: updateData, error: updateError } = await supabase.auth.updateUser({
+      // Note: We don't need to handle success here as the auth listener will catch it
+      const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword
       });
       
@@ -241,46 +287,25 @@ const PasswordChangePage = () => {
         throw updateError;
       }
       
-      if (!updateData.user) {
-        console.error('No user data returned after update');
-        throw new Error('Password update failed. Please try again.');
-      }
-      
-      console.log('Password updated successfully');
-      
-      // Clear the timeout since the operation completed successfully
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-      
-      // Success
-      setSuccessMessage('Your password has been updated successfully');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setPasswordStrength(null);
-      
-      // Clear success message after a delay
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 5000);
+      // The success case is now handled by the auth listener
+      // This prevents issues with timing and async operations
       
     } catch (error: any) {
       console.error('Error changing password:', error);
       setError(error.message || 'Failed to update password. Please try again.');
-    } finally {
-      // Clear the timeout in case it's still running
+      setIsSubmitting(false); // Reset submission state on error
+      
+      // Clear the timeout in case of error
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
-      
-      setIsSubmitting(false);
     }
+    // Note: We don't include a finally block here because we want isSubmitting
+    // to be controlled by the auth listener on success, or the catch block on error
   };
 
-  // Loading indicator with timeout for better UX
+  // Emergency backup timeout as a last resort
   useEffect(() => {
     let loadingTimeout: NodeJS.Timeout | null = null;
     
