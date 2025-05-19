@@ -54,12 +54,25 @@ export async function middleware(req: NextRequest) {
       path.startsWith(protectedPath) || path === protectedPath
     );
 
+    // Enhanced session validation including our custom auth cookies
+    const isAuthenticated = (session && session.user?.id) || 
+                            (hasAuthCookie && hasAuthDomainInStorage);
+    
+    // Add manual cookie check for fallback - we can detect auth even if session check failed
+    const manualAuthCheck = req.cookies.get('tt_auth_check');
+    const manualCrossDomain = req.cookies.get('tt_cross_domain');
+    const hasManualAuthCookie = manualAuthCheck ? manualAuthCheck.toString() === 'true' : false;
+    const hasManualCrossDomain = manualCrossDomain ? manualCrossDomain.toString() === 'true' : false;
+    
+    // Consider manually set cookies as well
+    const isManuallyAuthenticated = hasManualAuthCookie && hasManualCrossDomain;
+    
+    // Final auth decision combines both methods
+    const finalIsAuthenticated = isAuthenticated || isManuallyAuthenticated;
+    
     // Handle protected paths
     if (isProtectedPath) {
-      const isAuthenticated = (session && session.user?.id) || 
-                              (hasAuthCookie && hasAuthDomainInStorage);
-      
-      if (!isAuthenticated) {
+      if (!finalIsAuthenticated) {
         console.log(`Middleware: Protected path ${path} accessed without valid session, redirecting to login`);
         
         // Redirect to login

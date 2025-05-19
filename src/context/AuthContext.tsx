@@ -313,77 +313,112 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Try more robust strategies earlier
       let profile = null;
       
-      // Check if RPC function exists by making a test call
-      const hasRpcFunction = await testRpcFunctionExists();
-      
-      // Try the RPC function first - it's more reliable (if it exists)
-      if (hasRpcFunction) {
+      // Helper function to wrap Supabase calls with timeout
+      const withTimeout = async (promise, timeoutMs = 5000, name = 'operation') => {
+        let timeoutId;
+        
         try {
-          console.log('[PROFILE] Using RPC profile fetch strategy');
-          const { data: rpcData, error: rpcError } = await supabase.rpc('get_user_profile_by_id', {
-            user_id: userId
+          const timeoutPromise = new Promise((_, reject) => {
+            timeoutId = setTimeout(() => {
+              reject(new Error(`[PROFILE] ${name} timed out after ${timeoutMs}ms`));
+            }, timeoutMs);
           });
           
-          if (rpcData && rpcData.length > 0) {
-            console.log('[PROFILE] Successfully fetched profile via RPC');
-            profile = rpcData[0];
-          } else if (rpcError) {
-            console.error('[PROFILE] RPC profile fetch error:', rpcError.message);
-          } else {
-            console.log('[PROFILE] RPC returned no data and no error');
-          }
-        } catch (rpcErr) {
-          console.error('[PROFILE] RPC method error:', rpcErr);
-        }
-      } else {
-        console.log('[PROFILE] RPC function not available, skipping RPC method');
-      }
-      
-      // If RPC didn't work, try the standard query
-      if (!profile) {
-        console.log('[PROFILE] Trying standard profile query');
-        const { data, error } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', userId)
-          .single();
+          // Race the operation against the timeout
+          const result = await Promise.race([
+            promise,
+            timeoutPromise
+          ]);
           
-        if (data) {
-          console.log('[PROFILE] Successfully fetched profile via standard query');
-          profile = data;
-        } else if (error) {
-          console.error('[PROFILE] Profile fetch error:', error.message);
+          return result;
+        } catch (err) {
+          console.error(`[PROFILE] ${name} failed:`, err);
+          throw err;
+        } finally {
+          clearTimeout(timeoutId);
         }
+      };
+      
+      // Try a simple query first to test if Supabase is responding
+      try {
+        console.log('[PROFILE] Testing database connection...');
+        const connectionTest = await withTimeout(
+          supabase.from('user_profiles').select('count').limit(1),
+          3000,
+          'Connection test'
+        );
+        
+        if (connectionTest.error) {
+          console.error('[PROFILE] Database connection test failed:', connectionTest.error.message);
+        } else {
+          console.log('[PROFILE] Database connection successful');
+        }
+      } catch (connErr) {
+        console.error('[PROFILE] Connection test timeout:', connErr);
       }
       
-      // If we still don't have a profile, create one immediately without waiting for multiple attempts
+      // Skip RPC and try direct query first for reliability
+      console.log('[PROFILE] Trying direct profile query...');
+      try {
+        const { data, error } = await withTimeout(
+          supabase.from('user_profiles')
+            .select('*')
+            .eq('id', userId)
+            .single(),
+          5000,
+          'Direct profile query'
+        );
+        
+        if (error) {
+          console.error('[PROFILE] Direct query error:', error.message);
+        } else if (data) {
+          console.log('[PROFILE] Successfully fetched profile via direct query');
+          profile = data;
+        } else {
+          console.log('[PROFILE] No profile found via direct query');
+        }
+      } catch (directErr) {
+        console.error('[PROFILE] Direct query failed:', directErr);
+      }
+      
+      // If direct query didn't work, try to create the profile
       if (!profile) {
         console.log('[PROFILE] Profile not found, attempting to create one');
         
         try {
           // First check if user exists in auth.users
-          const { data: userData } = await supabase.auth.getUser();
+          const { data: userData, error: userError } = await withTimeout(
+            supabase.auth.getUser(),
+            5000,
+            'Auth getUser'
+          );
           
-          if (userData?.user) {
+          if (userError) {
+            console.error('[PROFILE] Error getting user data:', userError.message);
+          } else if (userData?.user) {
             console.log('[PROFILE] User exists in auth, creating profile');
-            const { data: newProfile, error: insertError } = await supabase
-              .from('user_profiles')
-              .insert([
-                { 
-                  id: userId,
-                  email: userData.user.email,
-                  full_name: userData.user.user_metadata?.full_name || '',
-                  created_at: new Date().toISOString()
-                }
-              ])
-              .select('*')
-              .single();
-              
-            if (newProfile) {
+            
+            const { data: newProfile, error: insertError } = await withTimeout(
+              supabase.from('user_profiles')
+                .insert([
+                  { 
+                    id: userId,
+                    email: userData.user.email,
+                    full_name: userData.user.user_metadata?.full_name || '',
+                    created_at: new Date().toISOString()
+                  }
+                ])
+                .select('*')
+                .single(),
+              5000,
+              'Profile creation'
+            );
+            
+            if (insertError) {
+              console.error('[PROFILE] Error creating profile:', insertError.message);
+            } else if (newProfile) {
               console.log('[PROFILE] Successfully created new profile');
               profile = newProfile;
-            } else if (insertError) {
-              console.error('[PROFILE] Error creating profile:', insertError.message);
             }
           } else {
             console.error('[PROFILE] Cannot create profile: user data unavailable');
@@ -400,12 +435,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sessionStorage.removeItem('profileFetchAttempts'); // Reset counter on success
         
         // Set cross-domain cookies to help with auth
-        document.cookie = 'tt_auth_check=true; path=/; max-age=86400; SameSite=Lax';
-        
-        // For production environments
-        if (window.location.hostname.includes('travelling-technicians.ca')) {
-          document.cookie = 'tt_auth_check=true; path=/; domain=.travelling-technicians.ca; max-age=86400; SameSite=Lax; Secure';
-          document.cookie = 'tt_cross_domain=true; path=/; domain=.travelling-technicians.ca; max-age=86400; SameSite=Lax; Secure';
+        try {
+          document.cookie = 'tt_auth_check=true; path=/; max-age=86400; SameSite=Lax';
+          
+          // For production environments
+          if (window.location.hostname.includes('travelling-technicians.ca')) {
+            document.cookie = 'tt_auth_check=true; path=/; domain=.travelling-technicians.ca; max-age=86400; SameSite=Lax; Secure';
+            document.cookie = 'tt_cross_domain=true; path=/; domain=.travelling-technicians.ca; max-age=86400; SameSite=Lax; Secure';
+          }
+        } catch (cookieErr) {
+          console.error('[PROFILE] Error setting cookies:', cookieErr);
         }
         
         console.log('[PROFILE] Profile fetch completed successfully');
