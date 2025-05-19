@@ -34,7 +34,7 @@ const validateAuthState = (user: any): boolean => {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -314,7 +314,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let profile = null;
       
       // Helper function to wrap Supabase calls with timeout
-      const withTimeout = async <T>(promise: Promise<T>, timeoutMs = 5000, name = 'operation'): Promise<T> => {
+      const withTimeout = async <T,>(promise: Promise<T>, timeoutMs = 5000, name = 'operation'): Promise<T> => {
         let timeoutId: NodeJS.Timeout;
         
         try {
@@ -343,7 +343,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         console.log('[PROFILE] Testing database connection...');
         const connectionTest = await withTimeout(
-          supabase.from('user_profiles').select('count').limit(1),
+          Promise.resolve(supabase.from('user_profiles').select('count').limit(1)),
           3000,
           'Connection test'
         );
@@ -361,10 +361,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('[PROFILE] Trying direct profile query...');
       try {
         const { data, error } = await withTimeout(
-          supabase.from('user_profiles')
+          Promise.resolve(supabase.from('user_profiles')
             .select('*')
             .eq('id', userId)
-            .single(),
+            .single()),
           5000,
           'Direct profile query'
         );
@@ -388,7 +388,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           // First check if user exists in auth.users
           const { data: userData, error: userError } = await withTimeout(
-            supabase.auth.getUser(),
+            Promise.resolve(supabase.auth.getUser()),
             5000,
             'Auth getUser'
           );
@@ -399,7 +399,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.log('[PROFILE] User exists in auth, creating profile');
             
             const { data: newProfile, error: insertError } = await withTimeout(
-              supabase.from('user_profiles')
+              Promise.resolve(supabase.from('user_profiles')
                 .insert([
                   { 
                     id: userId,
@@ -409,7 +409,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                   }
                 ])
                 .select('*')
-                .single(),
+                .single()),
               5000,
               'Profile creation'
             );
@@ -897,10 +897,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useAuth() {
+function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-} 
+}
+
+// Export all the necessary items
+export { AuthContext, AuthProvider, useAuth };

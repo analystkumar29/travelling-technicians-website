@@ -353,9 +353,9 @@ export default function Home() {
                 3
               </div>
               <div className="rounded-full bg-primary-100 w-20 h-20 flex items-center justify-center mx-auto mb-6">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
               </div>
               <h3 className="text-xl font-bold mb-3">Get Repaired & Relax</h3>
               <p className="text-gray-600">
@@ -497,9 +497,9 @@ export default function Home() {
                   <FaClock className="h-8 w-8 text-primary-600 benefit-icon" />
                 </div>
                 <h3 className="text-xl font-bold mb-4">Save Time</h3>
-                <p className="text-gray-600">
-                  No need to travel to a repair shop or wait days for your device. Our technicians come to you and complete most repairs within an hour.
-                </p>
+                              <p className="text-gray-600">
+                No need to travel to a repair shop or wait days for your device. Our technicians come to you and complete most repairs within an hour.
+              </p>
               </div>
             </div>
             
@@ -552,7 +552,7 @@ export default function Home() {
                       />
                     ))}
                   </div>
-                  <p className="text-gray-700 mb-4 testimonial-text">"{testimonial.comment}"</p>
+                  <p className="text-gray-700 mb-4 testimonial-text">&ldquo;{testimonial.comment}&rdquo;</p>
                   <div className="flex justify-between items-center">
                     <div>
                       <p className="font-medium">{testimonial.name}</p>
