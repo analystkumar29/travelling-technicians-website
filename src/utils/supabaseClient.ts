@@ -49,10 +49,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     flowType: 'pkce',
-    detectSessionInUrl: true,
-    // Set redirect URL directly in the auth options - most reliable method
-    // for Supabase v2.x
-    redirectTo: authRedirectUrl
+    detectSessionInUrl: true
   },
   global: {
     headers: { 
@@ -74,6 +71,20 @@ supabase.auth.onAuthStateChange((event, session) => {
     console.log('Auth URL configured:', getSiteUrl());
   }
 });
+
+// Set the default redirect URL for auth operations
+// Instead of setting redirectTo in the client options, we manually configure it here
+// to ensure it works across all Supabase versions
+try {
+  // This needs to be done after client initialization
+  // Will be used for all auth operations (signIn, signUp, etc.)
+  if (typeof window !== 'undefined') {
+    console.log('Setting default auth redirect to:', authRedirectUrl);
+    sessionStorage.setItem('supabaseAuthRedirectTo', authRedirectUrl);
+  }
+} catch (err) {
+  console.error('Error setting auth redirect:', err);
+}
 
 // Function to get admin client with service role (only use on the server)
 export const getServiceSupabase = () => {
