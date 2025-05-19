@@ -314,11 +314,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let profile = null;
       
       // Helper function to wrap Supabase calls with timeout
-      const withTimeout = async (promise, timeoutMs = 5000, name = 'operation') => {
-        let timeoutId;
+      const withTimeout = async <T>(promise: Promise<T>, timeoutMs = 5000, name = 'operation'): Promise<T> => {
+        let timeoutId: NodeJS.Timeout;
         
         try {
-          const timeoutPromise = new Promise((_, reject) => {
+          const timeoutPromise = new Promise<never>((_, reject) => {
             timeoutId = setTimeout(() => {
               reject(new Error(`[PROFILE] ${name} timed out after ${timeoutMs}ms`));
             }, timeoutMs);
@@ -335,7 +335,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error(`[PROFILE] ${name} failed:`, err);
           throw err;
         } finally {
-          clearTimeout(timeoutId);
+          clearTimeout(timeoutId!);
         }
       };
       
