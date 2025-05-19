@@ -40,13 +40,19 @@ export const getSiteUrl = () => {
   return productionUrl.startsWith('http') ? productionUrl : `https://${productionUrl}`;
 };
 
+// Get the redirect URL for auth
+const authRedirectUrl = `${getSiteUrl()}/auth/callback`;
+
 // Create a single supabase client for the browser
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     flowType: 'pkce',
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
+    // Set redirect URL directly in the auth options - most reliable method
+    // for Supabase v2.x
+    redirectTo: authRedirectUrl
   },
   global: {
     headers: { 
@@ -55,15 +61,16 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
-// Set default redirect to options for auth operations
-// This is the correct way to set redirects in Supabase v2
-const authRedirectUrl = getSiteUrl() + '/auth/callback';
+// Log the redirect URL on initialization in development
+if (isDev) {
+  console.log(`Auth redirect URL configured as: ${authRedirectUrl}`);
+}
 
-// After creating the client, manually set the redirect URL
-// This ensures the authentication process uses our custom domain
+// After creating the client, listen for auth state changes
 supabase.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
     // Make sure site redirects are correct
+    console.log('Auth state changed:', event);
     console.log('Auth URL configured:', getSiteUrl());
   }
 });

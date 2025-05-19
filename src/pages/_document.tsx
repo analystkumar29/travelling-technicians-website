@@ -27,16 +27,17 @@ class MyDocument extends Document {
           )}
           
           {/* Web App Manifest */}
-          <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
+          <link rel="manifest" href="/manifest.json" />
           
           {/* Theme Color */}
           <meta name="theme-color" content="#0d9488" />
           
           {/* Favicon */}
           <link rel="icon" href="/favicon.ico" />
+          <link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png" />
           <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png" />
           <link rel="icon" type="image/png" sizes="192x192" href="/favicons/favicon-192x192.png" />
-          <link rel="apple-touch-icon" sizes="192x192" href="/favicons/favicon-192x192.png" />
+          <link rel="apple-touch-icon" sizes="192x192" href="/favicons/apple-touch-icon.png" />
           
           {/* Add the cache cleaning script */}
           <script src="/clean-cache.js" async></script>
