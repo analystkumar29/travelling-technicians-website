@@ -72,7 +72,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // More robust recovery system
   const recoverAuthState = useCallback(async (): Promise<boolean> => {
-    if (recoveryAttempts.current > 3) {
+    // Skip recovery on homepage to prevent loops
+    const isHomePage = typeof window !== 'undefined' && (
+      window.location.pathname === '/' || window.location.pathname === ''
+    );
+    
+    if (isHomePage) {
+      console.log('Skipping auth recovery on homepage to prevent loops');
+      sessionStorage.setItem('skipHomepageChecks', 'true');
+      // Reset recovery attempts when on homepage
+      recoveryAttempts.current = 0;
+      return false;
+    }
+    
+    // Increase attempts threshold before forcing sign out
+    if (recoveryAttempts.current > 5) {
       console.warn('Too many recovery attempts, forcing sign out');
       await forceSignOut();
       return false;
@@ -119,13 +133,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
       
-      // If we get here, recovery failed
+      // If we get here, recovery failed but don't increase counter if we're on a non-critical page
+      const isNonCriticalPage = router.pathname.includes('/auth/') || 
+                                router.pathname === '/' || 
+                                router.pathname === '';
+      
+      if (isNonCriticalPage) {
+        // Don't count this as a failed attempt on non-critical pages
+        recoveryAttempts.current = Math.max(0, recoveryAttempts.current - 1);
+      }
+      
       return false;
     } catch (error) {
       console.error('Error in recoverAuthState:', error);
       return false;
     }
-  }, [refreshSession]);
+  }, [refreshSession, router.pathname]);
 
   // Initialize auth state
   useEffect(() => {
@@ -439,13 +462,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.warn('Auth loading state timed out, forcing reset');
         setIsLoading(false);
         
-        // Try to recover state from localStorage if available
-        const recovered = tryRecoverFromStorage();
-        if (!recovered) {
-          recoverAuthState();
+        // Only attempt recovery if not on homepage to prevent loops
+        const isHomePage = typeof window !== 'undefined' && (
+          window.location.pathname === '/' || window.location.pathname === ''
+        );
+        
+        if (!isHomePage) {
+          // Try to recover state from localStorage if available
+          const recovered = tryRecoverFromStorage();
+          if (!recovered) {
+            recoverAuthState();
+          }
+        } else {
+          console.log('Skipping auth recovery on homepage to prevent loops');
+          // Set flag to skip homepage checks
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('skipHomepageChecks', 'true');
+            // Set a higher timeout to clear this flag
+            setTimeout(() => {
+              sessionStorage.removeItem('skipHomepageChecks');
+            }, 30000); // 30 seconds
+          }
         }
       }
-    }, 5000); // 5 second timeout for loading state
+    }, 10000); // Increase timeout to 10 seconds to reduce false positives
     
     return () => clearTimeout(timeout);
   }, [isLoading, recoverAuthState]);

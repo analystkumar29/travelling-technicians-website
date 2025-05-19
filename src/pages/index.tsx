@@ -113,7 +113,22 @@ export default function Home() {
 
   // Initialize UI enhancements and add anti-reload loop protection
   useEffect(() => {
-    // Check if loop prevention is active, if so don't do anything else
+    // Set a flag to prevent auth recovery on homepage
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('skipHomepageChecks', 'true');
+      
+      // Clear this flag after 30 seconds to allow recovery on other pages
+      setTimeout(() => {
+        if (window.location.pathname === '/' || window.location.pathname === '') {
+          console.log('Keeping homepage protection active');
+        } else {
+          console.log('Clearing homepage protection');
+          sessionStorage.removeItem('skipHomepageChecks');
+        }
+      }, 30000);
+    }
+    
+    // Check if loop prevention is active
     if (typeof window !== 'undefined' && sessionStorage.getItem('homepageLoopPrevented') === 'true') {
       console.log('Homepage reload loop prevention active, skipping initializations');
       // Just clean up any problematic classes to be extra safe
@@ -126,10 +141,32 @@ export default function Home() {
     // Initialize enhancements
     initUIEnhancements();
     
-    // Anti-reload loop protection specifically for homepage
-    // This helps prevent issues with the auth state detection
+    // Track page loads to detect potential reload loops
     if (typeof window !== 'undefined') {
-      // Clear any problematic classes that might cause reload loops
+      // Get current reload count
+      const reloadCount = parseInt(sessionStorage.getItem('homepageReloadCount') || '0', 10);
+      
+      // If we've reloaded too many times in a short period, enable protection
+      if (reloadCount > 3) {
+        console.warn('Detected potential reload loop, enabling protection');
+        sessionStorage.setItem('homepageLoopPrevented', 'true');
+        
+        // Clear this prevention after some time
+        setTimeout(() => {
+          sessionStorage.removeItem('homepageLoopPrevented');
+          sessionStorage.setItem('homepageReloadCount', '0');
+        }, 60000); // 1 minute
+      } else {
+        // Increment reload count
+        sessionStorage.setItem('homepageReloadCount', (reloadCount + 1).toString());
+        
+        // Reset count after a timeout
+        setTimeout(() => {
+          sessionStorage.setItem('homepageReloadCount', '0');
+        }, 10000); // 10 second window for counting reloads
+      }
+      
+      // Clear any problematic classes
       document.body.classList.remove('loading-navigation');
       document.body.classList.remove('navigation-stuck');
       document.body.classList.remove('auth-corrupted');
