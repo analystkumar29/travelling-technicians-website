@@ -1,7 +1,15 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { supabase, getSiteUrl } from '@/utils/supabaseClient';
 import { UserProfile } from '@/types/user';
+import { 
+  normalizeAuthState, 
+  validateAuthToken, 
+  withNetworkRetry, 
+  clearAuthStorage,
+  updateAuthState,
+  AuthState
+} from '@/utils/authStateProtection';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -10,12 +18,19 @@ interface AuthContextType {
   userProfile: UserProfile | null;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signUp: (email: string, password: string, fullName: string, phone?: string) => Promise<{ success: boolean; error?: string }>;
-  signOut: () => Promise<void>;
+  signOut: (silent?: boolean) => Promise<void>;
   forceSignOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   linkBookingsToAccount: (email: string) => Promise<number>;
   isStateCorrupted: boolean;
+  refreshSession: () => Promise<boolean>;
 }
+
+// Auth state validation schema
+const validateAuthState = (user: any): boolean => {
+  if (!user) return true; // Null user is valid
+  return !!(user.id && user.email && user.id !== 'undefined' && user.id !== 'null');
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -25,14 +40,101 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isStateCorrupted, setIsStateCorrupted] = useState(false);
   const router = useRouter();
+  const recoveryAttempts = useRef(0);
+  const lastValidationTime = useRef<number>(Date.now());
+  const authStateVersion = useRef<number>(0);
+  
+  // Token refresh interceptor with improved error handling
+  const refreshSession = useCallback(async (): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      
+      if (error) {
+        console.warn('Token refresh failed:', error);
+        return false;
+      }
+      
+      if (data.session) {
+        // Update internal state with new session data
+        setUser(data.session.user);
+        authStateVersion.current += 1;
+        lastValidationTime.current = Date.now();
+        return true;
+      }
+      
+      return false;
+    } catch (err) {
+      console.error('Error in refreshSession:', err);
+      return false;
+    }
+  }, []);
+
+  // More robust recovery system
+  const recoverAuthState = useCallback(async (): Promise<boolean> => {
+    if (recoveryAttempts.current > 3) {
+      console.warn('Too many recovery attempts, forcing sign out');
+      await forceSignOut();
+      return false;
+    }
+    
+    recoveryAttempts.current += 1;
+    console.log(`Attempting auth state recovery (attempt ${recoveryAttempts.current})`);
+    
+    try {
+      // First try to refresh the session
+      const refreshed = await refreshSession();
+      if (refreshed) {
+        console.log('Successfully recovered session via refresh');
+        recoveryAttempts.current = 0;
+        return true;
+      }
+      
+      // If refresh fails, check localStorage
+      if (typeof window !== 'undefined') {
+        const storedUser = localStorage.getItem('authUser');
+        const supabaseToken = localStorage.getItem('supabase.auth.token');
+        
+        // If we have both token and stored user, try to validate session
+        if (storedUser && supabaseToken) {
+          try {
+            const parsedUser = JSON.parse(storedUser);
+            
+            // Validate the parsed user
+            if (validateAuthState(parsedUser)) {
+              console.log('Recovered user from localStorage, validating with server');
+              const { data } = await supabase.auth.getUser();
+              
+              if (data.user && data.user.id === parsedUser.id) {
+                // Valid user, set state and fetch profile
+                setUser(data.user);
+                await fetchUserProfile(data.user.id);
+                recoveryAttempts.current = 0;
+                return true;
+              }
+            }
+          } catch (e) {
+            console.error('Error parsing stored user during recovery:', e);
+          }
+        }
+      }
+      
+      // If we get here, recovery failed
+      return false;
+    } catch (error) {
+      console.error('Error in recoverAuthState:', error);
+      return false;
+    }
+  }, [refreshSession]);
 
   // Initialize auth state
   useEffect(() => {
     const fetchUser = async () => {
       try {
         setIsLoading(true);
-        // Get current session
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        // Get current session with network retry
+        const { data: sessionData, error: sessionError } = await withNetworkRetry(() => 
+          supabase.auth.getSession()
+        );
         
         if (sessionError) {
           console.error('Error getting session:', sessionError);
@@ -46,25 +148,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (sessionData?.session) {
           // Set user from session
           setUser(sessionData.session.user);
+          authStateVersion.current += 1;
+          lastValidationTime.current = Date.now();
           
           // Fetch user profile
           await fetchUserProfile(sessionData.session.user.id);
           
-          // Store minimal auth info to improve reliability
+          // Store normalized auth info to improve reliability
           if (typeof window !== 'undefined') {
-            localStorage.setItem('authUser', JSON.stringify({
+            updateAuthState({
               id: sessionData.session.user.id,
-              email: sessionData.session.user.email
-            }));
+              email: sessionData.session.user.email || '',
+              version: authStateVersion.current,
+              lastUpdated: Date.now()
+            });
           }
         } else {
           // Try to recover from localStorage as fallback
-          tryRecoverFromStorage();
+          await recoverAuthState();
         }
       } catch (error) {
         console.error('Error fetching user session:', error);
         // Attempt recovery from localStorage as fallback
-        tryRecoverFromStorage();
+        await recoverAuthState();
       } finally {
         setIsLoading(false);
       }
@@ -80,6 +186,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setUserProfile(null);
         setIsStateCorrupted(false);
+        authStateVersion.current += 1;
+        
         // Clear any locally stored authentication data
         if (typeof window !== 'undefined') {
           localStorage.removeItem('supabase.auth.token');
@@ -88,28 +196,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } else if (event === 'SIGNED_IN' && session) {
         setUser(session.user);
+        authStateVersion.current += 1;
+        lastValidationTime.current = Date.now();
         await fetchUserProfile(session.user.id);
         setIsStateCorrupted(false);
-        // Store minimal auth info to improve reliability
+        
+        // Store normalized auth info to improve reliability
         if (typeof window !== 'undefined') {
-          localStorage.setItem('authUser', JSON.stringify({
+          updateAuthState({
             id: session.user.id,
-            email: session.user.email
-          }));
+            email: session.user.email || '',
+            version: authStateVersion.current,
+            lastUpdated: Date.now()
+          });
         }
       } else if (event === 'USER_UPDATED' && session) {
         setUser(session.user);
+        authStateVersion.current += 1;
+        lastValidationTime.current = Date.now();
         await fetchUserProfile(session.user.id);
         setIsStateCorrupted(false);
-        // Update minimal auth info 
+        
+        // Update normalized auth info 
         if (typeof window !== 'undefined') {
-          localStorage.setItem('authUser', JSON.stringify({
+          updateAuthState({
             id: session.user.id,
-            email: session.user.email
-          }));
+            email: session.user.email || '',
+            version: authStateVersion.current,
+            lastUpdated: Date.now()
+          });
         }
       } else if (event === 'TOKEN_REFRESHED' && session) {
         setUser(session.user);
+        authStateVersion.current += 1;
+        lastValidationTime.current = Date.now();
         setIsStateCorrupted(false);
       }
       
@@ -119,7 +239,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       if (authListener) authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [recoverAuthState]);
 
   // Function to attempt recovery from localStorage
   const tryRecoverFromStorage = () => {
@@ -129,10 +249,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           const parsedUser = JSON.parse(storedUser);
           // Only use this as minimal fallback
-          if (parsedUser && parsedUser.id) {
+          if (validateAuthState(parsedUser)) {
             console.log('Recovering minimal user state from localStorage');
             setUser({ id: parsedUser.id, email: parsedUser.email });
             fetchUserProfile(parsedUser.id);
+            return true;
           }
         } catch (e) {
           console.error('Error parsing stored user:', e);
@@ -140,6 +261,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     }
+    return false;
   };
   
   // Add timeout to prevent infinite loading
@@ -153,12 +275,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
         
         // Try to recover state from localStorage if available
-        tryRecoverFromStorage();
+        const recovered = tryRecoverFromStorage();
+        if (!recovered) {
+          recoverAuthState();
+        }
       }
     }, 5000); // 5 second timeout for loading state
     
     return () => clearTimeout(timeout);
-  }, [isLoading]);
+  }, [isLoading, recoverAuthState]);
 
   // Check for corrupt user state
   useEffect(() => {
@@ -169,17 +294,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (isHomepage || skipHomepageChecks) return;
     
     // Check if user exists but has incomplete or corrupted data
-    if (user && (!user.id || !user.email || user.id === 'undefined')) {
+    if (user && !validateAuthState(user)) {
       console.error('Detected corrupted user state', user);
       setIsStateCorrupted(true);
+      recoverAuthState();
     } else if (user && userProfile === null && !isLoading) {
       // If we have a user but couldn't fetch the profile, may be corrupted
       console.warn('User exists but profile fetch failed, possible corruption');
       setIsStateCorrupted(true);
+      recoverAuthState();
     } else {
       setIsStateCorrupted(false);
     }
-  }, [user, userProfile, isLoading, router.pathname]);
+  }, [user, userProfile, isLoading, router.pathname, recoverAuthState]);
+
+  // Periodic session validation
+  useEffect(() => {
+    // Only run validation if there's a user and we're not on the homepage (to prevent loops)
+    if (!user || router.pathname === '/') return;
+
+    const validateInterval = 15 * 60 * 1000; // 15 minutes
+    
+    // Validate session periodically
+    const sessionValidator = setInterval(async () => {
+      // Skip validation if done recently
+      if (Date.now() - lastValidationTime.current < validateInterval) return;
+      
+      try {
+        console.log('Performing periodic session validation');
+        const { data } = await supabase.auth.getUser();
+        
+        if (!data.user && user) {
+          console.warn('Session validation failed - user no longer valid');
+          await recoverAuthState();
+        } else if (data.user) {
+          console.log('Session validation passed');
+          lastValidationTime.current = Date.now();
+        }
+      } catch (err) {
+        console.error('Error in periodic validation:', err);
+      }
+    }, validateInterval);
+    
+    return () => clearInterval(sessionValidator);
+  }, [user, router.pathname, recoverAuthState]);
+  
+  // Network status monitoring
+  useEffect(() => {
+    const handleOnline = async () => {
+      console.log('Network connection restored');
+      if (user) {
+        // Validate session when reconnecting
+        await refreshSession();
+      }
+    };
+    
+    // Listen for network status changes
+    window.addEventListener('online', handleOnline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [user, refreshSession]);
 
   // Fetch user profile from database
   const fetchUserProfile = async (userId: string) => {
@@ -219,6 +395,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) throw error;
+      
+      authStateVersion.current += 1;
+      lastValidationTime.current = Date.now();
       
       // Process any pending booking references
       const pendingBookingRef = sessionStorage.getItem('pendingBookingReference');
@@ -307,7 +486,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Sign out with improved error handling and state management
-  const signOut = async () => {
+  const signOut = async (silent: boolean = false) => {
     try {
       setIsLoading(true);
       
@@ -318,6 +497,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sessionStorage.removeItem('authRedirectPath');
       }
       
+      authStateVersion.current += 1;
+      
       // Sign out from Supabase
       await supabase.auth.signOut();
       
@@ -327,9 +508,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsStateCorrupted(false);
       
       // Add a small delay before redirecting to ensure state is cleared
-      setTimeout(() => {
-        router.push('/');
-      }, 50);
+      if (!silent) {
+        setTimeout(() => {
+          router.push('/');
+        }, 50);
+      }
     } catch (error) {
       console.error('Sign out error:', error);
       // If normal signout fails, try the force method
@@ -345,50 +528,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.warn('Using force sign out method - clearing all auth state');
       setIsLoading(true);
       
-      // Clear all auth data from browser storage
-      if (typeof window !== 'undefined') {
-        // Clear localStorage
-        localStorage.removeItem('supabase.auth.token');
-        localStorage.removeItem('authUser');
-        
-        // Clear sessionStorage
-        sessionStorage.removeItem('authRedirectPath');
-        sessionStorage.removeItem('pendingBookingReference');
-        
-        // Try to clear all potential auth related items
-        try {
-          // Remove all items containing 'auth', 'user', 'session', 'token' in key
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && (key.includes('auth') || key.includes('user') || 
-                key.includes('session') || key.includes('token') || 
-                key.includes('supabase'))) {
-              localStorage.removeItem(key);
-            }
-          }
-          
-          // Do the same for sessionStorage
-          for (let i = 0; i < sessionStorage.length; i++) {
-            const key = sessionStorage.key(i);
-            if (key && (key.includes('auth') || key.includes('user') || 
-                key.includes('session') || key.includes('token') || 
-                key.includes('supabase'))) {
-              sessionStorage.removeItem(key);
-            }
-          }
-        } catch (e) {
-          console.error('Error clearing storage:', e);
-        }
-        
-        // Clear cookies related to auth
-        document.cookie.split(';').forEach(cookie => {
-          const [name] = cookie.trim().split('=');
-          if (name && (name.includes('auth') || name.includes('supabase') || 
-              name.includes('session') || name.includes('token'))) {
-            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
-          }
-        });
-      }
+      // Clear all auth data from browser storage using utility
+      clearAuthStorage();
       
       // Force sign out from Supabase
       try {
@@ -463,7 +604,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     forceSignOut,
     refreshProfile,
     linkBookingsToAccount,
-    isStateCorrupted
+    isStateCorrupted,
+    refreshSession
   };
 
   return (
