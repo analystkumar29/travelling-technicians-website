@@ -54,19 +54,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     flowType: 'pkce',
-    detectSessionInUrl: true,
-    cookieOptions: {
-      // Allow cookies to work on both main domain and preview domains
-      domain: typeof window !== 'undefined' 
-        ? window.location.hostname.includes('vercel.app') 
-          ? window.location.hostname 
-          : window.location.hostname.includes('travelling-technicians.ca') 
-            ? 'travelling-technicians.ca'
-            : undefined
-        : undefined,
-      sameSite: 'lax',
-      secure: true
-    }
+    detectSessionInUrl: true
   },
   global: {
     headers: { 
