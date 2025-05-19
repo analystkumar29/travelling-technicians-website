@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
+// Import compatible version for @supabase/auth-helpers-nextjs 0.10.0
+import { createMiddlewareSupabaseClient } from '@supabase/auth-helpers-nextjs';
 
 /**
  * Authentication Middleware
@@ -10,39 +11,36 @@ import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
  * and ensures auth state doesn't become corrupted during navigation.
  */
 export async function middleware(req: NextRequest) {
-  // Create a response object that we'll modify as needed
+  // Create initial response
   const res = NextResponse.next();
   
   try {
-    // Get the hostname for cookie domain management
+    // Get hostname and environment info
     const hostname = req.headers.get('host') || '';
     const isDevEnvironment = process.env.NODE_ENV === 'development';
-    const isPreviewDeployment = Boolean(process.env.VERCEL_ENV === 'preview');
     
-    // Create a Supabase client for the middleware
-    // For your version of auth-helpers-nextjs, we need to use the standard syntax
-    const supabase = createMiddlewareClient({ req, res });
+    // Create Supabase client for middleware (with older API format)
+    const supabase = createMiddlewareSupabaseClient({ req, res });
     
-    // Verify session is valid during navigation
+    // Get session using supabase client
     const { data: { session }, error } = await supabase.auth.getSession();
     
-    // If there was an error getting the session, log it
     if (error) {
       console.error('Middleware auth error:', error.message);
-      
-      // Add diagnostic headers (only visible to the application)
       res.headers.set('x-auth-error', error.message);
     }
     
-    // Check for custom auth cookie that we set in the client
-    // This helps with cross-domain authentication
-    const hasAuthCookie = req.cookies.get('tt_auth_check')?.value === 'true';
-    const hasAuthDomainInStorage = req.cookies.get('tt_cross_domain')?.value === 'true';
+    // Get cookie values directly instead of using .value property
+    const ttAuthCheck = req.cookies.get('tt_auth_check');
+    const ttCrossDomain = req.cookies.get('tt_cross_domain');
+    
+    const hasAuthCookie = ttAuthCheck === 'true';
+    const hasAuthDomainInStorage = ttCrossDomain === 'true';
     
     // Get path from URL
     const path = req.nextUrl.pathname;
     
-    // Define protected paths that require authentication
+    // Define protected paths
     const protectedPaths = [
       '/account',
       '/my-bookings',
@@ -50,84 +48,84 @@ export async function middleware(req: NextRequest) {
       '/profile',
     ];
     
-    // Check if current path is protected
+    // Check if path is protected
     const isProtectedPath = protectedPaths.some(protectedPath => 
       path.startsWith(protectedPath) || path === protectedPath
     );
 
-    // For protected paths, verify authentication
+    // Handle protected paths
     if (isProtectedPath) {
-      // Enhanced session validation including our custom auth cookies
       const isAuthenticated = (session && session.user?.id) || 
                               (hasAuthCookie && hasAuthDomainInStorage);
       
-      // If no session or invalid session, redirect to login
       if (!isAuthenticated) {
         console.log(`Middleware: Protected path ${path} accessed without valid session, redirecting to login`);
         
-        // Store intended path for redirect after login
+        // Redirect to login
         const redirectUrl = new URL('/auth/login', req.url);
         redirectUrl.searchParams.set('redirect', path);
         
-        // Set cookies to help with debugging
-        // For Cookie options, we'll set them directly
-        const cookieOptions = {
+        // Set debug cookie
+        const redirectResponse = NextResponse.redirect(redirectUrl);
+        redirectResponse.cookies.set('auth_redirect_reason', 'protected_path_access', {
           path: '/',
-          sameSite: 'lax' as 'lax',
           secure: !isDevEnvironment,
-          httpOnly: false, // Allow client-side access
+          httpOnly: false,
           maxAge: 60 * 5 // 5 minutes
-        };
-
-        // For Vercel previews or production, handle domain differently
+        });
+        
+        // Set domain for non-dev environments
         if (!isDevEnvironment && !hostname.includes('vercel.app')) {
-          // @ts-ignore - TypeScript doesn't know about domain property
-          cookieOptions.domain = '.travelling-technicians.ca';
+          redirectResponse.cookies.set('auth_redirect_reason', 'protected_path_access', {
+            path: '/',
+            secure: true,
+            httpOnly: false,
+            maxAge: 60 * 5,
+            domain: '.travelling-technicians.ca'
+          });
         }
         
-        res.cookies.set('auth_redirect_reason', 'protected_path_access', cookieOptions);
-        
-        return NextResponse.redirect(redirectUrl);
+        return redirectResponse;
       }
       
-      // If authenticated, add header with user ID (if available)
+      // Add user ID to header if available
       if (session?.user?.id) {
         res.headers.set('x-auth-user-id', session.user.id);
       }
     }
     
-    // If user is authenticated but session is corrupted, redirect to error page
+    // Handle corrupted sessions
     if (session && (!session.user || !session.user.id || !session.user.email)) {
-      console.log('Middleware: Detected corrupted auth state', { 
-        userId: session.user?.id,
-        hasEmail: Boolean(session.user?.email)
-      });
+      console.log('Middleware: Detected corrupted auth state');
       
-      // Only redirect to error if not on homepage (to prevent loops)
+      // Only redirect if not on homepage (to prevent loops)
       if (path !== '/' && path !== '') {
-        // Session is corrupted - redirect to error page with reset option
+        // Create error URL
         const errorUrl = new URL('/auth/error', req.url);
         errorUrl.searchParams.set('error', 'invalid_session');
         errorUrl.searchParams.set('action', 'reset');
         
-        // Set cookies to help with debugging
-        const cookieOptions = {
+        // Set debug cookie
+        const errorResponse = NextResponse.redirect(errorUrl);
+        errorResponse.cookies.set('auth_error_reason', 'corrupted_session', {
           path: '/',
-          sameSite: 'lax' as 'lax',
           secure: !isDevEnvironment,
           httpOnly: false,
-          maxAge: 60 * 5 // 5 minutes
-        };
-  
-        // For Vercel previews or production, handle domain differently  
+          maxAge: 60 * 5
+        });
+        
+        // Set domain for non-dev environments
         if (!isDevEnvironment && !hostname.includes('vercel.app')) {
-          // @ts-ignore - TypeScript doesn't know about domain property
-          cookieOptions.domain = '.travelling-technicians.ca';
+          errorResponse.cookies.set('auth_error_reason', 'corrupted_session', {
+            path: '/',
+            secure: true,
+            httpOnly: false,
+            maxAge: 60 * 5,
+            domain: '.travelling-technicians.ca'
+          });
         }
         
-        res.cookies.set('auth_error_reason', 'corrupted_session', cookieOptions);
-        
-        return NextResponse.redirect(errorUrl);
+        return errorResponse;
       }
     }
     
@@ -135,18 +133,16 @@ export async function middleware(req: NextRequest) {
   } catch (error) {
     console.error('Middleware unexpected error:', error);
     
-    // If there's an error in the middleware, don't block navigation
-    // but add a header to indicate the auth check failed
+    // Return next response with error header
     const response = NextResponse.next();
     response.headers.set('x-auth-validation-failed', 'true');
     return response;
   }
 }
 
-// Define which paths this middleware should run on
+// Configure matcher
 export const config = {
   matcher: [
-    // Apply to all pages except static assets, api routes, and auth-related pages
     '/((?!_next/static|_next/image|favicon.ico|api/public|auth/callback|images|favicons).*)',
   ],
 }; 
