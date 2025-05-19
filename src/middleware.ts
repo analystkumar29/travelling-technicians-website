@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-// Import compatible version for @supabase/auth-helpers-nextjs 0.10.0
-import { createMiddlewareSupabaseClient } from '@supabase/auth-helpers-nextjs';
+// Use the correct non-deprecated function name
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 
 /**
  * Authentication Middleware
@@ -19,8 +19,8 @@ export async function middleware(req: NextRequest) {
     const hostname = req.headers.get('host') || '';
     const isDevEnvironment = process.env.NODE_ENV === 'development';
     
-    // Create Supabase client for middleware (with older API format)
-    const supabase = createMiddlewareSupabaseClient({ req, res });
+    // Create Supabase client for middleware with correct function name
+    const supabase = createMiddlewareClient({ req, res });
     
     // Get session using supabase client
     const { data: { session }, error } = await supabase.auth.getSession();
@@ -30,12 +30,13 @@ export async function middleware(req: NextRequest) {
       res.headers.set('x-auth-error', error.message);
     }
     
-    // Get cookie values directly instead of using .value property
+    // Get cookie values as strings, handling the RequestCookie type properly
     const ttAuthCheck = req.cookies.get('tt_auth_check');
     const ttCrossDomain = req.cookies.get('tt_cross_domain');
     
-    const hasAuthCookie = ttAuthCheck === 'true';
-    const hasAuthDomainInStorage = ttCrossDomain === 'true';
+    // Safely check cookie values
+    const hasAuthCookie = ttAuthCheck ? ttAuthCheck.toString() === 'true' : false;
+    const hasAuthDomainInStorage = ttCrossDomain ? ttCrossDomain.toString() === 'true' : false;
     
     // Get path from URL
     const path = req.nextUrl.pathname;
