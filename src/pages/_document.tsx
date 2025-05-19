@@ -26,8 +26,9 @@ class MyDocument extends Document {
             <meta name="robots" content="noindex" />
           )}
           
-          {/* Web App Manifest */}
+          {/* Web App Manifest - include both formats for maximum compatibility */}
           <link rel="manifest" href="/manifest.json" />
+          <link rel="manifest" href="/site.webmanifest" />
           
           {/* Theme Color */}
           <meta name="theme-color" content="#0d9488" />
@@ -37,10 +38,53 @@ class MyDocument extends Document {
           <link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png" />
           <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png" />
           <link rel="icon" type="image/png" sizes="192x192" href="/favicons/favicon-192x192.png" />
-          <link rel="apple-touch-icon" sizes="192x192" href="/favicons/apple-touch-icon.png" />
+          <link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png" />
           
           {/* Add the cache cleaning script */}
           <script src="/clean-cache.js" async></script>
+          
+          {/* Inline fallback for manifest.json */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                // Provide a fallback for manifest.json if it fails to load
+                window.addEventListener('error', function(e) {
+                  if (e.target && e.target.tagName === 'LINK' && e.target.rel === 'manifest') {
+                    console.log('Manifest failed to load, creating inline fallback');
+                    var manifestData = {
+                      "name": "The Travelling Technicians",
+                      "short_name": "TT Repair",
+                      "description": "Mobile phone and laptop repair with doorstep service in Lower Mainland, BC",
+                      "start_url": "/",
+                      "display": "standalone",
+                      "background_color": "#ffffff",
+                      "theme_color": "#0076be",
+                      "icons": [
+                        {
+                          "src": "/favicons/favicon-192x192.png",
+                          "sizes": "192x192",
+                          "type": "image/png"
+                        }
+                      ]
+                    };
+                    
+                    // Create a blob URL for the manifest
+                    var manifestBlob = new Blob(
+                      [JSON.stringify(manifestData)], 
+                      {type: 'application/json'}
+                    );
+                    var manifestURL = URL.createObjectURL(manifestBlob);
+                    
+                    // Replace the failing link
+                    var newLink = document.createElement('link');
+                    newLink.rel = 'manifest';
+                    newLink.href = manifestURL;
+                    document.head.appendChild(newLink);
+                  }
+                }, true);
+              `,
+            }}
+          />
           
           {/* Add a fallback inline script that will ensure content is visible */}
           <script
