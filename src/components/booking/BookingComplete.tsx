@@ -1,7 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useAuth } from '@/context/AuthContext';
+import { AuthContext } from '@/context/AuthContext';
+import { useBookingForm } from '@/hooks/useBookingForm';
+import { supabase } from '@/utils/supabaseClient';
+import { FaCheckCircle, FaRegCalendarAlt, FaMapMarkerAlt, FaTools, FaMobileAlt, FaLaptop } from 'react-icons/fa';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import ConfettiExplosion from 'react-confetti-explosion';
 
 interface BookingCompleteProps {
   bookingReference: string;
@@ -9,6 +14,7 @@ interface BookingCompleteProps {
   customerEmail: string;
   appointmentDate: string;
   appointmentTime: string;
+  onReset: () => void;
 }
 
 const BookingComplete: React.FC<BookingCompleteProps> = ({
@@ -16,10 +22,13 @@ const BookingComplete: React.FC<BookingCompleteProps> = ({
   customerName,
   customerEmail,
   appointmentDate,
-  appointmentTime
+  appointmentTime,
+  onReset
 }) => {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { state } = useBookingForm();
+  const auth = useContext(AuthContext);
+  const { isAuthenticated } = auth || {};
 
   // Format date for better display
   const formatDate = (dateString: string) => {
