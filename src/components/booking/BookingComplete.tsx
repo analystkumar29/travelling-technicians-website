@@ -6,7 +6,9 @@ import { useBookingForm } from '@/hooks/useBookingForm';
 import { supabase } from '@/utils/supabaseClient';
 import { FaCheckCircle, FaRegCalendarAlt, FaMapMarkerAlt, FaTools, FaMobileAlt, FaLaptop } from 'react-icons/fa';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import ConfettiExplosion from 'react-confetti-explosion';
+// Import temporarily commented out due to build issues
+// import ConfettiExplosion from 'react-confetti-explosion';
+import { BookingFormState } from '@/types/booking';
 
 interface BookingCompleteProps {
   bookingReference: string;
