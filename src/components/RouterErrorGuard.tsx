@@ -1,7 +1,7 @@
-import { useEffect, useRef, ReactNode, useState } from 'react';
+import { useEffect, useRef, ReactNode, useState, useContext } from 'react';
 import { useRouter } from 'next/router';
 import { showError } from './GlobalErrorHandler';
-import { useAuth } from '@/context/AuthContext';
+import { AuthContext } from '@/context/AuthContext';
 
 /**
  * RouterErrorGuard component
@@ -13,6 +13,9 @@ import { useAuth } from '@/context/AuthContext';
  * 4. Adding timeout mechanism for stalled navigation
  * 5. Detecting corrupted auth states during navigation
  * 6. Providing emergency reset options
+ * 
+ * FIXED VERSION: Prevents false positives in reload loop detection
+ * and improves handling of protected routes
  */
 interface RouterErrorGuardProps {
   children: ReactNode;
@@ -20,13 +23,19 @@ interface RouterErrorGuardProps {
 
 const RouterErrorGuard: React.FC<RouterErrorGuardProps> = ({ children }) => {
   const router = useRouter();
-  const { isAuthenticated, isStateCorrupted, forceSignOut } = useAuth();
+  const [hasError, setHasError] = useState(false);
+  const [errorCount, setErrorCount] = useState(0);
+  const [showResetButton, setShowResetButton] = useState(false);
+  
+  const auth = useContext(AuthContext);
+  const { isAuthenticated, isLoading, isStateCorrupted, forceSignOut } = auth || {};
   const isNavigating = useRef(false);
   const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const currentUrlRef = useRef<string | null>(null);
   const navigationCountRef = useRef(0);
   const lastNavigationTimeRef = useRef(Date.now());
   const [showEmergencyReset, setShowEmergencyReset] = useState(false);
+  const lastValidPageRef = useRef<string | null>(null);
   
   // Handle corrupted auth state - SKIP ON HOMEPAGE
   useEffect(() => {
@@ -41,44 +50,44 @@ const RouterErrorGuard: React.FC<RouterErrorGuardProps> = ({ children }) => {
       setShowEmergencyReset(false);
     }
   }, [isStateCorrupted, router.pathname]);
-  
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
-    console.log('[RouterErrorGuard] Initializing router error protection');
-    
-    // Function to ensure required router state
+    // Function to fix router state issues
     const fixRouterState = () => {
-      try {
-        // Make sure the history state has proper data
-        if (window.history.state && !window.history.state.data) {
-          window.history.replaceState({
-            ...window.history.state,
-            data: {
-              props: {},
-              page: router.pathname || window.location.pathname || '/',
-              query: router.query || {},
-              buildId: window.__NEXT_DATA__?.buildId || 'development'
-            }
-          }, document.title, window.location.href);
-        }
+      // Fix issue with undefined history state
+      if (typeof window.history.state === 'undefined' || window.history.state === null) {
+        const newState = {
+          url: window.location.href,
+          as: window.location.href,
+          options: {}
+        };
         
-        // Ensure next data exists
-        if (!window.__NEXT_DATA__) {
-          window.__NEXT_DATA__ = {
-            props: {},
-            page: router.pathname || window.location.pathname || '/',
-            query: router.query || {},
-            buildId: 'development'
-          };
-        }
-      } catch (err) {
-        console.error('[RouterErrorGuard] Error fixing router state:', err);
+        // Replace the current history state with a valid one
+        window.history.replaceState(newState, '', window.location.href);
+        console.log('[RouterErrorGuard] Fixed undefined history state');
+      }
+      
+      // Fix issue with missing __NEXT_DATA__
+      if (typeof window.__NEXT_DATA__ === 'undefined') {
+        window.__NEXT_DATA__ = { 
+          props: {}, 
+          page: window.location.pathname || '/',
+          query: {},
+          buildId: 'development' 
+        };
+        console.log('[RouterErrorGuard] Fixed missing __NEXT_DATA__');
+      }
+      
+      // Reset navigating state if stuck
+      if (isNavigating.current && document.body.classList.contains('navigation-stuck')) {
+        isNavigating.current = false;
+        document.body.classList.remove('loading-navigation');
+        document.body.classList.remove('navigation-stuck');
+        console.log('[RouterErrorGuard] Reset stuck navigation state');
       }
     };
-    
-    // Fix any state issues immediately
-    fixRouterState();
 
     // Detect rapid navigation attempts
     const detectRapidNavigation = () => {
@@ -176,6 +185,11 @@ const RouterErrorGuard: React.FC<RouterErrorGuardProps> = ({ children }) => {
       document.body.classList.remove('navigation-stuck');
       console.log('[RouterErrorGuard] Route change completed:', url);
       
+      // Store last successful non-homepage route for recovery
+      if (url !== '/' && url !== '') {
+        lastValidPageRef.current = url;
+      }
+      
       // Reset emergency reset option on successful navigation to non-homepage
       if (url !== '/' && url !== '') {
         setShowEmergencyReset(false);
@@ -224,15 +238,38 @@ const RouterErrorGuard: React.FC<RouterErrorGuardProps> = ({ children }) => {
       fixRouterState();
     };
     
-    // Anti-reload loop guard for homepage
+    // Anti-reload loop guard for homepage - IMPROVED VERSION
     const reloadGuard = () => {
+      // Only check on homepage
       if (router.pathname === '/') {
+        // Get the previous path from sessionStorage
+        const previousPath = sessionStorage.getItem('previousPath') || '';
+        const currentPath = router.pathname;
+        
+        // Check if we're coming from a protected path like /account or /profile
+        const isComingFromProtectedPath = 
+          previousPath.includes('/account') || 
+          previousPath.includes('/profile') || 
+          previousPath.includes('/bookings');
+        
+        // If coming from protected path and we're authenticated, this is likely a false positive
+        if (isComingFromProtectedPath && isAuthenticated && !isLoading) {
+          console.log('[RouterErrorGuard] Coming from protected path while authenticated, not counting as reload loop');
+          // Prevent this from being counted as part of a reload loop
+          sessionStorage.setItem('homepageReloadCount', '0');
+          // Store a flag to indicate we should redirect back to the protected route
+          sessionStorage.setItem('shouldReturnToProtectedRoute', 'true');
+          return;
+        }
+        
+        // Normal reload loop detection logic
         const reloads = parseInt(sessionStorage.getItem('homepageReloadCount') || '0', 10);
         sessionStorage.setItem('homepageReloadCount', (reloads + 1).toString());
         
-        // Decrease threshold to 2 for faster detection and more aggressive cleanup
+        // Only consider it a loop if we have multiple reloads
         if (reloads > 2) {
           console.warn('[RouterErrorGuard] Potential reload loop on homepage, disabling guards');
+          
           // Disable classes that might cause issues
           document.body.classList.remove('loading-navigation');
           document.body.classList.remove('navigation-stuck');
@@ -252,17 +289,41 @@ const RouterErrorGuard: React.FC<RouterErrorGuardProps> = ({ children }) => {
           
           // Completely prevent any further reloads by setting a flag
           sessionStorage.setItem('homepageLoopPrevented', 'true');
+          
+          // If authenticated and we have a lastValidPage, try redirecting back
+          if (isAuthenticated && lastValidPageRef.current) {
+            console.log(`[RouterErrorGuard] Attempting to recover by redirecting to last valid page: ${lastValidPageRef.current}`);
+            // Use a timeout to allow state to settle
+            setTimeout(() => {
+              router.push(lastValidPageRef.current || '/account');
+            }, 500);
+          }
         }
       } else {
-        // Reset the counter on non-homepage routes
+        // Not on homepage, store the current path and reset the counter
+        sessionStorage.setItem('previousPath', router.pathname);
         sessionStorage.setItem('homepageReloadCount', '0');
         sessionStorage.removeItem('homepageLoopPrevented');
-        sessionStorage.removeItem('skipHomepageChecks');
       }
     };
     
     // Call reload guard immediately
     reloadGuard();
+    
+    // Check if we should redirect back to protected route
+    if (router.pathname === '/' && sessionStorage.getItem('shouldReturnToProtectedRoute') === 'true' && isAuthenticated && !isLoading) {
+      // Clear the flag
+      sessionStorage.removeItem('shouldReturnToProtectedRoute');
+      
+      // Try to return to the last valid protected page or default to account page
+      const lastProtectedPage = lastValidPageRef.current || sessionStorage.getItem('previousPath') || '/account';
+      console.log(`[RouterErrorGuard] Returning to protected route: ${lastProtectedPage}`);
+      
+      // Use a timeout to allow state to settle
+      setTimeout(() => {
+        router.push(lastProtectedPage);
+      }, 500);
+    }
     
     // Subscribe to router events
     router.events.on('routeChangeStart', handleRouteChangeStart);
@@ -277,14 +338,45 @@ const RouterErrorGuard: React.FC<RouterErrorGuardProps> = ({ children }) => {
       (window as any).__resetAuthState = async () => {
         console.log('[RouterErrorGuard] Emergency reset triggered');
         try {
-          await forceSignOut();
-          return true;
+          if (forceSignOut) {
+            await forceSignOut();
+            return true;
+          } else {
+            // Fallback
+            window.location.href = '/';
+            return false;
+          }
         } catch (e) {
           console.error('[RouterErrorGuard] Emergency reset failed:', e);
           // Last resort - hard reload
           window.location.href = '/';
           return false;
         }
+      };
+
+      // Add global navigation recovery function
+      (window as any).__recoverNavigation = () => {
+        console.log('[RouterErrorGuard] Navigation recovery triggered');
+        // Clear all status flags
+        sessionStorage.removeItem('homepageLoopPrevented');
+        sessionStorage.removeItem('homepageReloadCount');
+        sessionStorage.removeItem('skipHomepageChecks');
+        
+        // Fix DOM state
+        document.body.classList.remove('loading-navigation');
+        document.body.classList.remove('navigation-stuck');
+        document.body.classList.remove('auth-corrupted');
+        
+        // Reset navigation state
+        isNavigating.current = false;
+        
+        // Clear timeouts
+        if (navigationTimeoutRef.current) {
+          clearTimeout(navigationTimeoutRef.current);
+          navigationTimeoutRef.current = null;
+        }
+        
+        console.log('Navigation recovery complete');
       };
     }
     
@@ -301,12 +393,9 @@ const RouterErrorGuard: React.FC<RouterErrorGuardProps> = ({ children }) => {
         navigationTimeoutRef.current = null;
       }
       
-      // Remove global emergency reset
-      if (typeof window !== 'undefined') {
-        (window as any).__resetAuthState = undefined;
-      }
+      // Keep global emergency reset and recovery function
     };
-  }, [router, isAuthenticated, forceSignOut]);
+  }, [router, isAuthenticated, isLoading, forceSignOut]);
   
   // Return the children with optional emergency reset button
   // Only show emergency reset on non-homepage
@@ -321,7 +410,7 @@ const RouterErrorGuard: React.FC<RouterErrorGuardProps> = ({ children }) => {
         <div className="fixed bottom-4 right-4 z-50">
           <button
             className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded shadow-lg flex items-center"
-            onClick={forceSignOut}
+            onClick={() => forceSignOut ? forceSignOut() : window.location.href = '/'}
             aria-label="Emergency Reset"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">

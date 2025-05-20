@@ -132,6 +132,22 @@ export async function sendBookingConfirmationEmail(data: BookingConfirmationEmai
       isServer: typeof window === 'undefined'
     });
     
+    // In development mode, simulate sending the email
+    if (process.env.NODE_ENV === 'development') {
+      emailLogger.info('DEVELOPMENT MODE: Simulating email sending', {
+        to: data.to,
+        subject: 'Your Booking Confirmation - The Travelling Technicians',
+        reference: data.referenceNumber,
+        date: formattedDate,
+        time: formattedTime
+      });
+      
+      // Simulate a delay for the API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      return true;
+    }
+    
     // Send the email using the API with full URL
     const response = await fetch(fullUrl, {
       method: 'POST',

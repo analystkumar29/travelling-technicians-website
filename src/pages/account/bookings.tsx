@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import { supabase } from '@/utils/supabaseClient';
-import { useAuth } from '@/context/AuthContext';
+import { AuthContext } from '@/context/AuthContext';
 import Layout from '@/components/layout/Layout';
+import AuthProtectedRoute from '@/components/AuthProtectedRoute';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 interface Booking {
   id: string;
@@ -17,11 +19,16 @@ interface Booking {
   booking_time: string;
   status: string;
   created_at: string;
+  updated_at: string;
+  issue_type: string;
+  appointment_date: string;
+  appointment_time: string;
 }
 
 const BookingsPage = () => {
   const router = useRouter();
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const auth = useContext(AuthContext);
+  const { isAuthenticated, isLoading, user } = auth || {};
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +51,7 @@ const BookingsPage = () => {
         const { data, error } = await supabase
           .from('bookings')
           .select('*')
-          .eq('customer_email', user.email)
+          .eq('customer_email', user?.email)
           .order('created_at', { ascending: false });
           
         if (error) throw error;

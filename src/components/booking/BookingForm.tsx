@@ -304,129 +304,129 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   ? 'border-primary-500 bg-primary-50' 
                   : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}>
-                <Controller
-                  name="deviceType"
-                  control={methods.control}
+              <Controller
+                name="deviceType"
+                control={methods.control}
                   rules={{ required: "Please select a device type" }}
-                  render={({ field }) => (
-                    <input
-                      type="radio"
-                      className="sr-only"
-                      value="mobile"
-                      checked={field.value === 'mobile'}
+                render={({ field }) => (
+                  <input
+                    type="radio"
+                    className="sr-only"
+                    value="mobile"
+                    checked={field.value === 'mobile'}
                       onChange={() => {
                         field.onChange('mobile');
                         methods.setValue('deviceBrand', '');
                         methods.setValue('deviceModel', '');
                         console.log('Changed to mobile');
                       }}
-                    />
-                  )}
-                />
+                  />
+                )}
+              />
                 <div className="flex items-center p-4 cursor-pointer">
                   <div className={`bg-primary-100 rounded-full p-3 mr-3 transition-all duration-300 ${
                     deviceType === 'mobile' ? 'bg-primary-200' : ''
                   }`}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-900">Mobile Phone</span>
+                  <span className="font-medium text-gray-900">Mobile Phone</span>
                     {deviceType === 'mobile' && (
                       <div className="h-1 w-full bg-primary-500 absolute bottom-0 left-0 rounded-b-lg"></div>
                     )}
                   </div>
-                </div>
-              </label>
-              
+              </div>
+            </label>
+            
               <label className={`relative overflow-hidden rounded-lg border-2 transition-all duration-300 ${
                 deviceType === 'laptop' 
                   ? 'border-primary-500 bg-primary-50' 
                   : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}>
-                <Controller
-                  name="deviceType"
-                  control={methods.control}
+              <Controller
+                name="deviceType"
+                control={methods.control}
                   rules={{ required: "Please select a device type" }}
-                  render={({ field }) => (
-                    <input
-                      type="radio"
-                      className="sr-only"
-                      value="laptop"
-                      checked={field.value === 'laptop'}
+                render={({ field }) => (
+                  <input
+                    type="radio"
+                    className="sr-only"
+                    value="laptop"
+                    checked={field.value === 'laptop'}
                       onChange={() => {
                         field.onChange('laptop');
                         methods.setValue('deviceBrand', '');
                         methods.setValue('deviceModel', '');
                         console.log('Changed to laptop');
                       }}
-                    />
-                  )}
-                />
+                  />
+                )}
+              />
                 <div className="flex items-center p-4 cursor-pointer">
                   <div className={`bg-primary-100 rounded-full p-3 mr-3 transition-all duration-300 ${
                     deviceType === 'laptop' ? 'bg-primary-200' : ''
                   }`}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-900">Laptop</span>
+                  <span className="font-medium text-gray-900">Laptop</span>
                     {deviceType === 'laptop' && (
                       <div className="h-1 w-full bg-primary-500 absolute bottom-0 left-0 rounded-b-lg"></div>
                     )}
                   </div>
-                </div>
-              </label>
-              
+              </div>
+            </label>
+            
               <label className={`relative overflow-hidden rounded-lg border-2 transition-all duration-300 ${
                 deviceType === 'tablet' 
                   ? 'border-primary-500 bg-primary-50' 
                   : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}>
-                <Controller
-                  name="deviceType"
-                  control={methods.control}
+              <Controller
+                name="deviceType"
+                control={methods.control}
                   rules={{ required: "Please select a device type" }}
-                  render={({ field }) => (
-                    <input
-                      type="radio"
-                      className="sr-only"
-                      value="tablet"
-                      checked={field.value === 'tablet'}
+                render={({ field }) => (
+                  <input
+                    type="radio"
+                    className="sr-only"
+                    value="tablet"
+                    checked={field.value === 'tablet'}
                       onChange={() => {
                         field.onChange('tablet');
                         methods.setValue('deviceBrand', '');
                         methods.setValue('deviceModel', '');
                         console.log('Changed to tablet');
                       }}
-                    />
-                  )}
-                />
+                  />
+                )}
+              />
                 <div className="flex items-center p-4 cursor-pointer">
                   <div className={`bg-primary-100 rounded-full p-3 mr-3 transition-all duration-300 ${
                     deviceType === 'tablet' ? 'bg-primary-200' : ''
                   }`}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-900">Tablet</span>
+                  <span className="font-medium text-gray-900">Tablet</span>
                     {deviceType === 'tablet' && (
                       <div className="h-1 w-full bg-primary-500 absolute bottom-0 left-0 rounded-b-lg"></div>
                     )}
                   </div>
-                </div>
-              </label>
-            </div>
+              </div>
+            </label>
+          </div>
             {methods.formState.errors.deviceType && showValidationErrors && (
               <p className="mt-1 text-sm text-red-600">{methods.formState.errors.deviceType.message}</p>
             )}
-          </div>
-          
+        </div>
+        
           {deviceType && (
             <div className="mb-4" key={deviceKey}>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -452,39 +452,39 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                           : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
                       }`}
                     >
-                      <Controller
-                        name="deviceBrand"
-                        control={methods.control}
-                        rules={{ required: "Please select a brand" }}
-                        render={({ field }) => (
-                          <input
-                            type="radio"
-                            className="sr-only"
+          <Controller
+            name="deviceBrand"
+            control={methods.control}
+                      rules={{ required: "Please select a brand" }}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="sr-only"
                             value={brand.value}
                             checked={field.value === brand.value}
-                            onChange={() => {
+                          onChange={() => {
                               field.onChange(brand.value);
-                              methods.setValue('deviceModel', '');
-                            }}
-                          />
-                        )}
-                      />
+                            methods.setValue('deviceModel', '');
+                          }}
+                        />
+                      )}
+                    />
                       <div className="flex items-center p-3 cursor-pointer">
                         <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center mr-3 text-lg font-medium rounded-full bg-gray-100 text-gray-700">
                           {brand.icon}
-                        </div>
+                    </div>
                         <span className="font-medium text-gray-900">{brand.label}</span>
                         {methods.watch('deviceBrand') === brand.value && (
                           <div className="ml-auto">
                             <svg className="h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                             </svg>
-                          </div>
+                    </div>
                         )}
-                      </div>
-                    </label>
+                    </div>
+                  </label>
                   ))}
-                </div>
+                    </div>
               )}
               
               {/* Laptop device brands */}
@@ -506,39 +506,39 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                           : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
                       }`}
                     >
-                      <Controller
-                        name="deviceBrand"
-                        control={methods.control}
-                        rules={{ required: "Please select a brand" }}
-                        render={({ field }) => (
-                          <input
-                            type="radio"
-                            className="sr-only"
+                    <Controller
+                      name="deviceBrand"
+                      control={methods.control}
+                      rules={{ required: "Please select a brand" }}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="sr-only"
                             value={brand.value}
                             checked={field.value === brand.value}
-                            onChange={() => {
+                          onChange={() => {
                               field.onChange(brand.value);
-                              methods.setValue('deviceModel', '');
-                            }}
-                          />
-                        )}
-                      />
+                            methods.setValue('deviceModel', '');
+                          }}
+                        />
+                      )}
+                    />
                       <div className="flex items-center p-3 cursor-pointer">
                         <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center mr-3 text-lg font-medium rounded-full bg-gray-100 text-gray-700">
                           {brand.icon}
-                        </div>
+                    </div>
                         <span className="font-medium text-gray-900">{brand.label}</span>
                         {methods.watch('deviceBrand') === brand.value && (
                           <div className="ml-auto">
                             <svg className="h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                             </svg>
-                          </div>
+                    </div>
                         )}
-                      </div>
-                    </label>
+                    </div>
+                  </label>
                   ))}
-                </div>
+                    </div>
               )}
               
               {/* Tablet device brands */}
@@ -559,37 +559,37 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                           : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
                       }`}
                     >
-                      <Controller
-                        name="deviceBrand"
-                        control={methods.control}
-                        rules={{ required: "Please select a brand" }}
-                        render={({ field }) => (
-                          <input
-                            type="radio"
-                            className="sr-only"
+                    <Controller
+                      name="deviceBrand"
+                      control={methods.control}
+                      rules={{ required: "Please select a brand" }}
+                      render={({ field }) => (
+                        <input
+                          type="radio"
+                          className="sr-only"
                             value={brand.value}
                             checked={field.value === brand.value}
-                            onChange={() => {
+                          onChange={() => {
                               field.onChange(brand.value);
-                              methods.setValue('deviceModel', '');
-                            }}
-                          />
-                        )}
-                      />
+                            methods.setValue('deviceModel', '');
+                          }}
+                        />
+                      )}
+                    />
                       <div className="flex items-center p-3 cursor-pointer">
                         <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center mr-3 text-lg font-medium rounded-full bg-gray-100 text-gray-700">
                           {brand.icon}
-                        </div>
+                    </div>
                         <span className="font-medium text-gray-900">{brand.label}</span>
                         {methods.watch('deviceBrand') === brand.value && (
                           <div className="ml-auto">
                             <svg className="h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                             </svg>
-                          </div>
+                    </div>
                         )}
-                      </div>
-                    </label>
+                    </div>
+                  </label>
                   ))}
                 </div>
               )}
@@ -608,21 +608,21 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   <Controller
                     name="customBrand"
                     control={methods.control}
-                    render={({ field, fieldState }) => (
-                      <>
-                        <input
-                          type="text"
+            render={({ field, fieldState }) => (
+              <>
+              <input
+                type="text"
                           className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200"
                           placeholder="Enter brand name..."
-                          {...field}
-                        />
+                  {...field}
+                />
                         {fieldState.error && showValidationErrors && (
-                          <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                        )}
-                      </>
-                    )}
-                  />
-                </div>
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
+              </>
+            )}
+              />
+            </div>
               )}
             </div>
           )}
@@ -633,10 +633,10 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 Model <span className="text-red-500">*</span>
               </label>
               
-              <Controller
-                name="deviceModel"
-                control={methods.control}
-                rules={{ required: "Model is required" }}
+          <Controller
+            name="deviceModel"
+            control={methods.control}
+            rules={{ required: "Model is required" }}
                 render={({ field, fieldState }) => {
                   // Debug output for device selection
                   console.log('DeviceModelSelector props from BookingForm:', {
@@ -648,20 +648,20 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   return (
                     <>
                       <div className="rounded-md border border-gray-300 overflow-hidden focus-within:border-primary-500 focus-within:ring-1 focus-within:ring-primary-500 transition-all duration-300">
-                        <DeviceModelSelector
-                          deviceType={methods.watch('deviceType')}
-                          brand={methods.watch('deviceBrand')}
-                          value={field.value}
-                          onChange={field.onChange}
-                        />
+                    <DeviceModelSelector
+                      deviceType={methods.watch('deviceType')}
+                      brand={methods.watch('deviceBrand')}
+                      value={field.value}
+                      onChange={field.onChange}
+              />
                       </div>
-                      {fieldState.error && showValidationErrors && (
-                        <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                      )}
-                    </>
+                    {fieldState.error && showValidationErrors && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
+          </>
                   );
                 }}
-              />
+          />
             </div>
           )}
         </div>
@@ -992,7 +992,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <h3 className="text-base font-medium text-gray-900 border-b border-gray-200 pb-2">
                 {groupLabels[group]}
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {services.map(service => (
                   <div 
                     key={service.id} 
@@ -1004,22 +1004,22 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   >
                     <label className="flex p-4 cursor-pointer">
                       <div className="flex items-center h-5 mt-0.5">
-                        <Controller
-                          name="serviceType"
-                          control={methods.control}
-                          rules={{ required: "Please select a service" }}
-                          render={({ field }) => (
-                            <input
-                              type="radio"
-                              className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
-                              value={service.id}
-                              checked={field.value === service.id}
-                              onChange={() => field.onChange(service.id)}
-                            />
-                          )}
-                        />
-                      </div>
-                      <div className="ml-3 flex-1">
+                  <Controller
+                    name="serviceType"
+                    control={methods.control}
+                    rules={{ required: "Please select a service" }}
+                    render={({ field }) => (
+                      <input
+                        type="radio"
+                        className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+                        value={service.id}
+                        checked={field.value === service.id}
+                        onChange={() => field.onChange(service.id)}
+                      />
+                    )}
+                  />
+                  </div>
+                <div className="ml-3 flex-1">
                         <div className="flex items-center mb-1">
                           <svg className="h-5 w-5 text-primary-600 mr-2" viewBox="0 0 24 24" fill="currentColor">
                             <path d={service.icon} />
@@ -1046,38 +1046,38 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       </div>
                     </label>
                     
-                    {service.doorstep ? (
+                  {service.doorstep ? (
                       <div className="absolute top-0 right-0 mt-2 mr-2">
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 border border-green-200">
                           <svg className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>
                           Doorstep
-                        </span>
+                    </span>
                       </div>
-                    ) : (
+                  ) : (
                       <div className="absolute top-0 right-0 mt-2 mr-2">
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
-                          In-Shop Only
-                        </span>
+                      In-Shop Only
+                    </span>
                       </div>
                     )}
                   </div>
-                ))}
-              </div>
+            ))}
+          </div>
             </div>
           );
         })}
         
-        {methods.formState.errors.serviceType && showValidationErrors && (
-          <p className="mt-1 text-sm text-red-600">{methods.formState.errors.serviceType.message}</p>
-        )}
+          {methods.formState.errors.serviceType && showValidationErrors && (
+            <p className="mt-1 text-sm text-red-600">{methods.formState.errors.serviceType.message}</p>
+          )}
         
         <div className="space-y-2 mt-8">
           <div className="flex justify-between items-center">
-            <label htmlFor="issueDescription" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="issueDescription" className="block text-sm font-medium text-gray-700">
               Describe Your Issue
-            </label>
+          </label>
             <span className="text-sm text-gray-500">Recommended</span>
           </div>
           
@@ -1087,9 +1087,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             rules={{}} 
             render={({ field, fieldState }) => (
               <>
-                <textarea
-                  id="issueDescription"
-                  rows={4}
+          <textarea
+            id="issueDescription"
+            rows={4}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-sm"
                   placeholder={`Please describe your ${deviceType} issue in as much detail as possible. For example: "My screen is cracked and has black spots" or "Battery drains very quickly, only lasts 2 hours"`}
                   {...field}
@@ -1137,39 +1137,39 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           <div className="relative">
             <label htmlFor="customerName" className="block text-sm font-medium text-gray-700 mb-1">
               Full Name <span className="text-red-500">*</span>
-            </label>
+          </label>
             <div className="relative rounded-md shadow-sm">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                 </svg>
               </div>
-              <Controller
-                name="customerName"
-                control={methods.control}
-                rules={{ required: "Name is required" }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <input
-                      id="customerName"
-                      type="text"
+          <Controller
+            name="customerName"
+            control={methods.control}
+            rules={{ required: "Name is required" }}
+            render={({ field, fieldState }) => (
+              <>
+                <input
+                  id="customerName"
+                  type="text"
                       className={`block w-full pl-10 pr-3 py-2 border ${fieldState.error ? 'border-red-300' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200`}
                       placeholder="John Smith"
-                      {...field}
-                    />
-                    {fieldState.error && showValidationErrors && (
-                      <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                    )}
-                  </>
+                  {...field}
+                />
+                {fieldState.error && showValidationErrors && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
                 )}
-              />
+              </>
+            )}
+            />
             </div>
           </div>
-            
+          
           <div className="relative">
             <label htmlFor="customerEmail" className="block text-sm font-medium text-gray-700 mb-1">
               Email Address <span className="text-red-500">*</span>
-            </label>
+          </label>
             <div className="relative rounded-md shadow-sm">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
@@ -1177,78 +1177,78 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                 </svg>
               </div>
-              <Controller
-                name="customerEmail"
-                control={methods.control}
-                rules={{ 
-                  required: "Email is required",
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: "Invalid email address"
-                  }
-                }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <input
-                      id="customerEmail"
-                      type="email"
+          <Controller
+            name="customerEmail"
+            control={methods.control}
+            rules={{ 
+              required: "Email is required",
+              pattern: {
+                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                message: "Invalid email address"
+              }
+            }}
+            render={({ field, fieldState }) => (
+              <>
+                <input
+                  id="customerEmail"
+                  type="email"
                       className={`block w-full pl-10 pr-3 py-2 border ${fieldState.error ? 'border-red-300' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200`}
-                      placeholder="you@example.com"
-                      {...field}
-                    />
-                    {fieldState.error && showValidationErrors && (
-                      <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                    )}
-                  </>
+                  placeholder="you@example.com"
+                  {...field}
+                />
+                {fieldState.error && showValidationErrors && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
                 )}
-              />
+              </>
+            )}
+          />
             </div>
             <p className="mt-1 text-xs text-gray-500">
               We'll send booking confirmation and updates to this email. We won't share it with third parties.
-            </p>
-          </div>
-          
+          </p>
+        </div>
+        
           <div className="relative">
             <label htmlFor="customerPhone" className="block text-sm font-medium text-gray-700 mb-1">
               Phone Number <span className="text-red-500">*</span>
-            </label>
+          </label>
             <div className="relative rounded-md shadow-sm">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                 </svg>
               </div>
-              <Controller
-                name="customerPhone"
-                control={methods.control}
-                rules={{ 
-                  required: "Phone number is required",
-                  pattern: {
-                    value: process.env.NODE_ENV === 'production' 
-                      ? /^(\+?1-?)?(\([2-9]([0-9]{2})\)|[2-9]([0-9]{2}))-?[2-9]([0-9]{2})-?([0-9]{4})$/
-                      : /^.{2,}$/,
-                    message: "Please enter a valid phone number"
-                  }
-                }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <input
-                      id="customerPhone"
-                      type="tel"
+          <Controller
+            name="customerPhone"
+            control={methods.control}
+            rules={{ 
+              required: "Phone number is required",
+              pattern: {
+                value: process.env.NODE_ENV === 'production' 
+                  ? /^(\+?1-?)?(\([2-9]([0-9]{2})\)|[2-9]([0-9]{2}))-?[2-9]([0-9]{2})-?([0-9]{4})$/
+                  : /^.{2,}$/,
+                message: "Please enter a valid phone number"
+              }
+            }}
+            render={({ field, fieldState }) => (
+              <>
+                <input
+                  id="customerPhone"
+                  type="tel"
                       className={`block w-full pl-10 pr-3 py-2 border ${fieldState.error ? 'border-red-300' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200`}
-                      placeholder="(555) 123-4567"
-                      {...field}
-                    />
-                    {fieldState.error && showValidationErrors && (
-                      <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                    )}
-                  </>
+                  placeholder="(555) 123-4567"
+                  {...field}
+                />
+                {fieldState.error && showValidationErrors && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
                 )}
-              />
+              </>
+            )}
+          />
             </div>
             <p className="mt-1 text-xs text-gray-500">
-              Our technician will call you before arriving for the repair.
-            </p>
+            Our technician will call you before arriving for the repair.
+          </p>
           </div>
         </div>
 
@@ -1660,18 +1660,18 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             Choose your preferred date and time for the repair. Our technician will arrive during your selected timeframe.
           </p>
         </div>
-          
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Preferred Date <span className="text-red-500">*</span>
-            </label>
-            <Controller
-              name="appointmentDate"
-              control={methods.control}
+          </label>
+          <Controller
+            name="appointmentDate"
+            control={methods.control}
               rules={{ required: "Date is required" }}
-              render={({ field, fieldState }) => (
-                <>
+            render={({ field, fieldState }) => (
+              <>
                   <div className="relative rounded-md shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
@@ -1683,55 +1683,55 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       className={`block w-full pl-10 pr-10 py-2 border ${fieldState.error ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm`}
                       min={getTomorrowDate()}
                       max={getMaxDate()}
-                      {...field}
+                  {...field}
                     />
                   </div>
-                  {fieldState.error && showValidationErrors && (
-                    <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                  )}
-                </>
-              )}
-            />
+                {fieldState.error && showValidationErrors && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
+              </>
+            )}
+          />
             <p className="mt-1 text-xs text-gray-500">We accept bookings up to 60 days in advance.</p>
-          </div>
-            
+        </div>
+        
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Preferred Time <span className="text-red-500">*</span>
-            </label>
-            <Controller
-              name="appointmentTime"
-              control={methods.control}
+          </label>
+          <Controller
+            name="appointmentTime"
+            control={methods.control}
               rules={{ required: "Time slot is required" }}
-              render={({ field, fieldState }) => (
-                <>
+            render={({ field, fieldState }) => (
+              <>
                   <div className="relative rounded-md shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                       </svg>
                     </div>
-                    <select
+                <select
                       className={`block w-full pl-10 pr-10 py-2 border ${fieldState.error ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm appearance-none`}
-                      {...field}
-                    >
+                  {...field}
+                >
                       <option value="">Select a time slot...</option>
                       <option value="morning">Morning (9AM - 12PM)</option>
                       <option value="afternoon">Afternoon (12PM - 4PM)</option>
                       <option value="evening">Evening (4PM - 7PM)</option>
-                    </select>
+                </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                       </svg>
                     </div>
                   </div>
-                  {fieldState.error && showValidationErrors && (
-                    <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                  )}
-                </>
-              )}
-            />
+                {fieldState.error && showValidationErrors && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
+              </>
+            )}
+          />
             <p className="mt-1 text-xs text-gray-500">Our technicians work 7 days a week.</p>
           </div>
         </div>
@@ -2053,11 +2053,11 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <ul className="list-disc pl-5 space-y-1">
                 {errorFields.map((fieldName, index) => (
                   <li key={index}>{fieldErrorMessages[fieldName] || `${fieldName} is required`}</li>
-                ))}
-              </ul>
+              ))}
+            </ul>
             </div>
-          </div>
         </div>
+          </div>
       </div>
     );
   };
@@ -2144,7 +2144,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 ) : (
                   index + 1
                 )}
-              </div>
+          </div>
               <span className={`text-xs mt-2 font-medium max-w-[80px] text-center ${
                 index === currentStep ? 'text-primary-700 font-semibold' : index < currentStep ? 'text-primary-600' : 'text-gray-600'
               } ${index === currentStep ? 'scale-110' : ''} transition-all duration-300`}>
@@ -2161,7 +2161,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   <div className={`h-full ${index < currentStep ? 'bg-primary-500' : 'bg-gray-300'}`}></div>
                 </div>
               )}
-            </div>
+        </div>
           ))}
         </div>
         <div className="relative mt-5">
@@ -2184,7 +2184,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         }}>
           {/* Step content with improved styling */}
           <div className="mb-8 bg-gray-50 p-6 rounded-lg border border-gray-100 shadow-sm">
-            {renderStepContent()}
+        {renderStepContent()}
           </div>
           
           {/* Navigation buttons with improved styling */}
@@ -2247,7 +2247,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               </button>
             )}
           </div>
-        </form>
+      </form>
       </FormProvider>
     </div>
   );

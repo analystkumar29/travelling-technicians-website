@@ -1,15 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
-import { useAuth } from '@/context/AuthContext';
+import { AuthContext } from '@/context/AuthContext';
+import AuthProtectedRoute from '@/components/AuthProtectedRoute';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { supabase } from '@/utils/supabaseClient';
 import WarrantyCard from '@/components/warranty/WarrantyCard';
 import { WarrantySummary } from '@/types/warranty';
 
 const MyWarrantiesPage: NextPage = () => {
-  const { user, isLoading: authLoading } = useAuth();
   const [warranties, setWarranties] = useState<WarrantySummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const auth = useContext(AuthContext);
+  const { user, isLoading: authLoading } = auth || {};
   const [error, setError] = useState('');
   const router = useRouter();
   
@@ -19,7 +23,7 @@ const MyWarrantiesPage: NextPage = () => {
       if (!user) return;
       
       try {
-        setIsLoading(true);
+        setLoading(true);
         const response = await fetch(`/api/warranties?customer_email=${encodeURIComponent(user.email)}`);
         
         if (!response.ok) {
@@ -32,7 +36,7 @@ const MyWarrantiesPage: NextPage = () => {
         console.error('Error fetching warranties:', err);
         setError('Unable to load your warranties. Please try again later.');
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     }
     
@@ -48,7 +52,7 @@ const MyWarrantiesPage: NextPage = () => {
   
   // Render appropriate content based on loading/auth state
   const renderContent = () => {
-    if (authLoading || isLoading) {
+    if (authLoading || loading) {
       return (
         <div className="flex justify-center items-center min-h-[400px]">
           <div className="animate-pulse flex flex-col items-center">

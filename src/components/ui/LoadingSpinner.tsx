@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
@@ -10,8 +10,9 @@ interface LoadingSpinnerProps {
  * LoadingSpinner Component
  * 
  * A flexible loading spinner with customizable size and color
+ * Memoized to prevent unnecessary re-renders
  */
-const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = memo(({
   size = 'md',
   color = 'blue',
   className = '',
@@ -37,6 +38,9 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
       <span className="sr-only">Loading...</span>
     </div>
   );
-};
+});
+
+// Display name for dev tools
+LoadingSpinner.displayName = 'LoadingSpinner';
 
 export default LoadingSpinner; 

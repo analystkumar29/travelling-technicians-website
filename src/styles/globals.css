@@ -145,6 +145,12 @@
   pointer-events: none; /* Prevent further navigation while loading */
 }
 
+.loading-navigation .nav-link,
+.loading-navigation .menu-item {
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
 .navigation-stuck:after {
   content: "";
   position: fixed;
@@ -164,7 +170,68 @@
   z-index: 9999;
 }
 
+/* Add pulsing effect for navigation items when stuck */
+.navigation-stuck .logo,
+.navigation-stuck .nav-link,
+.navigation-stuck .menu-item {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
 @keyframes loading-gradient {
   0% { background-position: 0 0; }
   100% { background-position: -200% 0; }
+}
+
+/* Auth state indicators */
+.auth-corrupted .profile-link,
+.auth-corrupted .account-link,
+.auth-corrupted .user-menu {
+  position: relative;
+  border: 1px dashed #ff4040 !important;
+}
+
+.auth-corrupted .profile-link:after,
+.auth-corrupted .account-link:after,
+.auth-corrupted .user-menu:after {
+  content: "⚠️";
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #ff4040;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Emergency reset button animation */
+@keyframes attention-pulse {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  50% { 
+    transform: scale(1.05);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.emergency-reset-btn {
+  animation: attention-pulse 2s infinite;
 } 

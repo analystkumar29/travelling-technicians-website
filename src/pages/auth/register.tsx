@@ -1,79 +1,81 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import { AuthContext } from '@/context/AuthContext';
 import Layout from '@/components/layout/Layout';
-import { useAuth } from '@/context/AuthContext';
 
 const RegisterPage = () => {
   const router = useRouter();
-  const { email: emailParam, redirect } = router.query;
-  const { isAuthenticated, isLoading, signUp, linkBookingsToAccount } = useAuth();
+  const auth = useContext(AuthContext);
+  const { isAuthenticated, isLoading, signUp, linkBookingsToAccount } = auth || {};
+  
+  const { redirect, email: emailParam } = router.query;
   
   const [formData, setFormData] = useState({
     fullName: '',
-    email: '',
+    email: emailParam && typeof emailParam === 'string' ? emailParam : '',
     phone: '',
     password: '',
     confirmPassword: ''
   });
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  
+  const [errors, setErrors] = useState<{
+    fullName?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [registrationError, setRegistrationError] = useState<string | null>(null);
-
-  // Set email from query parameter if available
+  
+  // Redirect if user is already authenticated
   useEffect(() => {
-    if (emailParam && typeof emailParam === 'string') {
-      setFormData(prev => ({ ...prev, email: emailParam }));
-    }
-  }, [emailParam]);
-
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      const redirectPath = typeof redirect === 'string' ? redirect : '/account/profile';
+    if (isAuthenticated && !isLoading) {
+      const redirectPath = redirect && typeof redirect === 'string' 
+        ? redirect
+        : '/account';
+      
       router.push(redirectPath);
     }
-  }, [isLoading, isAuthenticated, router, redirect]);
-
+  }, [isAuthenticated, isLoading, redirect, router]);
+  
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    
     setFormData({
       ...formData,
       [name]: value
     });
     
     // Clear error for this field when user types
-    if (errors[name]) {
+    if (errors[name as keyof typeof errors]) {
       setErrors({
         ...errors,
-        [name]: ''
+        [name]: undefined
       });
     }
   };
-
+  
   const validateForm = () => {
-    const newErrors: { [key: string]: string } = {};
+    const newErrors: typeof errors = {};
     
-    // Validate full name
     if (!formData.fullName.trim()) {
       newErrors.fullName = 'Full name is required';
     }
     
-    // Validate email
-    if (!formData.email) {
+    if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+      newErrors.email = 'Please enter a valid email address';
     }
     
-    // Validate password
     if (!formData.password) {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters long';
     }
     
-    // Validate confirm password
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
@@ -81,7 +83,7 @@ const RegisterPage = () => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
+  
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
@@ -90,6 +92,11 @@ const RegisterPage = () => {
     try {
       setIsSubmitting(true);
       setRegistrationError(null);
+      
+      // Add null check for signUp
+      if (!signUp) {
+        throw new Error('Authentication service is not available');
+      }
       
       const { success, error } = await signUp(
         formData.email,
@@ -103,7 +110,7 @@ const RegisterPage = () => {
       }
       
       // If registration came from booking, link any existing bookings with this email
-      if (emailParam && typeof emailParam === 'string') {
+      if (emailParam && typeof emailParam === 'string' && linkBookingsToAccount) {
         await linkBookingsToAccount(emailParam);
       }
       
@@ -284,7 +291,7 @@ const RegisterPage = () => {
                   className={`appearance-none relative block w-full px-3 py-2 border ${
                     errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
                   } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm`}
-                  placeholder="Confirm Password"
+                  placeholder="Confirm password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
                 />
@@ -298,11 +305,13 @@ const RegisterPage = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-70 disabled:cursor-not-allowed"
+                className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
+                  isSubmitting ? 'bg-primary-400' : 'bg-primary-600 hover:bg-primary-700'
+                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500`}
               >
                 {isSubmitting ? (
                   <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
@@ -312,20 +321,12 @@ const RegisterPage = () => {
               </button>
             </div>
             
-            <div className="text-sm text-center">
-              <p className="text-gray-600">
-                By registering, you agree to our{' '}
-                <Link href="/terms">
-                  <a className="font-medium text-primary-600 hover:text-primary-500">
-                    Terms of Service
-                  </a>
-                </Link>{' '}
+            <div className="text-center text-sm">
+              <p>
+                By creating an account, you agree to our{' '}
+                <Link href="/terms"><a className="text-primary-600 hover:text-primary-500">Terms of Service</a></Link>{' '}
                 and{' '}
-                <Link href="/privacy">
-                  <a className="font-medium text-primary-600 hover:text-primary-500">
-                    Privacy Policy
-                  </a>
-                </Link>
+                <Link href="/privacy"><a className="text-primary-600 hover:text-primary-500">Privacy Policy</a></Link>
               </p>
             </div>
           </form>

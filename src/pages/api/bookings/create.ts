@@ -193,6 +193,53 @@ export default async function handler(
       service_type: dbFieldsOnly.service_type,
       fields: Object.keys(dbFieldsOnly)
     });
+
+    // Always use mock implementation in development mode
+    if (process.env.NODE_ENV === 'development') {
+      
+      apiLogger.warn('Using mock implementation for database in development mode');
+      
+      // Create a mock booking object
+      const mockBooking = {
+        id: `mock-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        ...dbFieldsOnly
+      };
+      
+      // Try to send confirmation email (if configured)
+      try {
+        await sendBookingConfirmationEmail({
+          to: normalizedBookingData.customerEmail,
+          name: normalizedBookingData.customerName,
+          referenceNumber,
+          appointmentDate: normalizedBookingData.appointmentDate,
+          appointmentTime: normalizedBookingData.appointmentTime,
+          service: normalizedBookingData.serviceType,
+          deviceType: normalizedBookingData.deviceType,
+          deviceBrand: normalizedBookingData.deviceBrand,
+          deviceModel: normalizedBookingData.deviceModel,
+          address: normalizedBookingData.address,
+          city: normalizedBookingData.city,
+          postalCode: normalizedBookingData.postalCode,
+          province: normalizedBookingData.province
+        });
+        
+        apiLogger.info('Confirmation email sent (or simulated)', { email: normalizedBookingData.customerEmail });
+      } catch (emailError) {
+        // Log the error but don't fail the request
+        apiLogger.error('Failed to send confirmation email', {
+          error: emailError instanceof Error ? emailError.message : 'Unknown error'
+        });
+      }
+      
+      // Return successful response with mock data
+      return res.status(200).json({
+        success: true,
+        message: 'Booking created successfully (Development Mode)',
+        reference: referenceNumber,
+        booking: mockBooking
+      });
+    }
     
     // Get Supabase client with service role
     const supabase = getServiceSupabase();
@@ -252,23 +299,23 @@ export default async function handler(
       });
     }
     
-    // Return success with the booking reference
-    return res.status(201).json({
+    // Return successful response
+    return res.status(200).json({
       success: true,
       message: 'Booking created successfully',
       reference: referenceNumber,
-      booking_reference: referenceNumber, // Add alias for compatibility
+      booking
     });
   } catch (error) {
-    // Handle unexpected errors
-    apiLogger.error('Unexpected error during booking creation', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
+    // Log any uncaught errors
+    apiLogger.error('Uncaught error in booking creation', {
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
     
+    // Return error response
     return res.status(500).json({
       success: false,
-      message: 'Server error during booking creation',
+      message: 'An unexpected error occurred',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }

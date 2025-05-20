@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
-import { useAuth } from '@/context/AuthContext';
+import { AuthContext } from '@/context/AuthContext';
 import { clearAuthStorage } from '@/utils/authStateProtection';
 
 const AuthErrorPage: React.FC = () => {
   const router = useRouter();
-  const { forceSignOut } = useAuth();
+  const auth = useContext(AuthContext);
+  const { forceSignOut } = auth || {};
   const [error, setError] = useState<string | null>(null);
   const [resetInProgress, setResetInProgress] = useState(false);
 
@@ -38,7 +39,15 @@ const AuthErrorPage: React.FC = () => {
       clearAuthStorage();
       
       // Force sign out via Auth context
-      await forceSignOut();
+      if (forceSignOut) {
+        await forceSignOut();
+      } else {
+        // Fallback if forceSignOut is not available
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('supabase.auth.token');
+          localStorage.removeItem('authUser');
+        }
+      }
       
       // Redirect to homepage after reset
       router.push('/');

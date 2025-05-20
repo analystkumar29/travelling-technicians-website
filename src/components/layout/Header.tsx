@@ -1,223 +1,224 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { Disclosure } from '@headlessui/react';
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
-import { useAuth } from '@/context/AuthContext';
+import { AuthContext } from '@/context/AuthContext';
+import useAuthNavigation from '@/hooks/useAuthNavigation';
+import Image from 'next/image';
 
-// Updated navigation with some items potentially moved to a "More" dropdown
+// Define navigation items
 const navigation = [
   { name: 'Home', href: '/' },
   { 
     name: 'Services', 
-    href: '#',
+    href: '/services',
     submenu: [
-      { name: 'Mobile Phone Repair', href: '/services/mobile' },
-      { name: 'Laptop & Computer Repair', href: '/services/laptop' },
-    ],
+      { name: 'Mobile Repair', href: '/services/mobile-repair' },
+      { name: 'Laptop Repair', href: '/services/laptop-repair' },
+      { name: 'All Services', href: '/services' }
+    ] 
   },
-  { name: 'Doorstep Repair', href: '/doorstep', highlight: true },
-  { name: 'Pricing', href: '/pricing' },
+  { name: 'Doorstep Repair', href: '/doorstep-repair' },
+  { name: 'Service Areas', href: '/service-areas' },
   { name: 'About Us', href: '/about' },
-  { 
-    name: 'More',
-    href: '#',
-    submenu: [
-      { name: 'Service Areas', href: '/service-areas' },
-      { name: 'FAQ', href: '/faq' },
-      { name: 'Blog', href: '/blog' },
-      { name: 'Contact', href: '/contact' },
-    ]
-  }
+  { name: 'Contact', href: '/contact' },
+  { name: 'Blog', href: '/blog' }
 ];
 
-export default function Header() {
-  const [isServicesOpen, setIsServicesOpen] = useState(false);
-  const [isMoreOpen, setIsMoreOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
+/**
+ * Header Component
+ * 
+ * Main navigation header with responsive design, dropdown menus, and
+ * authentication-aware user menu.
+ * 
+ * IMPROVED: Uses safe authenticated navigation to prevent redirect loops
+ */
+const Header = () => {
   const router = useRouter();
-  const { isAuthenticated, isLoading, userProfile, signOut, isStateCorrupted, forceSignOut } = useAuth();
+  const { isAuthenticated, isLoading, userProfile, isStateCorrupted, signOut, forceSignOut } = useContext(AuthContext) || {};
+  const authNavigation = useAuthNavigation();
   
-  // Add scroll effect to header
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 20) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
-    };
-    
-    window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [isServicesMenuOpen, setIsServicesMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   
-  // Add class to body when auth state is corrupted
-  useEffect(() => {
-    // Skip applying auth corruption class on the homepage
-    const isHomepage = router.pathname === '/';
-    
-    if (isStateCorrupted && !isHomepage) {
-      document.body.classList.add('auth-corrupted');
-    } else {
-      document.body.classList.remove('auth-corrupted');
-    }
-  }, [isStateCorrupted, router.pathname]);
-  
-  // Function to check if the current path matches the navigation item
-  const isActivePath = (path: string): boolean => {
-    if (path === '/') {
-      return router.pathname === path;
-    }
-    return router.pathname.startsWith(path);
-  };
-
-  // Function to check if a submenu item is active
-  const isActiveSubmenuItem = (path: string): boolean => {
-    return router.pathname === path;
-  };
-
-  // Function to check if any submenu item is active
-  const isAnySubmenuActive = (submenu: {name: string, href: string}[] | undefined): boolean => {
-    return submenu ? submenu.some(subItem => isActiveSubmenuItem(subItem.href)) : false;
-  };
-
-  // Handle dropdown toggles
   const handleDropdownToggle = (dropdownName: string) => {
-    if (dropdownName === 'Services') {
-      setIsServicesOpen(!isServicesOpen);
-      if (isMoreOpen) setIsMoreOpen(false);
-      if (isUserMenuOpen) setIsUserMenuOpen(false);
-    } else if (dropdownName === 'More') {
-      setIsMoreOpen(!isMoreOpen);
-      if (isServicesOpen) setIsServicesOpen(false);
-      if (isUserMenuOpen) setIsUserMenuOpen(false);
-    } else if (dropdownName === 'User') {
-      setIsUserMenuOpen(!isUserMenuOpen);
-      if (isServicesOpen) setIsServicesOpen(false);
-      if (isMoreOpen) setIsMoreOpen(false);
+    if (activeDropdown === dropdownName) {
+      setActiveDropdown(null);
+      setIsServicesMenuOpen(false);
+      setIsUserMenuOpen(false);
+    } else {
+      setActiveDropdown(dropdownName);
+      setIsServicesMenuOpen(dropdownName === 'Services');
+      setIsUserMenuOpen(dropdownName === 'User');
     }
   };
-
-  // Handle emergency reset
+  
+  const handleSignOut = async () => {
+    try {
+      if (typeof signOut === 'function') {
+        await signOut();
+        // Use regular router for homepage navigation (not protected)
+        router.push('/');
+      }
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+  
   const handleEmergencyReset = async () => {
-    // Close user menu
-    setIsUserMenuOpen(false);
-    
-    // Show confirmation before proceeding
-    if (confirm('This will reset your authentication state and log you out. Continue?')) {
-      try {
+    try {
+      if (typeof forceSignOut === 'function') {
         await forceSignOut();
-      } catch (error) {
-        console.error('Error during emergency reset:', error);
-        // Force reload as a fallback
+        window.location.href = '/';
+      } else {
         window.location.href = '/';
       }
+    } catch (error) {
+      console.error('Error during emergency reset:', error);
+      window.location.href = '/';
     }
   };
-
-  // Handle sign out
-  const handleSignOut = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    signOut();
+  
+  // Check if a menu item should be highlighted as active
+  const isActiveMenuItem = (href: string) => {
+    if (href === '/') {
+      return router.pathname === '/';
+    }
+    return router.pathname.startsWith(href);
   };
-
+  
+  // Check if a submenu item should be highlighted as active
+  const isActiveSubmenuItem = (href: string) => {
+    return router.pathname === href;
+  };
+  
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Services dropdown
+      const servicesDropdown = document.querySelector('.services-dropdown');
+      if (isServicesMenuOpen && servicesDropdown && !servicesDropdown.contains(event.target as Node)) {
+        setIsServicesMenuOpen(false);
+        if (activeDropdown === 'Services') {
+          setActiveDropdown(null);
+        }
+      }
+      
+      // User dropdown
+      const userDropdown = document.querySelector('.user-menu');
+      if (isUserMenuOpen && userDropdown && !userDropdown.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+        if (activeDropdown === 'User') {
+          setActiveDropdown(null);
+        }
+      }
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [isServicesMenuOpen, isUserMenuOpen, activeDropdown]);
+  
+  // Navigate to profile using safe navigation
+  const goToProfile = (event: React.MouseEvent) => {
+    event.preventDefault();
+    authNavigation.navigateToProfile();
+  };
+  
+  // Navigate to bookings using safe navigation
+  const goToBookings = (event: React.MouseEvent) => {
+    event.preventDefault();
+    authNavigation.navigateToBookings();
+  };
+  
+  // Navigate to warranties using safe navigation
+  const goToWarranties = (event: React.MouseEvent) => {
+    event.preventDefault();
+    authNavigation.navigateToWarranties();
+  };
+  
   return (
-    <Disclosure as="nav" className={`bg-white bg-opacity-90 backdrop-blur-md sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'shadow-lg py-1' : 'py-2'}`}>
+    <Disclosure as="nav" className="bg-white shadow">
       {({ open }) => (
         <>
-          <div className="container-custom">
-            <div className="flex justify-between items-center h-20">
-              <div className="flex-shrink-0 flex items-center">
-                <Link href="/">
-                  <a className="flex items-center logo">
-                    {/* Logo with integrated text */}
-                    <div className="h-10 md:h-12 w-auto relative transition-all duration-300 ease-in-out hover:scale-105">
-                      <Image 
-                        src="/images/logo/tt-logo-rect.svg" 
-                        alt="The Travelling Technicians Logo" 
-                        width={370}
-                        height={60}
-                        layout="intrinsic"
-                        className="h-full w-auto"
-                        priority
-                      />
-                    </div>
-                  </a>
-                </Link>
-              </div>
-
-              {/* Desktop Menu */}
-              <div className="hidden lg:flex lg:items-center lg:justify-end lg:flex-1">
-                <div className="flex space-x-3">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between h-20">
+              {/* Logo and Main Navigation */}
+              <div className="flex">
+                {/* Logo */}
+                <div className="flex-shrink-0 flex items-center">
+                  <Link href="/">
+                    <a className="flex items-center">
+                      <div className="w-10 h-10 relative mr-2">
+                        <Image
+                          src="/images/logo/logo-icon.png"
+                          alt="The Travelling Technicians"
+                          layout="fill"
+                          objectFit="contain"
+                          priority
+                        />
+                      </div>
+                      <div className="hidden lg:block font-semibold text-gray-900 leading-tight">
+                        <span className="block text-sm">The Travelling</span>
+                        <span className="block text-lg text-primary-600">Technicians</span>
+                      </div>
+                    </a>
+                  </Link>
+                </div>
+                
+                {/* Desktop Navigation */}
+                <div className="hidden sm:ml-6 sm:flex sm:space-x-4 items-center">
                   {navigation.map((item) => (
                     !item.submenu ? (
-                      <Link 
-                        key={item.name}
-                        href={item.href}
-                      >
-                        <a className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-300 nav-link ${
-                          isActivePath(item.href) 
-                            ? 'text-primary-600 bg-gray-50 shadow-sm' 
-                            : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50 hover:shadow-sm'
-                          } ${item.highlight ? 'doorstep-repair-button nav-item-doorstep-repair' : 'nav-item-hover'}`}
+                      <Link key={item.name} href={item.href}>
+                        <a
+                          className={`px-3 py-2 rounded-md text-sm font-medium ${
+                            isActiveMenuItem(item.href)
+                              ? 'text-primary-600 bg-primary-50'
+                              : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
+                          } transition-colors duration-200`}
                         >
                           {item.name}
                         </a>
                       </Link>
                     ) : (
-                      <div key={item.name} className="relative">
+                      <div key={item.name} className="relative services-dropdown">
                         <button
-                          onClick={() => handleDropdownToggle(item.name)}
-                          className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-300 menu-item ${
-                            isAnySubmenuActive(item.submenu) 
-                              ? 'text-primary-600 bg-gray-50 shadow-sm' 
-                              : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50 hover:shadow-sm'
-                          }`}
+                          onClick={() => handleDropdownToggle('Services')}
+                          className={`px-3 py-2 rounded-md text-sm font-medium flex items-center ${
+                            isActiveMenuItem(item.href)
+                              ? 'text-primary-600 bg-primary-50'
+                              : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
+                          } transition-colors duration-200`}
                         >
                           {item.name}
                           <svg 
                             xmlns="http://www.w3.org/2000/svg" 
-                            className={`h-4 w-4 ml-1 transition-transform duration-300 ${
-                              (item.name === 'Services' && isServicesOpen) || 
-                              (item.name === 'More' && isMoreOpen) ? 'rotate-180' : ''
-                            }`}
+                            className={`h-4 w-4 ml-1 transition-transform duration-300 ${isServicesMenuOpen ? 'rotate-180' : ''}`}
                             fill="none" 
                             viewBox="0 0 24 24" 
                             stroke="currentColor"
                           >
-                            <path 
-                              strokeLinecap="round" 
-                              strokeLinejoin="round" 
-                              strokeWidth={2} 
-                              d="M19 9l-7 7-7-7" 
-                            />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                           </svg>
                         </button>
-
-                        {(item.name === 'Services' && isServicesOpen) || 
-                         (item.name === 'More' && isMoreOpen) ? (
-                          <div className="absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none transform transition-all duration-200 ease-out opacity-100 scale-100 origin-top-left submenu-animation">
-                            <div className="py-1">
+                        
+                        {isServicesMenuOpen && (
+                          <div className="absolute z-10 -ml-4 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                            <div className="py-1" role="menu" aria-orientation="vertical">
                               {item.submenu.map((subItem) => (
-                                <Link
-                                  key={subItem.name}
-                                  href={subItem.href}
-                                >
-                                  <a 
-                                    className={`block px-4 py-2 text-sm transition-colors duration-200 ${
-                                      isActiveSubmenuItem(subItem.href) 
-                                        ? 'text-primary-600 bg-gray-50 font-medium' 
-                                        : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
+                                <Link key={subItem.name} href={subItem.href}>
+                                  <a
+                                    className={`block px-4 py-2 text-sm ${
+                                      isActiveSubmenuItem(subItem.href)
+                                        ? 'text-primary-600 bg-primary-50'
+                                        : 'text-gray-700 hover:bg-gray-50 hover:text-primary-600'
                                     }`}
-                                    onClick={() => {
-                                      if (item.name === 'Services') setIsServicesOpen(false);
-                                      if (item.name === 'More') setIsMoreOpen(false);
-                                    }}
+                                    role="menuitem"
                                   >
                                     {subItem.name}
                                   </a>
@@ -225,13 +226,24 @@ export default function Header() {
                               ))}
                             </div>
                           </div>
-                        ) : null}
+                        )}
                       </div>
                     )
                   ))}
                 </div>
-
-                {/* Account and Book Online buttons */}
+              </div>
+              
+              {/* Right Side - Book Online, Account etc. */}
+              <div className="flex items-center">
+                {/* Book Online Button */}
+                <div className="mr-2 sm:mr-4">
+                  <Link href="/book-online">
+                    <a className="inline-flex items-center px-3 sm:px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700">
+                      Book Online
+                    </a>
+                  </Link>
+                </div>
+                
                 <div className="ml-4 pl-4 border-l border-gray-200 flex items-center space-x-4">
                   {/* User Account Menu */}
                   {isLoading ? (
@@ -267,33 +279,39 @@ export default function Header() {
                                 </span>
                               )}
                             </div>
-                            <Link href="/account/profile">
-                              <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600 profile-link">
-                                Your Profile
-                              </a>
-                            </Link>
-                            <Link href="/account/bookings">
-                              <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600">
-                                Your Bookings
-                              </a>
-                            </Link>
-                            <Link href="/my-warranties">
-                              <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600">
-                                Your Warranties
-                              </a>
-                            </Link>
+                            <a 
+                              href="/account/profile"
+                              onClick={goToProfile}
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600 profile-link"
+                            >
+                              Your Profile
+                            </a>
+                            <a 
+                              href="/account/bookings"
+                              onClick={goToBookings}
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600"
+                            >
+                              Your Bookings
+                            </a>
+                            <a 
+                              href="/my-warranties"
+                              onClick={goToWarranties}
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600"
+                            >
+                              Your Warranties
+                            </a>
                             
                             {/* Emergency Reset Option */}
                             {isStateCorrupted && (
                               <button 
                                 onClick={handleEmergencyReset}
-                                className="w-full text-left block px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 emergency-reset-btn"
+                                className="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-red-50 emergency-reset-btn"
                               >
                                 🔄 Emergency Reset
                               </button>
                             )}
                             
-                            <button 
+                            <button
                               onClick={handleSignOut}
                               className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-red-600"
                             >
@@ -305,46 +323,55 @@ export default function Header() {
                     </div>
                   ) : (
                     <Link href="/auth/login">
-                      <a className="text-gray-700 hover:text-primary-600 font-medium">
+                      <a className="text-gray-700 hover:text-primary-600 text-sm font-medium">
                         Sign In
                       </a>
                     </Link>
                   )}
 
-                  {/* Book Now Button */}
-                  <Link href="/book-online">
-                    <a className="btn-primary shadow-md transform hover:scale-105 transition duration-300">
-                      Book Online
-                    </a>
-                  </Link>
+                  {/* Mobile menu button */}
+                  <button
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-primary-600 hover:bg-gray-50 focus:outline-none"
+                  >
+                    <span className="sr-only">Open main menu</span>
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      className={`h-6 w-6 ${isOpen ? 'hidden' : 'block'}`}
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      className={`h-6 w-6 ${isOpen ? 'block' : 'hidden'}`}
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
-              </div>
-
-              {/* Mobile menu button */}
-              <div className="flex items-center lg:hidden">
-                <Disclosure.Button className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-primary-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500">
-                  <span className="sr-only">Open main menu</span>
-                  {open ? (
-                    <XMarkIcon className="block h-6 w-6" aria-hidden="true" />
-                  ) : (
-                    <Bars3Icon className="block h-6 w-6" aria-hidden="true" />
-                  )}
-                </Disclosure.Button>
               </div>
             </div>
           </div>
-
-          {/* Mobile menu */}
-          <Disclosure.Panel className="lg:hidden bg-white">
+          
+          {/* Mobile menu, show/hide based on menu state */}
+          <Disclosure.Panel className={`sm:hidden ${isOpen ? 'block' : 'hidden'}`}>
             <div className="px-2 pt-2 pb-3 space-y-1">
               {navigation.map((item) => (
                 !item.submenu ? (
                   <Link key={item.name} href={item.href}>
-                    <a className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
-                      isActivePath(item.href) 
-                        ? 'text-primary-600 bg-primary-50' 
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-primary-600'
-                    } ${item.highlight ? 'border-l-4 border-primary-500 pl-2' : ''}`}>
+                    <a
+                      className={`block px-3 py-2 rounded-md text-base font-medium ${
+                        isActiveMenuItem(item.href)
+                          ? 'bg-primary-50 text-primary-600'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-primary-600'
+                      }`}
+                    >
                       {item.name}
                     </a>
                   </Link>
@@ -353,19 +380,20 @@ export default function Header() {
                     {({ open }) => (
                       <>
                         <Disclosure.Button
-                          className={`flex justify-between w-full px-3 py-2 text-base font-medium rounded-md transition-colors duration-200 ${
-                            isAnySubmenuActive(item.submenu)
-                              ? 'text-primary-600 bg-primary-50'
+                          className={`flex justify-between w-full px-3 py-2 text-base font-medium rounded-md ${
+                            isActiveMenuItem(item.href)
+                              ? 'bg-primary-50 text-primary-600'
                               : 'text-gray-700 hover:bg-gray-50 hover:text-primary-600'
                           }`}
                         >
-                          {item.name}
+                          <span>{item.name}</span>
                           <svg
-                            className={`${open ? 'rotate-180 transform' : ''} h-5 w-5`}
                             xmlns="http://www.w3.org/2000/svg"
+                            className={`ml-2 h-5 w-5 transform ${
+                              open ? 'rotate-180' : 'rotate-0'
+                            } transition-transform duration-200`}
                             viewBox="0 0 20 20"
                             fill="currentColor"
-                            aria-hidden="true"
                           >
                             <path
                               fillRule="evenodd"
@@ -374,6 +402,7 @@ export default function Header() {
                             />
                           </svg>
                         </Disclosure.Button>
+
                         <Disclosure.Panel className="px-4 pt-2 pb-2 space-y-1">
                           {item.submenu.map((subItem) => (
                             <Link key={subItem.name} href={subItem.href}>
@@ -419,21 +448,27 @@ export default function Header() {
                     </div>
                   </div>
                   <div className="mt-3 space-y-1 border-t border-gray-100 pt-2">
-                    <Link href="/account/profile">
-                      <a className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-primary-600">
-                        Your Profile
-                      </a>
-                    </Link>
-                    <Link href="/account/bookings">
-                      <a className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-primary-600">
-                        Your Bookings
-                      </a>
-                    </Link>
-                    <Link href="/my-warranties">
-                      <a className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-primary-600">
-                        Your Warranties
-                      </a>
-                    </Link>
+                    <a 
+                      href="/account/profile"
+                      onClick={goToProfile}
+                      className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-primary-600"
+                    >
+                      Your Profile
+                    </a>
+                    <a 
+                      href="/account/bookings"
+                      onClick={goToBookings}
+                      className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-primary-600"
+                    >
+                      Your Bookings
+                    </a>
+                    <a 
+                      href="/my-warranties"
+                      onClick={goToWarranties}
+                      className="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-primary-600"
+                    >
+                      Your Warranties
+                    </a>
                     
                     {/* Emergency Reset Option */}
                     {isStateCorrupted && (
@@ -454,26 +489,25 @@ export default function Header() {
                   </div>
                 </>
               ) : (
-                <div className="flex flex-col space-y-3 px-4">
+                <div className="px-4 space-y-3">
                   <Link href="/auth/login">
-                    <a className="text-primary-600 font-medium hover:text-primary-700">
+                    <a className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                       Sign In
+                    </a>
+                  </Link>
+                  <Link href="/book-online">
+                    <a className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                      Book Online
                     </a>
                   </Link>
                 </div>
               )}
-              
-              <div className="mt-4 px-4">
-                <Link href="/book-online">
-                  <a className="w-full block text-center btn-primary shadow-md">
-                    Book Online
-                  </a>
-                </Link>
-              </div>
             </div>
           </Disclosure.Panel>
         </>
       )}
     </Disclosure>
   );
-} 
+};
+
+export default Header; 
