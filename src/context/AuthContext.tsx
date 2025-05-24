@@ -25,6 +25,7 @@ interface AuthContextType {
   linkBookingsToAccount: (email: string) => Promise<number>;
   isStateCorrupted: boolean;
   isFetchingProfile: boolean;
+  profileError: string | null;
   refreshSession: () => Promise<boolean>;
 }
 
@@ -46,43 +47,42 @@ function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isFetchingProfile, setIsFetchingProfile] = useState(false);
   const [isStateCorrupted, setIsStateCorrupted] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const router = useRouter();
   const recoveryAttempts = useRef(0);
   const lastValidationTime = useRef<number>(Date.now());
   const authStateVersion = useRef<number>(0);
   
-  // Define fetchUserProfile first as it's used by others
   const fetchUserProfile = useCallback(async (userId: string) => {
     if (!userId) {
       console.error('[PROFILE] Cannot fetch profile: userId is missing');
-      setIsFetchingProfile(false); // Ensure this is set early on error
+      setIsFetchingProfile(false);
+      setProfileError('User ID is missing, cannot fetch profile.');
       return null;
     }
     
     console.log(`[PROFILE] Starting profile fetch process for user ${userId.slice(0,6)}...`);
     setIsFetchingProfile(true);
-    setIsStateCorrupted(false); // Reset corruption state at the beginning of a fetch
+    setIsStateCorrupted(false);
+    setProfileError(null);
 
-    let profile: UserProfile | null = null; // Explicitly type profile
+    let profile: UserProfile | null = null;
     let currentAttempt = 0;
     let retryDelay = INITIAL_RETRY_DELAY;
 
-    // Respect sessionStorage attempts but cap with our constant for the loop
     const sessionAttempts = parseInt(sessionStorage.getItem('profileFetchAttempts') || '0', 10);
     
     if (user?.id && router.pathname.includes('/auth/callback')) {
-      console.log('[PROFILE] Auth callback detected, resetting fetch attempts in session storage.');
+      console.log('[PROFILE] Auth callback detected, resetting session storage attempts.');
       sessionStorage.removeItem('profileFetchAttempts');
     }
 
     while (currentAttempt < MAX_PROFILE_FETCH_ATTEMPTS) {
       currentAttempt++;
-      // Update session storage for external visibility/consistency if needed, but loop respects MAX_PROFILE_FETCH_ATTEMPTS
       sessionStorage.setItem('profileFetchAttempts', Math.max(sessionAttempts, currentAttempt).toString());
       console.log(`[PROFILE] Fetch attempt ${currentAttempt}/${MAX_PROFILE_FETCH_ATTEMPTS}`);
 
-      // --- Helper: Timeout for promises ---
-      const withTimeout = async <T,>(promise: Promise<T>, timeoutMs = 10000, name = 'operation'): Promise<T> => { // Default timeout to 10000ms
+      const withTimeout = async <T,>(promise: Promise<T>, timeoutMs = 10000, name = 'operation'): Promise<T> => {
         let timeoutId: NodeJS.Timeout | undefined = undefined;
         try {
           const timeoutPromise = new Promise<never>((_, reject) => {
@@ -94,158 +94,95 @@ function AuthProvider({ children }: { children: ReactNode }) {
           return result;
         } catch (err) {
           console.error(`[PROFILE] ${name} failed within withTimeout:`, err);
-          throw err; // Re-throw to be caught by the main try-catch of the attempt
+          throw err;
         } finally {
           if (timeoutId) clearTimeout(timeoutId);
         }
       };
-
-      // --- Helper: Retry with backoff for connection test ---
-      const retryConnectionTest = async (fn: () => Promise<any>, retries = 2, delay = 1500) => { // Reduced retries for connection test
-        let lastError;
-        for (let i = 0; i < retries; i++) {
-          try {
-            return await fn();
-          } catch (err) {
-            lastError = err;
-            console.warn(`[PROFILE] Connection test attempt ${i + 1} failed:`, err);
-            if (i < retries -1) await new Promise(res => setTimeout(res, delay * (i + 1)));
-          }
-        }
-        throw lastError;
-      };
       
       try {
-        // --- Connection Test (Optional, can be less aggressive) ---
-        try {
-          console.log('[PROFILE] Testing database connection...');
-          await retryConnectionTest(
-            () => withTimeout(
-              Promise.resolve(supabase.from('user_profiles').select('count', { count: 'exact' }).limit(1)), 
-              5000, // DB Connection test timeout: 5000ms
-              'Connection test'
-            ),
-            2, 1000 // Fewer retries, shorter initial delay for connection test
-          );
-          console.log('[PROFILE] Database connection seems OK.');
-        } catch (connErr) {
-          console.warn('[PROFILE] Database connection test failed:', connErr);
-        }
-
-        // --- Attempt to fetch existing profile ---
         console.log('[PROFILE] Trying direct profile query...');
         const fetchedProfileResponse = await withTimeout<PostgrestSingleResponse<UserProfile>>(
-          Promise.resolve(supabase.from('user_profiles').select('*').eq('id', userId).single()), 
-          10000, // Main operation timeout: 10000ms
+          Promise.resolve(supabase.from('user_profiles').select('*').eq('id', userId).single()),
+          10000, 
           'Direct profile query'
         );
-        const { data: fetchedProfile, error: queryError } = fetchedProfileResponse;
+        const { data: fetchedProfileData, error: queryError } = fetchedProfileResponse;
 
-        if (queryError) {
-          console.error('[PROFILE] Direct query error:', queryError.message, queryError.code);
-          if (queryError.code !== 'PGRST116') { // PGRST116: Row not found
-            // For other errors, it might be a more significant issue.
-            // Consider if setIsStateCorrupted(true) is appropriate here or if retry should handle it.
-          }
-        } else if (fetchedProfile) {
+        if (queryError && queryError.code !== 'PGRST116') { // PGRST116 means no rows found, which is not an error for this step
+          console.error('[PROFILE] Direct query error (not PGRST116):', queryError.message);
+          throw queryError; // Throw to trigger retry for other errors
+        } else if (fetchedProfileData) {
           console.log('[PROFILE] Successfully fetched profile via direct query');
-          profile = fetchedProfile;
-          break; // Profile found, exit loop
-        } else {
-          console.log('[PROFILE] No profile found via direct query, will attempt creation.');
+          profile = fetchedProfileData;
+          break; 
         }
+        // If profile is null (either not found or PGRST116), proceed to upsert
+        console.log('[PROFILE] Profile not found or PGRST116, attempting upsert.');
 
-        // --- If not found, attempt to create profile ---
-        if (!profile) {
-          console.log('[PROFILE] Attempting to create profile...');
-          const authUserResponse = await withTimeout<UserResponse>(
-            Promise.resolve(supabase.auth.getUser()), 
-            10000, // Auth operation timeout: 10000ms
-            'Auth getUser for creation'
+        const authUserResp = await withTimeout<UserResponse>(
+          Promise.resolve(supabase.auth.getUser()),
+          10000, 
+          'Auth getUser for upsert'
+        );
+        const authUserData = authUserResp.data.user;
+        const authUserError = authUserResp.error;
+
+        if (authUserError) {
+          console.error('[PROFILE] Error getting user data for profile upsert:', authUserError.message);
+          throw authUserError;
+        } else if (authUserData) {
+          console.log('[PROFILE] User exists in auth, proceeding with profile upsert.');
+          const upsertData: Partial<UserProfile> = {
+            id: userId, // This is the conflict target
+            email: authUserData.email!,
+            full_name: authUserData.user_metadata?.full_name || '',
+            phone: authUserData.user_metadata?.phone === null ? undefined : (authUserData.user_metadata?.phone || undefined),
+            updated_at: new Date().toISOString(),
+          };
+          const { data: upsertedProfile, error: upsertError } = await withTimeout<PostgrestSingleResponse<UserProfile>>(
+            Promise.resolve(supabase.from('user_profiles')
+              .upsert(upsertData, { onConflict: 'id' })
+              .select()
+              .single()),
+            10000, 
+            'Profile upsert'
           );
-          // const { user: authUserData, error: authUserError } = authUserResponse; // Original line
-          // Correctly access data and error from UserResponse
-          const authUserData = authUserResponse.data.user;
-          const authUserError = authUserResponse.error;
 
-          if (authUserError) {
-            console.error('[PROFILE] Error getting user data for profile creation:', authUserError.message);
-            throw authUserError; 
-          } else if (authUserData) { 
-            console.log('[PROFILE] User exists in auth, proceeding with profile record creation.');
-            const newProfileResponse = await withTimeout<PostgrestSingleResponse<UserProfile>>(
-              Promise.resolve(supabase.from('user_profiles') 
-                .insert([{
-                  id: userId,
-                  email: authUserData.email!, 
-                  full_name: authUserData.user_metadata?.full_name || '',
-                }])
-                .select('*')
-                .single()),
-              10000, // Main operation timeout: 10000ms
-              'Profile creation'
-            );
-            const { data: newProfile, error: insertError } = newProfileResponse;
-
-            if (insertError) {
-              if (insertError.code === '23505' || (insertError.message && insertError.message.includes('duplicate key value'))) {
-                console.warn('[PROFILE] Duplicate key on insert, attempting to re-fetch.');
-                const existingProfileAfterDuplicateResponse = await withTimeout<PostgrestSingleResponse<UserProfile>>(
-                  Promise.resolve(supabase.from('user_profiles').select('*').eq('id', userId).single()), 
-                  10000, // Main operation timeout: 10000ms
-                  'Fetch existing after duplicate key'
-                );
-                const { data: existingProfileAfterDuplicate, error: fetchExistingError } = existingProfileAfterDuplicateResponse;
-
-                if (fetchExistingError) {
-                  console.error('[PROFILE] Failed to fetch existing profile after duplicate key:', fetchExistingError.message);
-                  // Propagate error to trigger retry or failure of this attempt
-                  throw fetchExistingError;
-                } else if (existingProfileAfterDuplicate) {
-                  console.log('[PROFILE] Successfully fetched existing profile after duplicate key error.');
-                  profile = existingProfileAfterDuplicate;
-                  break; // Profile found, exit loop
-                } else {
-                   console.error('[PROFILE] Profile still not found after duplicate key error and re-fetch.');
-                   // Let it fall through to retry logic or attempt failure
-                }
-              } else {
-                console.error('[PROFILE] Error creating profile:', insertError.message);
-                // Propagate error to trigger retry or failure of this attempt
-                throw insertError;
-              }
-            } else if (newProfile) {
-              console.log('[PROFILE] Successfully created new profile');
-              profile = newProfile;
-              break; // Profile created, exit loop
-            }
-          } else {
-            console.error('[PROFILE] Cannot create profile: Supabase user data unavailable.');
-            // This indicates a problem, fail this attempt.
-            throw new Error('Supabase user data unavailable for profile creation');
+          if (upsertError) {
+            console.error('[PROFILE] Error upserting profile:', upsertError.message);
+            throw upsertError;
+          } else if (upsertedProfile) {
+            console.log('[PROFILE] Successfully upserted profile');
+            profile = upsertedProfile;
+            break; 
           }
+        } else {
+          console.error('[PROFILE] Cannot upsert profile: Supabase user data unavailable.');
+          throw new Error('Supabase user data unavailable for profile upsert');
         }
       } catch (attemptError) {
         console.warn(`[PROFILE] Attempt ${currentAttempt} failed:`, attemptError);
         if (currentAttempt >= MAX_PROFILE_FETCH_ATTEMPTS) {
-          console.error('[PROFILE] All profile fetch/create attempts failed.');
-          setIsStateCorrupted(true); // Set state as corrupted after all retries fail
-          break; // Exit loop, all attempts used
+          console.error('[PROFILE] All profile fetch/upsert attempts failed.');
+          setProfileError('Unable to load your profile after multiple attempts. Please refresh the page or try again later.');
+          setIsStateCorrupted(true); 
+          break; 
         }
-        // Wait before next retry
         console.log(`[PROFILE] Waiting ${retryDelay}ms before next attempt.`);
         await new Promise(res => setTimeout(res, retryDelay));
-        retryDelay *= 2; // Exponential backoff
+        retryDelay *= 2; 
       }
-    } // End of while loop
+    } 
 
-    setIsFetchingProfile(false); // Set to false after all attempts or success
+    setIsFetchingProfile(false); 
 
     if (profile) {
       console.log('[PROFILE] Setting user profile in state:', profile);
       setUserProfile(profile);
-      setIsStateCorrupted(false); // Explicitly set to false on success
-      sessionStorage.removeItem('profileFetchAttempts'); // Clear session attempts on success
+      setIsStateCorrupted(false); 
+      setProfileError(null); 
+      sessionStorage.removeItem('profileFetchAttempts'); 
       try {
         document.cookie = 'tt_auth_check=true; path=/; max-age=86400; SameSite=Lax';
         if (window.location.hostname.includes('travelling-technicians.ca')) {
@@ -259,39 +196,42 @@ function AuthProvider({ children }: { children: ReactNode }) {
       return profile;
     }
     
-    // This block executes if profile is still null after all loop attempts
-    // The session 'profileFetchAttempts' is updated inside the loop.
     const finalSessionAttempts = parseInt(sessionStorage.getItem('profileFetchAttempts') || '0', 10);
-    if (finalSessionAttempts >= MAX_PROFILE_FETCH_ATTEMPTS) { // Check against our defined max
+    if (finalSessionAttempts >= MAX_PROFILE_FETCH_ATTEMPTS) { 
       const isProtectedPage = !['/auth/login', '/auth/register', '/auth/reset-password', '/'].some(p => 
         router.pathname.startsWith(p) || router.pathname === p
       );
       if (isProtectedPage) {
-        console.error(`[PROFILE] Maximum profile fetch attempts (${MAX_PROFILE_FETCH_ATTEMPTS}) reached on protected page, initiating sign out. isStateCorrupted is now true.`);
+        console.error(`[PROFILE] Maximum profile fetch attempts (${MAX_PROFILE_FETCH_ATTEMPTS}) reached on protected page. User will be signed out.`);
         try {
           clearAuthStorage(); 
-          if (router.pathname !== '/auth/login') { // Prevent loop if already there
-             router.push('/auth/login?error=profile_fetch_failed'); 
+          await supabase.auth.signOut();
+          if (router.pathname !== '/auth/login') { 
+            router.push('/auth/login?error=profile_fetch_failed&reason=max_attempts'); 
           }
-        } catch (clearErr) {
-          console.error('[PROFILE] Error clearing auth state:', clearErr);
+        } catch (signOutError) {
+          console.error('[PROFILE] Error during auto-sign out after max attempts:', signOutError);
+           if (typeof window !== 'undefined') window.location.href = '/auth/login?error=profile_fetch_critical&reason=signout_failure';
         }
       } else {
-        console.log(`[PROFILE] Max attempts (${MAX_PROFILE_FETCH_ATTEMPTS}) reached but on non-protected page, not logging out. Current attempts in session: ${finalSessionAttempts}`);
-        // Optionally reset session attempts for non-protected pages if desired
-        // sessionStorage.setItem('profileFetchAttempts', '0'); 
+        console.log(`[PROFILE] Max attempts (${MAX_PROFILE_FETCH_ATTEMPTS}) reached but on non-protected page, not logging out. User can try refreshing.`);
       }
     }
     
-    return null; // Explicitly return null if no profile was fetched or created
+    return null; 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, router]); // Removed signOut from dependencies, and disabled lint warning for this line
+  }, [user, router]);
 
   const refreshSession = useCallback(async (): Promise<boolean> => {
+    setIsLoading(true);
+    setProfileError(null);
     try {
       const { data, error } = await supabase.auth.refreshSession();
       if (error) {
         console.warn('Token refresh failed:', error);
+        if (error.message.includes('NetworkError')) {
+          setProfileError('Network error during token refresh. Please check your connection.');
+        }
         return false;
       }
       if (data.session) {
@@ -301,38 +241,34 @@ function AuthProvider({ children }: { children: ReactNode }) {
         return true;
       }
       return false;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error in refreshSession:', err);
+      setProfileError('An unexpected error occurred during session refresh.');
       return false;
-    }
-  }, []);
-
-  // Define forceSignOut before recoverAuthState
-  const forceSignOut = useCallback(async () => {
-    try {
-      console.warn('Using force sign out method - clearing all auth state');
-      setIsLoading(true);
-      clearAuthStorage();
-      try {
-        await supabase.auth.signOut();
-      } catch (e) {
-        console.error('Error during supabase signout:', e);
-      }
-      setUser(null);
-      setUserProfile(null);
-      setIsStateCorrupted(false);
-      // Ensure router is available or use window.location.href
-      if (router) {
-        router.push('/');
-      } else {
-        window.location.href = '/';
-      }
-    } catch (error) {
-      console.error('Force sign out error:', error);
-      window.location.href = '/'; // Fallback
     } finally {
       setIsLoading(false);
     }
+  }, []);
+
+  const forceSignOut = useCallback(async () => {
+    console.warn('Using force sign out method - clearing all auth state');
+    setIsLoading(true);
+    setProfileError(null);
+    clearAuthStorage();
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error('Error during supabase signout in forceSignOut:', e);
+    }
+    setUser(null);
+    setUserProfile(null);
+    setIsStateCorrupted(false);
+    if (router) {
+      router.push('/');
+    } else if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
+    setIsLoading(false); // Ensure loading is set to false
   }, [router]);
 
   const recoverAuthState = useCallback(async (): Promise<boolean> => {
@@ -343,19 +279,20 @@ function AuthProvider({ children }: { children: ReactNode }) {
       recoveryAttempts.current = 0;
       return false;
     }
-    if (recoveryAttempts.current > 5) {
-      console.warn('Too many recovery attempts, forcing sign out');
+    if (recoveryAttempts.current >= MAX_PROFILE_FETCH_ATTEMPTS) { // Use constant here too
+      console.warn('Too many auth recovery attempts, forcing sign out');
       await forceSignOut();
       return false;
     }
     recoveryAttempts.current += 1;
     console.log(`Attempting auth state recovery (attempt ${recoveryAttempts.current})`);
+    setProfileError(null); // Clear errors before attempting recovery
+
     try {
       const refreshed = await refreshSession();
       if (refreshed) {
         console.log('Successfully recovered session via refresh');
         recoveryAttempts.current = 0;
-        // Session refreshed, user state will be set, now fetch profile
         const { data: refreshedSessionData } = await supabase.auth.getSession();
         if (refreshedSessionData.session?.user) {
             await fetchUserProfile(refreshedSessionData.session.user.id);
@@ -364,13 +301,13 @@ function AuthProvider({ children }: { children: ReactNode }) {
       }
       if (typeof window !== 'undefined') {
         const storedUser = localStorage.getItem('authUser');
-        const supabaseToken = localStorage.getItem('supabase.auth.token'); // Ensure this key is correct
+        const supabaseToken = localStorage.getItem('supabase.auth.token');
         if (storedUser && supabaseToken) {
           try {
             const parsedUser = JSON.parse(storedUser);
             if (validateAuthState(parsedUser)) {
               console.log('Recovered user from localStorage, validating with server');
-              const { data: { user: serverUser } } = await supabase.auth.getUser(); // Destructure correctly
+              const { data: { user: serverUser } } = await supabase.auth.getUser(); 
               if (serverUser && serverUser.id === parsedUser.id) {
                 setUser(serverUser);
                 await fetchUserProfile(serverUser.id);
@@ -385,14 +322,15 @@ function AuthProvider({ children }: { children: ReactNode }) {
       }
       const isNonCriticalPage = router.pathname.includes('/auth/') || router.pathname === '/' || router.pathname === '';
       if (isNonCriticalPage) {
-        recoveryAttempts.current = Math.max(0, recoveryAttempts.current - 1);
+        recoveryAttempts.current = Math.max(0, recoveryAttempts.current - 1); // Decrement for non-critical pages to give more chances
       }
       return false;
     } catch (error) {
       console.error('Error in recoverAuthState:', error);
+      setProfileError('Failed to recover authentication state.');
       return false;
     }
-  }, [refreshSession, router.pathname, fetchUserProfile, forceSignOut]);
+  }, [refreshSession, router.pathname, fetchUserProfile, forceSignOut]); // Added forceSignOut here
 
   const tryRecoverFromStorage = useCallback(() => {
     if (typeof window !== 'undefined') {
@@ -402,13 +340,14 @@ function AuthProvider({ children }: { children: ReactNode }) {
           const parsedUser = JSON.parse(storedUser);
           if (validateAuthState(parsedUser)) {
             console.log('Recovering minimal user state from localStorage');
-            setUser({ id: parsedUser.id, email: parsedUser.email }); // Set minimal user
-            fetchUserProfile(parsedUser.id); // Attempt to fetch full profile
+            setUser({ id: parsedUser.id, email: parsedUser.email }); 
+            fetchUserProfile(parsedUser.id); 
             return true;
           }
         } catch (e) {
           console.error('Error parsing stored user:', e);
-          setIsStateCorrupted(true); // If parsing fails, state might be corrupted
+          setIsStateCorrupted(true); 
+          setProfileError('Error reading authentication data from storage.');
         }
       }
     }
@@ -419,13 +358,14 @@ function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session);
-        setIsLoading(true);
+      setIsLoading(true);
+      setProfileError(null); // Clear errors on auth state change initially
+
       if (event === 'INITIAL_SESSION') {
         if (session?.user) {
           setUser(session.user);
           await fetchUserProfile(session.user.id);
         } else {
-           // Only call recoverAuthState if there's no initial session.
           await recoverAuthState();
         }
       } else if (event === 'SIGNED_IN') {
@@ -443,29 +383,25 @@ function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setUserProfile(null);
         setIsStateCorrupted(false);
+        setProfileError(null); // Clear profile error on sign out
         authStateVersion.current += 1;
         if (typeof window !== 'undefined') {
-          localStorage.removeItem('supabase.auth.token'); // Standard key
-          localStorage.removeItem('authUser'); // Your custom key
-          sessionStorage.removeItem('authRedirectPath');
-          clearAuthStorage(); // Clear all known auth keys
+          clearAuthStorage();
         }
       } else if (event === 'USER_UPDATED' && session?.user) {
         setUser(session.user);
         authStateVersion.current += 1;
         lastValidationTime.current = Date.now();
-        await fetchUserProfile(session.user.id); // Re-fetch profile on user update
+        await fetchUserProfile(session.user.id); 
         setIsStateCorrupted(false);
         if (typeof window !== 'undefined') {
           updateAuthState({ id: session.user.id, email: session.user.email || '', version: authStateVersion.current, lastUpdated: Date.now() });
         }
       } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-        setUser(session.user); // Update user object with potentially new metadata
+        setUser(session.user); 
         authStateVersion.current += 1;
         lastValidationTime.current = Date.now();
         setIsStateCorrupted(false);
-        // Optionally re-fetch profile if critical user data might change with token refresh
-        // await fetchUserProfile(session.user.id); 
       }
       setIsLoading(false);
     });
@@ -473,7 +409,8 @@ function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       authListener?.subscription.unsubscribe();
     };
-  }, [recoverAuthState, fetchUserProfile]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchUserProfile, recoverAuthState]); // Removed direct signOut dependency, forceSignOut is via recoverAuthState
 
   // ... (testRpcFunctionExists - seems fine as is, not a hook)
   const testRpcFunctionExists = async (): Promise<boolean> => {
@@ -482,20 +419,30 @@ function AuthProvider({ children }: { children: ReactNode }) {
   };
   
   const createUserProfile = useCallback(async (userId: string, email: string, fullName: string, phone?: string) => {
+    setProfileError(null);
     try {
-      // No need to check user from state here, as we pass required info.
-      const newProfileData = { id: userId, email: email, full_name: fullName, phone: phone || null };
-      const { data, error } = await supabase.from('user_profiles').insert(newProfileData).select().single();
+      const newProfileData: Partial<UserProfile> = { 
+        id: userId, 
+        email, 
+        full_name: fullName || '', 
+        phone: phone === null ? undefined : (phone || undefined), 
+        created_at: new Date().toISOString(), 
+        updated_at: new Date().toISOString() 
+      };
+      // Use upsert to handle potential race conditions or pre-existing profiles more gracefully.
+      const { data, error } = await supabase.from('user_profiles').upsert(newProfileData, { onConflict: 'id' }).select().single();
       if (error) {
-        console.error('Failed to create user profile:', error);
+        console.error('Failed to create/upsert user profile:', error);
+        setProfileError(`Failed to create profile: ${error.message}`);
         return null;
       }
-      console.log('Successfully created user profile');
-      setUserProfile(data); // Update profile state
-      sessionStorage.setItem('profileFetchAttempts', '0'); // Reset on successful creation
-      return data;
-    } catch (err) {
+      console.log('Successfully created/upserted user profile');
+      setUserProfile(data as UserProfile); 
+      sessionStorage.setItem('profileFetchAttempts', '0'); 
+      return data as UserProfile;
+    } catch (err: any) {
       console.error('Error in createUserProfile:', err);
+      setProfileError(`An unexpected error occurred while creating profile: ${err.message}`);
       return null;
     }
   }, [setUserProfile]);
@@ -504,25 +451,26 @@ function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isLoading) return;
     const timeout = setTimeout(() => {
-      if (isLoading) { // Check isLoading again inside timeout
+      if (isLoading) { 
         console.warn('Auth loading state timed out, forcing reset');
         setIsLoading(false);
         const isHomePage = typeof window !== 'undefined' && (window.location.pathname === '/' || window.location.pathname === '');
         if (!isHomePage) {
           const recovered = tryRecoverFromStorage();
           if (!recovered) {
-            recoverAuthState(); // Call recoverAuthState if tryRecoverFromStorage fails
+            recoverAuthState(); 
           }
         } else {
-          console.log('Skipping auth recovery on homepage to prevent loops');
+          console.log('Skipping auth recovery on homepage to prevent loops for timeout');
           if (typeof window !== 'undefined') {
             sessionStorage.setItem('skipHomepageChecks', 'true');
             setTimeout(() => { sessionStorage.removeItem('skipHomepageChecks'); }, 30000);
           }
         }
       }
-    }, 10000); // 10-second timeout
+    }, 10000); 
     return () => clearTimeout(timeout);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, recoverAuthState, tryRecoverFromStorage]);
 
   // CORRUPT USER STATE EFFECT
@@ -534,79 +482,88 @@ function AuthProvider({ children }: { children: ReactNode }) {
     if (user && !validateAuthState(user)) {
       console.error('Detected corrupted user state', user);
       setIsStateCorrupted(true);
+      setProfileError('Authentication data is corrupted. Attempting to recover...');
       recoverAuthState();
-    } else if (user && userProfile === null && !isLoading && !isFetchingProfile) { // Also check isFetchingProfile
-      console.warn('User exists but profile fetch failed or incomplete, possible corruption');
+    } else if (user && userProfile === null && !isLoading && !isFetchingProfile && !profileError) { // Only recover if no specific profile error is already set
+      console.warn('User exists but profile fetch failed or incomplete, attempting recovery.');
       setIsStateCorrupted(true);
+      setProfileError('Profile data is missing or incomplete. Attempting to recover...');
       recoverAuthState();
-    } else if (user && userProfile) { // If user and profile exist, state is not corrupted
+    } else if (user && userProfile) { 
       setIsStateCorrupted(false);
+      // setProfileError(null); // Don't clear profile error here, might be set by other processes
     }
-  }, [user, userProfile, isLoading, isFetchingProfile, router.pathname, recoverAuthState]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, userProfile, isLoading, isFetchingProfile, router.pathname, recoverAuthState, profileError]);
 
   // PERIODIC SESSION VALIDATION EFFECT
   useEffect(() => {
     if (!user || router.pathname === '/') return;
     const validateInterval = 15 * 60 * 1000; // 15 minutes
     const sessionValidator = setInterval(async () => {
-      if (Date.now() - lastValidationTime.current < validateInterval / 2 ) return; // Check more frequently if needed, or reduce interval
+      if (Date.now() - lastValidationTime.current < validateInterval / 2 ) return;
       try {
         console.log('Performing periodic session validation');
         const { data: { user: serverUser } } = await supabase.auth.getUser();
-        if (!serverUser && user) { // If local user exists but server session is gone
+        if (!serverUser && user) { 
           console.warn('Session validation failed - user no longer valid on server');
+          setProfileError('Your session is no longer valid on the server. Attempting to recover...');
           await recoverAuthState();
         } else if (serverUser) {
           console.log('Session validation passed');
           lastValidationTime.current = Date.now();
-          if (user?.id !== serverUser.id) { // If server user ID doesn't match local, critical issue
+          if (user?.id !== serverUser.id) { 
             console.error("CRITICAL: Local user ID doesn't match server user ID during validation!");
-            await forceSignOut(); // Force sign out and reset
+            setProfileError('Critical authentication mismatch. Forcing sign out.');
+            await forceSignOut(); 
           } else {
-            setUser(serverUser); // Refresh local user state with latest from server
+            setUser(serverUser); 
           }
         }
       } catch (err) {
         console.error('Error in periodic validation:', err);
-        // Consider calling recoverAuthState here too on error
+        setProfileError('Error during periodic session validation.');
       }
     }, validateInterval);
     return () => clearInterval(sessionValidator);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, router.pathname, recoverAuthState, forceSignOut]);
   
   // NETWORK STATUS MONITORING EFFECT
   useEffect(() => {
     const handleOnline = async () => {
       console.log('Network connection restored');
-      if (user) { // If there was a user
-        await refreshSession(); // Attempt to refresh session
-        // Optionally, re-fetch profile if critical
-        // await fetchUserProfile(user.id);
+      if (user) { 
+        await refreshSession(); 
       } else {
-        // If no user, maybe try to recover initial state
         await recoverAuthState();
       }
     };
-    window.addEventListener('online', handleOnline);
+    if (typeof window !== 'undefined') window.addEventListener('online', handleOnline);
     return () => {
-      window.removeEventListener('online', handleOnline);
+      if (typeof window !== 'undefined') window.removeEventListener('online', handleOnline);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, refreshSession, recoverAuthState]);
 
   // FETCH USER PROFILE ON USER CHANGE EFFECT (ensure this is after fetchUserProfile is defined)
   useEffect(() => {
     const isHomepage = router.pathname === '/';
     const skipHomepageChecks = typeof window !== 'undefined' && sessionStorage.getItem('skipHomepageChecks') === 'true';
-    if (!user || isHomepage || skipHomepageChecks || !user.id) { // also check user.id
-        // If user object exists but no id, something is wrong, don't fetch.
+    if (!user || isHomepage || skipHomepageChecks || !user.id) { 
         if(user && !user.id) console.warn("[PROFILE] User object present but user.id is missing, skipping profile fetch.");
         return;
     }
-    fetchUserProfile(user.id);
-  }, [user, router.pathname, fetchUserProfile]);
+    if (!userProfile && !isFetchingProfile && !profileError) { // Only fetch if no profile, not already fetching, and no existing error
+        fetchUserProfile(user.id);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, userProfile, isFetchingProfile, profileError, router.pathname, fetchUserProfile]);
 
   const refreshProfile = useCallback(async () => {
-    if (user && user.id) { // also check user.id
+    if (user && user.id) { 
+      console.log('[PROFILE] Manual profile refresh requested.');
+      setProfileError(null); // Clear previous errors before manual refresh
       await fetchUserProfile(user.id);
     }
   }, [user, fetchUserProfile]);
@@ -624,10 +581,11 @@ function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
+    setIsLoading(true);
+    setProfileError(null);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      // User will be set by onAuthStateChange, which will then trigger fetchUserProfile
       authStateVersion.current += 1;
       lastValidationTime.current = Date.now();
       const pendingBookingRef = sessionStorage.getItem('pendingBookingReference');
@@ -635,28 +593,35 @@ function AuthProvider({ children }: { children: ReactNode }) {
         await linkBookingToUserId(pendingBookingRef, data.user.id, email);
         sessionStorage.removeItem('pendingBookingReference');
       }
+      // User & profile will be set by onAuthStateChange
       return { success: true };
     } catch (error: any) {
       console.error('Login error:', error);
+      setProfileError(error.message || 'Failed to log in');
       return { success: false, error: error.message || 'Failed to log in' };
+    } finally {
+      setIsLoading(false);
     }
   }, [linkBookingToUserId]);
 
   const signUp = useCallback(async (email: string, password: string, fullName: string, phone?: string) => {
+    setIsLoading(true);
+    setProfileError(null);
     try {
-      const { data: existingProfiles } = await supabase.from('user_profiles').select('email').eq('email', email).limit(1);
-      if (existingProfiles && existingProfiles.length > 0) {
-        throw new Error('Email already exists. Please use a different email or sign in with your existing account.');
+      const { data: existingUser } = await supabase.from('user_profiles').select('email').eq('email', email).maybeSingle();
+      if (existingUser) {
+        return { success: false, error: 'An account with this email already exists. Please try logging in.' };
       }
+
       const { data, error } = await supabase.auth.signUp({
         email, password, options: { data: { full_name: fullName, phone }, emailRedirectTo: `${getSiteUrl()}/auth/callback` },
       });
       if (error) throw error;
       
-      // Profile creation will be handled by onAuthStateChange via fetchUserProfile if it finds no profile.
-      // However, if you want to ensure profile is created immediately with metadata from signUp:
       if (data.user) {
-         await createUserProfile(data.user.id, data.user.email!, fullName, phone);
+         // createUserProfile will be called by onAuthStateChange logic via fetchUserProfile if it finds no profile or upserts.
+         // Forcing it here could be redundant but ensures immediate profile availability if desired.
+         // await createUserProfile(data.user.id, data.user.email!, fullName, phone); 
         const pendingBookingRef = sessionStorage.getItem('pendingBookingReference');
         if (pendingBookingRef) {
           await linkBookingToUserId(pendingBookingRef, data.user.id, email);
@@ -666,49 +631,49 @@ function AuthProvider({ children }: { children: ReactNode }) {
       return { success: true };
     } catch (error: any) {
       console.error('Registration error:', error);
+      setProfileError(error.message || 'Failed to create account');
       return { success: false, error: error.message || 'Failed to create account' };
+    } finally {
+      setIsLoading(false);
     }
-  }, [createUserProfile, linkBookingToUserId]);
+  }, [linkBookingToUserId]); // Removed createUserProfile from dependencies
 
   const signOut = useCallback(async (silent: boolean = false) => {
+    setIsLoading(true);
+    setProfileError(null); 
     try {
-      setIsLoading(true);
-      // onAuthStateChange will handle setUser(null) and setUserProfile(null)
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('supabase.auth.token');
-        localStorage.removeItem('authUser');
-        sessionStorage.removeItem('authRedirectPath');
-        clearAuthStorage();
-      }
-      authStateVersion.current += 1; // Increment version before Supabase call
-      await supabase.auth.signOut(); // This will trigger onAuthStateChange
+      clearAuthStorage();
+      await supabase.auth.signOut();
       if (!silent) {
-        // Add a small delay before redirecting to ensure state is cleared by onAuthStateChange
         setTimeout(() => {
-            if(router) router.push('/'); else window.location.href = '/';
+            if(router) router.push('/'); else if (typeof window !== 'undefined') window.location.href = '/';
         }, 50);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Sign out error:', error);
-      await forceSignOut(); // Fallback to force sign out
+      setProfileError(error.message || 'Error during sign out.');
+      await forceSignOut(); // Fallback to force sign out on error
     } finally {
-      // setIsLoading(false); // onAuthStateChange will set isLoading to false
+      // setIsLoading(false); // onAuthStateChange should handle this for consistency
     }
-  }, [router, forceSignOut]);
+  }, [router, forceSignOut]); // Added forceSignOut to dependencies
 
   const linkBookingsToAccount = useCallback(async (email: string) => {
     if (!user || !user.id) return 0;
+    setProfileError(null);
     try {
       const { data, error } = await supabase.from('bookings').update({ user_id: user.id }).match({ customer_email: email, user_id: null }).select();
-      if (error) throw error;
-      // Optionally, refresh profile or bookings list here
+      if (error) {
+        setProfileError(error.message || 'Error linking bookings.');
+        throw error;
+      }
       return data?.length || 0;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error linking bookings to account:', error);
+      if (!profileError) setProfileError(error.message || 'Error linking bookings to account.');
       return 0;
     }
-  }, [user]);
-
+  }, [user, profileError]);
 
   const value = {
     isAuthenticated: !!user,
@@ -723,6 +688,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
     linkBookingsToAccount,
     isStateCorrupted,
     isFetchingProfile,
+    profileError, 
     refreshSession
   };
 
