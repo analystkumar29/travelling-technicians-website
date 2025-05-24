@@ -404,7 +404,6 @@ function AuthProvider({ children }: { children: ReactNode }) {
     // If direct query didn't work, try to create the profile
     if (!profile) {
       console.log('[PROFILE] Profile not found, attempting to create one');
-      
       try {
         // First check if user exists in auth.users
         const { data: userData, error: userError } = await withTimeout(
@@ -412,12 +411,10 @@ function AuthProvider({ children }: { children: ReactNode }) {
           5000,
           'Auth getUser'
         );
-        
         if (userError) {
           console.error('[PROFILE] Error getting user data:', userError.message);
         } else if (userData?.user) {
           console.log('[PROFILE] User exists in auth, creating profile');
-          
           const { data: newProfile, error: insertError } = await withTimeout(
             Promise.resolve(supabase.from('user_profiles')
               .insert([
@@ -433,7 +430,6 @@ function AuthProvider({ children }: { children: ReactNode }) {
             5000,
             'Profile creation'
           );
-          
           if (insertError) {
             if (insertError.code === '23505' || (insertError.message && insertError.message.includes('duplicate key value'))) {
               // Duplicate key: profile already exists, fetch it again
@@ -518,15 +514,8 @@ function AuthProvider({ children }: { children: ReactNode }) {
     }
     
     return null;
-  } catch (error) {
-    console.error('[PROFILE] Error fetching user profile:', error);
-    setIsStateCorrupted(true);
-    return null;
-  } finally {
-    setIsFetchingProfile(false);
   }
-};
-  
+
   // Helper function to test if the RPC function exists
   const testRpcFunctionExists = async (): Promise<boolean> => {
     try {
