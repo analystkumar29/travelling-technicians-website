@@ -46,7 +46,7 @@
         console.log('[Error Handler] Recreating __NEXT_DATA__');
         window.__NEXT_DATA__ = {
           props: {},
-          page: window.location.pathname,
+          page: window.location.pathname || '/',
           query: {},
           buildId: ''
         };
