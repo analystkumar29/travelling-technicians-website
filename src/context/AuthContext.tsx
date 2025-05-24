@@ -82,7 +82,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
       console.log(`[PROFILE] Fetch attempt ${currentAttempt}/${MAX_PROFILE_FETCH_ATTEMPTS}`);
 
       // --- Helper: Timeout for promises ---
-      const withTimeout = async <T,>(promise: Promise<T>, timeoutMs = 7000, name = 'operation'): Promise<T> => { // Increased default timeout
+      const withTimeout = async <T,>(promise: Promise<T>, timeoutMs = 10000, name = 'operation'): Promise<T> => { // Default timeout to 10000ms
         let timeoutId: NodeJS.Timeout | undefined = undefined;
         try {
           const timeoutPromise = new Promise<never>((_, reject) => {
@@ -121,8 +121,8 @@ function AuthProvider({ children }: { children: ReactNode }) {
           console.log('[PROFILE] Testing database connection...');
           await retryConnectionTest(
             () => withTimeout(
-              Promise.resolve(supabase.from('user_profiles').select('count', { count: 'exact' }).limit(1)), // Wrapped in Promise.resolve
-              3000, // Shorter timeout for connection test
+              Promise.resolve(supabase.from('user_profiles').select('count', { count: 'exact' }).limit(1)), 
+              5000, // DB Connection test timeout: 5000ms
               'Connection test'
             ),
             2, 1000 // Fewer retries, shorter initial delay for connection test
@@ -135,8 +135,8 @@ function AuthProvider({ children }: { children: ReactNode }) {
         // --- Attempt to fetch existing profile ---
         console.log('[PROFILE] Trying direct profile query...');
         const fetchedProfileResponse = await withTimeout<PostgrestSingleResponse<UserProfile>>(
-          Promise.resolve(supabase.from('user_profiles').select('*').eq('id', userId).single()), // Wrapped
-          7000, // Main operation timeout
+          Promise.resolve(supabase.from('user_profiles').select('*').eq('id', userId).single()), 
+          10000, // Main operation timeout: 10000ms
           'Direct profile query'
         );
         const { data: fetchedProfile, error: queryError } = fetchedProfileResponse;
@@ -159,8 +159,9 @@ function AuthProvider({ children }: { children: ReactNode }) {
         if (!profile) {
           console.log('[PROFILE] Attempting to create profile...');
           const authUserResponse = await withTimeout<UserResponse>(
-            Promise.resolve(supabase.auth.getUser()), // Wrapped
-            5000, 'Auth getUser for creation'
+            Promise.resolve(supabase.auth.getUser()), 
+            10000, // Auth operation timeout: 10000ms
+            'Auth getUser for creation'
           );
           // const { user: authUserData, error: authUserError } = authUserResponse; // Original line
           // Correctly access data and error from UserResponse
@@ -173,15 +174,15 @@ function AuthProvider({ children }: { children: ReactNode }) {
           } else if (authUserData) { 
             console.log('[PROFILE] User exists in auth, proceeding with profile record creation.');
             const newProfileResponse = await withTimeout<PostgrestSingleResponse<UserProfile>>(
-              Promise.resolve(supabase.from('user_profiles') // Wrapped
+              Promise.resolve(supabase.from('user_profiles') 
                 .insert([{
                   id: userId,
-                  email: authUserData.email!, // Added non-null assertion, as if authUserData exists, email should too
+                  email: authUserData.email!, 
                   full_name: authUserData.user_metadata?.full_name || '',
                 }])
                 .select('*')
                 .single()),
-              7000, // Main operation timeout
+              10000, // Main operation timeout: 10000ms
               'Profile creation'
             );
             const { data: newProfile, error: insertError } = newProfileResponse;
@@ -190,8 +191,9 @@ function AuthProvider({ children }: { children: ReactNode }) {
               if (insertError.code === '23505' || (insertError.message && insertError.message.includes('duplicate key value'))) {
                 console.warn('[PROFILE] Duplicate key on insert, attempting to re-fetch.');
                 const existingProfileAfterDuplicateResponse = await withTimeout<PostgrestSingleResponse<UserProfile>>(
-                  Promise.resolve(supabase.from('user_profiles').select('*').eq('id', userId).single()), // Wrapped
-                  5000, 'Fetch existing after duplicate key'
+                  Promise.resolve(supabase.from('user_profiles').select('*').eq('id', userId).single()), 
+                  10000, // Main operation timeout: 10000ms
+                  'Fetch existing after duplicate key'
                 );
                 const { data: existingProfileAfterDuplicate, error: fetchExistingError } = existingProfileAfterDuplicateResponse;
 
@@ -227,8 +229,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
         console.warn(`[PROFILE] Attempt ${currentAttempt} failed:`, attemptError);
         if (currentAttempt >= MAX_PROFILE_FETCH_ATTEMPTS) {
           console.error('[PROFILE] All profile fetch/create attempts failed.');
-          // Optionally set isStateCorrupted(true) here if all attempts fail
-          // The existing logic outside the loop for max attempts will handle redirection.
+          setIsStateCorrupted(true); // Set state as corrupted after all retries fail
           break; // Exit loop, all attempts used
         }
         // Wait before next retry
@@ -266,15 +267,15 @@ function AuthProvider({ children }: { children: ReactNode }) {
         router.pathname.startsWith(p) || router.pathname === p
       );
       if (isProtectedPage) {
-        console.error(`[PROFILE] Maximum profile fetch attempts (${MAX_PROFILE_FETCH_ATTEMPTS}) reached on protected page, initiating sign out.`);
-        // Don't remove 'profileFetchAttempts' here, so other parts of app can see it failed max times
-        // Consider calling forceSignOut directly if available and appropriate
-        // Using existing signOut logic which should redirect.
-        signOut(true).then(() => { // silent signout
-             if (router.pathname !== '/auth/login') { // Prevent loop if already there
-                router.push('/auth/login?error=profile_fetch_failed'); 
-             }
-        });
+        console.error(`[PROFILE] Maximum profile fetch attempts (${MAX_PROFILE_FETCH_ATTEMPTS}) reached on protected page, initiating sign out. isStateCorrupted is now true.`);
+        try {
+          clearAuthStorage(); 
+          if (router.pathname !== '/auth/login') { // Prevent loop if already there
+             router.push('/auth/login?error=profile_fetch_failed'); 
+          }
+        } catch (clearErr) {
+          console.error('[PROFILE] Error clearing auth state:', clearErr);
+        }
       } else {
         console.log(`[PROFILE] Max attempts (${MAX_PROFILE_FETCH_ATTEMPTS}) reached but on non-protected page, not logging out. Current attempts in session: ${finalSessionAttempts}`);
         // Optionally reset session attempts for non-protected pages if desired
