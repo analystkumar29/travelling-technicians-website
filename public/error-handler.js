@@ -34,7 +34,7 @@
     // Prevent webpack and router related errors from crashing the app
     if (event && event.error && event.error.message && (
         event.error.message.includes('Cannot read properties of undefined') || 
-        event.error.message.includes('reading 'data'') ||
+        event.error.message.includes('reading \'data\'') ||
         event.error.message.includes('webpack') ||
         event.error.message.includes('router'))) {
       

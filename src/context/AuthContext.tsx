@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { useRouter } from 'next/router';
 import { supabase, getSiteUrl } from '@/utils/supabaseClient';
 import { UserProfile } from '@/types/user';
+import { PostgrestSingleResponse, PostgrestError, UserResponse } from '@supabase/supabase-js';
 import { 
   normalizeAuthState, 
   validateAuthToken, 
@@ -35,6 +36,10 @@ const validateAuthState = (user: any): boolean => {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Constants for retry logic
+const MAX_PROFILE_FETCH_ATTEMPTS = 5;
+const INITIAL_RETRY_DELAY = 1000; // 1 second
+
 function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -53,170 +58,193 @@ function AuthProvider({ children }: { children: ReactNode }) {
       setIsFetchingProfile(false); // Ensure this is set early on error
       return null;
     }
+    
+    console.log(`[PROFILE] Starting profile fetch process for user ${userId.slice(0,6)}...`);
     setIsFetchingProfile(true);
     setIsStateCorrupted(false); // Reset corruption state at the beginning of a fetch
-    console.log(`[PROFILE] Starting profile fetch for user ${userId.slice(0,6)}...`);
+
+    let profile: UserProfile | null = null; // Explicitly type profile
+    let currentAttempt = 0;
+    let retryDelay = INITIAL_RETRY_DELAY;
+
+    // Respect sessionStorage attempts but cap with our constant for the loop
+    const sessionAttempts = parseInt(sessionStorage.getItem('profileFetchAttempts') || '0', 10);
     
     if (user?.id && router.pathname.includes('/auth/callback')) {
-      console.log('[PROFILE] Auth callback detected, resetting fetch attempts');
+      console.log('[PROFILE] Auth callback detected, resetting fetch attempts in session storage.');
       sessionStorage.removeItem('profileFetchAttempts');
     }
-    
-    const profileFetchAttempts = parseInt(sessionStorage.getItem('profileFetchAttempts') || '0', 10);
-    sessionStorage.setItem('profileFetchAttempts', (profileFetchAttempts + 1).toString());
-    console.log(`[PROFILE] Fetch attempt ${profileFetchAttempts + 1}`);
 
-    let profile = null;
-    
-    const withTimeout = async <T,>(promise: Promise<T>, timeoutMs = 5000, name = 'operation'): Promise<T> => {
-      let timeoutId: NodeJS.Timeout | undefined = undefined; // Initialize to undefined
-      try {
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          timeoutId = setTimeout(() => {
-            reject(new Error(`[PROFILE] ${name} timed out after ${timeoutMs}ms`));
-          }, timeoutMs);
-        });
-        const result = await Promise.race([promise, timeoutPromise]);
-        return result;
-      } catch (err) {
-        console.error(`[PROFILE] ${name} failed:`, err);
-        throw err;
-      } finally {
-        if (timeoutId) clearTimeout(timeoutId); 
-      }
-    };
-    
-    const retryWithBackoff = async (fn: () => Promise<any>, retries = 3, delay = 1000) => {
-      let lastError;
-      for (let i = 0; i < retries; i++) {
+    while (currentAttempt < MAX_PROFILE_FETCH_ATTEMPTS) {
+      currentAttempt++;
+      // Update session storage for external visibility/consistency if needed, but loop respects MAX_PROFILE_FETCH_ATTEMPTS
+      sessionStorage.setItem('profileFetchAttempts', Math.max(sessionAttempts, currentAttempt).toString());
+      console.log(`[PROFILE] Fetch attempt ${currentAttempt}/${MAX_PROFILE_FETCH_ATTEMPTS}`);
+
+      // --- Helper: Timeout for promises ---
+      const withTimeout = async <T,>(promise: Promise<T>, timeoutMs = 7000, name = 'operation'): Promise<T> => { // Increased default timeout
+        let timeoutId: NodeJS.Timeout | undefined = undefined;
         try {
-          return await fn();
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(() => {
+              reject(new Error(`[PROFILE] ${name} timed out after ${timeoutMs}ms`));
+            }, timeoutMs);
+          });
+          const result = await Promise.race([promise, timeoutPromise]);
+          return result;
         } catch (err) {
-          lastError = err;
-          console.warn(`[PROFILE] Connection test attempt ${i + 1} failed:`, err);
-          await new Promise(res => setTimeout(res, delay * (i + 1))); // Ensure delay scales
+          console.error(`[PROFILE] ${name} failed within withTimeout:`, err);
+          throw err; // Re-throw to be caught by the main try-catch of the attempt
+        } finally {
+          if (timeoutId) clearTimeout(timeoutId);
         }
-      }
-      throw lastError;
-    };
+      };
 
-    try {
-      console.log('[PROFILE] Testing database connection with retry...');
-      await retryWithBackoff(
-        () => withTimeout(
-          Promise.resolve(supabase.from('user_profiles').select('count').limit(1)),
-          5000, 
-          'Connection test'
-        ),
-        3, 
-        1500 
-      );
-      console.log('[PROFILE] Database connection successful');
-    } catch (connErr) {
-      console.error('[PROFILE] Connection test failed after retries:', connErr);
-      // Not necessarily a corrupted state, could be network. Don't set isStateCorrupted here.
-    }
-    
-    console.log('[PROFILE] Trying direct profile query...');
-    try {
-      const { data, error: queryError } = await withTimeout(
-        Promise.resolve(supabase.from('user_profiles')
-          .select('*')
-          .eq('id', userId)
-          .single()),
-        5000,
-        'Direct profile query'
-      );
-      
-      if (queryError) {
-        console.error('[PROFILE] Direct query error:', queryError.message);
-        if (queryError.code !== 'PGRST116') { // PGRST116: Row not found, not necessarily corruption
-          setIsStateCorrupted(true);
+      // --- Helper: Retry with backoff for connection test ---
+      const retryConnectionTest = async (fn: () => Promise<any>, retries = 2, delay = 1500) => { // Reduced retries for connection test
+        let lastError;
+        for (let i = 0; i < retries; i++) {
+          try {
+            return await fn();
+          } catch (err) {
+            lastError = err;
+            console.warn(`[PROFILE] Connection test attempt ${i + 1} failed:`, err);
+            if (i < retries -1) await new Promise(res => setTimeout(res, delay * (i + 1)));
+          }
         }
-      } else if (data) {
-        console.log('[PROFILE] Successfully fetched profile via direct query');
-        profile = data;
-      } else {
-        console.log('[PROFILE] No profile found via direct query');
-      }
-    } catch (directErr) {
-      console.error('[PROFILE] Direct query failed:', directErr);
-      // This catch might indicate a more severe issue than just row not found.
-      setIsStateCorrupted(true);
-    }
-    
-    if (!profile) {
-      console.log('[PROFILE] Profile not found, attempting to create one');
+        throw lastError;
+      };
+      
       try {
-        const { data: userData, error: userError } = await withTimeout(
-          Promise.resolve(supabase.auth.getUser()),
-          5000,
-          'Auth getUser'
-        );
-        if (userError) {
-          console.error('[PROFILE] Error getting user data:', userError.message);
-        } else if (userData?.user) {
-          console.log('[PROFILE] User exists in auth, creating profile');
-          const { data: newProfile, error: insertError } = await withTimeout(
-            Promise.resolve(supabase.from('user_profiles')
-              .insert([
-                { 
-                  id: userId,
-                  email: userData.user.email,
-                  full_name: userData.user.user_metadata?.full_name || '',
-                  // created_at is set by default by Supabase, no need to set it here
-                }
-              ])
-              .select('*')
-              .single()),
-            5000,
-            'Profile creation'
+        // --- Connection Test (Optional, can be less aggressive) ---
+        try {
+          console.log('[PROFILE] Testing database connection...');
+          await retryConnectionTest(
+            () => withTimeout(
+              Promise.resolve(supabase.from('user_profiles').select('count', { count: 'exact' }).limit(1)), // Wrapped in Promise.resolve
+              3000, // Shorter timeout for connection test
+              'Connection test'
+            ),
+            2, 1000 // Fewer retries, shorter initial delay for connection test
           );
-          if (insertError) {
-            if (insertError.code === '23505' || (insertError.message && insertError.message.includes('duplicate key value'))) {
-              console.warn('[PROFILE] Duplicate key error on profile creation, fetching existing profile');
-              try {
-                const { data: existingProfile, error: fetchExistingError } = await withTimeout(
-                  Promise.resolve(supabase.from('user_profiles')
-                    .select('*')
-                    .eq('id', userId)
-                    .single()),
-                  5000,
-                  'Fetch existing profile after duplicate key'
+          console.log('[PROFILE] Database connection seems OK.');
+        } catch (connErr) {
+          console.warn('[PROFILE] Database connection test failed:', connErr);
+        }
+
+        // --- Attempt to fetch existing profile ---
+        console.log('[PROFILE] Trying direct profile query...');
+        const fetchedProfileResponse = await withTimeout<PostgrestSingleResponse<UserProfile>>(
+          Promise.resolve(supabase.from('user_profiles').select('*').eq('id', userId).single()), // Wrapped
+          7000, // Main operation timeout
+          'Direct profile query'
+        );
+        const { data: fetchedProfile, error: queryError } = fetchedProfileResponse;
+
+        if (queryError) {
+          console.error('[PROFILE] Direct query error:', queryError.message, queryError.code);
+          if (queryError.code !== 'PGRST116') { // PGRST116: Row not found
+            // For other errors, it might be a more significant issue.
+            // Consider if setIsStateCorrupted(true) is appropriate here or if retry should handle it.
+          }
+        } else if (fetchedProfile) {
+          console.log('[PROFILE] Successfully fetched profile via direct query');
+          profile = fetchedProfile;
+          break; // Profile found, exit loop
+        } else {
+          console.log('[PROFILE] No profile found via direct query, will attempt creation.');
+        }
+
+        // --- If not found, attempt to create profile ---
+        if (!profile) {
+          console.log('[PROFILE] Attempting to create profile...');
+          const authUserResponse = await withTimeout<UserResponse>(
+            Promise.resolve(supabase.auth.getUser()), // Wrapped
+            5000, 'Auth getUser for creation'
+          );
+          // const { user: authUserData, error: authUserError } = authUserResponse; // Original line
+          // Correctly access data and error from UserResponse
+          const authUserData = authUserResponse.data.user;
+          const authUserError = authUserResponse.error;
+
+          if (authUserError) {
+            console.error('[PROFILE] Error getting user data for profile creation:', authUserError.message);
+            throw authUserError; 
+          } else if (authUserData) { 
+            console.log('[PROFILE] User exists in auth, proceeding with profile record creation.');
+            const newProfileResponse = await withTimeout<PostgrestSingleResponse<UserProfile>>(
+              Promise.resolve(supabase.from('user_profiles') // Wrapped
+                .insert([{
+                  id: userId,
+                  email: authUserData.email!, // Added non-null assertion, as if authUserData exists, email should too
+                  full_name: authUserData.user_metadata?.full_name || '',
+                }])
+                .select('*')
+                .single()),
+              7000, // Main operation timeout
+              'Profile creation'
+            );
+            const { data: newProfile, error: insertError } = newProfileResponse;
+
+            if (insertError) {
+              if (insertError.code === '23505' || (insertError.message && insertError.message.includes('duplicate key value'))) {
+                console.warn('[PROFILE] Duplicate key on insert, attempting to re-fetch.');
+                const existingProfileAfterDuplicateResponse = await withTimeout<PostgrestSingleResponse<UserProfile>>(
+                  Promise.resolve(supabase.from('user_profiles').select('*').eq('id', userId).single()), // Wrapped
+                  5000, 'Fetch existing after duplicate key'
                 );
+                const { data: existingProfileAfterDuplicate, error: fetchExistingError } = existingProfileAfterDuplicateResponse;
+
                 if (fetchExistingError) {
                   console.error('[PROFILE] Failed to fetch existing profile after duplicate key:', fetchExistingError.message);
-                  setIsStateCorrupted(true);
-                } else if (existingProfile) {
-                  console.log('[PROFILE] Successfully fetched existing profile after duplicate key');
-                  profile = existingProfile;
+                  // Propagate error to trigger retry or failure of this attempt
+                  throw fetchExistingError;
+                } else if (existingProfileAfterDuplicate) {
+                  console.log('[PROFILE] Successfully fetched existing profile after duplicate key error.');
+                  profile = existingProfileAfterDuplicate;
+                  break; // Profile found, exit loop
+                } else {
+                   console.error('[PROFILE] Profile still not found after duplicate key error and re-fetch.');
+                   // Let it fall through to retry logic or attempt failure
                 }
-              } catch (fetchExistingErr) {
-                console.error('[PROFILE] Error fetching existing profile after duplicate key:', fetchExistingErr);
-                setIsStateCorrupted(true);
+              } else {
+                console.error('[PROFILE] Error creating profile:', insertError.message);
+                // Propagate error to trigger retry or failure of this attempt
+                throw insertError;
               }
-            } else {
-              console.error('[PROFILE] Error creating profile:', insertError.message);
-              setIsStateCorrupted(true);
+            } else if (newProfile) {
+              console.log('[PROFILE] Successfully created new profile');
+              profile = newProfile;
+              break; // Profile created, exit loop
             }
-          } else if (newProfile) {
-            console.log('[PROFILE] Successfully created new profile');
-            profile = newProfile;
+          } else {
+            console.error('[PROFILE] Cannot create profile: Supabase user data unavailable.');
+            // This indicates a problem, fail this attempt.
+            throw new Error('Supabase user data unavailable for profile creation');
           }
-        } else {
-          console.error('[PROFILE] Cannot create profile: user data unavailable for creation');
         }
-      } catch (createErr) {
-        console.error('[PROFILE] Error in profile creation block:', createErr);
-        setIsStateCorrupted(true); // If creation block fails, consider state corrupted
+      } catch (attemptError) {
+        console.warn(`[PROFILE] Attempt ${currentAttempt} failed:`, attemptError);
+        if (currentAttempt >= MAX_PROFILE_FETCH_ATTEMPTS) {
+          console.error('[PROFILE] All profile fetch/create attempts failed.');
+          // Optionally set isStateCorrupted(true) here if all attempts fail
+          // The existing logic outside the loop for max attempts will handle redirection.
+          break; // Exit loop, all attempts used
+        }
+        // Wait before next retry
+        console.log(`[PROFILE] Waiting ${retryDelay}ms before next attempt.`);
+        await new Promise(res => setTimeout(res, retryDelay));
+        retryDelay *= 2; // Exponential backoff
       }
-    }
-    
+    } // End of while loop
+
+    setIsFetchingProfile(false); // Set to false after all attempts or success
+
     if (profile) {
-      console.log('[PROFILE] Setting user profile in state');
+      console.log('[PROFILE] Setting user profile in state:', profile);
       setUserProfile(profile);
       setIsStateCorrupted(false); // Explicitly set to false on success
-      sessionStorage.removeItem('profileFetchAttempts');
+      sessionStorage.removeItem('profileFetchAttempts'); // Clear session attempts on success
       try {
         document.cookie = 'tt_auth_check=true; path=/; max-age=86400; SameSite=Lax';
         if (window.location.hostname.includes('travelling-technicians.ca')) {
@@ -226,32 +254,37 @@ function AuthProvider({ children }: { children: ReactNode }) {
       } catch (cookieErr) {
         console.error('[PROFILE] Error setting cookies:', cookieErr);
       }
-      console.log('[PROFILE] Profile fetch completed successfully');
-      setIsFetchingProfile(false);
+      console.log('[PROFILE] Profile fetch process completed successfully.');
       return profile;
     }
     
-    // This block executes if profile is still null after all attempts
-    if (profileFetchAttempts >= 5) {
+    // This block executes if profile is still null after all loop attempts
+    // The session 'profileFetchAttempts' is updated inside the loop.
+    const finalSessionAttempts = parseInt(sessionStorage.getItem('profileFetchAttempts') || '0', 10);
+    if (finalSessionAttempts >= MAX_PROFILE_FETCH_ATTEMPTS) { // Check against our defined max
       const isProtectedPage = !['/auth/login', '/auth/register', '/auth/reset-password', '/'].some(p => 
         router.pathname.startsWith(p) || router.pathname === p
       );
       if (isProtectedPage) {
-        console.error('[PROFILE] Maximum profile fetch attempts reached on protected page, logging out');
-        sessionStorage.removeItem('profileFetchAttempts');
+        console.error(`[PROFILE] Maximum profile fetch attempts (${MAX_PROFILE_FETCH_ATTEMPTS}) reached on protected page, initiating sign out.`);
+        // Don't remove 'profileFetchAttempts' here, so other parts of app can see it failed max times
         // Consider calling forceSignOut directly if available and appropriate
-        supabase.auth.signOut().then(() => {
-          router.push('/auth/login'); // Redirect to login after sign out
+        // Using existing signOut logic which should redirect.
+        signOut(true).then(() => { // silent signout
+             if (router.pathname !== '/auth/login') { // Prevent loop if already there
+                router.push('/auth/login?error=profile_fetch_failed'); 
+             }
         });
       } else {
-        console.log('[PROFILE] Max attempts reached but on non-protected page, not logging out');
-        sessionStorage.setItem('profileFetchAttempts', '0'); // Reset for non-protected pages
+        console.log(`[PROFILE] Max attempts (${MAX_PROFILE_FETCH_ATTEMPTS}) reached but on non-protected page, not logging out. Current attempts in session: ${finalSessionAttempts}`);
+        // Optionally reset session attempts for non-protected pages if desired
+        // sessionStorage.setItem('profileFetchAttempts', '0'); 
       }
     }
     
-    setIsFetchingProfile(false);
     return null; // Explicitly return null if no profile was fetched or created
-  }, [user, router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, router]); // Removed signOut from dependencies, and disabled lint warning for this line
 
   const refreshSession = useCallback(async (): Promise<boolean> => {
     try {
