@@ -1,5 +1,74 @@
 import { Html, Head, Main, NextScript } from 'next/document';
 import Document, { DocumentContext } from 'next/document';
+import Script from 'next/script';
+
+// Define routerFixScript (copied from _app.tsx originally)
+const routerFixScript = `
+  (function() {
+    if (!window.__NEXT_DATA__) {
+      window.__NEXT_DATA__ = {
+        props: {},
+        page: window.location.pathname || '/',
+        query: {},
+        buildId: 'development' // Or a proper build ID if available
+      };
+    }
+    
+    function ensureValidHistoryState(state) {
+      if (!state || typeof state !== 'object') {
+        return {
+          data: {
+            props: {},
+            page: window.location.pathname || '/',
+            query: {},
+            buildId: 'development'
+          }
+        };
+      }
+      
+      if (!state.data) {
+        return {
+          ...state,
+          data: {
+            props: {},
+            page: window.location.pathname || '/',
+            query: {},
+            buildId: 'development'
+          }
+        };
+      }
+      
+      return state;
+    }
+    
+    if (window.history && window.history.state) {
+      try {
+        const currentState = window.history.state;
+        constnewState = ensureValidHistoryState(currentState);
+        if (currentState !== newState) { // Avoid unnecessary replaceState if object is the same
+            window.history.replaceState(newState, document.title, window.location.href);
+        }
+      } catch (e) {
+        console.warn('Error ensuring valid history state:', e);
+      }
+    }
+    
+    window.addEventListener('error', function(event) {
+      if (event.message && 
+         (event.message.includes('Cannot read properties of undefined') ||
+          event.message.includes('Cannot read property ') || // Added space to be more specific
+          event.message.includes('data of undefined'))) {
+        console.warn('Suppressed potential router error:', event.message);
+        event.preventDefault();
+      }
+    });
+
+    // Attempt to fix missing __NEXT_DATA__.page issue on initial load for some edge cases
+    if (typeof window !== 'undefined' && window.__NEXT_DATA__ && !window.__NEXT_DATA__.page) {
+      window.__NEXT_DATA__.page = window.location.pathname || '/';
+    }
+  })();
+`;
 
 /**
  * Custom Document for The Travelling Technicians website
@@ -105,6 +174,12 @@ class MyDocument extends Document {
           />
           {/* Preconnect to origin to speed up loading */}
           <link rel="preconnect" href={`https://${process.env.NEXT_PUBLIC_VERCEL_URL || 'localhost:3000'}`} />
+
+          {/* Moved Scripts from _app.tsx */}
+          <Script id="next-router-fix" strategy="beforeInteractive">
+            {routerFixScript}
+          </Script>
+          <Script id="error-handler" src="/error-handler.js" strategy="beforeInteractive" />
         </Head>
         <body>
           {/* Add fallback text that will be shown if JS fails to load */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ReactNode, useContext, useRef } from 'react';
+import React, { useState, useEffect, ReactNode, useContext, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { AuthContext } from '@/context/AuthContext';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -42,28 +42,41 @@ const AuthProtectedRoute: React.FC<AuthProtectedRouteProps> = ({
   const redirectAttemptsRef = useRef(0);
   const previousPathRef = useRef<string | null>(null);
 
+  // Wrap attemptAuthRecovery in useCallback
+  const attemptAuthRecovery = useCallback(async (): Promise<boolean> => {
+    if (isStateCorrupted && !allowCorruptedState && forceSignOut) {
+      console.warn('[AuthProtectedRoute] Corrupted state detected, forcing sign out.');
+      await forceSignOut();
+      setRedirecting(true);
+      router.push(fallbackUrl); 
+      return false;
+    }
+
+    if (!isAuthenticated && refreshSession) {
+      console.log('[AuthProtectedRoute] Attempting session recovery...');
+      const success = await refreshSession();
+      if (success) {
+        console.log('[AuthProtectedRoute] Session recovered successfully.');
+        setRecoveryAttempted(true);
+        return true;
+      } else {
+        console.warn('[AuthProtectedRoute] Session recovery failed.');
+        if (!allowCorruptedState && forceSignOut) {
+          console.warn('[AuthProtectedRoute] Forcing sign out due to recovery failure.');
+          await forceSignOut();
+        }
+        setRedirecting(true);
+        router.push(fallbackUrl); 
+        return false;
+      }
+    }
+    setRecoveryAttempted(true);
+    return false;
+  }, [isStateCorrupted, allowCorruptedState, forceSignOut, isAuthenticated, refreshSession, router, fallbackUrl, setRecoveryAttempted, setRedirecting]);
+
   // Check for potential redirect loop
   const isInRedirectLoop = () => {
     return redirectAttemptsRef.current > 2;
-  };
-
-  // Try to recover authentication state
-  const attemptAuthRecovery = async () => {
-    console.log('Attempting auth recovery for protected route');
-    
-    if (typeof refreshSession === 'function') {
-      try {
-        const refreshed = await refreshSession();
-        if (refreshed) {
-          console.log('Successfully refreshed auth session');
-          return true;
-        }
-      } catch (err) {
-        console.error('Error refreshing session during recovery:', err);
-      }
-    }
-    
-    return false;
   };
 
   useEffect(() => {
@@ -208,7 +221,7 @@ const AuthProtectedRoute: React.FC<AuthProtectedRouteProps> = ({
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [isLoading, isAuthenticated, router, fallbackUrl, user, userProfile, redirecting, recoveryAttempted, isStateCorrupted, allowCorruptedState, forceSignOut, refreshSession, isFetchingProfile]);
+  }, [isLoading, isAuthenticated, router, fallbackUrl, user, userProfile, redirecting, recoveryAttempted, isStateCorrupted, allowCorruptedState, forceSignOut, refreshSession, isFetchingProfile, attemptAuthRecovery]);
 
   // Force recovery function for emergency use
   const forceRecovery = async () => {

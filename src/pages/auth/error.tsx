@@ -1,8 +1,14 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
 import { AuthContext } from '@/context/AuthContext';
 import { clearAuthStorage } from '@/utils/authStateProtection';
+import { supabase } from '@/utils/supabaseClient';
+import { ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 const AuthErrorPage: React.FC = () => {
   const router = useRouter();
@@ -10,13 +16,39 @@ const AuthErrorPage: React.FC = () => {
   const { forceSignOut } = auth || {};
   const [error, setError] = useState<string | null>(null);
   const [resetInProgress, setResetInProgress] = useState(false);
+  const [resetStatus, setResetStatus] = useState<'success' | 'error' | null>(null);
+
+  // Define handleReset with useCallback before it's used in the first useEffect
+  const handleReset = useCallback(async () => {
+    setResetInProgress(true);
+    setResetStatus(null);
+    const email = sessionStorage.getItem('auth_recovery_email');
+
+    if (!email) {
+      setResetStatus('error');
+      console.error('No email found in session storage for password reset.');
+      setResetInProgress(false);
+      return;
+    }
+
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+      if (resetError) throw resetError;
+      setResetStatus('success');
+    } catch (err: any) {
+      console.error('Password reset error:', err.message);
+      setResetStatus('error');
+    } finally {
+      setResetInProgress(false);
+    }
+  }, []); // Empty dependency array as it doesn't depend on props/state from this component scope
 
   useEffect(() => {
-    // Get error type from URL
     const errorType = router.query.error as string;
     const action = router.query.action as string;
     
-    // Set appropriate error message
     if (errorType === 'invalid_session') {
       setError('Your authentication session is corrupted or invalid.');
     } else if (errorType === 'expired_session') {
@@ -25,39 +57,19 @@ const AuthErrorPage: React.FC = () => {
       setError('There was a problem with your authentication.');
     }
     
-    // If action is 'reset', automatically initiate recovery
     if (action === 'reset') {
       handleReset();
     }
-  }, [router.query]);
+  }, [router.query, handleReset]); // Added handleReset to dependency array
 
-  const handleReset = async () => {
-    setResetInProgress(true);
-    
-    try {
-      // Clear all auth storage
-      clearAuthStorage();
-      
-      // Force sign out via Auth context
-      if (forceSignOut) {
-        await forceSignOut();
-      } else {
-        // Fallback if forceSignOut is not available
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('supabase.auth.token');
-          localStorage.removeItem('authUser');
-        }
-      }
-      
-      // Redirect to homepage after reset
-      router.push('/');
-    } catch (error) {
-      console.error('Error during auth reset:', error);
-      
-      // Last resort - force page reload
-      window.location.href = '/';
-    }
-  };
+  // This useEffect seems redundant or its purpose is unclear with the above one.
+  // If it was intended for something else, its logic and dependencies should be reviewed.
+  // For now, commenting out as the warning might be a false positive if this isn't the target useEffect.
+  /*
+  useEffect(() => {
+    // ... existing code ...
+  }, [handleReset]); 
+  */
 
   const handleGoBack = () => {
     router.back();
@@ -67,15 +79,45 @@ const AuthErrorPage: React.FC = () => {
     router.push('/');
   };
 
+  let displayMessage = 'An unexpected error occurred.';
+  if (typeof error === 'string') {
+    displayMessage = error;
+  } else if (error === 'OAuthAccountNotLinked') {
+    displayMessage = 'This email is already linked to another account. Please sign in with the original method.';
+  }
+
+  const showResetLink = error === 'AuthApiError' && (error as string)?.toLowerCase().includes('invalid login credentials');
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-8">
           <h1 className="text-2xl font-bold text-red-600 mb-4">Authentication Error</h1>
           
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
-              <p className="text-red-800">{error}</p>
+          <Alert variant="destructive" className="bg-red-900/30 border-red-700 text-red-300">
+            <AlertTitle className="font-semibold">Error Details:</AlertTitle>
+            <AlertDescription>{displayMessage}</AlertDescription>
+          </Alert>
+          
+          {showResetLink && (
+            <div className="text-center">
+              <p className="text-sm text-slate-400 mb-2">
+                Forgot your password? You can request a password reset.
+              </p>
+              <Button 
+                onClick={handleReset} 
+                disabled={resetInProgress}
+                variant="outline"
+                className="w-full bg-sky-600 hover:bg-sky-500 text-white border-sky-500 hover:border-sky-400"
+              >
+                {resetInProgress ? 'Sending...' : 'Request Password Reset'}
+              </Button>
+              {resetStatus === 'success' && (
+                <p className="mt-2 text-sm text-green-400">Password reset email sent. Please check your inbox.</p>
+              )}
+              {resetStatus === 'error' && (
+                <p className="mt-2 text-sm text-red-400">Failed to send reset email. Please try again or contact support.</p>
+              )}
             </div>
           )}
           

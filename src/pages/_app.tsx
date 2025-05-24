@@ -24,67 +24,7 @@ const analytics = require('@/utils/analytics').default;
 // @ts-ignore
 const NextjsRouterLoader = require('@/components/NextjsRouterLoader').default;
 
-// Define a script to run in the browser to prevent router errors
-const routerFixScript = `
-  (function() {
-    if (!window.__NEXT_DATA__) {
-      window.__NEXT_DATA__ = {
-        props: {},
-        page: window.location.pathname || '/',
-        query: {},
-        buildId: 'development'
-      };
-    }
-    
-    // Create a safe history state wrapper
-    function ensureValidHistoryState(state) {
-      if (!state || typeof state !== 'object') {
-        return {
-          data: {
-            props: {},
-            page: window.location.pathname || '/',
-            query: {},
-            buildId: 'development'
-          }
-        };
-      }
-      
-      if (!state.data) {
-        return {
-          ...state,
-          data: {
-            props: {},
-            page: window.location.pathname || '/',
-            query: {},
-            buildId: 'development'
-          }
-        };
-      }
-      
-      return state;
-    }
-    
-    // Make sure the current state is valid
-    if (window.history && window.history.state) {
-      window.history.replaceState(
-        ensureValidHistoryState(window.history.state),
-        document.title,
-        window.location.href
-      );
-    }
-    
-    // Error handler for router errors
-    window.addEventListener('error', function(event) {
-      if (event.message && 
-         (event.message.includes('Cannot read properties of undefined') ||
-          event.message.includes('Cannot read property') ||
-          event.message.includes('data of undefined'))) {
-        console.warn('Suppressed router error:', event.message);
-        event.preventDefault();
-      }
-    });
-  })();
-`;
+// routerFixScript has been moved to _document.tsx
 
 function SafeHydrate({ children }: { children: React.ReactNode }) {
   const [isClient, setIsClient] = useState(false);
@@ -195,16 +135,17 @@ export default function App({ Component, pageProps }: AppProps) {
                 <link rel="icon" type="image/png" sizes="192x192" href="/favicons/favicon-192x192.png" />
                 <link rel="apple-touch-icon" href="/favicons/favicon-192x192.png" />
                 <link rel="manifest" href="/manifest.json" />
-                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
                 <title>The Travelling Technicians | Mobile Doorstep Repair Service</title>
               </Head>
               
-              {/* Early error prevention scripts */}
-              <Script id="next-router-fix" strategy="beforeInteractive">
+              {/* Early error prevention scripts moved to _document.tsx */}
+              {/* 
+              <Script id=\"next-router-fix\" strategy=\"beforeInteractive\">
                 {routerFixScript}
               </Script>
               
-              <Script id="error-handler" src="/error-handler.js" strategy="beforeInteractive" />
+              <Script id=\"error-handler\" src=\"/error-handler.js\" strategy=\"beforeInteractive\" />
+              */}
               
               <RouterErrorGuard>
                 <NextjsRouterLoader />
