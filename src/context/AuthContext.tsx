@@ -339,22 +339,37 @@ function AuthProvider({ children }: { children: ReactNode }) {
         }
       };
       
-      // Try a simple query first to test if Supabase is responding
-      try {
-        console.log('[PROFILE] Testing database connection...');
-        const connectionTest = await withTimeout(
-          Promise.resolve(supabase.from('user_profiles').select('count').limit(1)),
-          3000,
-          'Connection test'
-        );
-        
-        if (connectionTest.error) {
-          console.error('[PROFILE] Database connection test failed:', connectionTest.error.message);
-        } else {
-          console.log('[PROFILE] Database connection successful');
+      // Helper: Retry with exponential backoff
+      const retryWithBackoff = async (fn: () => Promise<any>, retries = 3, delay = 1000) => {
+        let lastError;
+        for (let i = 0; i < retries; i++) {
+          try {
+            return await fn();
+          } catch (err) {
+            lastError = err;
+            console.warn(`[PROFILE] Connection test attempt ${i + 1} failed:`, err);
+            await new Promise(res => setTimeout(res, delay * (i + 1)));
+          }
         }
+        throw lastError;
+      };
+      
+      // Try a simple query first to test if Supabase is responding (with retry)
+      try {
+        console.log('[PROFILE] Testing database connection with retry...');
+        await retryWithBackoff(
+          () => withTimeout(
+            Promise.resolve(supabase.from('user_profiles').select('count').limit(1)),
+            5000, // increased timeout
+            'Connection test'
+          ),
+          3, // retries
+          1500 // backoff delay
+        );
+        console.log('[PROFILE] Database connection successful');
       } catch (connErr) {
-        console.error('[PROFILE] Connection test timeout:', connErr);
+        console.error('[PROFILE] Connection test failed after retries:', connErr);
+        // Optionally: show user-friendly error or fallback
       }
       
       // Skip RPC and try direct query first for reliability
