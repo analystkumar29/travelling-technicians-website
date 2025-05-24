@@ -34,7 +34,7 @@ const AuthProtectedRoute: React.FC<AuthProtectedRouteProps> = ({
 }) => {
   const router = useRouter();
   const auth = useContext(AuthContext);
-  const { isAuthenticated, isLoading, user, userProfile, isStateCorrupted, forceSignOut, refreshSession } = auth || {};
+  const { isAuthenticated, isLoading, user, userProfile, isStateCorrupted, forceSignOut, refreshSession, isFetchingProfile } = auth || {};
   const [localLoading, setLocalLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
   const [recoveryAttempted, setRecoveryAttempted] = useState(false);
@@ -76,6 +76,12 @@ const AuthProtectedRoute: React.FC<AuthProtectedRouteProps> = ({
     
     // Only start checking once the router is ready
     if (!router.isReady) return;
+
+    // If profile is fetching, consider it as loading and wait
+    if (isFetchingProfile) {
+      setLocalLoading(true);
+      return;
+    }
 
     // Handle corrupted state
     if (isStateCorrupted && !allowCorruptedState) {
@@ -163,34 +169,37 @@ const AuthProtectedRoute: React.FC<AuthProtectedRouteProps> = ({
         });
       } else {
         // Authenticated or already redirecting
-        // Reset redirect attempts counter on successful auth
+        // Reset redirect attempts counter on successful auth and profile resolution
         redirectAttemptsRef.current = 0;
         setLocalLoading(false);
       }
     } else {
       // Set a timeout to prevent infinite loading
+      // Also consider isFetchingProfile here
       timeoutId = setTimeout(() => {
-        console.warn('Auth protection check timed out, forcing state resolution');
-        setLocalLoading(false);
-        setShowEmergencyReset(true);
-        
-        // If still no auth after timeout, check if we're in a loop
-        if (!user && !redirecting) {
-          redirectAttemptsRef.current += 1;
+        if (isLoading || isFetchingProfile) { // Check both isLoading and isFetchingProfile
+          console.warn('Auth protection check timed out (isLoading or isFetchingProfile still true), forcing state resolution');
+          setLocalLoading(false);
+          setShowEmergencyReset(true);
           
-          // If potential loop, try recovery first
-          if (isInRedirectLoop()) {
-            attemptAuthRecovery().then(recovered => {
-              if (!recovered) {
-                // Only redirect if recovery failed
-                setRedirecting(true);
-                router.push(fallbackUrl);
-              }
-            });
-          } else {
-            // Otherwise just redirect
-            setRedirecting(true);
-            router.push(fallbackUrl);
+          // If still no auth after timeout, check if we're in a loop
+          if (!user && !redirecting) {
+            redirectAttemptsRef.current += 1;
+            
+            // If potential loop, try recovery first
+            if (isInRedirectLoop()) {
+              attemptAuthRecovery().then(recovered => {
+                if (!recovered) {
+                  // Only redirect if recovery failed
+                  setRedirecting(true);
+                  router.push(fallbackUrl);
+                }
+              });
+            } else {
+              // Otherwise just redirect
+              setRedirecting(true);
+              router.push(fallbackUrl);
+            }
           }
         }
       }, 3000); // 3 second timeout
@@ -199,7 +208,7 @@ const AuthProtectedRoute: React.FC<AuthProtectedRouteProps> = ({
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [isLoading, isAuthenticated, router, fallbackUrl, user, userProfile, redirecting, recoveryAttempted, isStateCorrupted, allowCorruptedState, forceSignOut, refreshSession]);
+  }, [isLoading, isAuthenticated, router, fallbackUrl, user, userProfile, redirecting, recoveryAttempted, isStateCorrupted, allowCorruptedState, forceSignOut, refreshSession, isFetchingProfile]);
 
   // Force recovery function for emergency use
   const forceRecovery = async () => {
@@ -226,8 +235,8 @@ const AuthProtectedRoute: React.FC<AuthProtectedRouteProps> = ({
     }
   };
 
-  // Show loading spinner while checking authentication
-  if (localLoading || redirecting) {
+  // Show loading spinner while checking authentication or fetching profile
+  if (localLoading || redirecting || isFetchingProfile) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="flex flex-col items-center">

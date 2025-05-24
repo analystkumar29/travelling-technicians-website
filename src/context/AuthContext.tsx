@@ -23,6 +23,7 @@ interface AuthContextType {
   refreshProfile: () => Promise<void>;
   linkBookingsToAccount: (email: string) => Promise<number>;
   isStateCorrupted: boolean;
+  isFetchingProfile: boolean;
   refreshSession: () => Promise<boolean>;
 }
 
@@ -38,6 +39,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFetchingProfile, setIsFetchingProfile] = useState(false);
   const [isStateCorrupted, setIsStateCorrupted] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
   const router = useRouter();
@@ -290,232 +292,240 @@ function AuthProvider({ children }: { children: ReactNode }) {
   
   // Add back fetchUserProfile function to fix build error
   const fetchUserProfile = async (userId: string) => {
-    try {
-      if (!userId) {
-        console.error('[PROFILE] Cannot fetch profile: userId is missing');
-        return null;
-      }
-      
-      setProfileLoading(true);
-      console.log(`[PROFILE] Starting profile fetch for user ${userId.slice(0,6)}...`);
-      
-      // Reset session storage counters when we successfully sign in
-      if (user?.id && router.pathname.includes('/auth/callback')) {
-        console.log('[PROFILE] Auth callback detected, resetting fetch attempts');
-        sessionStorage.removeItem('profileFetchAttempts');
-      }
-      
-      // Track profile fetch attempts for this session
-      const profileFetchAttempts = parseInt(sessionStorage.getItem('profileFetchAttempts') || '0', 10);
-      sessionStorage.setItem('profileFetchAttempts', (profileFetchAttempts + 1).toString());
-      console.log(`[PROFILE] Fetch attempt ${profileFetchAttempts + 1}`);
+    if (!userId) {
+      console.error('[PROFILE] Cannot fetch profile: userId is missing');
+      return null;
+    }
 
-      // Try more robust strategies earlier
-      let profile = null;
+    setIsFetchingProfile(true);
+    setIsStateCorrupted(false);
+    console.log(`[PROFILE] Starting profile fetch for user ${userId.slice(0,6)}...`);
+    
+    // Reset session storage counters when we successfully sign in
+    if (user?.id && router.pathname.includes('/auth/callback')) {
+      console.log('[PROFILE] Auth callback detected, resetting fetch attempts');
+      sessionStorage.removeItem('profileFetchAttempts');
+    }
+    
+    // Track profile fetch attempts for this session
+    const profileFetchAttempts = parseInt(sessionStorage.getItem('profileFetchAttempts') || '0', 10);
+    sessionStorage.setItem('profileFetchAttempts', (profileFetchAttempts + 1).toString());
+    console.log(`[PROFILE] Fetch attempt ${profileFetchAttempts + 1}`);
+
+    // Try more robust strategies earlier
+    let profile = null;
+    
+    // Helper function to wrap Supabase calls with timeout
+    const withTimeout = async <T,>(promise: Promise<T>, timeoutMs = 5000, name = 'operation'): Promise<T> => {
+      let timeoutId: NodeJS.Timeout;
       
-      // Helper function to wrap Supabase calls with timeout
-      const withTimeout = async <T,>(promise: Promise<T>, timeoutMs = 5000, name = 'operation'): Promise<T> => {
-        let timeoutId: NodeJS.Timeout;
+      try {
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error(`[PROFILE] ${name} timed out after ${timeoutMs}ms`));
+          }, timeoutMs);
+        });
         
+        // Race the operation against the timeout
+        const result = await Promise.race([
+          promise,
+          timeoutPromise
+        ]);
+        
+        return result;
+      } catch (err) {
+        console.error(`[PROFILE] ${name} failed:`, err);
+        throw err;
+      } finally {
+        clearTimeout(timeoutId!);
+      }
+    };
+    
+    // Helper: Retry with exponential backoff
+    const retryWithBackoff = async (fn: () => Promise<any>, retries = 3, delay = 1000) => {
+      let lastError;
+      for (let i = 0; i < retries; i++) {
         try {
-          const timeoutPromise = new Promise<never>((_, reject) => {
-            timeoutId = setTimeout(() => {
-              reject(new Error(`[PROFILE] ${name} timed out after ${timeoutMs}ms`));
-            }, timeoutMs);
-          });
-          
-          // Race the operation against the timeout
-          const result = await Promise.race([
-            promise,
-            timeoutPromise
-          ]);
-          
-          return result;
+          return await fn();
         } catch (err) {
-          console.error(`[PROFILE] ${name} failed:`, err);
-          throw err;
-        } finally {
-          clearTimeout(timeoutId!);
+          lastError = err;
+          console.warn(`[PROFILE] Connection test attempt ${i + 1} failed:`, err);
+          await new Promise(res => setTimeout(res, delay * (i + 1)));
         }
-      };
-      
-      // Helper: Retry with exponential backoff
-      const retryWithBackoff = async (fn: () => Promise<any>, retries = 3, delay = 1000) => {
-        let lastError;
-        for (let i = 0; i < retries; i++) {
-          try {
-            return await fn();
-          } catch (err) {
-            lastError = err;
-            console.warn(`[PROFILE] Connection test attempt ${i + 1} failed:`, err);
-            await new Promise(res => setTimeout(res, delay * (i + 1)));
-          }
-        }
-        throw lastError;
-      };
-      
-      // Try a simple query first to test if Supabase is responding (with retry)
-      try {
-        console.log('[PROFILE] Testing database connection with retry...');
-        await retryWithBackoff(
-          () => withTimeout(
-            Promise.resolve(supabase.from('user_profiles').select('count').limit(1)),
-            5000, // increased timeout
-            'Connection test'
-          ),
-          3, // retries
-          1500 // backoff delay
-        );
-        console.log('[PROFILE] Database connection successful');
-      } catch (connErr) {
-        console.error('[PROFILE] Connection test failed after retries:', connErr);
-        // Optionally: show user-friendly error or fallback
       }
+      throw lastError;
+    };
+    
+    // Try a simple query first to test if Supabase is responding (with retry)
+    try {
+      console.log('[PROFILE] Testing database connection with retry...');
+      await retryWithBackoff(
+        () => withTimeout(
+          Promise.resolve(supabase.from('user_profiles').select('count').limit(1)),
+          5000, // increased timeout
+          'Connection test'
+        ),
+        3, // retries
+        1500 // backoff delay
+      );
+      console.log('[PROFILE] Database connection successful');
+    } catch (connErr) {
+      console.error('[PROFILE] Connection test failed after retries:', connErr);
+      // Optionally: show user-friendly error or fallback
+    }
+    
+    // Skip RPC and try direct query first for reliability
+    console.log('[PROFILE] Trying direct profile query...');
+    try {
+      const { data, error } = await withTimeout(
+        Promise.resolve(supabase.from('user_profiles')
+          .select('*')
+          .eq('id', userId)
+          .single()),
+        5000,
+        'Direct profile query'
+      );
       
-      // Skip RPC and try direct query first for reliability
-      console.log('[PROFILE] Trying direct profile query...');
+      if (error) {
+        console.error('[PROFILE] Direct query error:', error.message);
+        if (error.code !== 'PGRST116') {
+          setIsStateCorrupted(true);
+        }
+      } else if (data) {
+        console.log('[PROFILE] Successfully fetched profile via direct query');
+        profile = data;
+      } else {
+        console.log('[PROFILE] No profile found via direct query');
+      }
+    } catch (directErr) {
+      console.error('[PROFILE] Direct query failed:', directErr);
+    }
+    
+    // If direct query didn't work, try to create the profile
+    if (!profile) {
+      console.log('[PROFILE] Profile not found, attempting to create one');
+      
       try {
-        const { data, error } = await withTimeout(
-          Promise.resolve(supabase.from('user_profiles')
-            .select('*')
-            .eq('id', userId)
-            .single()),
+        // First check if user exists in auth.users
+        const { data: userData, error: userError } = await withTimeout(
+          Promise.resolve(supabase.auth.getUser()),
           5000,
-          'Direct profile query'
+          'Auth getUser'
         );
         
-        if (error) {
-          console.error('[PROFILE] Direct query error:', error.message);
-        } else if (data) {
-          console.log('[PROFILE] Successfully fetched profile via direct query');
-          profile = data;
-        } else {
-          console.log('[PROFILE] No profile found via direct query');
-        }
-      } catch (directErr) {
-        console.error('[PROFILE] Direct query failed:', directErr);
-      }
-      
-      // If direct query didn't work, try to create the profile
-      if (!profile) {
-        console.log('[PROFILE] Profile not found, attempting to create one');
-        
-        try {
-          // First check if user exists in auth.users
-          const { data: userData, error: userError } = await withTimeout(
-            Promise.resolve(supabase.auth.getUser()),
+        if (userError) {
+          console.error('[PROFILE] Error getting user data:', userError.message);
+        } else if (userData?.user) {
+          console.log('[PROFILE] User exists in auth, creating profile');
+          
+          const { data: newProfile, error: insertError } = await withTimeout(
+            Promise.resolve(supabase.from('user_profiles')
+              .insert([
+                { 
+                  id: userId,
+                  email: userData.user.email,
+                  full_name: userData.user.user_metadata?.full_name || '',
+                  created_at: new Date().toISOString()
+                }
+              ])
+              .select('*')
+              .single()),
             5000,
-            'Auth getUser'
+            'Profile creation'
           );
           
-          if (userError) {
-            console.error('[PROFILE] Error getting user data:', userError.message);
-          } else if (userData?.user) {
-            console.log('[PROFILE] User exists in auth, creating profile');
-            
-            const { data: newProfile, error: insertError } = await withTimeout(
-              Promise.resolve(supabase.from('user_profiles')
-                .insert([
-                  { 
-                    id: userId,
-                    email: userData.user.email,
-                    full_name: userData.user.user_metadata?.full_name || '',
-                    created_at: new Date().toISOString()
-                  }
-                ])
-                .select('*')
-                .single()),
-              5000,
-              'Profile creation'
-            );
-            
-            if (insertError) {
-              if (insertError.code === '23505' || (insertError.message && insertError.message.includes('duplicate key value'))) {
-                // Duplicate key: profile already exists, fetch it again
-                console.warn('[PROFILE] Duplicate key error on profile creation, fetching existing profile');
-                try {
-                  const { data: existingProfile, error: fetchExistingError } = await withTimeout(
-                    Promise.resolve(supabase.from('user_profiles')
-                      .select('*')
-                      .eq('id', userId)
-                      .single()),
-                    5000,
-                    'Fetch existing profile after duplicate key'
-                  );
-                  if (fetchExistingError) {
-                    console.error('[PROFILE] Failed to fetch existing profile after duplicate key:', fetchExistingError.message);
-                  } else if (existingProfile) {
-                    console.log('[PROFILE] Successfully fetched existing profile after duplicate key');
-                    profile = existingProfile;
-                  }
-                } catch (fetchExistingErr) {
-                  console.error('[PROFILE] Error fetching existing profile after duplicate key:', fetchExistingErr);
+          if (insertError) {
+            if (insertError.code === '23505' || (insertError.message && insertError.message.includes('duplicate key value'))) {
+              // Duplicate key: profile already exists, fetch it again
+              console.warn('[PROFILE] Duplicate key error on profile creation, fetching existing profile');
+              try {
+                const { data: existingProfile, error: fetchExistingError } = await withTimeout(
+                  Promise.resolve(supabase.from('user_profiles')
+                    .select('*')
+                    .eq('id', userId)
+                    .single()),
+                  5000,
+                  'Fetch existing profile after duplicate key'
+                );
+                if (fetchExistingError) {
+                  console.error('[PROFILE] Failed to fetch existing profile after duplicate key:', fetchExistingError.message);
+                  setIsStateCorrupted(true);
+                } else if (existingProfile) {
+                  console.log('[PROFILE] Successfully fetched existing profile after duplicate key');
+                  profile = existingProfile;
                 }
-              } else {
-                console.error('[PROFILE] Error creating profile:', insertError.message);
+              } catch (fetchExistingErr) {
+                console.error('[PROFILE] Error fetching existing profile after duplicate key:', fetchExistingErr);
+                setIsStateCorrupted(true);
               }
-            } else if (newProfile) {
-              console.log('[PROFILE] Successfully created new profile');
-              profile = newProfile;
+            } else {
+              console.error('[PROFILE] Error creating profile:', insertError.message);
+              setIsStateCorrupted(true);
             }
-          } else {
-            console.error('[PROFILE] Cannot create profile: user data unavailable');
+          } else if (newProfile) {
+            console.log('[PROFILE] Successfully created new profile');
+            profile = newProfile;
           }
-        } catch (createErr) {
-          console.error('[PROFILE] Error in profile creation:', createErr);
-        }
-      }
-      
-      // Update state if we have a profile
-      if (profile) {
-        console.log('[PROFILE] Setting user profile in state');
-        setUserProfile(profile);
-        sessionStorage.removeItem('profileFetchAttempts'); // Reset counter on success
-        
-        // Set cross-domain cookies to help with auth
-        try {
-          document.cookie = 'tt_auth_check=true; path=/; max-age=86400; SameSite=Lax';
-          
-          // For production environments
-          if (window.location.hostname.includes('travelling-technicians.ca')) {
-            document.cookie = 'tt_auth_check=true; path=/; domain=.travelling-technicians.ca; max-age=86400; SameSite=Lax; Secure';
-            document.cookie = 'tt_cross_domain=true; path=/; domain=.travelling-technicians.ca; max-age=86400; SameSite=Lax; Secure';
-          }
-        } catch (cookieErr) {
-          console.error('[PROFILE] Error setting cookies:', cookieErr);
-        }
-        
-        console.log('[PROFILE] Profile fetch completed successfully');
-        return profile;
-      }
-      
-      // Only attempt a forced sign out on protected pages, not on public or auth pages
-      if (profileFetchAttempts >= 5) {
-        const isProtectedPage = !['/auth/login', '/auth/register', '/auth/reset-password', '/'].some(p => 
-          router.pathname.startsWith(p) || router.pathname === p
-        );
-        
-        if (isProtectedPage) {
-          console.error('[PROFILE] Maximum profile fetch attempts reached on protected page, logging out');
-          sessionStorage.removeItem('profileFetchAttempts');
-          supabase.auth.signOut().then(() => {
-            router.push('/auth/login');
-          });
         } else {
-          console.log('[PROFILE] Max attempts reached but on non-protected page, not logging out');
-          // Reset counter to avoid building up failed attempts
-          sessionStorage.setItem('profileFetchAttempts', '0');
+          console.error('[PROFILE] Cannot create profile: user data unavailable');
         }
+      } catch (createErr) {
+        console.error('[PROFILE] Error in profile creation:', createErr);
+      }
+    }
+    
+    // Update state if we have a profile
+    if (profile) {
+      console.log('[PROFILE] Setting user profile in state');
+      setUserProfile(profile);
+      setIsStateCorrupted(false);
+      sessionStorage.removeItem('profileFetchAttempts'); // Reset counter on success
+      
+      // Set cross-domain cookies to help with auth
+      try {
+        document.cookie = 'tt_auth_check=true; path=/; max-age=86400; SameSite=Lax';
+        
+        // For production environments
+        if (window.location.hostname.includes('travelling-technicians.ca')) {
+          document.cookie = 'tt_auth_check=true; path=/; domain=.travelling-technicians.ca; max-age=86400; SameSite=Lax; Secure';
+          document.cookie = 'tt_cross_domain=true; path=/; domain=.travelling-technicians.ca; max-age=86400; SameSite=Lax; Secure';
+        }
+      } catch (cookieErr) {
+        console.error('[PROFILE] Error setting cookies:', cookieErr);
       }
       
-      return null;
-    } catch (error) {
-      console.error('[PROFILE] Error fetching user profile:', error);
-      return null;
-    } finally {
-      setProfileLoading(false);
+      console.log('[PROFILE] Profile fetch completed successfully');
+      return profile;
     }
-  };
+    
+    // Only attempt a forced sign out on protected pages, not on public or auth pages
+    if (profileFetchAttempts >= 5) {
+      const isProtectedPage = !['/auth/login', '/auth/register', '/auth/reset-password', '/'].some(p => 
+        router.pathname.startsWith(p) || router.pathname === p
+      );
+      
+      if (isProtectedPage) {
+        console.error('[PROFILE] Maximum profile fetch attempts reached on protected page, logging out');
+        sessionStorage.removeItem('profileFetchAttempts');
+        supabase.auth.signOut().then(() => {
+          router.push('/auth/login');
+        });
+      } else {
+        console.log('[PROFILE] Max attempts reached but on non-protected page, not logging out');
+        // Reset counter to avoid building up failed attempts
+        sessionStorage.setItem('profileFetchAttempts', '0');
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('[PROFILE] Error fetching user profile:', error);
+    setIsStateCorrupted(true);
+    return null;
+  } finally {
+    setIsFetchingProfile(false);
+  }
+};
   
   // Helper function to test if the RPC function exists
   const testRpcFunctionExists = async (): Promise<boolean> => {
@@ -925,6 +935,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
     refreshProfile,
     linkBookingsToAccount,
     isStateCorrupted,
+    isFetchingProfile,
     refreshSession
   };
 

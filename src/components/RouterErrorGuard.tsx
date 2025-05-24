@@ -28,7 +28,7 @@ const RouterErrorGuard: React.FC<RouterErrorGuardProps> = ({ children }) => {
   const [showResetButton, setShowResetButton] = useState(false);
   
   const auth = useContext(AuthContext);
-  const { isAuthenticated, isLoading, isStateCorrupted, forceSignOut } = auth || {};
+  const { isAuthenticated, isLoading, isStateCorrupted, forceSignOut, isFetchingProfile } = auth || {};
   const isNavigating = useRef(false);
   const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const currentUrlRef = useRef<string | null>(null);
@@ -42,6 +42,12 @@ const RouterErrorGuard: React.FC<RouterErrorGuardProps> = ({ children }) => {
     // Only show errors and emergency reset on non-homepage routes
     const isHomepage = router.pathname === '/' || router.pathname === '';
     
+    // Do not show corruption errors if profile is still fetching
+    if (isFetchingProfile) {
+      setShowEmergencyReset(false);
+      return;
+    }
+    
     if (isStateCorrupted && !isHomepage) {
       console.error('[RouterErrorGuard] Detected corrupted auth state');
       showError('Authentication state is corrupted. Try signing out and in again, or use the emergency reset.', 'error');
@@ -49,7 +55,7 @@ const RouterErrorGuard: React.FC<RouterErrorGuardProps> = ({ children }) => {
     } else if (!isStateCorrupted) {
       setShowEmergencyReset(false);
     }
-  }, [isStateCorrupted, router.pathname]);
+  }, [isStateCorrupted, router.pathname, isFetchingProfile]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -253,8 +259,8 @@ const RouterErrorGuard: React.FC<RouterErrorGuardProps> = ({ children }) => {
           previousPath.includes('/bookings');
         
         // If coming from protected path and we're authenticated, this is likely a false positive
-        if (isComingFromProtectedPath && isAuthenticated && !isLoading) {
-          console.log('[RouterErrorGuard] Coming from protected path while authenticated, not counting as reload loop');
+        if (isComingFromProtectedPath && isAuthenticated && !isLoading && !isFetchingProfile) {
+          console.log('[RouterErrorGuard] Coming from protected path while authenticated (and profile not fetching), not counting as reload loop');
           // Prevent this from being counted as part of a reload loop
           sessionStorage.setItem('homepageReloadCount', '0');
           // Store a flag to indicate we should redirect back to the protected route
@@ -311,7 +317,7 @@ const RouterErrorGuard: React.FC<RouterErrorGuardProps> = ({ children }) => {
     reloadGuard();
     
     // Check if we should redirect back to protected route
-    if (router.pathname === '/' && sessionStorage.getItem('shouldReturnToProtectedRoute') === 'true' && isAuthenticated && !isLoading) {
+    if (router.pathname === '/' && sessionStorage.getItem('shouldReturnToProtectedRoute') === 'true' && isAuthenticated && !isLoading && !isFetchingProfile) {
       // Clear the flag
       sessionStorage.removeItem('shouldReturnToProtectedRoute');
       
@@ -395,7 +401,7 @@ const RouterErrorGuard: React.FC<RouterErrorGuardProps> = ({ children }) => {
       
       // Keep global emergency reset and recovery function
     };
-  }, [router, isAuthenticated, isLoading, forceSignOut]);
+  }, [router, isAuthenticated, isLoading, forceSignOut, isFetchingProfile]);
   
   // Return the children with optional emergency reset button
   // Only show emergency reset on non-homepage
