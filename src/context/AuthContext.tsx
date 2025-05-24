@@ -430,7 +430,30 @@ function AuthProvider({ children }: { children: ReactNode }) {
             );
             
             if (insertError) {
-              console.error('[PROFILE] Error creating profile:', insertError.message);
+              if (insertError.code === '23505' || (insertError.message && insertError.message.includes('duplicate key value'))) {
+                // Duplicate key: profile already exists, fetch it again
+                console.warn('[PROFILE] Duplicate key error on profile creation, fetching existing profile');
+                try {
+                  const { data: existingProfile, error: fetchExistingError } = await withTimeout(
+                    Promise.resolve(supabase.from('user_profiles')
+                      .select('*')
+                      .eq('id', userId)
+                      .single()),
+                    5000,
+                    'Fetch existing profile after duplicate key'
+                  );
+                  if (fetchExistingError) {
+                    console.error('[PROFILE] Failed to fetch existing profile after duplicate key:', fetchExistingError.message);
+                  } else if (existingProfile) {
+                    console.log('[PROFILE] Successfully fetched existing profile after duplicate key');
+                    profile = existingProfile;
+                  }
+                } catch (fetchExistingErr) {
+                  console.error('[PROFILE] Error fetching existing profile after duplicate key:', fetchExistingErr);
+                }
+              } else {
+                console.error('[PROFILE] Error creating profile:', insertError.message);
+              }
             } else if (newProfile) {
               console.log('[PROFILE] Successfully created new profile');
               profile = newProfile;
