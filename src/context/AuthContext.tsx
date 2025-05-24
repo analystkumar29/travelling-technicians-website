@@ -385,7 +385,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session);
-      setIsLoading(true); 
+        setIsLoading(true);
       if (event === 'INITIAL_SESSION') {
         if (session?.user) {
           setUser(session.user);
@@ -506,7 +506,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
       setIsStateCorrupted(true);
       recoverAuthState();
     } else if (user && userProfile) { // If user and profile exist, state is not corrupted
-        setIsStateCorrupted(false);
+      setIsStateCorrupted(false);
     }
   }, [user, userProfile, isLoading, isFetchingProfile, router.pathname, recoverAuthState]);
 
@@ -539,7 +539,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
     }, validateInterval);
     return () => clearInterval(sessionValidator);
   }, [user, router.pathname, recoverAuthState, forceSignOut]);
-
+  
   // NETWORK STATUS MONITORING EFFECT
   useEffect(() => {
     const handleOnline = async () => {
@@ -623,11 +623,11 @@ function AuthProvider({ children }: { children: ReactNode }) {
       // However, if you want to ensure profile is created immediately with metadata from signUp:
       if (data.user) {
          await createUserProfile(data.user.id, data.user.email!, fullName, phone);
-         const pendingBookingRef = sessionStorage.getItem('pendingBookingReference');
-         if (pendingBookingRef) {
-           await linkBookingToUserId(pendingBookingRef, data.user.id, email);
-           sessionStorage.removeItem('pendingBookingReference');
-         }
+        const pendingBookingRef = sessionStorage.getItem('pendingBookingReference');
+        if (pendingBookingRef) {
+          await linkBookingToUserId(pendingBookingRef, data.user.id, email);
+          sessionStorage.removeItem('pendingBookingReference');
+        }
       }
       return { success: true };
     } catch (error: any) {
@@ -650,7 +650,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
       await supabase.auth.signOut(); // This will trigger onAuthStateChange
       if (!silent) {
         // Add a small delay before redirecting to ensure state is cleared by onAuthStateChange
-        setTimeout(() => { 
+        setTimeout(() => {
             if(router) router.push('/'); else window.location.href = '/';
         }, 50);
       }

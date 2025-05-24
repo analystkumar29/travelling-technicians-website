@@ -44,7 +44,6 @@ module.exports = (phase, { defaultConfig }) => {
     output: 'standalone',
     experimental: {
       // Only use experimental options that are supported in Next.js 12.3.4
-      outputFileTracingRoot: '/',
       esmExternals: true
     }
   };
