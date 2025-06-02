@@ -16,6 +16,8 @@ import { useEffect, useState } from 'react';
 import { setupGlobalErrorHandlers } from '@/utils/errorHandling';
 import { BookingProvider } from '@/context/BookingContext';
 import { AuthProvider } from '@/context/AuthContext';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 // Using require to bypass TypeScript errors for these modules
 // @ts-ignore
 const ErrorProvider = require('@/context/ErrorContext').ErrorProvider;
@@ -90,6 +92,7 @@ function CustomErrorBoundary({ children }: { children: React.ReactNode }) {
 }
 
 export default function App({ Component, pageProps }: AppProps) {
+  const [queryClient] = useState(() => new QueryClient());
   // Set up global error handlers when the app mounts
   useEffect(() => {
     setupGlobalErrorHandlers();
@@ -123,38 +126,41 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <SafeHydrate>
       <CustomErrorBoundary>
-        <ErrorProvider>
-          <AuthProvider>
-            <BookingProvider>
-              <Head>
-                <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-                <meta name="description" content="The Travelling Technicians - Mobile phone and laptop repair with doorstep service in Vancouver, Burnaby & the Lower Mainland. Same-day repairs by certified technicians." />
-                <meta name="theme-color" content="#0076be" />
-                <link rel="icon" href="/favicon.ico" />
-                <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png" />
-                <link rel="icon" type="image/png" sizes="192x192" href="/favicons/favicon-192x192.png" />
-                <link rel="apple-touch-icon" href="/favicons/favicon-192x192.png" />
-                <link rel="manifest" href="/manifest.json" />
-                <title>The Travelling Technicians | Mobile Doorstep Repair Service</title>
-              </Head>
-              
-              {/* Early error prevention scripts moved to _document.tsx */}
-              {/* 
-              <Script id=\"next-router-fix\" strategy=\"beforeInteractive\">
-                {routerFixScript}
-              </Script>
-              
-              <Script id=\"error-handler\" src=\"/error-handler.js\" strategy=\"beforeInteractive\" />
-              */}
-              
-              <RouterErrorGuard>
-                <NextjsRouterLoader />
-                <GlobalErrorHandler />
-                <Component {...pageProps} />
-              </RouterErrorGuard>
-            </BookingProvider>
-          </AuthProvider>
-        </ErrorProvider>
+        <QueryClientProvider client={queryClient}>
+          <ErrorProvider>
+            <AuthProvider>
+              <BookingProvider>
+                <Head>
+                  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+                  <meta name="description" content="The Travelling Technicians - Mobile phone and laptop repair with doorstep service in Vancouver, Burnaby & the Lower Mainland. Same-day repairs by certified technicians." />
+                  <meta name="theme-color" content="#0076be" />
+                  <link rel="icon" href="/favicon.ico" />
+                  <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png" />
+                  <link rel="icon" type="image/png" sizes="192x192" href="/favicons/favicon-192x192.png" />
+                  <link rel="apple-touch-icon" href="/favicons/favicon-192x192.png" />
+                  <link rel="manifest" href="/manifest.json" />
+                  <title>The Travelling Technicians | Mobile Doorstep Repair Service</title>
+                </Head>
+                
+                {/* Early error prevention scripts moved to _document.tsx */}
+                {/* 
+                <Script id=\"next-router-fix\" strategy=\"beforeInteractive\">
+                  {routerFixScript}
+                </Script>
+                
+                <Script id=\"error-handler\" src=\"/error-handler.js\" strategy=\"beforeInteractive\" />
+                */}
+                
+                <RouterErrorGuard>
+                  <NextjsRouterLoader />
+                  <GlobalErrorHandler />
+                  <Component {...pageProps} />
+                </RouterErrorGuard>
+                {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
+              </BookingProvider>
+            </AuthProvider>
+          </ErrorProvider>
+        </QueryClientProvider>
       </CustomErrorBoundary>
     </SafeHydrate>
   );

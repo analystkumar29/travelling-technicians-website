@@ -548,24 +548,55 @@ function AuthProvider({ children }: { children: ReactNode }) {
 
   // FETCH USER PROFILE ON USER CHANGE EFFECT (ensure this is after fetchUserProfile is defined)
   useEffect(() => {
+    // Skip fetching if no user or user without ID
+    if (!user || !user.id) {
+      if(user && !user.id) console.warn("[PROFILE] User object present but user.id is missing, skipping profile fetch.");
+      return;
+    }
+
+    // Skip fetching on homepage to prevent unnecessary API calls
     const isHomepage = router.pathname === '/';
     const skipHomepageChecks = typeof window !== 'undefined' && sessionStorage.getItem('skipHomepageChecks') === 'true';
-    if (!user || isHomepage || skipHomepageChecks || !user.id) { 
-        if(user && !user.id) console.warn("[PROFILE] User object present but user.id is missing, skipping profile fetch.");
-        return;
+    if (isHomepage || skipHomepageChecks) return;
+
+    // If we already have a profile or are currently fetching, don't fetch again
+    if (userProfile || isFetchingProfile) return;
+
+    // If we had a previous error fetching the profile, don't automatically retry
+    if (profileError) return;
+
+    // Only fetch the profile once per session
+    const profileFetchKey = `profile_fetched_${user.id}`;
+    if (typeof window !== 'undefined' && sessionStorage.getItem(profileFetchKey)) {
+      return;
     }
-    if (!userProfile && !isFetchingProfile && !profileError) { // Only fetch if no profile, not already fetching, and no existing error
-        fetchUserProfile(user.id);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, userProfile, isFetchingProfile, profileError, router.pathname, fetchUserProfile]);
+
+    // Fetch the profile
+    console.log('[PROFILE] Fetching profile for user', user.id.slice(0, 6));
+    fetchUserProfile(user.id).then(profile => {
+      if (profile && typeof window !== 'undefined') {
+        // Mark that we've fetched this profile for this session
+        sessionStorage.setItem(profileFetchKey, 'true');
+      }
+    });
+
+  // Dependencies: Only re-run when user or router.pathname changes, NOT on userProfile/isFetchingProfile/profileError changes
+  // This prevents infinite loops where profile fetch state changes trigger re-renders that trigger new fetches
+  }, [user, router.pathname, fetchUserProfile]);
 
   const refreshProfile = useCallback(async () => {
-    if (user && user.id) { 
-      console.log('[PROFILE] Manual profile refresh requested.');
-      setProfileError(null); // Clear previous errors before manual refresh
-      await fetchUserProfile(user.id);
+    if (!user || !user.id) return;
+    
+    console.log('[PROFILE] Manual profile refresh requested.');
+    setProfileError(null); // Clear previous errors before manual refresh
+    
+    // Clear the "already fetched" flag to allow a manual refresh
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem(`profile_fetched_${user.id}`);
     }
+    
+    // Call fetchUserProfile but ignore its return value to match Promise<void>
+    await fetchUserProfile(user.id);
   }, [user, fetchUserProfile]);
 
   // linkBookingToUserId must be defined before signIn and signUp if it's a dependency
