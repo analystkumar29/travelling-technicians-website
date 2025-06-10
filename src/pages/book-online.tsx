@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NextPage } from 'next';
 import Layout from '@/components/layout/Layout';
 import BookingForm from '@/components/booking/BookingForm';
@@ -11,7 +11,6 @@ import type { CreateBookingRequest } from '@/types/booking';
 import { logger } from '@/utils/logger';
 import { supabase } from '@/utils/supabaseClient';
 import { generateBookingReference as generateReferenceNumber } from '@/utils/bookingUtils';
-import { AuthContext } from '@/context/AuthContext';
 
 // Create a logger for this page
 const pageLogger = logger.createModuleLogger('BookOnlinePage');
@@ -21,8 +20,6 @@ const BookOnlinePage: NextPage = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bookingData, setBookingData] = useState<any>(null);
-  const auth = useContext(AuthContext);
-  const { isAuthenticated, user } = auth || {};
 
   // useEffect cleanup for any potential state updates that might happen after unmounting
   useEffect(() => {
@@ -36,44 +33,25 @@ const BookOnlinePage: NextPage = () => {
       setIsSubmitting(true);
       setError(null);
       
-      // Generate a reference number
-      const referenceNumber = generateReferenceNumber();
+      // Use the working booking API
+      const response = await fetch('/api/bookings/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
       
-      // If user is authenticated, associate booking with user
-      const userId = isAuthenticated && user ? user.id : null;
+      const result = await response.json();
       
-      // Prepare booking data
-      const bookingRecord = {
-        reference_number: referenceNumber,
-        device_type: data.deviceType,
-        device_brand: data.deviceBrand === 'other' ? data.customBrand : data.deviceBrand,
-        device_model: data.deviceModel,
-        service_type: data.serviceType,
-        issue_description: data.issueDescription,
-        booking_date: data.appointmentDate,
-        booking_time: data.appointmentTime,
-        customer_name: data.customerName,
-        customer_email: data.customerEmail,
-        customer_phone: data.customerPhone,
-        address: data.address,
-        city: data.city,
-        province: data.province,
-        postal_code: data.postalCode,
-        status: 'pending',
-        user_id: userId
-      };
-      
-      // Insert into Supabase
-      const { error: insertError } = await supabase
-        .from('bookings')
-        .insert([bookingRecord]);
-        
-      if (insertError) throw insertError;
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to create booking');
+      }
       
       // Record successful booking
       setBookingData({
-        ...bookingRecord,
-        reference_number: referenceNumber
+        ...result.booking,
+        reference_number: result.reference
       });
       
       // For SEO and analytics
@@ -87,42 +65,12 @@ const BookOnlinePage: NextPage = () => {
         }
         
         // Store booking in local storage for recovery
-        localStorage.setItem('lastBookingReference', referenceNumber);
+        localStorage.setItem('lastBookingReference', result.reference);
       }
       
       setIsSuccess(true);
       
-      // Send confirmation email
-      try {
-        const emailResponse = await fetch('/api/bookings/confirmation', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            bookingReference: referenceNumber,
-            customerName: data.customerName,
-            customerEmail: data.customerEmail,
-            deviceType: data.deviceType,
-            deviceBrand: data.deviceBrand === 'other' ? data.customBrand : data.deviceBrand,
-            deviceModel: data.deviceModel,
-            serviceType: data.serviceType,
-            appointmentDate: data.appointmentDate,
-            appointmentTime: data.appointmentTime,
-            address: data.address,
-            city: data.city,
-            province: data.province,
-            postalCode: data.postalCode
-          }),
-        });
-        
-        if (!emailResponse.ok) {
-          console.error('Failed to send confirmation email:', await emailResponse.text());
-        }
-      } catch (emailError) {
-        console.error('Error sending confirmation email:', emailError);
-        // Continue with booking process even if email fails
-      }
+      // Email is already sent by the API, no need to send again
       
     } catch (err: any) {
       console.error('Booking error:', err);
@@ -221,12 +169,7 @@ const BookOnlinePage: NextPage = () => {
           ) : (
             <BookingForm 
               onSubmit={handleSubmit} 
-              initialData={
-                isAuthenticated && user?.email ? {
-                  customerEmail: user.email,
-                  customerName: user.user_metadata?.full_name || ''
-                } : {}
-              }
+              initialData={{}}
             />
           )}
           

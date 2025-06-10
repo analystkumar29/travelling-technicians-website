@@ -192,7 +192,7 @@ export default function DeviceModelSelector({
       setUseCustomModel(false);
       setCustomModel('');
     }
-  }, [deviceType, brand, value, availableModels, onChange]);
+  }, [deviceType, brand]); // Only depend on deviceType and brand to prevent infinite loops
 
   // Effect to handle value changes from outside
   useEffect(() => {
@@ -200,7 +200,7 @@ export default function DeviceModelSelector({
       setCustomModel(value);
       setUseCustomModel(true);
     }
-  }, [value, availableModels, customModel]);
+  }, [value]); // Only depend on value to prevent infinite loops
 
   // Handle selection change
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -232,7 +232,7 @@ export default function DeviceModelSelector({
           deviceType === 'mobile' ? 'Motorola Edge 40' : 
           deviceType === 'laptop' ? 'Acer Swift 5' : 'Huawei MatePad Pro'
         })`}
-        value={value}
+        value={value || ''}
         onChange={(e) => onChange(e.target.value)}
       />
     );
@@ -250,11 +250,11 @@ export default function DeviceModelSelector({
       <select
         ref={selectRef}
         className="w-full px-4 py-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-        value={useCustomModel ? 'custom' : value}
+        value={useCustomModel ? 'custom' : (value || '')}
         onChange={handleSelectChange}
         disabled={!brand || availableModels.length === 0}
       >
-        <option value="" disabled selected={!value && !useCustomModel}>
+        <option value="">
           {getPlaceholderText()}
         </option>
         
@@ -264,7 +264,9 @@ export default function DeviceModelSelector({
           </option>
         ))}
         
-        <option value="custom">My model isn't listed</option>
+        {availableModels.length > 0 && (
+          <option value="custom">My model isn't listed</option>
+        )}
       </select>
 
       {/* Custom model input - shown when "My model isn't listed" is selected */}
@@ -274,7 +276,7 @@ export default function DeviceModelSelector({
             type="text"
             className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
             placeholder={`Enter your ${deviceType} model manually`}
-            value={customModel}
+            value={customModel || ''}
             onChange={handleCustomModelChange}
             autoFocus
           />
@@ -291,9 +293,6 @@ export default function DeviceModelSelector({
               className="text-primary-600 hover:text-primary-800 underline"
               onClick={() => {
                 onChange(model);
-                if (selectRef.current) {
-                  selectRef.current.value = model;
-                }
               }}
             >
               {model}

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaFacebook, FaTwitter, FaInstagram, FaLinkedin } from 'react-icons/fa';
+import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaMobileAlt, FaLaptop } from 'react-icons/fa';
 
 export default function Footer() {
   return (
@@ -68,74 +68,56 @@ export default function Footer() {
             <h3 className="text-xl font-bold mb-4 text-primary-400">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/">
-                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
+                <Link href="/" className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
                     <span>
                       <span className="w-1 h-1 bg-primary-400 rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                       Home
                     </span>
-                  </a>
+                  </Link>
+              </li>
+              <li>
+                <Link href="/services/mobile-repair" className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
+                  <FaMobileAlt className="mr-2" />
+                  Mobile Repair
                 </Link>
               </li>
               <li>
-                <Link href="/services/mobile">
-                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
-                    <span>
-                      <span className="w-1 h-1 bg-primary-400 rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                      Mobile Phone Repair
-                    </span>
-                  </a>
+                <Link href="/services/laptop-repair" className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
+                  <FaLaptop className="mr-2" />
+                  Laptop Repair
                 </Link>
               </li>
               <li>
-                <Link href="/services/laptop">
-                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
-                    <span>
-                      <span className="w-1 h-1 bg-primary-400 rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                      Laptop & Computer Repair
-                    </span>
-                  </a>
-                </Link>
-              </li>
-              <li>
-                <Link href="/doorstep">
-                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
+                <Link href="/doorstep" className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
                     <span>
                       <span className="w-1 h-1 bg-primary-400 rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                       Doorstep Repair
                     </span>
-                  </a>
-                </Link>
+                  </Link>
               </li>
               <li>
-                <Link href="/pricing">
-                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
+                <Link href="/pricing" className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
                     <span>
                       <span className="w-1 h-1 bg-primary-400 rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                       Pricing
                     </span>
-                  </a>
-                </Link>
+                  </Link>
               </li>
               <li>
-                <Link href="/book-online">
-                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
+                <Link href="/book-online" className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
                     <span>
                       <span className="w-1 h-1 bg-primary-400 rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                       Book Online
                     </span>
-                  </a>
-                </Link>
+                  </Link>
               </li>
               <li>
-                <Link href="/contact">
-                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
+                <Link href="/contact" className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
                     <span>
                       <span className="w-1 h-1 bg-primary-400 rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                       Contact Us
                     </span>
-                  </a>
-                </Link>
+                  </Link>
               </li>
             </ul>
           </div>
@@ -145,81 +127,59 @@ export default function Footer() {
             <h3 className="text-xl font-bold mb-4 text-primary-400">Service Areas</h3>
             <ul className="grid grid-cols-2 gap-x-2 gap-y-2">
               <li>
-                <Link href="/service-areas/vancouver">
-                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                <Link href="/service-areas/vancouver" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
                     Vancouver
-                  </a>
-                </Link>
+                  </Link>
               </li>
               <li>
-                <Link href="/service-areas/burnaby">
-                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                <Link href="/service-areas/burnaby" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
                     Burnaby
-                  </a>
-                </Link>
+                  </Link>
               </li>
               <li>
-                <Link href="/service-areas/surrey">
-                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                <Link href="/service-areas/surrey" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
                     Surrey
-                  </a>
-                </Link>
+                  </Link>
               </li>
               <li>
-                <Link href="/service-areas/richmond">
-                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                <Link href="/service-areas/richmond" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
                     Richmond
-                  </a>
-                </Link>
+                  </Link>
               </li>
               <li>
-                <Link href="/service-areas/coquitlam">
-                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                <Link href="/service-areas/coquitlam" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
                     Coquitlam
-                  </a>
-                </Link>
+                  </Link>
               </li>
               <li>
-                <Link href="/service-areas/north-vancouver">
-                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                <Link href="/service-areas/north-vancouver" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
                     North Vancouver
-                  </a>
-                </Link>
+                  </Link>
               </li>
               <li>
-                <Link href="/service-areas/west-vancouver">
-                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                <Link href="/service-areas/west-vancouver" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
                     West Vancouver
-                  </a>
-                </Link>
+                  </Link>
               </li>
               <li>
-                <Link href="/service-areas/new-westminster">
-                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                <Link href="/service-areas/new-westminster" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
                     New Westminster
-                  </a>
-                </Link>
+                  </Link>
               </li>
               <li>
-                <Link href="/service-areas/delta">
-                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                <Link href="/service-areas/delta" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
                     Delta
-                  </a>
-                </Link>
+                  </Link>
               </li>
               <li>
-                <Link href="/service-areas/langley">
-                  <a className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                <Link href="/service-areas/langley" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
                     Langley
-                  </a>
-                </Link>
+                  </Link>
               </li>
               <li>
-                <Link href="/service-areas">
-                  <a className="text-primary-400 hover:text-primary-300 transition-colors duration-300 font-medium">
+                <Link href="/service-areas" className="text-primary-400 hover:text-primary-300 transition-colors duration-300 font-medium">
                     View All Areas
-                  </a>
-                </Link>
+                  </Link>
               </li>
             </ul>
           </div>
@@ -242,11 +202,9 @@ export default function Footer() {
               </li>
             </ul>
             <div className="mt-6">
-              <Link href="/book-online">
-                <a className="w-full px-4 py-3 bg-accent-500 text-white rounded-md font-medium inline-block text-center hover:bg-accent-600 transition-all duration-300 hover:shadow-md hover:translate-y-[-1px]">
+              <Link href="/book-online" className="w-full px-4 py-3 bg-accent-500 text-white rounded-md font-medium inline-block text-center hover:bg-accent-600 transition-all duration-300 hover:shadow-md hover:translate-y-[-1px]">
                   Book Your Repair
-                </a>
-              </Link>
+                </Link>
             </div>
           </div>
         </div>
@@ -260,21 +218,15 @@ export default function Footer() {
               &copy; {new Date().getFullYear()} The Travelling Technicians. All rights reserved.
             </p>
             <div className="flex space-x-4 mt-2 md:mt-0">
-              <Link href="/privacy-policy">
-                <a className="text-gray-400 text-sm hover:text-primary-300 transition-colors duration-300">
+              <Link href="/privacy-policy" className="text-gray-400 text-sm hover:text-primary-300 transition-colors duration-300">
                   Privacy Policy
-                </a>
-              </Link>
-              <Link href="/terms-conditions">
-                <a className="text-gray-400 text-sm hover:text-primary-300 transition-colors duration-300">
+                </Link>
+              <Link href="/terms-conditions" className="text-gray-400 text-sm hover:text-primary-300 transition-colors duration-300">
                   Terms & Conditions
-                </a>
-              </Link>
-              <Link href="/sitemap">
-                <a className="text-gray-400 text-sm hover:text-primary-300 transition-colors duration-300">
+                </Link>
+              <Link href="/sitemap" className="text-gray-400 text-sm hover:text-primary-300 transition-colors duration-300">
                   Sitemap
-                </a>
-              </Link>
+                </Link>
             </div>
           </div>
         </div>

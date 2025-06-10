@@ -93,7 +93,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       // Unregister to remove validation when not needed
       unregister('customBrand');
     }
-  }, [deviceBrand, methods]);
+  }, [deviceBrand]); // Remove methods from dependency array to prevent infinite loop
 
   // Check localStorage for saved address data when component mounts
   useEffect(() => {
@@ -127,7 +127,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     } catch (error) {
       console.error('Error parsing saved location data:', error);
     }
-  }, [methods]);
+  }, []); // Empty dependency array - only run on mount
 
   // Placeholder step titles
   const steps = [
@@ -1425,7 +1425,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             </div>
             <div className="ml-3">
               <p className="text-sm text-blue-700">
-                We service the entire Lower Mainland area including Vancouver, Burnaby, Surrey, Richmond, Coquitlam, and more.
+                We service the entire Lower Mainland area including Vancouver, Burnaby, Richmond, New Westminster, North Vancouver, West Vancouver, Coquitlam, and Chilliwack.
               </p>
           </div>
           </div>
@@ -1530,7 +1530,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     id="city"
                     className={`$1`}
                     {...field}
+                    value={field.value || ''}
                   >
+                    <option value="" disabled>Select a city</option>
                     <option value="Vancouver">Vancouver</option>
                     <option value="Burnaby">Burnaby</option>
                     <option value="Surrey">Surrey</option>
@@ -1714,6 +1716,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 <select
                       className={`block w-full pl-10 pr-10 py-2 border ${fieldState.error ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm appearance-none`}
                   {...field}
+                  value={field.value || ''}
                 >
                       <option value="">Select a time slot...</option>
                       <option value="morning">Morning (9AM - 12PM)</option>

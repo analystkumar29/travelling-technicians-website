@@ -173,7 +173,7 @@ const faqCategories = [
       {
         id: 'locations-1',
         question: 'What areas do you serve?',
-        answer: 'We provide doorstep repair services throughout the Lower Mainland, including Vancouver, Burnaby, Richmond, Surrey, Coquitlam, Port Coquitlam, Port Moody, New Westminster, North Vancouver, West Vancouver, Delta, Langley, White Rock, Maple Ridge, and Pitt Meadows. You can check specific coverage on our Service Areas page.'
+        answer: 'We provide doorstep repair services throughout the Lower Mainland, including Vancouver, Burnaby, Richmond, New Westminster, North Vancouver, West Vancouver, Coquitlam, and Chilliwack. You can check specific coverage on our Service Areas page.'
       },
       {
         id: 'locations-2',
@@ -193,7 +193,7 @@ const faqCategories = [
       {
         id: 'locations-5',
         question: 'Which areas offer same-day service?',
-        answer: 'Same-day service is typically available in Vancouver, Burnaby, Richmond, Surrey, Coquitlam, Port Coquitlam, Port Moody, New Westminster, and North Vancouver, subject to technician availability. Other areas usually require scheduling at least one day in advance. Check our Service Areas page for specific details.'
+        answer: 'Same-day service is typically available in Vancouver, Burnaby, Richmond, New Westminster, North Vancouver, West Vancouver, and Coquitlam, subject to technician availability. Chilliwack requires scheduling at least one day in advance. Check our Service Areas page for specific details.'
       }
     ]
   }
@@ -345,11 +345,9 @@ export default function FAQPage() {
                     We're here to help. Contact our support team for assistance with any questions you may have.
                   </p>
                   <div className="mt-6">
-                    <Link href="/contact">
-                      <a className="btn-primary text-sm py-2 block text-center">
+                    <Link href="/contact" className="btn-primary text-sm py-2 block text-center">
                         Contact Our Team
-                      </a>
-                    </Link>
+                      </Link>
                   </div>
                 </div>
               </div>
@@ -383,17 +381,13 @@ export default function FAQPage() {
                 Can\'t find the answer you\'re looking for? Our friendly team is here to help you with any questions or concerns about our doorstep repair services.
               </p>
               <div className="text-center mt-12">
-                <Link href="/contact">
-                  <a className="btn-primary text-center">
+                <Link href="/contact" className="btn-primary text-center">
                     Have More Questions? Contact Us
-                  </a>
-                </Link>
+                  </Link>
                 <span className="mx-3 text-gray-300">or</span>
-                <Link href="/book-online">
-                  <a className="btn-outline text-center">
+                <Link href="/book-online" className="btn-outline text-center">
                     Book a Repair
-                  </a>
-                </Link>
+                  </Link>
               </div>
             </div>
           </div>
@@ -408,11 +402,9 @@ export default function FAQPage() {
             <p className="text-xl mb-8 max-w-3xl mx-auto">
               Our technicians bring the repair shop to you – saving you time and hassle. Book your appointment now.
             </p>
-            <Link href="/book-online">
-              <a className="btn-accent text-center inline-block">
+            <Link href="/book-online" className="btn-accent text-center inline-block">
                 Book Your Repair Now
-              </a>
-            </Link>
+              </Link>
           </div>
         </div>
       </section>

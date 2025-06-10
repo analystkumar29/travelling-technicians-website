@@ -18,9 +18,16 @@ export default function AddressAutocomplete({
   const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
   if (!googleMapsApiKey) {
-    console.error("Google Maps API Key is not configured. Please set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY environment variable.");
-    // Optionally, render a fallback or an error message to the user
-    return <div className="text-red-500 p-4 border border-red-500 rounded-md">Address lookup service is unavailable. API key missing.</div>;
+    // Graceful fallback - render a simple input field when Google Maps API is not available
+    return (
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onAddressSelect(e.target.value, true, '')}
+        placeholder="Enter your service address with postal code"
+        className={`${className} ${error ? 'border-red-500' : 'border-gray-300'} w-full p-3 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+      />
+    );
   }
 
   return (

@@ -22,12 +22,12 @@ const BrandImage = ({ src, alt }: { src: string, alt: string }) => {
 
 // Device brands
 const deviceBrands = [
-  { id: 'apple', name: 'Apple', image: '/images/brands/apple.png' },
-  { id: 'samsung', name: 'Samsung', image: '/images/brands/samsung.png' },
-  { id: 'google', name: 'Google', image: '/images/brands/google.png' },
-  { id: 'xiaomi', name: 'Xiaomi', image: '/images/brands/xiaomi.png' },
-  { id: 'oneplus', name: 'OnePlus', image: '/images/brands/oneplus.png' },
-  { id: 'huawei', name: 'Huawei', image: '/images/brands/huawei.png' },
+  { id: 'apple', name: 'Apple', image: '/images/brands/apple.svg' },
+  { id: 'samsung', name: 'Samsung', image: '/images/brands/samsung.svg' },
+  { id: 'google', name: 'Google', image: '/images/brands/google.svg' },
+  { id: 'xiaomi', name: 'Xiaomi', image: '/images/brands/xiaomi.svg' },
+  { id: 'oneplus', name: 'OnePlus', image: '/images/brands/oneplus.svg' },
+  { id: 'huawei', name: 'Huawei', image: '/images/brands/huawei.svg' },
 ];
 
 // Common issues
@@ -58,38 +58,38 @@ const commonIssues = {
   ]
 };
 
-// Testimonials
+// Testimonials - focusing only on target cities
 const testimonials = [
   {
     id: 1,
-    name: 'Sarah Johnson',
+    name: 'Sarah J.',
     location: 'Vancouver',
     rating: 5,
-    comment: 'Incredible service! The technician arrived within the scheduled window and fixed my iPhone screen in about 40 minutes. Very professional and convenient.',
+    comment: 'Excellent service! The technician came to my home and fixed my iPhone screen quickly. Very professional and convenient.',
     device: 'iPhone 13 Pro'
   },
   {
     id: 2,
-    name: 'Michael Chen',
+    name: 'Michael C.',
     location: 'Burnaby',
     rating: 5,
-    comment: 'Had my MacBook battery replaced at home. The technician was knowledgeable, efficient, and even cleaned up afterward. Highly recommend!',
+    comment: 'Had my MacBook battery replaced at home. Professional service and saved me a trip to the mall. Highly recommend!',
     device: 'MacBook Pro 2019'
   },
   {
     id: 3,
-    name: 'Jason Taylor',
+    name: 'Jason T.',
     location: 'Richmond',
     rating: 4,
-    comment: 'Great experience with their doorstep service. The Samsung screen replacement was perfect and the price was reasonable. Will use again!',
+    comment: 'Great doorstep service for my Samsung. The price was fair and the repair was done perfectly.',
     device: 'Samsung Galaxy S22'
   },
   {
     id: 4,
-    name: 'Priya Patel',
-    location: 'Surrey',
+    name: 'Anna W.',
+    location: 'North Vancouver',
     rating: 5,
-    comment: 'Saved me so much time! No need to go to a repair shop and leave my laptop behind. Technician was punctual and fixed my keyboard issues while I worked on another device.',
+    comment: 'Amazing convenience! The technician was punctual and fixed my laptop keyboard issue in under an hour.',
     device: 'Dell XPS 13'
   },
 ];
@@ -112,107 +112,14 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  // Initialize UI enhancements and add anti-reload loop protection
+  // Temporarily disable all UI enhancements to prevent infinite reload loop
   useEffect(() => {
-    // Test Supabase connection to diagnose auth issues
-    const testConnection = async () => {
-      try {
-        console.log('[HOME] Testing Supabase connection...');
-        const result = await testSupabaseConnection();
-        console.log('[HOME] Connection test result:', result);
-        
-        // If connection is successful but we're having auth issues, check session directly
-        if (result.success) {
-          const { data, error } = await supabase.auth.getSession();
-          if (error) {
-            console.error('[HOME] Session check error:', error.message);
-          } else {
-            console.log('[HOME] Current session state:', data.session ? 'Active' : 'No session');
-          }
-        }
-      } catch (err) {
-        console.error('[HOME] Connection test failed:', err);
-      }
-    };
+    console.log('Homepage loaded - UI enhancements disabled to prevent reload loop');
     
-    // Run the connection test
-    testConnection();
-    
-    // Set a flag to prevent auth recovery on homepage
+    // Basic cleanup only
     if (typeof window !== 'undefined') {
-      sessionStorage.setItem('skipHomepageChecks', 'true');
-      
-      // Clear this flag after 30 seconds to allow recovery on other pages
-      setTimeout(() => {
-        if (window.location.pathname === '/' || window.location.pathname === '') {
-          console.log('Keeping homepage protection active');
-        } else {
-          console.log('Clearing homepage protection');
-          sessionStorage.removeItem('skipHomepageChecks');
-        }
-      }, 30000);
-    }
-    
-    // Check if loop prevention is active
-    if (typeof window !== 'undefined' && sessionStorage.getItem('homepageLoopPrevented') === 'true') {
-      console.log('Homepage reload loop prevention active, skipping initializations');
-      // Just clean up any problematic classes to be extra safe
       document.body.classList.remove('loading-navigation');
       document.body.classList.remove('navigation-stuck');
-      document.body.classList.remove('auth-corrupted');
-      return;
-    }
-    
-    // Initialize enhancements
-    initUIEnhancements();
-    
-    // Track page loads to detect potential reload loops
-    if (typeof window !== 'undefined') {
-      // Get current reload count
-      const reloadCount = parseInt(sessionStorage.getItem('homepageReloadCount') || '0', 10);
-      
-      // If we've reloaded too many times in a short period, enable protection
-      if (reloadCount > 3) {
-        console.warn('Detected potential reload loop, enabling protection');
-        sessionStorage.setItem('homepageLoopPrevented', 'true');
-        
-        // Clear this prevention after some time
-        setTimeout(() => {
-          sessionStorage.removeItem('homepageLoopPrevented');
-          sessionStorage.setItem('homepageReloadCount', '0');
-        }, 60000); // 1 minute
-      } else {
-        // Increment reload count
-        sessionStorage.setItem('homepageReloadCount', (reloadCount + 1).toString());
-        
-        // Reset count after a timeout
-        setTimeout(() => {
-          sessionStorage.setItem('homepageReloadCount', '0');
-        }, 10000); // 10 second window for counting reloads
-      }
-      
-      // Clear any problematic classes
-      document.body.classList.remove('loading-navigation');
-      document.body.classList.remove('navigation-stuck');
-      document.body.classList.remove('auth-corrupted');
-      
-      // Reset homepage reload counter on deliberate navigation
-      const resetReloadCount = () => {
-        sessionStorage.setItem('homepageReloadCount', '0');
-      };
-      
-      // Add event listener to links to reset the counter on deliberate navigation
-      const links = document.querySelectorAll('a');
-      links.forEach(link => {
-        link.addEventListener('click', resetReloadCount);
-      });
-      
-      return () => {
-        // Cleanup
-        links.forEach(link => {
-          link.removeEventListener('click', resetReloadCount);
-        });
-      };
     }
   }, []);
 
@@ -278,24 +185,22 @@ export default function Home() {
               </div>
             </div>
             
-            <div className="relative rounded-xl overflow-hidden shadow-lg">
-              <div className="aspect-w-4 aspect-h-3 hero-image">
-                <Image 
-                  src="/images/services/doorstep-repair-tech.jpg" 
-                  alt="Technician repairing a device at customer's doorstep" 
-                  className="object-cover"
-                  layout="fill"
-                  priority={true}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
-                  <div className="p-6">
-                    <div className="inline-block bg-accent-500 text-white text-sm px-3 py-1 rounded-full mb-3 hero-badge">
-                      Doorstep Service
-                    </div>
-                    <p className="text-white text-xl font-bold">
-                      Skip the repair shop. We come to you!
-                    </p>
+            <div className="relative rounded-xl overflow-hidden shadow-lg h-80">
+              <Image 
+                src="/images/services/doorstep-repair-tech.jpg" 
+                alt="Technician repairing a device at customer's doorstep" 
+                className="object-cover"
+                fill={true}
+                priority={true}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
+                <div className="p-6">
+                  <div className="inline-block bg-accent-500 text-white text-sm px-3 py-1 rounded-full mb-3 hero-badge">
+                    Doorstep Service
                   </div>
+                  <p className="text-white text-xl font-bold">
+                    Skip the repair shop. We come to you!
+                  </p>
                 </div>
               </div>
             </div>
@@ -383,17 +288,17 @@ export default function Home() {
               {deviceBrands.map((brand) => (
                 <button
                   key={brand.id}
-                  className={`flex flex-col items-center justify-center p-4 border rounded-lg transition-colors ${
+                  className={`flex flex-col items-center justify-center p-5 border rounded-lg transition-colors min-h-[100px] ${
                     selectedBrand === brand.id 
                       ? 'border-primary-500 bg-primary-50' 
                       : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
                   }`}
                   onClick={() => setSelectedBrand(brand.id)}
                 >
-                  <div className="relative w-12 h-12 mb-2">
+                  <div className="relative w-28 h-24 mb-2 flex items-center justify-center">
                     <BrandImage src={brand.image} alt={brand.name} />
                   </div>
-                  <span className="text-sm font-medium">{brand.name}</span>
+                  <span className="text-xs font-medium text-center text-gray-700">{brand.name}</span>
                 </button>
               ))}
             </div>
@@ -402,7 +307,7 @@ export default function Home() {
             {selectedBrand && (
               <>
                 <h3 className="text-2xl font-bold mb-6 text-center">Select Your Issue</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
                   {commonIssues[deviceType].map((issue) => (
                     <button
                       key={issue.id}
@@ -438,11 +343,9 @@ export default function Home() {
                     deviceType === 'laptop' ? 'laptop' : 'tablet'
                   } {selectedIssue} issue at your doorstep!
                 </p>
-                <Link href="/book-online/">
-                  <a className="btn-primary text-lg inline-block">
+                <Link href="/book-online/" className="btn-primary text-lg inline-block">
                     See Pricing & Book Now
-                  </a>
-                </Link>
+                  </Link>
               </div>
             )}
           </div>
@@ -455,25 +358,25 @@ export default function Home() {
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose The Travelling Technicians</h2>
             <p className="text-xl text-primary-100 max-w-3xl mx-auto">
-              Thousands of satisfied customers across the Lower Mainland
+              Growing fast with satisfied customers across the Lower Mainland
             </p>
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="text-center" data-stat="repairs">
-              <div className="text-4xl md:text-5xl font-bold mb-2">5,000+</div>
+              <div className="text-4xl md:text-5xl font-bold mb-2 text-accent-400">150+</div>
               <p className="text-primary-100">Devices Repaired</p>
             </div>
             <div className="text-center" data-stat="sameDay">
-              <div className="text-4xl md:text-5xl font-bold mb-2">92%</div>
-              <p className="text-primary-100">Same Day Repairs</p>
+              <div className="text-4xl md:text-5xl font-bold mb-2 text-accent-400">95%</div>
+              <p className="text-primary-100">Same Day Service</p>
             </div>
             <div className="text-center" data-stat="rating">
-              <div className="text-4xl md:text-5xl font-bold mb-2">4.9</div>
-              <p className="text-primary-100">Average Rating</p>
+              <div className="text-4xl md:text-5xl font-bold mb-2 text-accent-400">4.8</div>
+              <p className="text-primary-100">Customer Rating</p>
             </div>
             <div className="text-center" data-stat="warranty">
-              <div className="text-4xl md:text-5xl font-bold mb-2">90</div>
+              <div className="text-4xl md:text-5xl font-bold mb-2 text-accent-400">90</div>
               <p className="text-primary-100">Days Warranty</p>
             </div>
           </div>
@@ -590,18 +493,16 @@ export default function Home() {
             </p>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
             {[
               { name: 'Vancouver', id: 'vancouver' },
               { name: 'Burnaby', id: 'burnaby' },
               { name: 'Richmond', id: 'richmond' },
-              { name: 'Surrey', id: 'surrey' },
-              { name: 'Coquitlam', id: 'coquitlam' },
               { name: 'New Westminster', id: 'newWestminster' },
               { name: 'North Vancouver', id: 'northVancouver' },
               { name: 'West Vancouver', id: 'westVancouver' },
-              { name: 'Delta', id: 'delta' },
-              { name: 'Langley', id: 'langley' }
+              { name: 'Coquitlam', id: 'coquitlam' },
+              { name: 'Chilliwack', id: 'chilliwack' }
             ].map((area, index) => (
               <div 
                 key={index}
@@ -630,11 +531,9 @@ export default function Home() {
             <p className="text-xl mb-8 max-w-3xl mx-auto">
               Book now and get your device repaired at your doorstep by certified technicians.
             </p>
-            <Link href="/book-online/">
-              <a className="btn-accent text-center inline-block text-lg">
+            <Link href="/book-online/" className="btn-accent text-center inline-block text-lg">
                 Book Your Repair Now
-              </a>
-            </Link>
+              </Link>
             <p className="mt-4 text-primary-100">
               Most repairs completed in 30-60 minutes with 90-day warranty
             </p>

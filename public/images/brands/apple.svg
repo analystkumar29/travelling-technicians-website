@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Perfectly centered Apple logo -->
+  <g transform="translate(50,50)">
+    <!-- Apple body with symmetric design -->
+    <path d="M-15,-20 C-20,-20 -25,-15 -25,-8 C-25,5 -20,20 -10,20 L10,20 C20,20 25,5 25,-8 C25,-15 20,-20 15,-20 L10,-20 C8,-12 4,-12 2,-20 Z" fill="#333"/>
+    <!-- Apple bite (right side) -->
+    <circle cx="12" cy="-5" r="7" fill="white"/>
+    <!-- Apple stem/leaf -->
+    <path d="M-2,-20 C-2,-25 3,-27 7,-25 C5,-22 1,-20 -2,-20 Z" fill="#333"/>
+  </g>
+</svg> 

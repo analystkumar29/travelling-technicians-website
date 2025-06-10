@@ -7,26 +7,17 @@ import '@/styles/homepage-enhancements.css';
 import '@/styles/header-fix.css';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
-import Script from 'next/script';
-import ErrorBoundary from '@/components/ErrorBoundary';
-import GlobalErrorHandler from '@/components/GlobalErrorHandler';
-import RouterErrorGuard from '@/components/RouterErrorGuard';
-import FallbackContent from '@/components/FallbackContent';
 import { useEffect, useState } from 'react';
-import { setupGlobalErrorHandlers } from '@/utils/errorHandling';
-import { BookingProvider } from '@/context/BookingContext';
-import { AuthProvider } from '@/context/AuthContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-// Using require to bypass TypeScript errors for these modules
-// @ts-ignore
-const ErrorProvider = require('@/context/ErrorContext').ErrorProvider;
-// @ts-ignore
-const analytics = require('@/utils/analytics').default;
-// @ts-ignore
-const NextjsRouterLoader = require('@/components/NextjsRouterLoader').default;
 
-// routerFixScript has been moved to _document.tsx
+// Analytics loading with fallback
+const analytics = (() => {
+  try {
+    return require('@/utils/analytics').default;
+  } catch (e) {
+    return { trackPageView: () => {} };
+  }
+})();
 
 function SafeHydrate({ children }: { children: React.ReactNode }) {
   const [isClient, setIsClient] = useState(false);
@@ -35,57 +26,13 @@ function SafeHydrate({ children }: { children: React.ReactNode }) {
     setIsClient(true);
   }, []);
   
-  // If we're rendering on the server, return a simpler version
-  if (!isClient) {
-    return <div style={{ padding: 20 }}>Loading...</div>;
+  // In development, don't delay rendering - this breaks Fast Refresh
+  if (process.env.NODE_ENV === 'development') {
+    return <>{children}</>;
   }
   
-  return (
-    <div suppressHydrationWarning>
-      {typeof window === 'undefined' ? null : children}
-    </div>
-  );
-}
-
-function CustomErrorBoundary({ children }: { children: React.ReactNode }) {
-  const [hasError, setHasError] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  
-  useEffect(() => {
-    const handleError = (error: ErrorEvent) => {
-      console.error("Caught in error boundary:", error);
-      setHasError(true);
-      setError(error.error);
-    };
-    
-    window.addEventListener('error', handleError);
-    return () => window.removeEventListener('error', handleError);
-  }, []);
-  
-  if (hasError) {
-    return (
-      <div style={{ 
-        padding: '20px', 
-        margin: '20px', 
-        border: '1px solid red',
-        borderRadius: '5px' 
-      }}>
-        <h1>Something went wrong.</h1>
-        <p>Error: {error?.message || 'Unknown error'}</p>
-        <button onClick={() => window.location.reload()}>
-          Reload Page
-        </button>
-        <pre style={{ 
-          marginTop: '20px', 
-          padding: '10px', 
-          background: '#f5f5f5', 
-          overflow: 'auto',
-          maxHeight: '200px' 
-        }}>
-          {error?.stack}
-        </pre>
-      </div>
-    );
+  if (!isClient) {
+    return <div>Loading...</div>;
   }
   
   return <>{children}</>;
@@ -93,12 +40,20 @@ function CustomErrorBoundary({ children }: { children: React.ReactNode }) {
 
 export default function App({ Component, pageProps }: AppProps) {
   const [queryClient] = useState(() => new QueryClient());
-  // Set up global error handlers when the app mounts
+  
   useEffect(() => {
-    setupGlobalErrorHandlers();
-
-    // Register service worker
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+    // Basic error handling
+    const handleError = (event: ErrorEvent) => {
+      if (event.message && event.message.includes('router')) {
+        console.warn('Router error suppressed:', event.message);
+        event.preventDefault();
+      }
+    };
+    
+    window.addEventListener('error', handleError);
+    
+    // Register service worker only in production
+    if (process.env.NODE_ENV === 'production' && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
           .then(registration => {
@@ -109,13 +64,14 @@ export default function App({ Component, pageProps }: AppProps) {
           });
       });
     }
+    
+    return () => window.removeEventListener('error', handleError);
   }, []);
 
   // Track page views
   useEffect(() => {
     analytics.trackPageView();
     
-    // Mark content as loaded after a short delay to ensure components have rendered
     const timer = setTimeout(() => {
       document.body.classList.add('content-loaded');
     }, 1000);
@@ -124,44 +80,28 @@ export default function App({ Component, pageProps }: AppProps) {
   }, []);
 
   return (
-    <SafeHydrate>
-      <CustomErrorBoundary>
+    <>
+      <Head>
+        <title>The Travelling Technicians | Mobile & Laptop Repair</title>
+        <meta name="description" content="Expert mobile phone and laptop repair with convenient doorstep service across the Lower Mainland, BC. Same-day service available with 1-year warranty." />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        
+        {/* Favicon Configuration */}
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="manifest" href="/site.webmanifest" />
+        <meta name="theme-color" content="#0d9488" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/favicons/favicon-192x192.png" />
+        <link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png" />
+      </Head>
+
+      <SafeHydrate>
         <QueryClientProvider client={queryClient}>
-          <ErrorProvider>
-            <AuthProvider>
-              <BookingProvider>
-                <Head>
-                  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-                  <meta name="description" content="The Travelling Technicians - Mobile phone and laptop repair with doorstep service in Vancouver, Burnaby & the Lower Mainland. Same-day repairs by certified technicians." />
-                  <meta name="theme-color" content="#0076be" />
-                  <link rel="icon" href="/favicon.ico" />
-                  <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png" />
-                  <link rel="icon" type="image/png" sizes="192x192" href="/favicons/favicon-192x192.png" />
-                  <link rel="apple-touch-icon" href="/favicons/favicon-192x192.png" />
-                  <link rel="manifest" href="/manifest.json" />
-                  <title>The Travelling Technicians | Mobile Doorstep Repair Service</title>
-                </Head>
-                
-                {/* Early error prevention scripts moved to _document.tsx */}
-                {/* 
-                <Script id=\"next-router-fix\" strategy=\"beforeInteractive\">
-                  {routerFixScript}
-                </Script>
-                
-                <Script id=\"error-handler\" src=\"/error-handler.js\" strategy=\"beforeInteractive\" />
-                */}
-                
-                <RouterErrorGuard>
-                  <NextjsRouterLoader />
-                  <GlobalErrorHandler />
-                  <Component {...pageProps} />
-                </RouterErrorGuard>
-                {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
-              </BookingProvider>
-            </AuthProvider>
-          </ErrorProvider>
+          <Component {...pageProps} />
         </QueryClientProvider>
-      </CustomErrorBoundary>
-    </SafeHydrate>
+      </SafeHydrate>
+    </>
   );
 } 

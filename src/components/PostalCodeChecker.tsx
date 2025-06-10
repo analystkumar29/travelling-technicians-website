@@ -486,11 +486,7 @@ export default function PostalCodeChecker({
           <div className="mt-4 text-sm text-gray-500 flex items-start">
             <FaInfoCircle className="h-4 w-4 mr-2 text-gray-400 mt-0.5" />
             <p>
-              We service most areas in the Lower Mainland, including Vancouver, Burnaby, Richmond, 
-              Surrey, Coquitlam, Port Coquitlam, North Vancouver, West Vancouver, New Westminster, 
-              Delta, Langley, Maple Ridge, Pitt Meadows, and White Rock. 
-              We also cover Squamish, Whistler, Victoria, Nanaimo, and Fraser Valley 
-              communities up to Chilliwack with adjusted service timeframes and travel fees for some areas.
+              We service most areas in the Lower Mainland, including Vancouver, Burnaby, Richmond, New Westminster, North Vancouver, West Vancouver, Coquitlam, and Chilliwack. Service timeframes and travel fees may vary for some areas.
             </p>
           </div>
         )}

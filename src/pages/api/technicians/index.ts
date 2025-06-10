@@ -15,8 +15,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return handleGetTechnicians(req, res);
     case 'POST':
       return handleCreateTechnician(req, res);
+    case 'PUT':
+      return handleUpdateTechnician(req, res);
     default:
-      res.setHeader('Allow', ['GET', 'POST']);
+      res.setHeader('Allow', ['GET', 'POST', 'PUT']);
       return res.status(405).json({ error: `Method ${method} Not Allowed` });
   }
 }
@@ -96,34 +98,40 @@ async function handleCreateTechnician(req: NextApiRequest, res: NextApiResponse)
   }
 }
 
-// Simple API auth middleware
-const withApiAuth = (handler: Function) => async (req: NextApiRequest, res: NextApiResponse) => {
-  // Check for authorization header
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Missing or invalid authorization header' });
-  }
-
-  // Validate the token
-  const token = authHeader.split(' ')[1];
-  
+/**
+ * Handle PUT request to update a technician
+ */
+async function handleUpdateTechnician(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const { data, error } = await supabase.auth.getUser(token);
+    const { id } = req.query;
+    const { body } = req;
     
-    if (error || !data.user) {
-      return res.status(401).json({ error: 'Invalid or expired token' });
+    if (!id) {
+      return res.status(400).json({ error: 'Technician ID is required' });
     }
     
-    // Add user to request object for use in handler
-    (req as any).user = data.user;
+    // Update the technician
+    const { data, error } = await supabase
+      .from('technicians')
+      .update(body)
+      .eq('id', id)
+      .select();
     
-    // Call the original handler
-    return handler(req, res);
+    if (error) {
+      logger.error('Error updating technician:', error);
+      return res.status(500).json({ error: 'Failed to update technician' });
+    }
+    
+    if (!data || data.length === 0) {
+      return res.status(404).json({ error: 'Technician not found' });
+    }
+    
+    return res.status(200).json(data[0]);
   } catch (error) {
-    logger.error('Auth middleware error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    logger.error('Unexpected error in update technician API:', error);
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
-};
+}
 
-// Export with auth middleware
-export default withApiAuth(handler); 
+// Export the handler directly
+export default handler; 

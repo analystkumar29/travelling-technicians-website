@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 280 80" xmlns="http://www.w3.org/2000/svg">
+  <!-- Huawei flower/sunburst icon -->
+  <g transform="translate(40,40)">
+    <!-- 8 petals arranged in circle -->
+    <!-- Petal 1 (top) -->
+    <path d="M0,-25 Q8,-18 15,-10 Q8,-2 0,5 Q-8,-2 -15,-10 Q-8,-18 0,-25 Z" fill="#FF0000" transform="rotate(0)"/>
+    <!-- Petal 2 (top-right) -->
+    <path d="M0,-25 Q8,-18 15,-10 Q8,-2 0,5 Q-8,-2 -15,-10 Q-8,-18 0,-25 Z" fill="#FF0000" transform="rotate(45)"/>
+    <!-- Petal 3 (right) -->
+    <path d="M0,-25 Q8,-18 15,-10 Q8,-2 0,5 Q-8,-2 -15,-10 Q-8,-18 0,-25 Z" fill="#FF0000" transform="rotate(90)"/>
+    <!-- Petal 4 (bottom-right) -->
+    <path d="M0,-25 Q8,-18 15,-10 Q8,-2 0,5 Q-8,-2 -15,-10 Q-8,-18 0,-25 Z" fill="#FF0000" transform="rotate(135)"/>
+    <!-- Petal 5 (bottom) -->
+    <path d="M0,-25 Q8,-18 15,-10 Q8,-2 0,5 Q-8,-2 -15,-10 Q-8,-18 0,-25 Z" fill="#FF0000" transform="rotate(180)"/>
+    <!-- Petal 6 (bottom-left) -->
+    <path d="M0,-25 Q8,-18 15,-10 Q8,-2 0,5 Q-8,-2 -15,-10 Q-8,-18 0,-25 Z" fill="#FF0000" transform="rotate(225)"/>
+    <!-- Petal 7 (left) -->
+    <path d="M0,-25 Q8,-18 15,-10 Q8,-2 0,5 Q-8,-2 -15,-10 Q-8,-18 0,-25 Z" fill="#FF0000" transform="rotate(270)"/>
+    <!-- Petal 8 (top-left) -->
+    <path d="M0,-25 Q8,-18 15,-10 Q8,-2 0,5 Q-8,-2 -15,-10 Q-8,-18 0,-25 Z" fill="#FF0000" transform="rotate(315)"/>
+  </g>
+  
+  <!-- HUAWEI text -->
+  <text x="140" y="48" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="28" fill="#000000" text-anchor="middle">HUAWEI</text>
+</svg> 

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
+  <!-- Red square background with rounded corners -->
+  <rect x="5" y="10" width="40" height="40" rx="6" ry="6" fill="#EB0028"/>
+  
+  <!-- White "1" symbol -->
+  <path d="M18 18 L18 42 L22 42 L22 22 L26 22 L26 18 Z" fill="white"/>
+  
+  <!-- White "+" symbol -->
+  <path d="M30 24 L30 28 L34 28 L34 32 L38 32 L38 28 L42 28 L42 24 L38 24 L38 20 L34 20 L34 24 Z" fill="white"/>
+  
+  <!-- ONEPLUS text -->
+  <text x="60" y="38" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="18" fill="black" letter-spacing="1.5">ONEPLUS</text>
+</svg> 

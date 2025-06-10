@@ -359,11 +359,9 @@ export default function ContactPage() {
                       <p className="text-gray-600 mb-4">
                         We provide doorstep repair services throughout the Lower Mainland. Check if we service your area:
                       </p>
-                      <Link href="/service-areas">
-                        <a className="btn-outline">
+                      <Link href="/service-areas" className="btn-outline">
                           View Service Areas
-                        </a>
-                      </Link>
+                        </Link>
                     </div>
                   </div>
                 </div>
@@ -410,14 +408,12 @@ export default function ContactPage() {
               <p className="text-gray-600 mb-4">
                 Learn about our convenient process for bringing repair services directly to your location.
               </p>
-              <Link href="/faq#process-1">
-                <a className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
+              <Link href="/faq#process-1" className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
                   Read Answer
                   <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
-                </a>
-              </Link>
+                </Link>
             </div>
 
             <div className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
@@ -425,14 +421,12 @@ export default function ContactPage() {
               <p className="text-gray-600 mb-4">
                 Find out which areas in the Lower Mainland we service with our doorstep repair.
               </p>
-              <Link href="/faq#locations-1">
-                <a className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
+              <Link href="/faq#locations-1" className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
                   Read Answer
                   <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
-                </a>
-              </Link>
+                </Link>
             </div>
 
             <div className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
@@ -440,23 +434,19 @@ export default function ContactPage() {
               <p className="text-gray-600 mb-4">
                 Get details about our competitive pricing, payment options, and warranty coverage.
               </p>
-              <Link href="/faq#pricing-1">
-                <a className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
+              <Link href="/faq#pricing-1" className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
                   Read Answer
                   <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
-                </a>
-              </Link>
+                </Link>
             </div>
           </div>
 
           <div className="mt-8 text-center">
-            <Link href="/faq">
-              <a className="btn-outline">
+            <Link href="/faq" className="btn-outline">
                 View All FAQs
-              </a>
-            </Link>
+              </Link>
           </div>
         </div>
       </section>
@@ -469,11 +459,9 @@ export default function ContactPage() {
             <p className="text-xl mb-8 max-w-3xl mx-auto">
               Skip the trip to a repair shop. Our technicians come to your location across the Lower Mainland.
             </p>
-            <Link href="/book-online">
-              <a className="btn-accent text-center inline-block">
+            <Link href="/book-online" className="btn-accent text-center inline-block">
                 Book Doorstep Repair
-              </a>
-            </Link>
+              </Link>
           </div>
         </div>
       </section>

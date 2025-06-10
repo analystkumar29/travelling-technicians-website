@@ -194,52 +194,8 @@ export default async function handler(
       fields: Object.keys(dbFieldsOnly)
     });
 
-    // Always use mock implementation in development mode
-    if (process.env.NODE_ENV === 'development') {
-      
-      apiLogger.warn('Using mock implementation for database in development mode');
-      
-      // Create a mock booking object
-      const mockBooking = {
-        id: `mock-${Date.now()}`,
-        created_at: new Date().toISOString(),
-        ...dbFieldsOnly
-      };
-      
-      // Try to send confirmation email (if configured)
-      try {
-        await sendBookingConfirmationEmail({
-          to: normalizedBookingData.customerEmail,
-          name: normalizedBookingData.customerName,
-          referenceNumber,
-          appointmentDate: normalizedBookingData.appointmentDate,
-          appointmentTime: normalizedBookingData.appointmentTime,
-          service: normalizedBookingData.serviceType,
-          deviceType: normalizedBookingData.deviceType,
-          deviceBrand: normalizedBookingData.deviceBrand,
-          deviceModel: normalizedBookingData.deviceModel,
-          address: normalizedBookingData.address,
-          city: normalizedBookingData.city,
-          postalCode: normalizedBookingData.postalCode,
-          province: normalizedBookingData.province
-        });
-        
-        apiLogger.info('Confirmation email sent (or simulated)', { email: normalizedBookingData.customerEmail });
-      } catch (emailError) {
-        // Log the error but don't fail the request
-        apiLogger.error('Failed to send confirmation email', {
-          error: emailError instanceof Error ? emailError.message : 'Unknown error'
-        });
-      }
-      
-      // Return successful response with mock data
-      return res.status(200).json({
-        success: true,
-        message: 'Booking created successfully (Development Mode)',
-        reference: referenceNumber,
-        booking: mockBooking
-      });
-    }
+    // Use real database implementation
+    apiLogger.info('Using real database implementation');
     
     // Get Supabase client with service role
     const supabase = getServiceSupabase();

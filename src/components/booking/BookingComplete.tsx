@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { AuthContext } from '@/context/AuthContext';
 import { useBookingForm } from '@/hooks/useBookingForm';
 import { supabase } from '@/utils/supabaseClient';
 import { FaCheckCircle, FaRegCalendarAlt, FaMapMarkerAlt, FaTools, FaMobileAlt, FaLaptop } from 'react-icons/fa';
@@ -28,8 +27,6 @@ const BookingComplete: React.FC<BookingCompleteProps> = ({
 }) => {
   const router = useRouter();
   const { state } = useBookingForm();
-  const auth = useContext(AuthContext);
-  const { isAuthenticated } = auth || {};
 
   // Format date for better display
   const formatDate = (dateString: string) => {
@@ -44,13 +41,6 @@ const BookingComplete: React.FC<BookingCompleteProps> = ({
     } catch (e) {
       return dateString;
     }
-  };
-
-  // Function to handle the registration flow
-  const handleRegister = () => {
-    // Store booking reference in session storage to associate it with the account after registration
-    sessionStorage.setItem('pendingBookingReference', bookingReference);
-    router.push(`/auth/register?email=${encodeURIComponent(customerEmail)}&redirect=/account/bookings`);
   };
 
   return (
@@ -89,62 +79,15 @@ const BookingComplete: React.FC<BookingCompleteProps> = ({
         </div>
       </div>
 
-      {/* Account creation prompt for non-authenticated users */}
-      {!isAuthenticated && (
-        <div className="bg-blue-50 border-l-4 border-blue-400 p-5 rounded-lg mb-8">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-blue-800">
-                Create an account to manage your bookings
-              </h3>
-              <div className="mt-2 text-sm text-blue-700">
-                <p>
-                  Register now to track your repair status, view warranty information, and schedule future repairs more easily.
-                </p>
-                <div className="mt-4">
-                  <button
-                    type="button"
-                    onClick={handleRegister}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    Create Account
-                  </button>
-                  <Link href={`/auth/login?email=${encodeURIComponent(customerEmail)}&redirect=/account/bookings`}>
-                    <a className="ml-4 inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                      I Already Have an Account
-                    </a>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="text-center space-y-4">
         <p className="text-gray-600">
           We've sent a confirmation email to <span className="font-semibold">{customerEmail}</span> with these details.
         </p>
         
         <div className="border-t border-gray-200 pt-6 mt-6">
-          <Link href="/">
-            <a className="text-primary-600 hover:text-primary-800 font-medium">
+          <Link href="/" className="text-primary-600 hover:text-primary-800 font-medium">
               Return to Home
-            </a>
-          </Link>
-
-          {isAuthenticated && (
-            <Link href="/account/bookings">
-              <a className="ml-6 text-primary-600 hover:text-primary-800 font-medium">
-                View All Bookings
-              </a>
             </Link>
-          )}
         </div>
       </div>
     </div>

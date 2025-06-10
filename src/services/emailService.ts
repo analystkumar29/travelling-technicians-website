@@ -132,9 +132,9 @@ export async function sendBookingConfirmationEmail(data: BookingConfirmationEmai
       isServer: typeof window === 'undefined'
     });
     
-    // In development mode, simulate sending the email
-    if (process.env.NODE_ENV === 'development') {
-      emailLogger.info('DEVELOPMENT MODE: Simulating email sending', {
+    // Check if SendGrid is configured before attempting to send
+    if (!process.env.SENDGRID_API_KEY) {
+      emailLogger.warn('SendGrid API key not configured - simulating email', {
         to: data.to,
         subject: 'Your Booking Confirmation - The Travelling Technicians',
         reference: data.referenceNumber,

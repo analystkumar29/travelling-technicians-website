@@ -44,7 +44,7 @@ const routerFixScript = `
     if (window.history && window.history.state) {
       try {
         const currentState = window.history.state;
-        constnewState = ensureValidHistoryState(currentState);
+        const newState = ensureValidHistoryState(currentState);
         if (currentState !== newState) { // Avoid unnecessary replaceState if object is the same
             window.history.replaceState(newState, document.title, window.location.href);
         }

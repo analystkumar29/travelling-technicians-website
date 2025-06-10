@@ -6,7 +6,14 @@ module.exports = (phase, { defaultConfig }) => {
     reactStrictMode: true,
     swcMinify: true,
     images: {
-      domains: ['images.unsplash.com'],
+      remotePatterns: [
+        {
+          protocol: 'https',
+          hostname: 'images.unsplash.com',
+          port: '',
+          pathname: '/**',
+        },
+      ],
     },
     // Enable asset copying from public folder to ensure manifest.json and favicons are properly included
     webpack: (config, { dev, isServer }) => {
@@ -39,8 +46,8 @@ module.exports = (phase, { defaultConfig }) => {
       }
       return config;
     },
-    // Add trailing slashes for better compatibility
-    trailingSlash: true,
+    // Remove trailing slash to fix API routing
+    trailingSlash: false,
     output: 'standalone',
     experimental: {
       // Only use experimental options that are supported in Next.js 12.3.4

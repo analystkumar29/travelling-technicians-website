@@ -5,12 +5,12 @@ import { FaMapMarkerAlt, FaCheckCircle, FaRegClock, FaBuilding, FaHome, FaStore 
 import PostalCodeChecker from '@/components/PostalCodeChecker';
 import InteractiveMap from '@/components/InteractiveMap';
 
-// Location data for service areas
+// Location data for service areas - focused on target cities
 const serviceAreas = [
   {
     id: 'vancouver',
     name: 'Vancouver',
-    description: 'Serving all Vancouver neighborhoods including Downtown, Kitsilano, Point Grey, West End, Yaletown, Mount Pleasant, Commercial Drive, and more.',
+    description: 'Serving all Vancouver neighborhoods including Downtown, Kitsilano, Point Grey, West End, Yaletown, Mount Pleasant, and Commercial Drive.',
     popular: true,
     sameDay: true,
     image: 'https://images.unsplash.com/photo-1560814304-4f05b62af116'
@@ -32,42 +32,10 @@ const serviceAreas = [
     image: 'https://images.unsplash.com/photo-1568626037031-fd9ed705dfa0'
   },
   {
-    id: 'surrey',
-    name: 'Surrey',
-    description: 'Comprehensive coverage across Surrey including Whalley, Guildford, Fleetwood, Newton, and Cloverdale areas.',
-    popular: true,
-    sameDay: true,
-    image: 'https://images.unsplash.com/photo-1585535852353-26b2e868b747'
-  },
-  {
-    id: 'coquitlam',
-    name: 'Coquitlam',
-    description: 'Service throughout Coquitlam including Maillardville, Town Centre, Westwood Plateau, and Burke Mountain.',
-    popular: false,
-    sameDay: true,
-    image: 'https://images.unsplash.com/photo-1599176043380-e8c361a41a3b'
-  },
-  {
-    id: 'port-coquitlam',
-    name: 'Port Coquitlam',
-    description: 'Doorstep repair service available throughout Port Coquitlam with efficient scheduling options.',
-    popular: false,
-    sameDay: true,
-    image: 'https://images.unsplash.com/photo-1599176044573-6c1b21a506f3'
-  },
-  {
-    id: 'port-moody',
-    name: 'Port Moody',
-    description: 'Serving the Port Moody area including Glenayre, Heritage Mountain, and Inlet Centre.',
-    popular: false,
-    sameDay: true,
-    image: 'https://images.unsplash.com/photo-1602087594298-6dc10c830a66'
-  },
-  {
     id: 'new-westminster',
     name: 'New Westminster',
     description: 'Complete coverage of New Westminster including Uptown, Downtown, Sapperton, and Queensborough.',
-    popular: false,
+    popular: true,
     sameDay: true,
     image: 'https://images.unsplash.com/photo-1599177053437-ef35f6c2de14'
   },
@@ -83,90 +51,25 @@ const serviceAreas = [
     id: 'west-vancouver',
     name: 'West Vancouver',
     description: 'Service available throughout West Vancouver including Ambleside, Dundarave, and British Properties.',
-    popular: false,
+    popular: true,
     sameDay: true,
     image: 'https://images.unsplash.com/photo-1584286595398-5e06e51ad185'
   },
   {
-    id: 'delta',
-    name: 'Delta',
-    description: 'Covering North Delta, Ladner, and Tsawwassen communities with scheduled repair services.',
-    popular: false,
-    sameDay: false,
-    image: 'https://images.unsplash.com/photo-1622982638356-66b456ef2b11'
-  },
-  {
-    id: 'langley',
-    name: 'Langley',
-    description: 'Serving both Langley City and Township areas, including Willowbrook, Walnut Grove, and Aldergrove.',
-    popular: false,
-    sameDay: false,
-    image: 'https://images.unsplash.com/photo-1569953391878-7147e8e35f9c'
-  },
-  {
-    id: 'white-rock',
-    name: 'White Rock',
-    description: 'Doorstep repair service available throughout the White Rock area, including the beachfront and uptown areas.',
-    popular: false,
-    sameDay: false,
-    image: 'https://images.unsplash.com/photo-1571866735550-7d01348c5787'
-  },
-  {
-    id: 'maple-ridge',
-    name: 'Maple Ridge',
-    description: 'Service available in the Maple Ridge area with scheduled appointments.',
-    popular: false,
-    sameDay: false,
-    image: 'https://images.unsplash.com/photo-1621872289209-a8218e95fec5'
-  },
-  {
-    id: 'pitt-meadows',
-    name: 'Pitt Meadows',
-    description: 'Covering the Pitt Meadows area with our convenient doorstep repair service.',
-    popular: false,
-    sameDay: false,
-    image: 'https://images.unsplash.com/photo-1596394516671-a90d15f50991'
-  },
-  // New locations
-  {
-    id: 'abbotsford',
-    name: 'Abbotsford',
-    description: 'Providing device repair services throughout Abbotsford including downtown, University area, and Clearbrook with scheduled appointments.',
-    popular: false,
-    sameDay: false,
-    image: 'https://images.unsplash.com/photo-1612815452771-2c59c5206735?q=80&w=200'
+    id: 'coquitlam',
+    name: 'Coquitlam',
+    description: 'Service throughout Coquitlam including Maillardville, Town Centre, Westwood Plateau, and Burke Mountain.',
+    popular: true,
+    sameDay: true,
+    image: 'https://images.unsplash.com/photo-1599176043380-e8c361a41a3b'
   },
   {
     id: 'chilliwack',
     name: 'Chilliwack',
-    description: 'Extending our services to Chilliwack and surrounding areas with pre-scheduled visits for your device repair needs.',
+    description: 'Extending our services to Chilliwack and surrounding areas with scheduled visits for your device repair needs.',
     popular: false,
     sameDay: false,
     image: 'https://images.unsplash.com/photo-1604037502574-11207107f274?q=80&w=200'
-  },
-  {
-    id: 'squamish',
-    name: 'Squamish',
-    description: 'Bringing our mobile repair expertise to Squamish with regularly scheduled service days each week.',
-    popular: false,
-    sameDay: false,
-    image: 'https://images.unsplash.com/photo-1584006682522-dc17d6c0272e?q=80&w=200'
-  },
-  {
-    id: 'whistler',
-    name: 'Whistler',
-    description: 'Offering device repair services in Whistler including the Village and surrounding areas with scheduled appointments.',
-    popular: false,
-    sameDay: false,
-    image: 'https://images.unsplash.com/photo-1551706872-f0ead5b260c4?q=80&w=200'
-  },
-  {
-    id: 'mission',
-    name: 'Mission',
-    description: 'Providing device repair services to Mission residents with convenient scheduled appointments.',
-    popular: false,
-    sameDay: false,
-    image: 'https://images.unsplash.com/photo-1588499852531-61170e5add14?q=80&w=200'
   }
 ];
 
@@ -206,16 +109,12 @@ export default function ServiceAreasPage() {
               Our mobile repair technicians bring expert device repair services directly to your location throughout the Greater Vancouver area and beyond, from Whistler in the north to Chilliwack in the east.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/book-online">
-                <a className="btn-accent text-center">
+              <Link href="/book-online" className="btn-accent text-center">
                   Book a Repair
-                </a>
-              </Link>
-              <Link href="/contact">
-                <a className="btn-outline border-white text-white hover:bg-primary-600 text-center">
+                </Link>
+              <Link href="/contact" className="btn-outline border-white text-white hover:bg-primary-600 text-center">
                   Contact Us
-                </a>
-              </Link>
+                </Link>
             </div>
           </div>
         </div>
@@ -456,16 +355,12 @@ export default function ServiceAreasPage() {
               We bring expert repair service to your location across the Lower Mainland. Book your appointment now.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link href="/book-online">
-                <a className="btn-accent text-center">
+              <Link href="/book-online" className="btn-accent text-center">
                   Book Your Repair
-                </a>
-              </Link>
-              <Link href="/contact">
-                <a className="btn-outline border-white text-white hover:bg-primary-700 text-center">
+                </Link>
+              <Link href="/contact" className="btn-outline border-white text-white hover:bg-primary-700 text-center">
                   Contact Our Team
-                </a>
-              </Link>
+                </Link>
             </div>
             <p className="text-primary-100 mt-6">
               <FaMapMarkerAlt className="inline-block mr-1" /> Serving all major communities in the Greater Vancouver area
