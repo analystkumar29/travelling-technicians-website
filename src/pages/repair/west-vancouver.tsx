@@ -41,7 +41,7 @@ export default function WestVancouverRepairPage() {
   return (
     <Layout 
       title="Mobile & Laptop Repair West Vancouver | The Travelling Technicians"
-      description="Premium mobile and laptop repair in West Vancouver. Doorstep service to Ambleside, Dundarave, British Properties. Same-day iPhone, MacBook repair. Book online!"
+      metaDescription="Premium mobile and laptop repair in West Vancouver. Doorstep service to Ambleside, Dundarave, British Properties. Same-day iPhone, MacBook repair. Book online!"
     >
       {/* Hero Section */}
       <section className="pt-16 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">

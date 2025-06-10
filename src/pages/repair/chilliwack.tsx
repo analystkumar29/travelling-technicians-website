@@ -41,7 +41,7 @@ export default function ChilliwackRepairPage() {
   return (
     <Layout 
       title="Mobile & Laptop Repair Chilliwack | The Travelling Technicians"
-      description="Professional mobile and laptop repair in Chilliwack. Scheduled doorstep service for iPhone, MacBook, Samsung repair. Quality service in the Fraser Valley. Book online!"
+      metaDescription="Professional mobile and laptop repair in Chilliwack. Scheduled doorstep service for iPhone, MacBook, Samsung repair. Quality service in the Fraser Valley. Book online!"
     >
       {/* Hero Section */}
       <section className="pt-16 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">

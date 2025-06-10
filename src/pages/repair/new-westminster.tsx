@@ -40,7 +40,7 @@ export default function NewWestminsterRepairPage() {
   return (
     <Layout 
       title="Mobile & Laptop Repair New Westminster | The Travelling Technicians"
-      description="Professional mobile and laptop repair in New Westminster. Doorstep service to Uptown, Downtown, Queens Park. Same-day iPhone, MacBook repair. Book online!"
+      metaDescription="Professional mobile and laptop repair in New Westminster. Doorstep service to Uptown, Downtown, Queens Park. Same-day iPhone, MacBook repair. Book online!"
     >
       {/* Hero Section */}
       <section className="pt-16 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">

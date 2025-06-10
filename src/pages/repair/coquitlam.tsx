@@ -40,7 +40,7 @@ export default function CoquitlamRepairPage() {
   return (
     <Layout 
       title="Mobile & Laptop Repair Coquitlam | The Travelling Technicians"
-      description="Professional mobile and laptop repair in Coquitlam. Doorstep service to Town Centre, Westwood Plateau, Burke Mountain. Same-day iPhone, MacBook repair. Book online!"
+      metaDescription="Professional mobile and laptop repair in Coquitlam. Doorstep service to Town Centre, Westwood Plateau, Burke Mountain. Same-day iPhone, MacBook repair. Book online!"
     >
       {/* Hero Section */}
       <section className="pt-16 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">

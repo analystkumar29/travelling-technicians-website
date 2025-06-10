@@ -74,7 +74,7 @@ export default function VancouverRepairPage() {
   return (
     <Layout 
       title="Mobile & Laptop Repair Vancouver | The Travelling Technicians"
-      description="Professional mobile and laptop repair in Vancouver. Doorstep service to Downtown, Yaletown, Kitsilano, West End. Same-day iPhone, MacBook, Samsung repair. Book online!"
+      metaDescription="Professional mobile and laptop repair in Vancouver. Doorstep service to Downtown, Yaletown, Kitsilano, West End. Same-day iPhone, MacBook, Samsung repair. Book online!"
     >
       {/* Hero Section */}
       <section className="pt-16 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">

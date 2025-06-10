@@ -43,7 +43,7 @@ export default function RichmondRepairPage() {
   return (
     <Layout 
       title="Mobile & Laptop Repair Richmond | The Travelling Technicians"
-      description="Professional mobile and laptop repair in Richmond. Doorstep service to City Centre, Steveston, YVR area. Same-day iPhone, MacBook, Samsung repair. Book online!"
+      metaDescription="Professional mobile and laptop repair in Richmond. Doorstep service to City Centre, Steveston, YVR area. Same-day iPhone, MacBook, Samsung repair. Book online!"
     >
       {/* Hero Section */}
       <section className="pt-16 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
