@@ -29,17 +29,16 @@ const Header = () => {
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href="/" className="flex items-center">
-              <div className="w-14 h-14 relative mr-3">
+              <div className="w-20 h-20 relative mr-2">
                 <Image
                   src="/images/logo/logo-orange.png"
-                  alt="The Travelling Technicians"
+                  alt="Travelling Technicians Logo"
                   fill
-                  style={{ objectFit: 'contain' }}
                   priority
                 />
               </div>
               <div className="hidden sm:block font-semibold text-white leading-tight">
-                <span className="block text-sm">The Travelling</span>
+                <span className="block text-lg">Travelling</span>
                 <span className="block text-lg text-accent-400">Technicians</span>
               </div>
             </Link>

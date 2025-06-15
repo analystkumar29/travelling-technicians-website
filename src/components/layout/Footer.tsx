@@ -15,13 +15,16 @@ export default function Footer() {
                 <source srcSet="/images/logo.svg" type="image/svg+xml" />
                 <img 
                   src="/images/logo/logo-orange.png" 
-                  alt="The Travelling Technicians Logo" 
+                  alt="Travelling Technicians Logo" 
                   width={110} 
                   height={40} 
                   className="h-12 w-auto mb-2"
                 />
               </picture>
-              <h3 className="text-xl font-bold mt-2">The Travelling Technicians</h3>
+              <div className="font-semibold text-white leading-tight">
+                <span className="block text-lg">Travelling</span>
+                <span className="block text-lg text-accent-400">Technicians</span>
+              </div>
             </div>
             <p className="text-gray-300 mb-4">
               Expert mobile phone and laptop repair services at your doorstep across the Lower Mainland.
