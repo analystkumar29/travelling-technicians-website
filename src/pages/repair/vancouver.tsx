@@ -441,7 +441,7 @@ export default function VancouverRepairPage() {
             "@context": "https://schema.org",
             "@type": "LocalBusiness",
             "name": "The Travelling Technicians - Vancouver",
-            "image": "https://travellingtechnicians.ca/logo.png",
+            "image": "https://travellingtechnicians.ca/images/logo/logo-orange.png",
             "telephone": "(604) 555-1234",
             "address": {
               "@type": "PostalAddress",

@@ -14,7 +14,7 @@ export default function Footer() {
               <picture className="inline-block">
                 <source srcSet="/images/logo.svg" type="image/svg+xml" />
                 <img 
-                  src="/images/logo.png" 
+                  src="/images/logo/logo-orange.png" 
                   alt="The Travelling Technicians Logo" 
                   width={110} 
                   height={40} 

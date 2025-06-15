@@ -319,7 +319,7 @@ export default function WestVancouverRepairPage() {
             "@context": "https://schema.org",
             "@type": "LocalBusiness",
             "name": "The Travelling Technicians - West Vancouver",
-            "image": "https://travellingtechnicians.ca/logo.png",
+            "image": "https://travellingtechnicians.ca/images/logo/logo-orange.png",
             "telephone": "(604) 555-1234",
             "address": {
               "@type": "PostalAddress",
