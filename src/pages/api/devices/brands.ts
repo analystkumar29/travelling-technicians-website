@@ -91,8 +91,23 @@ export default async function handler(
     try {
       const { data: brands, error: brandsError } = await supabase
         .from('brands')
-        .select('*')
-        .eq('device_type', deviceType)
+        .select(`
+          id,
+          name,
+          display_name,
+          logo_url,
+          website_url,
+          is_active,
+          sort_order,
+          created_at,
+          updated_at,
+          device_types!inner(
+            id,
+            name,
+            display_name
+          )
+        `)
+        .eq('device_types.name', deviceType)
         .eq('is_active', true)
         .order('sort_order', { ascending: true })
         .order('name', { ascending: true });

@@ -95,21 +95,27 @@ export default async function handler(
     try {
       // Join brands and models tables to get models for specific brand and device type
       const { data: models, error: modelsError } = await supabase
-        .from('models')
+        .from('device_models')
         .select(`
           id,
           name,
+          display_name,
           brand_id,
           model_year,
           is_active,
+          is_featured,
           sort_order,
           created_at,
           brands!inner(
+            id,
             name,
-            device_type
+            display_name,
+            device_types!inner(
+              name
+            )
           )
         `)
-        .eq('brands.device_type', deviceType)
+        .eq('brands.device_types.name', deviceType)
         .eq('brands.name', brand)
         .eq('is_active', true)
         .order('sort_order', { ascending: true })
@@ -123,11 +129,14 @@ export default async function handler(
       const transformedModels = (models || []).map((model: any) => ({
         id: model.id,
         name: model.name,
+        display_name: model.display_name,
         brand_id: model.brand_id,
         brand_name: model.brands?.name,
-        device_type: model.brands?.device_type,
+        brand_display_name: model.brands?.display_name,
+        device_type: model.brands?.device_types?.name,
         model_year: model.model_year,
         is_active: model.is_active,
+        is_featured: model.is_featured,
         sort_order: model.sort_order,
         created_at: model.created_at
       }));
