@@ -10,13 +10,13 @@ import { testSupabaseConnection, supabase } from '@/utils/supabaseClient';
 // Component to render device brand image with proper dimensions
 const BrandImage = ({ src, alt }: { src: string, alt: string }) => {
   return (
-    <div className="relative w-24 h-24">
+    <div className="relative w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 mx-auto">
       <Image 
         src={src} 
         alt={alt}
         fill
         className="object-contain"
-        sizes="(max-width: 768px) 96px, 96px"
+        sizes="(max-width: 640px) 48px, (max-width: 768px) 64px, 80px"
       />
     </div>
   );
@@ -286,21 +286,21 @@ export default function Home() {
           <div className="bg-white rounded-lg shadow-sm p-8">
             {/* Brands Selection */}
             <h3 className="text-2xl font-bold mb-6 text-center">Choose Your Brand</h3>
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-4 mb-8 brand-selection">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4 md:gap-6 mb-8 brand-selection">
               {deviceBrands.map((brand) => (
                 <button
                   key={brand.id}
-                  className={`flex flex-col items-center justify-center p-5 border rounded-lg transition-colors min-h-[100px] ${
+                  className={`flex flex-col items-center justify-center p-2 sm:p-3 md:p-4 border rounded-lg transition-colors min-h-[80px] sm:min-h-[90px] md:min-h-[100px] bg-white ${
                     selectedBrand === brand.id 
                       ? 'border-primary-500 bg-primary-50' 
                       : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
                   }`}
                   onClick={() => setSelectedBrand(brand.id)}
                 >
-                  <div className="relative w-28 h-24 mb-2 flex items-center justify-center">
+                  <div className="mb-1 sm:mb-2">
                     <BrandImage src={brand.image} alt={brand.name} />
                   </div>
-                  <span className="text-xs font-medium text-center text-gray-700">{brand.name}</span>
+                  <span className="text-xs sm:text-sm font-medium text-center text-gray-700 leading-tight">{brand.name}</span>
                 </button>
               ))}
             </div>

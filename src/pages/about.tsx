@@ -94,7 +94,7 @@ export default function AboutPage() {
             <div className="relative">
               <div className="relative h-[400px] w-full rounded-lg overflow-hidden shadow-custom-lg">
                 <Image
-                  src="/images/about/team-meeting.svg"
+                  src="/images/about/team-meeting.jpg"
                   alt="The Travelling Technicians team"
                   layout="fill"
                   className="object-contain"
