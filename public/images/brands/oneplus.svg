@@ -1,14 +1,1 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
-  <!-- Red square background with rounded corners -->
-  <rect x="5" y="10" width="40" height="40" rx="6" ry="6" fill="#EB0028"/>
-  
-  <!-- White "1" symbol -->
-  <path d="M18 18 L18 42 L22 42 L22 22 L26 22 L26 18 Z" fill="white"/>
-  
-  <!-- White "+" symbol -->
-  <path d="M30 24 L30 28 L34 28 L34 32 L38 32 L38 28 L42 28 L42 24 L38 24 L38 20 L34 20 L34 24 Z" fill="white"/>
-  
-  <!-- ONEPLUS text -->
-  <text x="60" y="38" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="18" fill="black" letter-spacing="1.5">ONEPLUS</text>
-</svg> 
+<svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>OnePlus</title><path d="M0 3.74V24h20.26V12.428h-2.256v9.317H2.254V5.995h9.318V3.742zM18.004 0v3.74h-3.758v2.256h3.758v3.758h2.255V5.996H24V3.74h-3.758V0zm-6.45 18.756V8.862H9.562c0 .682-.228 1.189-.577 1.504-.367.297-.91.437-1.556.437h-.245v1.625h2.133v6.31h2.237z"/></svg>

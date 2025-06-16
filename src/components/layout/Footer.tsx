@@ -9,18 +9,14 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
           <div>
-            <div className="mb-4">
-              {/* Logo implementation with SVG primary and PNG fallback */}
-              <picture className="inline-block">
-                <source srcSet="/images/logo.svg" type="image/svg+xml" />
-                <img 
-                  src="/images/logo/logo-orange.png" 
-                  alt="Travelling Technicians Logo" 
-                  width={110} 
-                  height={40} 
-                  className="h-12 w-auto mb-2"
-                />
-              </picture>
+            <div className="flex items-center mb-4">
+              <img 
+                src="/images/logo/logo-orange.png" 
+                alt="Travelling Technicians Logo" 
+                width={48} 
+                height={48} 
+                className="h-12 w-12 mr-2"
+              />
               <div className="font-semibold text-white leading-tight">
                 <span className="block text-lg">Travelling</span>
                 <span className="block text-lg text-accent-400">Technicians</span>
@@ -130,59 +126,44 @@ export default function Footer() {
             <h3 className="text-xl font-bold mb-4 text-primary-400">Service Areas</h3>
             <ul className="grid grid-cols-2 gap-x-2 gap-y-2">
               <li>
-                <Link href="/service-areas/vancouver" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
-                    Vancouver
-                  </Link>
+                <Link href="/repair/vancouver" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                  Vancouver
+                </Link>
               </li>
               <li>
-                <Link href="/service-areas/burnaby" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
-                    Burnaby
-                  </Link>
+                <Link href="/repair/burnaby" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                  Burnaby
+                </Link>
               </li>
               <li>
-                <Link href="/service-areas/surrey" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
-                    Surrey
-                  </Link>
+                <Link href="/repair/richmond" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                  Richmond
+                </Link>
               </li>
               <li>
-                <Link href="/service-areas/richmond" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
-                    Richmond
-                  </Link>
+                <Link href="/repair/new-westminster" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                  New Westminster
+                </Link>
               </li>
               <li>
-                <Link href="/service-areas/coquitlam" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
-                    Coquitlam
-                  </Link>
+                <Link href="/repair/north-vancouver" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                  North Vancouver
+                </Link>
               </li>
               <li>
-                <Link href="/service-areas/north-vancouver" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
-                    North Vancouver
-                  </Link>
+                <Link href="/repair/west-vancouver" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                  West Vancouver
+                </Link>
               </li>
               <li>
-                <Link href="/service-areas/west-vancouver" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
-                    West Vancouver
-                  </Link>
+                <Link href="/repair/coquitlam" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                  Coquitlam
+                </Link>
               </li>
               <li>
-                <Link href="/service-areas/new-westminster" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
-                    New Westminster
-                  </Link>
-              </li>
-              <li>
-                <Link href="/service-areas/delta" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
-                    Delta
-                  </Link>
-              </li>
-              <li>
-                <Link href="/service-areas/langley" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
-                    Langley
-                  </Link>
-              </li>
-              <li>
-                <Link href="/service-areas" className="text-primary-400 hover:text-primary-300 transition-colors duration-300 font-medium">
-                    View All Areas
-                  </Link>
+                <Link href="/repair/chilliwack" className="text-gray-300 hover:text-primary-300 transition-colors duration-300">
+                  Chilliwack
+                </Link>
               </li>
             </ul>
           </div>

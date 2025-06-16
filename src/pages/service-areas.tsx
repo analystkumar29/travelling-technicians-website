@@ -13,7 +13,7 @@ const serviceAreas = [
     description: 'Serving all Vancouver neighborhoods including Downtown, Kitsilano, Point Grey, West End, Yaletown, Mount Pleasant, and Commercial Drive.',
     popular: true,
     sameDay: true,
-    image: 'https://images.unsplash.com/photo-1560814304-4f05b62af116'
+    image: '/images/service-areas/vancouver.jpg'
   },
   {
     id: 'burnaby',
@@ -21,7 +21,7 @@ const serviceAreas = [
     description: 'Full service coverage across Burnaby including Metrotown, Brentwood, Lougheed, and SFU areas with fast response times.',
     popular: true,
     sameDay: true,
-    image: 'https://images.unsplash.com/photo-1599239233766-b16882e7c2c5'
+    image: '/images/service-areas/burnaby.jpg'
   },
   {
     id: 'richmond',
@@ -29,7 +29,7 @@ const serviceAreas = [
     description: 'Serving all Richmond areas including City Centre, Steveston, East Richmond, and around YVR Airport.',
     popular: true,
     sameDay: true,
-    image: 'https://images.unsplash.com/photo-1568626037031-fd9ed705dfa0'
+    image: '/images/service-areas/richmond.jpg'
   },
   {
     id: 'new-westminster',
@@ -37,7 +37,7 @@ const serviceAreas = [
     description: 'Complete coverage of New Westminster including Uptown, Downtown, Sapperton, and Queensborough.',
     popular: true,
     sameDay: true,
-    image: 'https://images.unsplash.com/photo-1599177053437-ef35f6c2de14'
+    image: '/images/service-areas/new-westminster.jpg'
   },
   {
     id: 'north-vancouver',
@@ -45,7 +45,7 @@ const serviceAreas = [
     description: 'Serving both the City and District of North Vancouver, including Lynn Valley, Lonsdale, and Deep Cove areas.',
     popular: true,
     sameDay: true,
-    image: 'https://images.unsplash.com/photo-1596394143290-9e9bdbc2c2dd'
+    image: '/images/service-areas/north-vancouver.jpg'
   },
   {
     id: 'west-vancouver',
@@ -53,7 +53,7 @@ const serviceAreas = [
     description: 'Service available throughout West Vancouver including Ambleside, Dundarave, and British Properties.',
     popular: true,
     sameDay: true,
-    image: 'https://images.unsplash.com/photo-1584286595398-5e06e51ad185'
+    image: '/images/service-areas/west-vancouver.jpg'
   },
   {
     id: 'coquitlam',
@@ -61,7 +61,7 @@ const serviceAreas = [
     description: 'Service throughout Coquitlam including Maillardville, Town Centre, Westwood Plateau, and Burke Mountain.',
     popular: true,
     sameDay: true,
-    image: 'https://images.unsplash.com/photo-1599176043380-e8c361a41a3b'
+    image: '/images/service-areas/coquitlam.jpg'
   },
   {
     id: 'chilliwack',
@@ -69,7 +69,7 @@ const serviceAreas = [
     description: 'Extending our services to Chilliwack and surrounding areas with scheduled visits for your device repair needs.',
     popular: false,
     sameDay: false,
-    image: 'https://images.unsplash.com/photo-1604037502574-11207107f274?q=80&w=200'
+    image: '/images/service-areas/chilliwack.jpg'
   }
 ];
 

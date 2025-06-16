@@ -10,13 +10,15 @@ import { testSupabaseConnection, supabase } from '@/utils/supabaseClient';
 // Component to render device brand image with proper dimensions
 const BrandImage = ({ src, alt }: { src: string, alt: string }) => {
   return (
-    <Image 
-      src={src} 
-      alt={alt}
-      width={200}
-      height={150}
-      className="object-contain w-full h-full"
-    />
+    <div className="relative w-24 h-24">
+      <Image 
+        src={src} 
+        alt={alt}
+        fill
+        className="object-contain"
+        sizes="(max-width: 768px) 96px, 96px"
+      />
+    </div>
   );
 };
 

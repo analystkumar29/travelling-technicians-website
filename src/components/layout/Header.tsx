@@ -37,7 +37,7 @@ const Header = () => {
                   priority
                 />
               </div>
-              <div className="hidden sm:block font-semibold text-white leading-tight">
+              <div className="font-semibold text-white leading-tight">
                 <span className="block text-lg">Travelling</span>
                 <span className="block text-lg text-accent-400">Technicians</span>
               </div>
