@@ -2118,8 +2118,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-xl p-8 max-w-3xl mx-auto border border-gray-100">
-      <h2 className="text-2xl font-bold mb-8 text-center text-primary-600 relative">
+    <div className="bg-white rounded-xl shadow-xl p-4 sm:p-6 md:p-8 max-w-3xl mx-auto border border-gray-100">
+      <h2 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8 text-center text-primary-600 relative">
         <span className="relative inline-block">
           Book Your Doorstep Repair
           <span className="absolute bottom-0 left-0 w-full h-1 bg-primary-300 opacity-40"></span>
@@ -2127,52 +2127,105 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       </h2>
       
       {/* Step progress indicators */}
-      <div className="mb-12">
-        <div className="flex justify-between items-center">
-          {steps.map((step, index) => (
-            <div key={index} className="flex flex-col items-center relative">
-              <div 
-                className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${
-                  index < currentStep 
-                    ? 'bg-primary-600 text-white scale-110 shadow-md' 
-                    : index === currentStep 
-                      ? 'bg-primary-100 text-primary-800 border-2 border-primary-500 scale-125 shadow-md' 
-                      : 'bg-gray-100 text-gray-500 border border-gray-300'
-                }`}
-              >
-                {index < currentStep ? (
-                  <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                ) : (
-                  index + 1
-                )}
-          </div>
-              <span className={`text-xs mt-2 font-medium max-w-[80px] text-center ${
-                index === currentStep ? 'text-primary-700 font-semibold' : index < currentStep ? 'text-primary-600' : 'text-gray-600'
-              } ${index === currentStep ? 'scale-110' : ''} transition-all duration-300`}>
-                {step}
-              </span>
-              
-              {index === currentStep && (
-                <div className="h-1 w-10 bg-primary-500 mt-1 rounded-full"></div>
-              )}
-              
-              {/* Connection lines between step indicators */}
-              {index < steps.length - 1 && (
-                <div className="hidden md:block absolute top-5 left-[calc(100%+0.5rem)] w-[calc(100%-2rem)] h-[2px] -translate-y-1/2" style={{ left: '100%', width: 'calc(100% - 1rem)' }}>
-                  <div className={`h-full ${index < currentStep ? 'bg-primary-500' : 'bg-gray-300'}`}></div>
+      <div className="mb-8 sm:mb-12">
+        {/* Mobile: Vertical stepper */}
+        <div className="block sm:hidden">
+          <div className="space-y-4">
+            {steps.map((step, index) => (
+              <div key={index} className="flex items-center space-x-3">
+                <div 
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-300 flex-shrink-0 ${
+                    index < currentStep 
+                      ? 'bg-primary-600 text-white shadow-md' 
+                      : index === currentStep 
+                        ? 'bg-primary-100 text-primary-800 border-2 border-primary-500 shadow-md' 
+                        : 'bg-gray-100 text-gray-500 border border-gray-300'
+                  }`}
+                >
+                  {index < currentStep ? (
+                    <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    index + 1
+                  )}
                 </div>
-              )}
+                <div className="flex-1">
+                  <span className={`text-sm font-medium leading-tight ${
+                    index === currentStep ? 'text-primary-700 font-semibold' : index < currentStep ? 'text-primary-600' : 'text-gray-600'
+                  }`}>
+                    {step}
+                  </span>
+                  {index === currentStep && (
+                    <div className="h-0.5 w-full bg-primary-500 mt-1 rounded-full"></div>
+                  )}
+                </div>
+                {/* Vertical connection line */}
+                {index < steps.length - 1 && (
+                  <div className="absolute left-4 mt-8 w-0.5 h-4 bg-gray-300 transform translate-y-full"></div>
+                )}
+              </div>
+            ))}
+          </div>
+          {/* Mobile progress bar */}
+          <div className="relative mt-6">
+            <div className="w-full h-2 bg-gray-200 rounded-full"></div>
+            <div 
+              className="absolute left-0 top-0 h-2 bg-primary-600 rounded-full transition-all duration-700 ease-in-out" 
+              style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
+            ></div>
+          </div>
         </div>
-          ))}
-        </div>
-        <div className="relative mt-5">
-          <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-full h-2 bg-gray-200 rounded-full"></div>
-          <div 
-            className="absolute left-0 top-1/2 transform -translate-y-1/2 h-2 bg-primary-600 rounded-full transition-all duration-700 ease-in-out" 
-            style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
-          ></div>
+
+        {/* Desktop: Horizontal stepper */}
+        <div className="hidden sm:block">
+          <div className="flex justify-between items-center">
+            {steps.map((step, index) => (
+              <div key={index} className="flex flex-col items-center relative">
+                <div 
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${
+                    index < currentStep 
+                      ? 'bg-primary-600 text-white scale-110 shadow-md' 
+                      : index === currentStep 
+                        ? 'bg-primary-100 text-primary-800 border-2 border-primary-500 scale-125 shadow-md' 
+                        : 'bg-gray-100 text-gray-500 border border-gray-300'
+                  }`}
+                >
+                  {index < currentStep ? (
+                    <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    index + 1
+                  )}
+                </div>
+                <span className={`text-xs mt-2 font-medium max-w-[80px] text-center leading-tight ${
+                  index === currentStep ? 'text-primary-700 font-semibold' : index < currentStep ? 'text-primary-600' : 'text-gray-600'
+                } ${index === currentStep ? 'scale-110' : ''} transition-all duration-300`}>
+                  {step}
+                </span>
+                
+                {index === currentStep && (
+                  <div className="h-1 w-10 bg-primary-500 mt-1 rounded-full"></div>
+                )}
+                
+                {/* Connection lines between step indicators */}
+                {index < steps.length - 1 && (
+                  <div className="absolute top-5 left-[calc(100%+0.5rem)] w-[calc(100%-2rem)] h-[2px] -translate-y-1/2" style={{ left: '100%', width: 'calc(100% - 1rem)' }}>
+                    <div className={`h-full ${index < currentStep ? 'bg-primary-500' : 'bg-gray-300'}`}></div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          {/* Desktop progress bar */}
+          <div className="relative mt-5">
+            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-full h-2 bg-gray-200 rounded-full"></div>
+            <div 
+              className="absolute left-0 top-1/2 transform -translate-y-1/2 h-2 bg-primary-600 rounded-full transition-all duration-700 ease-in-out" 
+              style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
+            ></div>
+          </div>
         </div>
       </div>
       
@@ -2186,17 +2239,17 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           }
         }}>
           {/* Step content with improved styling */}
-          <div className="mb-8 bg-gray-50 p-6 rounded-lg border border-gray-100 shadow-sm">
+          <div className="mb-6 sm:mb-8 bg-gray-50 p-4 sm:p-6 rounded-lg border border-gray-100 shadow-sm">
         {renderStepContent()}
           </div>
           
           {/* Navigation buttons with improved styling */}
-          <div className="flex justify-between mt-8">
+          <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 mt-6 sm:mt-8">
             {currentStep > 0 ? (
               <button
                 type="button"
                 onClick={prevStep}
-                className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-all duration-300 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 shadow-sm flex items-center"
+                className="w-full sm:w-auto px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-all duration-300 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 shadow-sm flex items-center justify-center"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -2207,7 +2260,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <button
                 type="button"
                 onClick={onCancel}
-                className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-all duration-300 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 shadow-sm"
+                className="w-full sm:w-auto px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-all duration-300 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 shadow-sm"
               >
                 Cancel
               </button>
@@ -2217,7 +2270,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <button
                 type="button"
                 onClick={() => nextStep()}
-                className="px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-all duration-300 shadow-md hover:shadow-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transform hover:-translate-y-0.5 active:translate-y-0 flex items-center"
+                className="w-full sm:w-auto px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-all duration-300 shadow-md hover:shadow-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center"
               >
                 Next
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
@@ -2228,7 +2281,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <button
                 type="button"
                 onClick={handleFinalSubmit}
-                className="px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-all duration-300 shadow-md hover:shadow-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center"
+                className="w-full sm:w-auto px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-all duration-300 shadow-md hover:shadow-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center"
                 disabled={methods.formState.isSubmitting}
               >
                 {methods.formState.isSubmitting ? (
