@@ -397,9 +397,10 @@ export default function PostalCodeChecker({
             
             {!onSuccess && !onError && (
               <div className="mt-4">
-                <Link href="/book-online" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                  <span className="inline-flex items-center">
-                    Book a Repair Now <FaArrowRight className="ml-2" />
+                <Link href="/book-online" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 book-now-button-pulse enhanced-button">
+                  <span className="button-gradient"></span>
+                  <span className="inline-flex items-center relative z-10">
+                    Book a Repair Now <FaArrowRight className="ml-2 button-icon" />
                   </span>
                 </Link>
               </div>

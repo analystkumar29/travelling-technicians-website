@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
 import DeviceModelSelector from './DeviceModelSelector';
+import FloatingProgress from './FloatingProgress';
+import '../../styles/booking-form-enhancements.css';
 // Comment out the non-existent imports for now
 // import { DeviceTypeStep } from './steps/DeviceTypeStep';
 // import { ServiceDetailsStep } from './steps/ServiceDetailsStep';
@@ -40,6 +42,29 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   const [detectingLocation, setDetectingLocation] = useState(false);
   // Move needsPostalCodeAttention to component level
   const [needsPostalCodeAttention, setNeedsPostalCodeAttention] = useState(false);
+  // Add state for progressive form reveal
+  const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set(['deviceType']));
+  // Add state for mobile swipe indicator
+  const [showSwipeIndicator, setShowSwipeIndicator] = useState(false);
+  
+  // Function to reveal sections progressively
+  const revealSection = useCallback((sectionName: string) => {
+    setVisibleSections(prev => new Set([...prev, sectionName]));
+  }, []);
+  
+  // Smart scroll function
+  const smartScroll = useCallback(() => {
+    // Scroll to the step content, but not all the way to the top
+    const stepContent = document.querySelector('.step-content');
+    if (stepContent) {
+      const rect = stepContent.getBoundingClientRect();
+      const offset = window.innerHeight * 0.2; // 20% from top
+      window.scrollTo({
+        top: window.scrollY + rect.top - offset,
+        behavior: 'smooth'
+      });
+    }
+  }, []);
 
   // Create a properly typed defaultValues object
   const defaultValues: Partial<CreateBookingRequest> = {
@@ -243,11 +268,10 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       // Increment the step
     setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
       
-      // Scroll to the top of the form container
-      const formContainer = document.querySelector('.bg-white.rounded-lg.shadow-lg');
-      if (formContainer) {
-        formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      // Add a small delay for the step transition animation, then scroll
+      setTimeout(() => {
+        smartScroll();
+      }, 200);
     } else {
       // Scroll to the first error
       const firstError = document.querySelector('.text-red-600');
@@ -299,9 +323,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             </label>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <label className={`relative overflow-hidden rounded-lg border-2 transition-all duration-300 ${
+              <label className={`device-card relative overflow-hidden rounded-lg border-2 transition-all duration-300 ${
                 deviceType === 'mobile' 
-                  ? 'border-primary-500 bg-primary-50' 
+                  ? 'border-primary-500 bg-primary-50 selected' 
                   : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}>
               <Controller
@@ -318,6 +342,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         field.onChange('mobile');
                         methods.setValue('deviceBrand', '');
                         methods.setValue('deviceModel', '');
+                        revealSection('brandSelection');
                         console.log('Changed to mobile');
                       }}
                   />
@@ -340,9 +365,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               </div>
             </label>
             
-              <label className={`relative overflow-hidden rounded-lg border-2 transition-all duration-300 ${
+              <label className={`device-card relative overflow-hidden rounded-lg border-2 transition-all duration-300 ${
                 deviceType === 'laptop' 
-                  ? 'border-primary-500 bg-primary-50' 
+                  ? 'border-primary-500 bg-primary-50 selected' 
                   : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}>
               <Controller
@@ -359,6 +384,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         field.onChange('laptop');
                         methods.setValue('deviceBrand', '');
                         methods.setValue('deviceModel', '');
+                        revealSection('brandSelection');
                         console.log('Changed to laptop');
                       }}
                   />
@@ -381,9 +407,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               </div>
             </label>
             
-              <label className={`relative overflow-hidden rounded-lg border-2 transition-all duration-300 ${
+              <label className={`device-card relative overflow-hidden rounded-lg border-2 transition-all duration-300 ${
                 deviceType === 'tablet' 
-                  ? 'border-primary-500 bg-primary-50' 
+                  ? 'border-primary-500 bg-primary-50 selected' 
                   : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}>
               <Controller
@@ -400,6 +426,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         field.onChange('tablet');
                         methods.setValue('deviceBrand', '');
                         methods.setValue('deviceModel', '');
+                        revealSection('brandSelection');
                         console.log('Changed to tablet');
                       }}
                   />
@@ -428,7 +455,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         </div>
         
           {deviceType && (
-            <div className="mb-4" key={deviceKey}>
+            <div className={`mb-4 form-section-reveal ${visibleSections.has('brandSelection') ? 'visible' : ''}`} key={deviceKey}>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Brand <span className="text-red-500">*</span>
               </label>
@@ -446,9 +473,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   ].map((brand) => (
                     <label 
                       key={brand.value}
-                      className={`relative rounded-md border overflow-hidden transition-all duration-200 ${
+                      className={`device-card relative rounded-md border overflow-hidden transition-all duration-200 ${
                         methods.watch('deviceBrand') === brand.value
-                          ? 'border-primary-500 bg-primary-50 shadow-sm'
+                          ? 'border-primary-500 bg-primary-50 shadow-sm selected'
                           : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
                       }`}
                     >
@@ -465,6 +492,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                           onChange={() => {
                               field.onChange(brand.value);
                             methods.setValue('deviceModel', '');
+                            revealSection('modelSelection');
                           }}
                         />
                       )}
@@ -1153,7 +1181,13 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 <input
                   id="customerName"
                   type="text"
-                      className={`block w-full pl-10 pr-3 py-2 border ${fieldState.error ? 'border-red-300' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200`}
+                  className={`input-field enhanced-focus-ring block w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200 ${
+                    fieldState.error 
+                      ? 'border-red-300 invalid' 
+                      : field.value && !fieldState.error 
+                        ? 'border-green-300 valid' 
+                        : 'border-gray-300'
+                  }`}
                       placeholder="John Smith"
                   {...field}
                 />
@@ -1192,7 +1226,13 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 <input
                   id="customerEmail"
                   type="email"
-                      className={`block w-full pl-10 pr-3 py-2 border ${fieldState.error ? 'border-red-300' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200`}
+                  className={`input-field enhanced-focus-ring block w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200 ${
+                    fieldState.error 
+                      ? 'border-red-300 invalid' 
+                      : field.value && !fieldState.error 
+                        ? 'border-green-300 valid' 
+                        : 'border-gray-300'
+                  }`}
                   placeholder="you@example.com"
                   {...field}
                 />
@@ -1235,7 +1275,13 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 <input
                   id="customerPhone"
                   type="tel"
-                      className={`block w-full pl-10 pr-3 py-2 border ${fieldState.error ? 'border-red-300' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200`}
+                  className={`input-field enhanced-focus-ring block w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200 ${
+                    fieldState.error 
+                      ? 'border-red-300 invalid' 
+                      : field.value && !fieldState.error 
+                        ? 'border-green-300 valid' 
+                        : 'border-gray-300'
+                  }`}
                   placeholder="(555) 123-4567"
                   {...field}
                 />
@@ -1432,16 +1478,19 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         </div>
         
         {locationWasPreFilled && (
-          <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
+          <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4 location-success-message">
             <div className="flex">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                <svg className="h-5 w-5 text-green-400 success-checkmark" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
               </div>
               <div className="ml-3">
-                <p className="text-sm text-green-700">
-                  Your location information has been pre-filled based on your location. You can edit these details if needed.
+                <p className="text-sm text-green-700 font-medium">
+                  🎉 Great news! You're in our service area!
+                </p>
+                <p className="text-xs text-green-600 mt-1">
+                  Your location information has been pre-filled. You can edit these details if needed.
                 </p>
               </div>
             </div>
@@ -2118,7 +2167,15 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-xl p-4 sm:p-6 md:p-8 max-w-3xl mx-auto border border-gray-100">
+    <>
+      {/* Floating Progress Indicator */}
+      <FloatingProgress 
+        currentStep={currentStep} 
+        totalSteps={steps.length} 
+        stepNames={steps} 
+      />
+      
+      <div className="bg-white rounded-xl shadow-xl p-4 sm:p-6 md:p-8 max-w-3xl mx-auto border border-gray-100">
       <h2 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8 text-center text-primary-600 relative">
         <span className="relative inline-block">
           Book Your Doorstep Repair
@@ -2134,11 +2191,11 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             {steps.map((step, index) => (
               <div key={index} className="flex items-center space-x-3">
                 <div 
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-300 flex-shrink-0 ${
+                  className={`step-indicator w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-300 flex-shrink-0 ${
                     index < currentStep 
-                      ? 'bg-primary-600 text-white shadow-md' 
+                      ? 'bg-primary-600 text-white shadow-md completed' 
                       : index === currentStep 
-                        ? 'bg-primary-100 text-primary-800 border-2 border-primary-500 shadow-md' 
+                        ? 'bg-primary-100 text-primary-800 border-2 border-primary-500 shadow-md active' 
                         : 'bg-gray-100 text-gray-500 border border-gray-300'
                   }`}
                 >
@@ -2183,11 +2240,11 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             {steps.map((step, index) => (
               <div key={index} className="flex flex-col items-center relative">
                 <div 
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${
+                  className={`step-indicator w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${
                     index < currentStep 
-                      ? 'bg-primary-600 text-white scale-110 shadow-md' 
+                      ? 'bg-primary-600 text-white scale-110 shadow-md completed' 
                       : index === currentStep 
-                        ? 'bg-primary-100 text-primary-800 border-2 border-primary-500 scale-125 shadow-md' 
+                        ? 'bg-primary-100 text-primary-800 border-2 border-primary-500 scale-125 shadow-md active' 
                         : 'bg-gray-100 text-gray-500 border border-gray-300'
                   }`}
                 >
@@ -2240,7 +2297,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         }}>
           {/* Step content with improved styling */}
           <div className="mb-6 sm:mb-8 bg-gray-50 p-4 sm:p-6 rounded-lg border border-gray-100 shadow-sm">
-        {renderStepContent()}
+            <div className="step-content">
+              {renderStepContent()}
+            </div>
           </div>
           
           {/* Navigation buttons with improved styling */}
@@ -2270,12 +2329,15 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <button
                 type="button"
                 onClick={() => nextStep()}
-                className="w-full sm:w-auto px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-all duration-300 shadow-md hover:shadow-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center"
+                className="enhanced-button w-full sm:w-auto px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-all duration-300 shadow-md hover:shadow-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center"
               >
-                Next
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                </svg>
+                <span className="button-gradient"></span>
+                <span className="relative z-10 flex items-center">
+                  Next
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2 button-icon" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                </span>
               </button>
             ) : (
               <button
@@ -2306,5 +2368,13 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       </form>
       </FormProvider>
     </div>
+    
+    {/* Mobile Swipe Indicator */}
+    {showSwipeIndicator && (
+      <div className={`swipe-indicator ${showSwipeIndicator ? 'visible' : ''}`}>
+        Swipe or tap Next to continue
+      </div>
+    )}
+    </>
   );
 }
