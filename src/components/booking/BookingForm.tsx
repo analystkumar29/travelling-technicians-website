@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
 import DeviceModelSelector from './DeviceModelSelector';
 import FloatingProgress from './FloatingProgress';
-import '../../styles/booking-form-enhancements.css';
 // Comment out the non-existent imports for now
 // import { DeviceTypeStep } from './steps/DeviceTypeStep';
 // import { ServiceDetailsStep } from './steps/ServiceDetailsStep';
@@ -49,7 +48,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   
   // Function to reveal sections progressively
   const revealSection = useCallback((sectionName: string) => {
-    setVisibleSections(prev => new Set([...prev, sectionName]));
+    setVisibleSections(prev => new Set([...Array.from(prev), sectionName]));
   }, []);
   
   // Smart scroll function

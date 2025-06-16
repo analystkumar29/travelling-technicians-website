@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import '@/styles/leaflet-custom.css';
 import '@/styles/homepage-enhancements.css';
 import '@/styles/header-fix.css';
+import '@/styles/booking-form-enhancements.css';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
