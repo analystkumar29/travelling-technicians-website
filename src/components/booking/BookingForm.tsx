@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
 import DeviceModelSelector from './DeviceModelSelector';
 import FloatingProgress from './FloatingProgress';
+import Image from 'next/image';
 // Comment out the non-existent imports for now
 // import { DeviceTypeStep } from './steps/DeviceTypeStep';
 // import { ServiceDetailsStep } from './steps/ServiceDetailsStep';
@@ -45,6 +46,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set(['deviceType', 'brandSelection']));
   // Add state for mobile swipe indicator
   const [showSwipeIndicator, setShowSwipeIndicator] = useState(false);
+  // Add state for brand selection warning
+  const [showBrandWarning, setShowBrandWarning] = useState(false);
   
   // Function to reveal sections progressively
   const revealSection = useCallback((sectionName: string) => {
@@ -100,6 +103,24 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     mode: 'onChange', // Enable validation on change
     reValidateMode: 'onSubmit' // Only revalidate when submitted (i.e., when Next is clicked)
   });
+
+  // Function to handle model selection attempt without brand
+  const handleModelSelectionAttempt = useCallback(() => {
+    const deviceBrand = methods.watch('deviceBrand');
+    if (!deviceBrand) {
+      setShowBrandWarning(true);
+      // Scroll to brand selection
+      const brandSection = document.querySelector('[data-section="brand-selection"]');
+      if (brandSection) {
+        brandSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      // Clear warning after 3 seconds
+      setTimeout(() => setShowBrandWarning(false), 3000);
+      return false;
+    }
+    setShowBrandWarning(false);
+    return true;
+  }, [methods]);
 
   // Watch for deviceBrand changes to apply conditional validation for customBrand
   const deviceBrand = methods.watch('deviceBrand');
@@ -193,6 +214,11 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         
       case 1: // Service Details
         // Validate service type (issue description is optional)
+        const serviceType = methods.watch('serviceType');
+        if (!serviceType || (Array.isArray(serviceType) && serviceType.length === 0)) {
+          methods.setError('serviceType', { type: 'required', message: 'Please select at least one service' });
+          return false;
+        }
         return await methods.trigger(['serviceType']);
         
       case 2: // Contact Info
@@ -298,6 +324,19 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     onSubmit(data);
   };
   
+  // Helper function to get brand logo
+  const getBrandLogo = (brandValue: string) => {
+    const logos: { [key: string]: string } = {
+      'apple': '/images/brands/apple.svg',
+      'samsung': '/images/brands/samsung.svg',
+      'google': '/images/brands/google.svg',
+      'oneplus': '/images/brands/oneplus.svg',
+      'xiaomi': '/images/brands/xiaomi.svg',
+      'huawei': '/images/brands/huawei.svg'
+    };
+    return logos[brandValue] || null;
+  };
+
   // Render the Device Type step
   const renderDeviceTypeStep = () => {
     const deviceType = methods.watch('deviceType');
@@ -454,170 +493,234 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         </div>
         
           {deviceType && (
-            <div className={`mb-4 form-section-reveal ${visibleSections.has('brandSelection') ? 'visible' : ''}`} key={deviceKey}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Brand <span className="text-red-500">*</span>
-              </label>
+            <div 
+              className={`mb-4 form-section-reveal ${visibleSections.has('brandSelection') ? 'visible' : ''} ${showBrandWarning ? 'animate-pulse border-2 border-orange-300 bg-orange-50 rounded-lg p-4' : ''}`} 
+              key={deviceKey}
+              data-section="brand-selection"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Brand <span className="text-red-500">*</span>
+                </label>
+                {showBrandWarning && (
+                  <div className="flex items-center text-orange-600 text-sm font-medium">
+                    <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    Please select a brand first!
+                  </div>
+                )}
+              </div>
               
               {/* Mobile device brands */}
               {deviceType === 'mobile' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4">
                   {[
-                    { value: 'apple', label: 'Apple', icon: '🍎' },
-                    { value: 'samsung', label: 'Samsung', icon: '📱' },
-                    { value: 'google', label: 'Google', icon: 'G' },
-                    { value: 'oneplus', label: 'OnePlus', icon: '1+' },
-                    { value: 'xiaomi', label: 'Xiaomi', icon: 'Mi' },
-                    { value: 'other', label: 'Other', icon: '...' }
-                  ].map((brand) => (
-                    <label 
-                      key={brand.value}
-                      className={`device-card relative rounded-md border overflow-hidden transition-all duration-200 ${
-                        methods.watch('deviceBrand') === brand.value
-                          ? 'border-primary-500 bg-primary-50 shadow-sm selected'
-                          : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                      }`}
-                    >
-          <Controller
-            name="deviceBrand"
-            control={methods.control}
-                      rules={{ required: "Please select a brand" }}
-                      render={({ field }) => (
-                        <input
-                          type="radio"
-                          className="sr-only"
-                            value={brand.value}
-                            checked={field.value === brand.value}
-                          onChange={() => {
-                              field.onChange(brand.value);
-                            methods.setValue('deviceModel', '');
-                            revealSection('modelSelection');
-                          }}
+                    { value: 'apple', label: 'Apple' },
+                    { value: 'samsung', label: 'Samsung' },
+                    { value: 'google', label: 'Google' },
+                    { value: 'oneplus', label: 'OnePlus' },
+                    { value: 'xiaomi', label: 'Xiaomi' },
+                    { value: 'other', label: 'Other' }
+                  ].map((brand) => {
+                    const logo = getBrandLogo(brand.value);
+                    return (
+                      <label 
+                        key={brand.value}
+                        className={`device-card relative rounded-md border overflow-hidden transition-all duration-200 ${
+                          methods.watch('deviceBrand') === brand.value
+                            ? 'border-primary-500 bg-primary-50 shadow-sm selected'
+                            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Controller
+                          name="deviceBrand"
+                          control={methods.control}
+                          rules={{ required: "Please select a brand" }}
+                          render={({ field }) => (
+                            <input
+                              type="radio"
+                              className="sr-only"
+                              value={brand.value}
+                              checked={field.value === brand.value}
+                              onChange={() => {
+                                field.onChange(brand.value);
+                                methods.setValue('deviceModel', '');
+                                revealSection('modelSelection');
+                                setShowBrandWarning(false);
+                              }}
+                            />
+                          )}
                         />
-                      )}
-                    />
-                      <div className="flex items-center p-3 cursor-pointer">
-                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center mr-3 text-lg font-medium rounded-full bg-gray-100 text-gray-700">
-                          {brand.icon}
-                    </div>
-                        <span className="font-medium text-gray-900">{brand.label}</span>
-                        {methods.watch('deviceBrand') === brand.value && (
-                          <div className="ml-auto">
-                            <svg className="h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                    </div>
-                        )}
-                    </div>
-                  </label>
-                  ))}
-                    </div>
+                        <div className="flex items-center p-3 cursor-pointer">
+                          <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center mr-3">
+                            {logo ? (
+                              <Image
+                                src={logo}
+                                alt={`${brand.label} logo`}
+                                width={32}
+                                height={32}
+                                className="w-8 h-8 object-contain"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 flex items-center justify-center text-lg font-medium rounded-full bg-gray-100 text-gray-700">
+                                ...
+                              </div>
+                            )}
+                          </div>
+                          <span className="font-medium text-gray-900">{brand.label}</span>
+                          {methods.watch('deviceBrand') === brand.value && (
+                            <div className="ml-auto">
+                              <svg className="h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
               )}
               
               {/* Laptop device brands */}
               {deviceType === 'laptop' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4">
                   {[
-                    { value: 'apple', label: 'Apple', icon: '🍎' },
-                    { value: 'dell', label: 'Dell', icon: 'D' },
-                    { value: 'hp', label: 'HP', icon: 'HP' },
-                    { value: 'lenovo', label: 'Lenovo', icon: 'L' },
-                    { value: 'asus', label: 'ASUS', icon: 'A' },
-                    { value: 'other', label: 'Other', icon: '...' }
-                  ].map((brand) => (
-                    <label 
-                      key={brand.value}
-                      className={`relative rounded-md border overflow-hidden transition-all duration-200 ${
-                        methods.watch('deviceBrand') === brand.value
-                          ? 'border-primary-500 bg-primary-50 shadow-sm'
-                          : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                      }`}
-                    >
-                    <Controller
-                      name="deviceBrand"
-                      control={methods.control}
-                      rules={{ required: "Please select a brand" }}
-                      render={({ field }) => (
-                        <input
-                          type="radio"
-                          className="sr-only"
-                            value={brand.value}
-                            checked={field.value === brand.value}
-                          onChange={() => {
-                              field.onChange(brand.value);
-                            methods.setValue('deviceModel', '');
-                          }}
+                    { value: 'apple', label: 'Apple' },
+                    { value: 'dell', label: 'Dell' },
+                    { value: 'hp', label: 'HP' },
+                    { value: 'lenovo', label: 'Lenovo' },
+                    { value: 'asus', label: 'ASUS' },
+                    { value: 'other', label: 'Other' }
+                  ].map((brand) => {
+                    const logo = getBrandLogo(brand.value);
+                    return (
+                      <label 
+                        key={brand.value}
+                        className={`device-card relative rounded-md border overflow-hidden transition-all duration-200 ${
+                          methods.watch('deviceBrand') === brand.value
+                            ? 'border-primary-500 bg-primary-50 shadow-sm selected'
+                            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Controller
+                          name="deviceBrand"
+                          control={methods.control}
+                          rules={{ required: "Please select a brand" }}
+                          render={({ field }) => (
+                            <input
+                              type="radio"
+                              className="sr-only"
+                              value={brand.value}
+                              checked={field.value === brand.value}
+                              onChange={() => {
+                                field.onChange(brand.value);
+                                methods.setValue('deviceModel', '');
+                                revealSection('modelSelection');
+                                setShowBrandWarning(false);
+                              }}
+                            />
+                          )}
                         />
-                      )}
-                    />
-                      <div className="flex items-center p-3 cursor-pointer">
-                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center mr-3 text-lg font-medium rounded-full bg-gray-100 text-gray-700">
-                          {brand.icon}
-                    </div>
-                        <span className="font-medium text-gray-900">{brand.label}</span>
-                        {methods.watch('deviceBrand') === brand.value && (
-                          <div className="ml-auto">
-                            <svg className="h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                    </div>
-                        )}
-                    </div>
-                  </label>
-                  ))}
-                    </div>
+                        <div className="flex items-center p-3 cursor-pointer">
+                          <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center mr-3">
+                            {logo ? (
+                              <Image
+                                src={logo}
+                                alt={`${brand.label} logo`}
+                                width={32}
+                                height={32}
+                                className="w-8 h-8 object-contain"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 flex items-center justify-center text-lg font-medium rounded-full bg-gray-100 text-gray-700">
+                                {brand.label.charAt(0)}
+                              </div>
+                            )}
+                          </div>
+                          <span className="font-medium text-gray-900">{brand.label}</span>
+                          {methods.watch('deviceBrand') === brand.value && (
+                            <div className="ml-auto">
+                              <svg className="h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
               )}
               
               {/* Tablet device brands */}
               {deviceType === 'tablet' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4">
                   {[
-                    { value: 'apple', label: 'Apple', icon: '🍎' },
-                    { value: 'samsung', label: 'Samsung', icon: '📱' },
-                    { value: 'microsoft', label: 'Microsoft', icon: 'MS' },
-                    { value: 'lenovo', label: 'Lenovo', icon: 'L' },
-                    { value: 'other', label: 'Other', icon: '...' }
-                  ].map((brand) => (
-                    <label 
-                      key={brand.value}
-                      className={`relative rounded-md border overflow-hidden transition-all duration-200 ${
-                        methods.watch('deviceBrand') === brand.value
-                          ? 'border-primary-500 bg-primary-50 shadow-sm'
-                          : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                      }`}
-                    >
-                    <Controller
-                      name="deviceBrand"
-                      control={methods.control}
-                      rules={{ required: "Please select a brand" }}
-                      render={({ field }) => (
-                        <input
-                          type="radio"
-                          className="sr-only"
-                            value={brand.value}
-                            checked={field.value === brand.value}
-                          onChange={() => {
-                              field.onChange(brand.value);
-                            methods.setValue('deviceModel', '');
-                          }}
+                    { value: 'apple', label: 'Apple' },
+                    { value: 'samsung', label: 'Samsung' },
+                    { value: 'microsoft', label: 'Microsoft' },
+                    { value: 'lenovo', label: 'Lenovo' },
+                    { value: 'other', label: 'Other' }
+                  ].map((brand) => {
+                    const logo = getBrandLogo(brand.value);
+                    return (
+                      <label 
+                        key={brand.value}
+                        className={`device-card relative rounded-md border overflow-hidden transition-all duration-200 ${
+                          methods.watch('deviceBrand') === brand.value
+                            ? 'border-primary-500 bg-primary-50 shadow-sm selected'
+                            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Controller
+                          name="deviceBrand"
+                          control={methods.control}
+                          rules={{ required: "Please select a brand" }}
+                          render={({ field }) => (
+                            <input
+                              type="radio"
+                              className="sr-only"
+                              value={brand.value}
+                              checked={field.value === brand.value}
+                              onChange={() => {
+                                field.onChange(brand.value);
+                                methods.setValue('deviceModel', '');
+                                revealSection('modelSelection');
+                                setShowBrandWarning(false);
+                              }}
+                            />
+                          )}
                         />
-                      )}
-                    />
-                      <div className="flex items-center p-3 cursor-pointer">
-                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center mr-3 text-lg font-medium rounded-full bg-gray-100 text-gray-700">
-                          {brand.icon}
-                    </div>
-                        <span className="font-medium text-gray-900">{brand.label}</span>
-                        {methods.watch('deviceBrand') === brand.value && (
-                          <div className="ml-auto">
-                            <svg className="h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                    </div>
-                        )}
-                    </div>
-                  </label>
-                  ))}
+                        <div className="flex items-center p-3 cursor-pointer">
+                          <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center mr-3">
+                            {logo ? (
+                              <Image
+                                src={logo}
+                                alt={`${brand.label} logo`}
+                                width={32}
+                                height={32}
+                                className="w-8 h-8 object-contain"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 flex items-center justify-center text-lg font-medium rounded-full bg-gray-100 text-gray-700">
+                                {brand.label.charAt(0)}
+                              </div>
+                            )}
+                          </div>
+                          <span className="font-medium text-gray-900">{brand.label}</span>
+                          {methods.watch('deviceBrand') === brand.value && (
+                            <div className="ml-auto">
+                              <svg className="h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
                 </div>
               )}
               
@@ -679,8 +782,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       deviceType={methods.watch('deviceType')}
                       brand={methods.watch('deviceBrand')}
                       value={field.value}
-                      onChange={field.onChange}
-              />
+                      onChange={(model) => {
+                        if (handleModelSelectionAttempt()) {
+                          field.onChange(model);
+                        }
+                      }}
+                    />
                       </div>
                     {fieldState.error && showValidationErrors && (
                   <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
@@ -1018,80 +1125,109 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             <div key={group} className="space-y-3">
               <h3 className="text-base font-medium text-gray-900 border-b border-gray-200 pb-2">
                 {groupLabels[group]}
+                {group === 'common' && (
+                  <span className="ml-2 text-sm text-gray-500 font-normal">(Multiple selections allowed)</span>
+                )}
               </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {services.map(service => (
-                  <div 
-                    key={service.id} 
-                    className={`relative rounded-lg border-2 transition overflow-hidden ${
-                      methods.watch('serviceType') === service.id 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    <label className="flex p-4 cursor-pointer">
-                      <div className="flex items-center h-5 mt-0.5">
-                  <Controller
-                    name="serviceType"
-                    control={methods.control}
-                    rules={{ required: "Please select a service" }}
-                    render={({ field }) => (
-                      <input
-                        type="radio"
-                        className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
-                        value={service.id}
-                        checked={field.value === service.id}
-                        onChange={() => field.onChange(service.id)}
-                      />
-                    )}
-                  />
-                  </div>
-                <div className="ml-3 flex-1">
-                        <div className="flex items-center mb-1">
-                          <svg className="h-5 w-5 text-primary-600 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                            <path d={service.icon} />
-                          </svg>
-                          <span className="font-medium text-gray-900">{service.label}</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {services.map(service => {
+                  const isCommonRepair = group === 'common';
+                  const currentServices = methods.watch('serviceType');
+                  const isSelected = isCommonRepair 
+                    ? Array.isArray(currentServices) && currentServices.includes(service.id)
+                    : currentServices === service.id;
+                  
+                  return (
+                    <div 
+                      key={service.id} 
+                      className={`relative rounded-lg border-2 transition overflow-hidden ${
+                        isSelected
+                          ? 'border-primary-500 bg-primary-50' 
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <label className="flex p-4 cursor-pointer">
+                        <div className="flex items-center h-5 mt-0.5">
+                          <Controller
+                            name="serviceType"
+                            control={methods.control}
+                            rules={{ required: "Please select at least one service" }}
+                            render={({ field }) => (
+                              <input
+                                type={isCommonRepair ? "checkbox" : "radio"}
+                                className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+                                value={service.id}
+                                checked={isSelected}
+                                onChange={() => {
+                                  if (isCommonRepair) {
+                                    // Handle multiple selection for common repairs
+                                    const currentArray = Array.isArray(field.value) ? field.value : [];
+                                    if (currentArray.includes(service.id)) {
+                                      // Remove service
+                                      field.onChange(currentArray.filter(id => id !== service.id));
+                                    } else {
+                                      // Add service
+                                      field.onChange([...currentArray, service.id]);
+                                    }
+                                  } else {
+                                    // Handle single selection for other groups
+                                    field.onChange(service.id);
+                                  }
+                                }}
+                              />
+                            )}
+                          />
                         </div>
-                        
-                        <div className="flex items-center justify-between mt-2 text-xs">
-                          <div className="flex items-center">
-                            <svg className="h-4 w-4 text-gray-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                        <div className="ml-3 flex-1">
+                          <div className="flex items-center mb-1">
+                            <svg className="h-5 w-5 text-primary-600 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                              <path d={service.icon} />
                             </svg>
-                            <span className="text-gray-600">{service.time}</span>
+                            <span className="font-medium text-gray-900">{service.label}</span>
                           </div>
                           
-                          <div className="flex items-center ml-4">
-                            <svg className="h-4 w-4 text-gray-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                              <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
-                            </svg>
-                            <span className="text-gray-600">{service.price}</span>
+                          <div className="flex items-center justify-between mt-2 text-xs">
+                            <div className="flex items-center">
+                              <svg className="h-4 w-4 text-gray-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-600">{service.time}</span>
+                            </div>
+                            
+                            <div className="flex items-center ml-4">
+                              <svg className="h-4 w-4 text-gray-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-600">{service.price}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </label>
-                    
-                  {service.doorstep ? (
-                      <div className="absolute top-0 right-0 mt-2 mr-2">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 border border-green-200">
-                          <svg className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                          Doorstep
-                    </span>
-                      </div>
-                  ) : (
-                      <div className="absolute top-0 right-0 mt-2 mr-2">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
-                      In-Shop Only
-                    </span>
-                      </div>
-                    )}
-                  </div>
-            ))}
-          </div>
+                      </label>
+                      
+                      {/* Only show doorstep badge for non-common repairs or when service is not doorstep eligible */}
+                      {!isCommonRepair && (
+                        service.doorstep ? (
+                          <div className="absolute top-0 right-0 mt-2 mr-2">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                              <svg className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              Doorstep
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="absolute top-0 right-0 mt-2 mr-2">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                              In-Shop Only
+                            </span>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           );
         })}
@@ -1938,8 +2074,13 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 <dd className="mt-1 text-sm text-gray-900">{formData.deviceModel}</dd>
               </div>
               <div className="sm:col-span-2">
-                <dt className="text-sm font-medium text-gray-500">Service</dt>
-                <dd className="mt-1 text-sm text-gray-900">{serviceTypeMap[formData.serviceType] || formData.serviceType}</dd>
+                <dt className="text-sm font-medium text-gray-500">Service{Array.isArray(formData.serviceType) && formData.serviceType.length > 1 ? 's' : ''}</dt>
+                <dd className="mt-1 text-sm text-gray-900">
+                  {Array.isArray(formData.serviceType) 
+                    ? formData.serviceType.map(service => serviceTypeMap[service] || service).join(', ')
+                    : serviceTypeMap[formData.serviceType as string] || formData.serviceType
+                  }
+                </dd>
               </div>
               {formData.issueDescription && (
               <div className="sm:col-span-2">

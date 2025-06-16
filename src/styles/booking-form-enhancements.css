@@ -85,6 +85,18 @@
   left: 100%;
 }
 
+/* Brand Warning Animation */
+@keyframes warningPulse {
+  0%, 100% { 
+    border-color: rgb(253 186 116); 
+    background-color: rgb(255 237 213);
+  }
+  50% { 
+    border-color: rgb(251 146 60); 
+    background-color: rgb(254 215 170);
+  }
+}
+
 /* 5. Enhanced Button States */
 .enhanced-button {
   position: relative;

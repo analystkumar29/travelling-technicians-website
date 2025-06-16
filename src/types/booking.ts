@@ -29,7 +29,7 @@ export interface CreateBookingRequest {
   deviceBrand: string;
   deviceModel: string;
   customBrand?: string; // Custom brand name when "other" is selected
-  serviceType: string;
+  serviceType: string | string[]; // Can be single service or array of services
   issueDescription?: string;
   
   appointmentDate: string;  // YYYY-MM-DD format
