@@ -41,8 +41,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   const [detectingLocation, setDetectingLocation] = useState(false);
   // Move needsPostalCodeAttention to component level
   const [needsPostalCodeAttention, setNeedsPostalCodeAttention] = useState(false);
-  // Add state for progressive form reveal
-  const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set(['deviceType']));
+  // Add state for progressive form reveal - initialize with brandSelection visible since we have a default device type
+  const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set(['deviceType', 'brandSelection']));
   // Add state for mobile swipe indicator
   const [showSwipeIndicator, setShowSwipeIndicator] = useState(false);
   
