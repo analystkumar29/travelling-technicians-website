@@ -184,8 +184,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   // Placeholder step titles
   const steps = [
     'Device Type',
-    'Service Details',
-    'Service Tier', // New step for pricing tier selection
+    'Service & Pricing', // Merged step for service details + tier selection
     'Contact Info',
     'Location',
     'Appointment',
@@ -220,32 +219,29 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         }
         return true;
         
-      case 1: // Service Details
+      case 1: // Service & Pricing (merged step)
         // Validate service type (issue description is optional)
         const serviceType = methods.watch('serviceType');
         if (!serviceType || (Array.isArray(serviceType) && serviceType.length === 0)) {
           methods.setError('serviceType', { type: 'required', message: 'Please select at least one service' });
           return false;
         }
-        return await methods.trigger(['serviceType']);
-        
-      case 2: // Service Tier
         // Validate pricing tier selection
         if (!data.pricingTier) {
           methods.setError('pricingTier', { type: 'required', message: 'Please select a service tier' });
           return false;
         }
-        return true;
+        return await methods.trigger(['serviceType']);
         
-      case 3: // Contact Info
+      case 2: // Contact Info
         // Validate name, email, and phone
         return await methods.trigger(['customerName', 'customerEmail', 'customerPhone']);
         
-      case 4: // Location
+      case 3: // Location
         // Validate address, city, and postal code
         return await methods.trigger(['address', 'city', 'postalCode']);
         
-      case 5: // Appointment
+      case 4: // Appointment
         // Validate appointment date and time
         return await methods.trigger(['appointmentDate', 'appointmentTime']);
         
@@ -288,26 +284,23 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         }
         break;
         
-      case 1: // Service Details
+      case 1: // Service & Pricing (merged step)
         isValid = await methods.trigger(['serviceType']);
-        break;
-        
-      case 2: // Service Tier
         if (!data.pricingTier) {
           methods.setError('pricingTier', { type: 'required', message: 'Please select a service tier' });
           isValid = false;
         }
         break;
         
-      case 3: // Contact Info
+      case 2: // Contact Info
         isValid = await methods.trigger(['customerName', 'customerEmail', 'customerPhone']);
         break;
         
-      case 4: // Location
+      case 3: // Location
         isValid = await methods.trigger(['address', 'city', 'postalCode']);
         break;
         
-      case 5: // Appointment
+      case 4: // Appointment
         isValid = await methods.trigger(['appointmentDate', 'appointmentTime']);
         break;
     }
@@ -1317,10 +1310,227 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     );
   };
 
+  // Render the merged Service Details and Tier step
+  const renderServiceDetailsAndTierStep = () => {
+    // Only show validation errors if this step has been validated
+    const showValidationErrors = validatedSteps.includes(1);
+    
+    return (
+      <div className="space-y-8">
+        {/* Header Section */}
+        <div className="bg-gradient-to-r from-blue-50 to-primary-50 p-4 rounded-lg mb-6">
+          <h3 className="text-lg font-semibold text-primary-900 mb-2">Service Details & Pricing</h3>
+          <p className="text-sm text-gray-700">
+            Select the services you need and choose your preferred service tier.
+          </p>
+        </div>
+
+        {/* Service Selection Section */}
+        <div className="space-y-6">
+          <h4 className="text-xl font-semibold text-gray-900">What needs repair?</h4>
+          
+          <div className="space-y-4">
+            <ServiceSelector
+              deviceType={methods.watch('deviceType')}
+              selectedServices={methods.watch('serviceType') || []}
+              onServiceChange={(services) => {
+                methods.setValue('serviceType', services);
+                methods.trigger('serviceType');
+              }}
+              showValidationErrors={showValidationErrors}
+            />
+          </div>
+
+          <div className="space-y-4">
+            <div className="relative">
+              <label htmlFor="issueDescription" className="block text-sm font-medium text-gray-700 mb-2">
+                Additional Details (Optional)
+              </label>
+              <Controller
+                name="issueDescription"
+                control={methods.control}
+                render={({ field }) => (
+                  <textarea
+                    id="issueDescription"
+                    rows={3}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    placeholder="Please describe any additional details about the issue..."
+                    {...field}
+                  />
+                )}
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Help our technicians understand the problem better (optional).
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Service Tier Selection Section */}
+        <div className="space-y-6 border-t pt-8">
+          <h4 className="text-xl font-semibold text-gray-900">Choose Your Service Tier</h4>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4">
+              {/* Standard Tier */}
+              <Controller
+                name="pricingTier"
+                control={methods.control}
+                rules={{ required: "Please select a service tier" }}
+                render={({ field, fieldState }) => (
+                  <>
+                    <div
+                      className={`relative rounded-lg border-2 transition cursor-pointer ${
+                        field.value === 'standard'
+                          ? 'border-primary-500 bg-primary-50'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <label className="flex p-6 cursor-pointer">
+                        <div className="flex items-center h-5 mt-0.5">
+                          <input
+                            type="radio"
+                            className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+                            value="standard"
+                            checked={field.value === 'standard'}
+                            onChange={() => field.onChange('standard')}
+                          />
+                        </div>
+                        <div className="ml-4 flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <h5 className="text-lg font-medium text-gray-900">Standard Repair</h5>
+                            <div className="flex items-center space-x-2">
+                              <div className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                Most Popular
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-4">
+                            Quality repair with standard timeframe and 3-month warranty
+                          </p>
+                          
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="flex items-center">
+                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-700">3-Month Warranty</span>
+                            </div>
+                            <div className="flex items-center">
+                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-700">24-48 Hours</span>
+                            </div>
+                            <div className="flex items-center">
+                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-700">Quality Parts</span>
+                            </div>
+                            <div className="flex items-center">
+                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-700">Free Diagnostics</span>
+                            </div>
+                          </div>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Premium Tier */}
+                    <div
+                      className={`relative rounded-lg border-2 transition cursor-pointer ${
+                        field.value === 'premium'
+                          ? 'border-primary-500 bg-primary-50'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <label className="flex p-6 cursor-pointer">
+                        <div className="flex items-center h-5 mt-0.5">
+                          <input
+                            type="radio"
+                            className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+                            value="premium"
+                            checked={field.value === 'premium'}
+                            onChange={() => field.onChange('premium')}
+                          />
+                        </div>
+                        <div className="ml-4 flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <h5 className="text-lg font-medium text-gray-900">Premium Service</h5>
+                            <div className="flex items-center space-x-2">
+                              <div className="text-sm bg-orange-100 text-orange-800 px-2 py-1 rounded">
+                                Express Service
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-4">
+                            Priority service with premium parts and 6-month warranty
+                          </p>
+                          
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="flex items-center">
+                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-700">6-Month Warranty</span>
+                            </div>
+                            <div className="flex items-center">
+                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-700">12-24 Hours</span>
+                            </div>
+                            <div className="flex items-center">
+                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-700">Premium Parts</span>
+                            </div>
+                            <div className="flex items-center">
+                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-700">Express Handling</span>
+                            </div>
+                          </div>
+                        </div>
+                      </label>
+                    </div>
+
+                    {fieldState.error && showValidationErrors && (
+                      <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                    )}
+                  </>
+                )}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Real-time Pricing Display */}
+        <div className="mt-8">
+          <TierPriceComparison
+            deviceType={methods.watch('deviceType')}
+            brand={methods.watch('deviceBrand')}
+            model={methods.watch('deviceModel')}
+            services={methods.watch('serviceType')}
+            tier={methods.watch('pricingTier') || 'standard'}
+            postalCode={methods.watch('postalCode')}
+            enabled={!!(methods.watch('deviceType') && methods.watch('deviceBrand') && methods.watch('deviceModel') && methods.watch('serviceType'))}
+            className="mt-6"
+          />
+        </div>
+      </div>
+    );
+  };
+
   // Render the Customer Info step
   const renderCustomerInfoStep = () => {
     // Only show validation errors if this step has been validated
-    const showValidationErrors = validatedSteps.includes(3);
+    const showValidationErrors = validatedSteps.includes(2);
     
     return (
       <div className="space-y-6">
@@ -1493,7 +1703,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   // Render the Location step
   const renderLocationStep = () => {
     // Only show validation errors if this step has been validated
-    const showValidationErrors = validatedSteps.includes(4);
+    const showValidationErrors = validatedSteps.includes(3);
     
     // Function to detect current location and fill address fields
     const detectCurrentLocation = async () => {
@@ -1857,7 +2067,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   // Render the Appointment step
   const renderAppointmentStep = () => {
     // Only show validation errors if this step has been validated
-    const showValidationErrors = validatedSteps.includes(5);
+    const showValidationErrors = validatedSteps.includes(4);
     
     // Function to get tomorrow's date in YYYY-MM-DD format
     const getTomorrowDate = () => {
@@ -2343,16 +2553,14 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       case 0:
         return renderDeviceTypeStep();
       case 1:
-        return renderServiceDetailsStep();
+        return renderServiceDetailsAndTierStep();
       case 2:
-        return renderServiceTierStep();
-      case 3:
         return renderCustomerInfoStep();
-      case 4:
+      case 3:
         return renderLocationStep();
-      case 5:
+      case 4:
         return renderAppointmentStep();
-      case 6:
+      case 5:
         return renderConfirmationStep();
       default:
         return (
@@ -2387,188 +2595,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     handleSubmit(processedData);
   };
 
-  // Render the Service Tier step
-  const renderServiceTierStep = () => {
-    // Only show validation errors if this step has been validated
-    const showValidationErrors = validatedSteps.includes(2);
-    
-    return (
-      <div className="space-y-6">
-        <div className="bg-gradient-to-r from-blue-50 to-primary-50 p-4 rounded-lg mb-6">
-          <h3 className="text-lg font-semibold text-primary-900 mb-2">Choose Your Service Tier</h3>
-          <p className="text-sm text-gray-700">
-            Select the service tier that best meets your timing and warranty needs.
-          </p>
-        </div>
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-4">
-            {/* Standard Tier */}
-            <Controller
-              name="pricingTier"
-              control={methods.control}
-              rules={{ required: "Please select a service tier" }}
-              render={({ field, fieldState }) => (
-                <>
-                  <div
-                    className={`relative rounded-lg border-2 transition cursor-pointer ${
-                      field.value === 'standard'
-                        ? 'border-primary-500 bg-primary-50'
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    <label className="flex p-6 cursor-pointer">
-                      <div className="flex items-center h-5 mt-0.5">
-                        <input
-                          type="radio"
-                          className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
-                          value="standard"
-                          checked={field.value === 'standard'}
-                          onChange={() => field.onChange('standard')}
-                        />
-                      </div>
-                      <div className="ml-4 flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-lg font-medium text-gray-900">Standard Repair</h4>
-                          <div className="flex items-center space-x-2">
-                            <div className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                              Most Popular
-                            </div>
-                            {/* Price will be shown via PriceDisplay component below */}
-                          </div>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-4">
-                          Quality repair with standard timeframe and 3-month warranty
-                        </p>
-                        
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div className="flex items-center">
-                            <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            <span className="text-gray-700">3-Month Warranty</span>
-                          </div>
-                          <div className="flex items-center">
-                            <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            <span className="text-gray-700">24-48 Hours</span>
-                          </div>
-                          <div className="flex items-center">
-                            <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            <span className="text-gray-700">Quality Parts</span>
-                          </div>
-                          <div className="flex items-center">
-                            <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            <span className="text-gray-700">Free Diagnostics</span>
-                          </div>
-                        </div>
-                      </div>
-                    </label>
-                  </div>
-
-                  {/* Premium Tier */}
-                  <div
-                    className={`relative rounded-lg border-2 transition cursor-pointer ${
-                      field.value === 'premium'
-                        ? 'border-primary-500 bg-primary-50'
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    <label className="flex p-6 cursor-pointer">
-                      <div className="flex items-center h-5 mt-0.5">
-                        <input
-                          type="radio"
-                          className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
-                          value="premium"
-                          checked={field.value === 'premium'}
-                          onChange={() => field.onChange('premium')}
-                        />
-                      </div>
-                      <div className="ml-4 flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-lg font-medium text-gray-900">Premium Service</h4>
-                          <div className="flex items-center space-x-2">
-                            <div className="text-sm bg-orange-100 text-orange-800 px-2 py-1 rounded">
-                              Express Service
-                            </div>
-                            {/* Price will be shown via PriceDisplay component below */}
-                          </div>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-4">
-                          Priority service with premium parts and 6-month warranty
-                        </p>
-                        
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div className="flex items-center">
-                            <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            <span className="text-gray-700">6-Month Warranty</span>
-                          </div>
-                          <div className="flex items-center">
-                            <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            <span className="text-gray-700">12-24 Hours</span>
-                          </div>
-                          <div className="flex items-center">
-                            <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            <span className="text-gray-700">Premium Parts</span>
-                          </div>
-                          <div className="flex items-center">
-                            <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            <span className="text-gray-700">Express Handling</span>
-                          </div>
-                        </div>
-                      </div>
-                    </label>
-                  </div>
-
-                  {fieldState.error && showValidationErrors && (
-                    <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                  )}
-                </>
-              )}
-            />
-          </div>
-        </div>
-
-        <div className="bg-blue-50 p-4 rounded-md border border-blue-100">
-          <div className="flex">
-            <svg className="h-6 w-6 text-blue-500 mr-3 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
-              <path fillRule="evenodd" d="M12 22a10 10 0 100-20 10 10 0 000 20zm0-18a8 8 0 100 16 8 8 0 000-16zm1 6a1 1 0 00-2 0v4a1 1 0 002 0V10zm-1-3a1 1 0 100 2 1 1 0 000-2z" clipRule="evenodd" />
-            </svg>
-            <div>
-              <h4 className="font-semibold text-blue-700 text-sm">Service Information:</h4>
-              <p className="text-sm text-blue-700 mt-1">
-                Both tiers include free diagnostics, professional service, and doorstep convenience. Premium service provides faster turnaround and extended warranty coverage.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Tier Pricing Comparison */}
-        <TierPriceComparison
-          deviceType={methods.watch('deviceType')}
-          brand={methods.watch('deviceBrand')}
-          model={methods.watch('deviceModel')}
-          services={methods.watch('serviceType')}
-          postalCode={methods.watch('postalCode')}
-          enabled={!!(methods.watch('deviceType') && methods.watch('deviceBrand') && methods.watch('deviceModel') && methods.watch('serviceType'))}
-          className="mt-6"
-        />
-      </div>
-    );
-  };
 
   return (
     <>
