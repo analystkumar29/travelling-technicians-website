@@ -1330,15 +1330,270 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           <h4 className="text-xl font-semibold text-gray-900">What needs repair?</h4>
           
           <div className="space-y-4">
-            <ServiceSelector
-              deviceType={methods.watch('deviceType')}
-              selectedServices={methods.watch('serviceType') || []}
-              onServiceChange={(services) => {
-                methods.setValue('serviceType', services);
-                methods.trigger('serviceType');
-              }}
-              showValidationErrors={showValidationErrors}
-            />
+            {/* Service selection logic from renderServiceDetailsStep */}
+            {(() => {
+              const deviceType = methods.watch('deviceType');
+              
+              // Enhanced services with icons, time estimates, and price ranges (using existing service definitions)
+              const services = {
+                mobile: [
+                  { 
+                    id: 'screen-replacement', 
+                    label: 'Screen Replacement', 
+                    doorstep: true,
+                    icon: 'M12 18h-1.5v-2H18v2H12zM6 11v-1h12v1H6zm0 6H4.5v-2H6v2zm10.5-6a.75.75 0 100-1.5.75.75 0 000 1.5zM12 6V4h6v2h-6zM6 6V4h4.5v2H6z',
+                    time: '30-60 min',
+                    price: '$89-199',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'battery-replacement', 
+                    label: 'Battery Replacement', 
+                    doorstep: true,
+                    icon: 'M20 10V8h-3V4H7v4H4v2h3v8a2 2 0 002 2h6a2 2 0 002-2v-8h3zM13 8V6h1v2h-1zm-3 0V6h1v2h-1z',
+                    time: '20-40 min',
+                    price: '$69-129',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'charging-port', 
+                    label: 'Charging Port Repair', 
+                    doorstep: true,
+                    icon: 'M9 4v4h6V4h2v4h1a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8a2 2 0 012-2h1V4h2zm1 16h4v-4h-4v4z',
+                    time: '30-45 min',
+                    price: '$79-119',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'speaker-mic', 
+                    label: 'Speaker/Microphone Repair', 
+                    doorstep: true,
+                    icon: 'M10 7a5 5 0 015 5 5 5 0 01-5 5 5 5 0 01-5-5 5 5 0 015-5zm0 2a3 3 0 00-3 3 3 3 0 003 3 3 3 0 003-3 3 3 0 00-3-3zm7-5v14a2 2 0 01-2 2H5a2 2 0 01-2-2V4a2 2 0 012-2h10a2 2 0 012 2z',
+                    time: '25-45 min',
+                    price: '$69-119',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'camera-repair', 
+                    label: 'Camera Repair', 
+                    doorstep: true,
+                    icon: 'M12 9a3 3 0 100 6 3 3 0 000-6zm0 1.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM20 5H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2zm-8 11a5 5 0 110-10 5 5 0 010 10z',
+                    time: '30-60 min',
+                    price: '$89-149',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'water-damage', 
+                    label: 'Water Damage Diagnostics', 
+                    doorstep: false,
+                    icon: 'M12 3.25a.75.75 0 01.75.75v6.701a4.25 4.25 0 11-1.5 0V4a.75.75 0 01.75-.75zM7.266 7.5a7 7 0 1113.468 2.5 7 7 0 01-13.468-2.5z',
+                    time: '45-90 min',
+                    price: '$99-249',
+                    group: 'special'
+                  }
+                ],
+                laptop: [
+                  { 
+                    id: 'screen-replacement', 
+                    label: 'Screen Replacement', 
+                    doorstep: true,
+                    icon: 'M20 4H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 11.5H4V6h16v9.5zM4 20h16v-2H4v2z',
+                    time: '45-75 min',
+                    price: '$149-349',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'battery-replacement', 
+                    label: 'Battery Replacement', 
+                    doorstep: true,
+                    icon: 'M20 10V8h-3V4H7v4H4v2h3v8a2 2 0 002 2h6a2 2 0 002-2v-8h3z',
+                    time: '30-45 min',
+                    price: '$99-199',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'keyboard-repair', 
+                    label: 'Keyboard Repair/Replacement', 
+                    doorstep: true,
+                    icon: 'M20 5H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2zm0 11.5H4V7h16v9.5zM6 10h2v2H6v-2zm3 0h2v2H9v-2zm3 0h2v2h-2v-2zm3 0h2v2h-2v-2z',
+                    time: '45-75 min',
+                    price: '$99-189',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'trackpad-repair', 
+                    label: 'Trackpad Repair', 
+                    doorstep: true,
+                    icon: 'M19 4H5a3 3 0 00-3 3v10a3 3 0 003 3h14a3 3 0 003-3V7a3 3 0 00-3-3zm1 13a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h14a1 1 0 011 1v10zm-8-7a2 2 0 100 4 2 2 0 000-4z',
+                    time: '45-90 min',
+                    price: '$99-179',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'ram-upgrade', 
+                    label: 'RAM Upgrade', 
+                    doorstep: true,
+                    icon: 'M4 4h16a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1zm0 8h16a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4a1 1 0 011-1zm3-6h2v2H7V6zm0 8h2v2H7v-2z',
+                    time: '20-40 min',
+                    price: '$69-249',
+                    group: 'upgrades'
+                  },
+                  { 
+                    id: 'storage-upgrade', 
+                    label: 'HDD/SSD Replacement/Upgrade', 
+                    doorstep: true,
+                    icon: 'M15 15a2 2 0 100-4 2 2 0 000 4zm4-11h-1V3a1 1 0 00-1-1H7a1 1 0 00-1 1v1H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm-4 10a4 4 0 110-8 4 4 0 010 8zm-6-8.5a.5.5 0 100-1 .5.5 0 000 1z',
+                    time: '30-60 min',
+                    price: '$89-349',
+                    group: 'upgrades'
+                  },
+                  { 
+                    id: 'software-trouble', 
+                    label: 'Software Troubleshooting', 
+                    doorstep: true,
+                    icon: 'M13 13.5a1 1 0 11-2 0 1 1 0 012 0zm-.25-5v2.992l.25.26a1 1 0 11-2 0l.25-.26V8.5a1 1 0 112 0zM12 4a8 8 0 100 16 8 8 0 000-16zm-6.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z',
+                    time: '45-90 min',
+                    price: '$79-149',
+                    group: 'software'
+                  },
+                  { 
+                    id: 'virus-removal', 
+                    label: 'Virus Removal', 
+                    doorstep: true,
+                    icon: 'M11 16.75a.75.75 0 001.5 0v-1.061l.344-.282a4.5 4.5 0 10-2.196.003l.352.279v1.06zm1.956-8.909a1 1 0 00-1.912 0L9.96 9.575A3 3 0 008.633 11H7a1 1 0 100 2h1.633A3.001 3.001 0 0012 15a3.001 3.001 0 003.367-2H17a1 1 0 100-2h-1.633a3 3 0 00-1.327-1.425l-1.084-1.734z',
+                    time: '60-120 min',
+                    price: '$99-199',
+                    group: 'software'
+                  },
+                  { 
+                    id: 'cooling-repair', 
+                    label: 'Cooling System Repair', 
+                    doorstep: true,
+                    icon: 'M10 8a1 1 0 11-2 0 1 1 0 012 0zm5 0a1 1 0 11-2 0 1 1 0 012 0zM8.5 12.5L7 11l-3 3 3 3 1.5-1.5L7 14l1.5-1.5zm7 0L14 14l1.5 1.5L17 14l-3-3-3 3 1.5 1.5 1.5-1.5zM12 2a10 10 0 100 20 10 10 0 000-20zm-8 10a8 8 0 1116 0 8 8 0 01-16 0z',
+                    time: '45-90 min',
+                    price: '$89-179',
+                    group: 'hardware'
+                  },
+                  { 
+                    id: 'power-jack', 
+                    label: 'Power Jack Repair', 
+                    doorstep: true,
+                    icon: 'M12 7V5M8 9l-2-2M16 9l2-2M7 13H5M19 13h-2M12 17a2 2 0 100-4 2 2 0 000 4z',
+                    time: '60-90 min',
+                    price: '$99-179',
+                    group: 'hardware'
+                  }
+                ],
+                tablet: [
+                  { 
+                    id: 'screen-replacement', 
+                    label: 'Screen Replacement', 
+                    doorstep: true,
+                    icon: 'M18 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2zm0 17H6V5h12v14zm-7-3h2v-2h-2v2z',
+                    time: '45-75 min',
+                    price: '$129-299',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'battery-replacement', 
+                    label: 'Battery Replacement', 
+                    doorstep: true,
+                    icon: 'M20 10V8h-3V4H7v4H4v2h3v8a2 2 0 002 2h6a2 2 0 002-2v-8h3z',
+                    time: '30-60 min',
+                    price: '$89-169',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'charging-port', 
+                    label: 'Charging Port Repair', 
+                    doorstep: true,
+                    icon: 'M9 4v4h6V4h2v4h1a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8a2 2 0 012-2h1V4h2zm1 16h4v-4h-4v4z',
+                    time: '30-60 min',
+                    price: '$79-149',
+                    group: 'common'
+                  }
+                ]
+              };
+
+              const deviceServices = services[deviceType as keyof typeof services] || [];
+              const selectedServices = methods.watch('serviceType') || [];
+
+              return (
+                <Controller
+                  name="serviceType"
+                  control={methods.control}
+                  rules={{ required: "Please select at least one service" }}
+                  render={({ field, fieldState }) => (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {deviceServices.map((service) => {
+                          const isSelected = Array.isArray(field.value) 
+                            ? field.value.includes(service.id)
+                            : field.value === service.id;
+
+                          return (
+                            <div
+                              key={service.id}
+                              className={`relative border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                                isSelected
+                                  ? 'border-primary-500 bg-primary-50'
+                                  : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                              onClick={() => {
+                                // Toggle service selection
+                                let newValue;
+                                if (Array.isArray(field.value)) {
+                                  newValue = isSelected
+                                    ? field.value.filter(id => id !== service.id)
+                                    : [...field.value, service.id];
+                                } else {
+                                  newValue = isSelected ? [] : [service.id];
+                                }
+                                field.onChange(newValue);
+                                methods.trigger('serviceType');
+                              }}
+                            >
+                              <div className="flex items-start space-x-3">
+                                <div className="flex-shrink-0 mt-1">
+                                  <svg className="h-6 w-6 text-primary-600" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d={service.icon} />
+                                  </svg>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-lg font-medium text-gray-900">{service.label}</h4>
+                                    {service.doorstep && (
+                                      <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                        Doorstep
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center justify-between text-sm text-gray-600">
+                                    <span>{service.time}</span>
+                                    <span className="font-medium text-primary-600">{service.price}</span>
+                                  </div>
+                                </div>
+                                {isSelected && (
+                                  <div className="flex-shrink-0">
+                                    <svg className="h-5 w-5 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      {fieldState.error && showValidationErrors && (
+                        <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                      )}
+                    </div>
+                  )}
+                />
+              );
+            })()}
           </div>
 
           <div className="space-y-4">
@@ -1517,7 +1772,6 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             brand={methods.watch('deviceBrand')}
             model={methods.watch('deviceModel')}
             services={methods.watch('serviceType')}
-            tier={methods.watch('pricingTier') || 'standard'}
             postalCode={methods.watch('postalCode')}
             enabled={!!(methods.watch('deviceType') && methods.watch('deviceBrand') && methods.watch('deviceModel') && methods.watch('serviceType'))}
             className="mt-6"
