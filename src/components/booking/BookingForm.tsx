@@ -1306,7 +1306,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   // Render the Customer Info step
   const renderCustomerInfoStep = () => {
     // Only show validation errors if this step has been validated
-    const showValidationErrors = validatedSteps.includes(2);
+    const showValidationErrors = validatedSteps.includes(3);
     
     return (
       <div className="space-y-6">
@@ -1479,7 +1479,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   // Render the Location step
   const renderLocationStep = () => {
     // Only show validation errors if this step has been validated
-    const showValidationErrors = validatedSteps.includes(3);
+    const showValidationErrors = validatedSteps.includes(4);
     
     // Function to detect current location and fill address fields
     const detectCurrentLocation = async () => {
@@ -1843,7 +1843,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   // Render the Appointment step
   const renderAppointmentStep = () => {
     // Only show validation errors if this step has been validated
-    const showValidationErrors = validatedSteps.includes(4);
+    const showValidationErrors = validatedSteps.includes(5);
     
     // Function to get tomorrow's date in YYYY-MM-DD format
     const getTomorrowDate = () => {
@@ -2471,6 +2471,52 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                           </div>
                           <div className="flex items-center">
                             <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                            <span className="text-gray-700">12-24 Hours</span>
+                          </div>
+                          <div className="flex items-center">
+                            <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                            <span className="text-gray-700">Premium Parts</span>
+                          </div>
+                          <div className="flex items-center">
+                            <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                            <span className="text-gray-700">Express Handling</span>
+                          </div>
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+
+                  {fieldState.error && showValidationErrors && (
+                    <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                  )}
+                </>
+              )}
+            />
+          </div>
+        </div>
+
+        <div className="bg-blue-50 p-4 rounded-md border border-blue-100">
+          <div className="flex">
+            <svg className="h-6 w-6 text-blue-500 mr-3 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+              <path fillRule="evenodd" d="M12 22a10 10 0 100-20 10 10 0 000 20zm0-18a8 8 0 100 16 8 8 0 000-16zm1 6a1 1 0 00-2 0v4a1 1 0 002 0V10zm-1-3a1 1 0 100 2 1 1 0 000-2z" clipRule="evenodd" />
+            </svg>
+            <div>
+              <h4 className="font-semibold text-blue-700 text-sm">Service Information:</h4>
+              <p className="text-sm text-blue-700 mt-1">
+                Both tiers include free diagnostics, professional service, and doorstep convenience. Premium service provides faster turnaround and extended warranty coverage.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <>
