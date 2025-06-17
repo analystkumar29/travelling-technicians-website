@@ -1,7 +1,7 @@
 import Layout from '@/components/layout/Layout';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FaCheckCircle, FaTabletAlt, FaBatteryFull, FaBolt, FaCamera, FaVolumeUp, FaBug, FaTouch, FaSyncAlt } from 'react-icons/fa';
+import { FaCheckCircle, FaTabletAlt, FaBatteryFull, FaBolt, FaCamera, FaVolumeUp, FaBug, FaHandPointer, FaSyncAlt } from 'react-icons/fa';
 
 // Tablet repair services data
 const tabletServices = [
@@ -75,7 +75,7 @@ const tabletServices = [
     id: 7,
     name: 'Touch Screen Calibration',
     description: 'If your tablet\'s touch response is inaccurate or unresponsive in certain areas, our technicians can recalibrate or repair touch functionality on-site.',
-    icon: <FaTouch className="h-10 w-10" />,
+    icon: <FaHandPointer className="h-10 w-10" />,
     doorstep: true,
     limited: false,
     price: 'From $69',
