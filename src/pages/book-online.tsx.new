@@ -11,6 +11,7 @@ import type { CreateBookingRequest } from '@/types/booking';
 import { logger } from '@/utils/logger';
 import { supabase } from '@/utils/supabaseClient';
 import { generateBookingReference as generateReferenceNumber } from '@/utils/bookingUtils';
+import { formatDate, formatTimeSlot } from '@/utils/formatters';
 import { AuthContext } from '@/context/AuthContext';
 
 // Create a logger for this page
@@ -143,37 +144,11 @@ const BookOnlinePage: NextPage = () => {
     setBookingData(null);
   };
   
-  // Format date for display
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'N/A';
-    try {
-      const date = new Date(dateString);
-      return new Intl.DateTimeFormat('en-CA', { 
-        weekday: 'long',
-        month: 'long', 
-        day: 'numeric',
-        year: 'numeric'
-      }).format(date);
-    } catch (e) {
-      return dateString; // Fallback to original string if parsing fails
-    }
-  };
-  
   // Format time for display
   const formatTime = (timeString?: string) => {
     if (!timeString) return 'N/A';
-    // Handle different time formats
-    if (timeString.includes('-')) {
-      return timeString; // Return time range as is
-    }
-    
-    try {
-      const [hours, minutes] = timeString.split(':');
-      const hour = parseInt(hours);
-      return `${hour > 12 ? hour - 12 : hour}:${minutes} ${hour >= 12 ? 'PM' : 'AM'}`;
-    } catch (e) {
-      return timeString; // Return original if parsing fails
-    }
+    // Use the formatTimeSlot utility function which properly handles "HH-HH" format
+    return formatTimeSlot(timeString);
   };
   
   const formatAddress = () => {

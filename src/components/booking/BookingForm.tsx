@@ -17,7 +17,7 @@ import {
   isValidPostalCodeFormat,
   ServiceAreaType
 } from '@/utils/locationUtils';
-import { formatDate } from '@/utils/formatters';
+import { formatDate, formatTimeSlot } from '@/utils/formatters';
 import AddressAutocomplete from './AddressAutocomplete';
 import PriceDisplay from './PriceDisplay';
 import TierPriceComparison from './TierPriceComparison';
@@ -2067,12 +2067,11 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       'other': 'Other Repair'
     };
     
-    // Format time for display
+    // Format time for display - use the utility function that handles time slots properly
     const formatTime = (timeString: string) => {
       if (!timeString) return 'Not selected';
-      const [hours, minutes] = timeString.split(':');
-      const hour = parseInt(hours);
-      return `${hour > 12 ? hour - 12 : hour}:${minutes} ${hour >= 12 ? 'PM' : 'AM'}`;
+      // Use the formatTimeSlot utility function which properly handles "HH-HH" format
+      return formatTimeSlot(timeString);
     };
     
     return (

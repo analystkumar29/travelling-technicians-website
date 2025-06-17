@@ -5,6 +5,7 @@ import { useBookingForm } from '@/hooks/useBookingForm';
 import { supabase } from '@/utils/supabaseClient';
 import { FaCheckCircle, FaRegCalendarAlt, FaMapMarkerAlt, FaTools, FaMobileAlt, FaLaptop } from 'react-icons/fa';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { formatDate, formatTimeSlot } from '@/utils/formatters';
 // Import temporarily commented out due to build issues
 // import ConfettiExplosion from 'react-confetti-explosion';
 
@@ -28,19 +29,9 @@ const BookingComplete: React.FC<BookingCompleteProps> = ({
   const router = useRouter();
   const { state } = useBookingForm();
 
-  // Format date for better display
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return new Intl.DateTimeFormat('en-CA', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric'
-      }).format(date);
-    } catch (e) {
-      return dateString;
-    }
+  // Format time for better display
+  const formatTime = (timeString: string) => {
+    return formatTimeSlot(timeString);
   };
 
   return (
@@ -74,7 +65,7 @@ const BookingComplete: React.FC<BookingCompleteProps> = ({
           </div>
           <div className="flex justify-between items-center border-b border-gray-200 pb-3">
             <span className="text-gray-600">Appointment:</span>
-            <span className="font-medium">{formatDate(appointmentDate)}, {appointmentTime}</span>
+            <span className="font-medium">{formatDate(appointmentDate)}, {formatTime(appointmentTime)}</span>
           </div>
         </div>
       </div>
