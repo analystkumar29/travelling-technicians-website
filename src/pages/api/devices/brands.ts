@@ -121,9 +121,20 @@ export default async function handler(
         deviceType 
       });
 
+      // Transform the data to match the Brand interface
+      const transformedBrands: Brand[] = (brands || []).map(brand => ({
+        id: brand.id,
+        name: brand.display_name || brand.name,
+        device_type: brand.device_types[0]?.name || deviceType as string,
+        logo_url: brand.logo_url,
+        is_active: brand.is_active,
+        sort_order: brand.sort_order,
+        created_at: brand.created_at
+      }));
+
       return res.status(200).json({
         success: true,
-        brands: brands || []
+        brands: transformedBrands
       });
 
     } catch (dbError) {
