@@ -23,18 +23,23 @@ const Header = () => {
   };
   
   return (
-    <nav className="bg-primary-700 text-white shadow-lg relative z-50">
+    <nav className="bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900 text-white shadow-lg relative z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href="/" className="flex items-center">
-              <div className="w-20 h-20 relative mr-2">
+              <div className="w-20 h-20 relative mr-2 overflow-hidden">
                 <Image
                   src="/images/logo/logo-orange.png"
                   alt="Travelling Technicians Logo"
                   fill
-                  priority
+                  priority={true}
+                  quality={95}
+                  className="object-contain"
+                  sizes="80px"
+                  placeholder="blur"
+                  blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjZjk3MzE2Ii8+Cjwvc3ZnPgo="
                 />
               </div>
               <div className="font-semibold text-white leading-tight">

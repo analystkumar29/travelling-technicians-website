@@ -100,15 +100,19 @@ class MyDocument extends Document {
           <link rel="manifest" href="/site.webmanifest" />
           
           {/* Theme Color */}
-          <meta name="theme-color" content="#0d9488" />
-          <meta name="msapplication-TileColor" content="#0d9488" />
+          <meta name="theme-color" content="#1e40af" />
+          <meta name="msapplication-TileColor" content="#1e40af" />
+          <meta name="msapplication-navbutton-color" content="#1e40af" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+          <meta name="apple-mobile-web-app-capable" content="yes" />
           
           {/* Favicon - Updated with cache busting */}
-          <link rel="icon" href="/favicon.ico?v=2024" />
-          <link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png?v=2024" />
-          <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png?v=2024" />
-          <link rel="icon" type="image/png" sizes="192x192" href="/favicons/favicon-192x192.png?v=2024" />
-          <link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png?v=2024" />
+          <link rel="icon" href="/favicon.ico?v=2024&t=orange" />
+          <link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png?v=2024&t=orange" />
+          <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png?v=2024&t=orange" />
+          <link rel="icon" type="image/png" sizes="192x192" href="/favicons/favicon-192x192.png?v=2024&t=orange" />
+          <link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png?v=2024&t=orange" />
+          <link rel="shortcut icon" href="/favicon.ico?v=2024&t=orange" />
           
           {/* Add the cache cleaning script */}
           <script src="/clean-cache.js" async></script>
@@ -175,6 +179,13 @@ class MyDocument extends Document {
           />
           {/* Preconnect to origin to speed up loading */}
           <link rel="preconnect" href={`https://${process.env.NEXT_PUBLIC_VERCEL_URL || 'localhost:3000'}`} />
+          
+          {/* Preload critical logo */}
+          <link rel="preload" href="/images/logo/logo-orange.png" as="image" type="image/png" />
+          
+          {/* Force search engines to update favicon */}
+          <meta property="og:image" content="/favicons/android-chrome-512x512.png?v=2024&t=orange" />
+          <meta name="msapplication-config" content="none" />
 
           {/* Moved Scripts from _app.tsx */}
           <Script id="next-router-fix" strategy="beforeInteractive">
