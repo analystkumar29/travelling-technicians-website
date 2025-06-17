@@ -139,46 +139,98 @@ export default function Home() {
                 Expert technicians come to your location in the Lower Mainland. Most repairs completed in under 60 minutes.
               </p>
               
+              <div className="mb-6">
+                <h3 className="text-lg font-bold mb-4 text-center">Choose Your Device Type:</h3>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1">
+                    <button 
+                      onClick={() => {
+                        setDeviceType('mobile');
+                        setSelectedBrand(null);
+                        setSelectedIssue(null);
+                        // Smooth scroll to issues section
+                        setTimeout(() => {
+                          const issuesSection = document.querySelector('[data-section="issues"]');
+                          if (issuesSection) {
+                            issuesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }
+                        }, 100);
+                      }}
+                      className={`w-full flex items-center justify-center p-4 rounded-lg border-2 ${
+                        deviceType === 'mobile' 
+                          ? 'bg-primary-600 text-white border-primary-600 shadow-lg transform scale-105' 
+                          : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50 hover:border-primary-400'
+                      } transition-all duration-200`}
+                    >
+                      <FaMobile className="mr-2" />
+                      Mobile
+                    </button>
+                  </div>
+                  <div className="flex-1">
+                    <button 
+                      onClick={() => {
+                        setDeviceType('laptop');
+                        setSelectedBrand(null);
+                        setSelectedIssue(null);
+                        // Smooth scroll to issues section
+                        setTimeout(() => {
+                          const issuesSection = document.querySelector('[data-section="issues"]');
+                          if (issuesSection) {
+                            issuesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }
+                        }, 100);
+                      }}
+                      className={`w-full flex items-center justify-center p-4 rounded-lg border-2 ${
+                        deviceType === 'laptop' 
+                          ? 'bg-primary-600 text-white border-primary-600 shadow-lg transform scale-105' 
+                          : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50 hover:border-primary-400'
+                      } transition-all duration-200`}
+                    >
+                      <FaLaptop className="mr-2" />
+                      Laptop
+                    </button>
+                  </div>
+                  <div className="flex-1">
+                    <button 
+                      onClick={() => {
+                        setDeviceType('tablet');
+                        setSelectedBrand(null);
+                        setSelectedIssue(null);
+                        // Smooth scroll to issues section
+                        setTimeout(() => {
+                          const issuesSection = document.querySelector('[data-section="issues"]');
+                          if (issuesSection) {
+                            issuesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }
+                        }, 100);
+                      }}
+                      className={`w-full flex items-center justify-center p-4 rounded-lg border-2 ${
+                        deviceType === 'tablet' 
+                          ? 'bg-primary-600 text-white border-primary-600 shadow-lg transform scale-105' 
+                          : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50 hover:border-primary-400'
+                      } transition-all duration-200`}
+                    >
+                      <FaTabletAlt className="mr-2" />
+                      Tablet
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Quick Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                  <button 
-                    onClick={() => setDeviceType('mobile')}
-                    className={`w-full flex items-center justify-center p-3 rounded-lg border-2 ${
-                      deviceType === 'mobile' 
-                        ? 'bg-primary-600 text-white border-primary-600' 
-                        : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50'
-                    } transition-colors`}
-                  >
-                    <FaMobile className="mr-2" />
-                    Mobile
-                  </button>
-                </div>
-                <div className="flex-1">
-                  <button 
-                    onClick={() => setDeviceType('laptop')}
-                    className={`w-full flex items-center justify-center p-3 rounded-lg border-2 ${
-                      deviceType === 'laptop' 
-                        ? 'bg-primary-600 text-white border-primary-600' 
-                        : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50'
-                    } transition-colors`}
-                  >
-                    <FaLaptop className="mr-2" />
-                    Laptop
-                  </button>
-                </div>
-                <div className="flex-1">
-                  <button 
-                    onClick={() => setDeviceType('tablet')}
-                    className={`w-full flex items-center justify-center p-3 rounded-lg border-2 ${
-                      deviceType === 'tablet' 
-                        ? 'bg-primary-600 text-white border-primary-600' 
-                        : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50'
-                    } transition-colors`}
-                  >
-                    <FaTabletAlt className="mr-2" />
-                    Tablet
-                  </button>
-                </div>
+                <Link 
+                  href={`/services/${deviceType === 'mobile' ? 'mobile' : deviceType === 'laptop' ? 'laptop' : 'tablet'}-repair`} 
+                  className="flex-1 bg-accent-500 text-white text-center py-3 px-6 rounded-lg font-semibold hover:bg-accent-600 transition-colors"
+                >
+                  See {deviceType === 'mobile' ? 'Mobile' : deviceType === 'laptop' ? 'Laptop' : 'Tablet'} Services
+                </Link>
+                <Link 
+                  href={`/book-online?deviceType=${deviceType}`} 
+                  className="flex-1 bg-primary-600 text-white text-center py-3 px-6 rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+                >
+                  Book {deviceType === 'mobile' ? 'Mobile' : deviceType === 'laptop' ? 'Laptop' : 'Tablet'} Repair
+                </Link>
               </div>
               
               <div className="mt-8">
@@ -274,7 +326,7 @@ export default function Home() {
       </section>
       
       {/* Common Repair Options */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-gray-50" data-section="issues">
         <div className="container-custom">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Select Your Issue</h2>

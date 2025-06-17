@@ -118,7 +118,7 @@ export default function MobileRepairPage() {
                 From cracked screens to water damage, we bring professional mobile phone repair services directly to your location across the Lower Mainland.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/book-online" className="btn-accent text-center">
+                <Link href="/book-online?deviceType=mobile" className="btn-accent text-center">
                     Book Mobile Repair
                   </Link>
                 <Link href="/pricing" className="btn-outline border-white text-white hover:bg-primary-600 text-center">
@@ -197,9 +197,9 @@ export default function MobileRepairPage() {
                       <div className="flex justify-between items-center">
                         <span className="font-bold text-lg text-primary-600">{service.price}</span>
                         <div className="flex justify-center mt-6">
-                          <Link href="/book-online" className="btn-primary text-sm py-2">
-                              Book This Service
-                            </Link>
+                                                  <Link href="/book-online?deviceType=mobile" className="btn-primary text-sm py-2">
+                            Book This Service
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -241,7 +241,7 @@ export default function MobileRepairPage() {
                   <div className="mt-auto flex justify-between items-center">
                     <span className="font-bold text-lg text-primary-600">{service.price}</span>
                     <div className="flex justify-center mt-6">
-                      <Link href="/book-online" className="btn-primary text-sm py-2">
+                      <Link href="/book-online?deviceType=mobile" className="btn-primary text-sm py-2">
                           Book Now
                         </Link>
                     </div>
@@ -382,9 +382,9 @@ export default function MobileRepairPage() {
               Book our doorstep mobile repair service and have your phone fixed without the hassle of going to a repair shop.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link href="/book-online" className="btn-accent text-center">
-                  Book a Repair
-                </Link>
+                          <Link href="/book-online?deviceType=mobile" className="btn-accent text-center">
+                Book a Repair
+              </Link>
               <Link href="/contact" className="btn-outline border-white text-white hover:bg-primary-700 text-center">
                   Contact Us
                 </Link>

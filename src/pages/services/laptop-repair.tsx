@@ -146,7 +146,7 @@ export default function LaptopRepairPage() {
                 From screen replacements to performance upgrades, we bring professional laptop repair services directly to your location across the Lower Mainland.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/book-online" className="btn-accent text-center">
+                <Link href="/book-online?deviceType=laptop" className="btn-accent text-center">
                     Book Laptop Repair
                   </Link>
                 <Link href="/pricing" className="btn-outline border-white text-white hover:bg-primary-600 text-center">
@@ -225,9 +225,9 @@ export default function LaptopRepairPage() {
                       <div className="flex justify-between items-center">
                         <span className="font-bold text-lg text-primary-600">{service.price}</span>
                         <div className="flex justify-center mt-6">
-                          <Link href="/book-online" className="btn-primary text-sm py-2">
-                              Book This Service
-                            </Link>
+                                                  <Link href="/book-online?deviceType=laptop" className="btn-primary text-sm py-2">
+                            Book This Service
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -269,9 +269,9 @@ export default function LaptopRepairPage() {
                   <div className="mt-auto flex justify-between items-center">
                     <span className="font-bold text-lg text-primary-600">{service.price}</span>
                     <div className="flex justify-center mt-6">
-                      <Link href="/book-online" className="btn-primary text-sm py-2">
-                          Book Now
-                        </Link>
+                                              <Link href="/book-online?deviceType=laptop" className="btn-primary text-sm py-2">
+                            Book Now
+                          </Link>
                     </div>
                   </div>
                 </div>
@@ -410,7 +410,7 @@ export default function LaptopRepairPage() {
               Book our doorstep laptop repair service and have your computer fixed without the hassle of going to a repair shop.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link href="/book-online" className="btn-accent text-center">
+              <Link href="/book-online?deviceType=laptop" className="btn-accent text-center">
                   Book Your Repair
                 </Link>
               <Link href="/contact" className="btn-outline border-white text-white hover:bg-primary-700 text-center">
