@@ -19,6 +19,8 @@ import {
 } from '@/utils/locationUtils';
 import { formatDate } from '@/utils/formatters';
 import AddressAutocomplete from './AddressAutocomplete';
+import PriceDisplay from './PriceDisplay';
+import TierPriceComparison from './TierPriceComparison';
 
 interface BookingFormProps {
   onSubmit: (data: CreateBookingRequest) => void;
@@ -1298,6 +1300,18 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               </div>
             </div>
           </div>
+
+          {/* Real-time Pricing Display */}
+          <PriceDisplay
+            deviceType={methods.watch('deviceType')}
+            brand={methods.watch('deviceBrand')}
+            model={methods.watch('deviceModel')}
+            services={methods.watch('serviceType')}
+            tier={methods.watch('pricingTier') || 'standard'}
+            postalCode={methods.watch('postalCode')}
+            enabled={!!(methods.watch('deviceType') && methods.watch('deviceBrand') && methods.watch('deviceModel') && methods.watch('serviceType'))}
+            className="mt-6"
+          />
         </div>
       </div>
     );
@@ -2103,23 +2117,33 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   }
                 </dd>
               </div>
-              <div className="sm:col-span-1">
-                <dt className="text-sm font-medium text-gray-500">Service Tier</dt>
-                <dd className="mt-1 text-sm text-gray-900">
-                  <span className="inline-flex items-center">
-                    {formData.pricingTier === 'premium' ? 'Premium Service' : 'Standard Repair'}
-                    {formData.pricingTier === 'premium' && (
-                      <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                        +25% Cost
+              <div className="sm:col-span-2">
+                <dt className="text-sm font-medium text-gray-500">Service Tier & Pricing</dt>
+                <dd className="mt-1">
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-900">
+                        {formData.pricingTier === 'premium' ? 'Premium Service' : 'Standard Repair'}
                       </span>
-                    )}
-                  </span>
-                </dd>
-              </div>
-              <div className="sm:col-span-1">
-                <dt className="text-sm font-medium text-gray-500">Warranty Period</dt>
-                <dd className="mt-1 text-sm text-gray-900">
-                  {formData.pricingTier === 'premium' ? '6 Months' : '3 Months'}
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        formData.pricingTier === 'premium' 
+                          ? 'bg-orange-100 text-orange-800' 
+                          : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {formData.pricingTier === 'premium' ? 'Express Service' : 'Most Popular'}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600">Warranty:</span>
+                        <span className="ml-2 font-medium">{formData.pricingTier === 'premium' ? '6 Months' : '3 Months'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Turnaround:</span>
+                        <span className="ml-2 font-medium">{formData.pricingTier === 'premium' ? '12-24 Hours' : '24-48 Hours'}</span>
+                      </div>
+                    </div>
+                  </div>
                 </dd>
               </div>
               {formData.issueDescription && (
@@ -2181,6 +2205,18 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             </dl>
           </div>
         </div>
+
+        {/* Final Pricing Summary */}
+        <PriceDisplay
+          deviceType={formData.deviceType}
+          brand={formData.deviceBrand}
+          model={formData.deviceModel}
+          services={formData.serviceType}
+          tier={formData.pricingTier || 'standard'}
+          postalCode={formData.postalCode}
+          enabled={true}
+          className="mt-6"
+        />
         
         <div className="mt-6">
           <div className="relative flex items-start">
@@ -2395,8 +2431,11 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       <div className="ml-4 flex-1">
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="text-lg font-medium text-gray-900">Standard Repair</h4>
-                          <div className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                            Most Popular
+                          <div className="flex items-center space-x-2">
+                            <div className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                              Most Popular
+                            </div>
+                            {/* Price will be shown via PriceDisplay component below */}
                           </div>
                         </div>
                         <p className="text-sm text-gray-600 mb-4">
@@ -2454,8 +2493,11 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       <div className="ml-4 flex-1">
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="text-lg font-medium text-gray-900">Premium Service</h4>
-                          <div className="text-sm bg-orange-100 text-orange-800 px-2 py-1 rounded">
-                            +25% Cost
+                          <div className="flex items-center space-x-2">
+                            <div className="text-sm bg-orange-100 text-orange-800 px-2 py-1 rounded">
+                              Express Service
+                            </div>
+                            {/* Price will be shown via PriceDisplay component below */}
                           </div>
                         </div>
                         <p className="text-sm text-gray-600 mb-4">
@@ -2514,6 +2556,17 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             </div>
           </div>
         </div>
+
+        {/* Tier Pricing Comparison */}
+        <TierPriceComparison
+          deviceType={methods.watch('deviceType')}
+          brand={methods.watch('deviceBrand')}
+          model={methods.watch('deviceModel')}
+          services={methods.watch('serviceType')}
+          postalCode={methods.watch('postalCode')}
+          enabled={!!(methods.watch('deviceType') && methods.watch('deviceBrand') && methods.watch('deviceModel') && methods.watch('serviceType'))}
+          className="mt-6"
+        />
       </div>
     );
   };

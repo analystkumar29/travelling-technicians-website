@@ -153,6 +153,62 @@ function getStaticPriceCalculation(
   tier: string,
   postalCode?: string
 ): PriceCalculation {
+  // Map form service IDs to backend service names
+  const serviceNameMapping: Record<string, string> = {
+    // Mobile services
+    'screen-replacement': 'screen_replacement',
+    'battery-replacement': 'battery_replacement', 
+    'charging-port': 'charging_port_repair',
+    'speaker-mic': 'speaker_microphone_repair',
+    'camera-repair': 'camera_repair',
+    'water-damage': 'water_damage_diagnostics',
+    'other-mobile': 'other_repair',
+    
+    // Laptop services
+    'keyboard-repair': 'keyboard_repair',
+    'trackpad-repair': 'trackpad_repair',
+    'ram-upgrade': 'ram_upgrade',
+    'storage-upgrade': 'storage_upgrade',
+    'software-trouble': 'software_troubleshooting',
+    'virus-removal': 'virus_removal',
+    'cooling-repair': 'cooling_repair',
+    'power-jack': 'power_jack_repair',
+    'other-laptop': 'other_repair',
+    
+    // Tablet services (can reuse charging-port since they map to same backend service)
+    'speaker-repair': 'speaker_repair',
+    'button-repair': 'button_repair',
+    'software-issue': 'software_troubleshooting',
+    'other-tablet': 'other_repair'
+  };
+
+  // Map service IDs to display names
+  const serviceDisplayNames: Record<string, string> = {
+    'screen-replacement': 'Screen Replacement',
+    'battery-replacement': 'Battery Replacement',
+    'charging-port': 'Charging Port Repair',
+    'speaker-mic': 'Speaker/Microphone Repair',
+    'camera-repair': 'Camera Repair',
+    'water-damage': 'Water Damage Diagnostics',
+    'keyboard-repair': 'Keyboard Repair/Replacement',
+    'trackpad-repair': 'Trackpad Repair',
+    'ram-upgrade': 'RAM Upgrade',
+    'storage-upgrade': 'Storage (HDD/SSD) Upgrade',
+    'software-trouble': 'Software Troubleshooting',
+    'virus-removal': 'Virus Removal',
+    'cooling-repair': 'Cooling System Repair',
+    'power-jack': 'Power Jack Repair',
+    'speaker-repair': 'Speaker Repair',
+    'button-repair': 'Button Repair',
+    'software-issue': 'Software Issue',
+    'other-mobile': 'Other Mobile Repair',
+    'other-laptop': 'Other Laptop Repair',
+    'other-tablet': 'Other Tablet Repair'
+  };
+
+  // Convert service ID to backend service name
+  const backendServiceName = serviceNameMapping[service] || service;
+
   // Static pricing based on device type and service
   const basePrices: Record<string, Record<string, number>> = {
     mobile: {
@@ -161,19 +217,30 @@ function getStaticPriceCalculation(
       charging_port_repair: 109,
       speaker_microphone_repair: 99,
       camera_repair: 119,
-      water_damage_diagnostics: 129
+      water_damage_diagnostics: 129,
+      other_repair: 99
     },
     laptop: {
       screen_replacement: 249,
       battery_replacement: 139,
       keyboard_repair: 159,
+      trackpad_repair: 139,
       ram_upgrade: 119,
       storage_upgrade: 179,
-      software_troubleshooting: 99
+      software_troubleshooting: 99,
+      virus_removal: 129,
+      cooling_repair: 159,
+      power_jack_repair: 149,
+      other_repair: 129
     },
     tablet: {
       screen_replacement: 189,
-      battery_replacement: 119
+      battery_replacement: 119,
+      charging_port_repair: 109,
+      speaker_repair: 99,
+      button_repair: 89,
+      software_troubleshooting: 99,
+      other_repair: 109
     }
   };
 
@@ -199,7 +266,7 @@ function getStaticPriceCalculation(
     other: 0.9
   };
 
-  const basePrice = basePrices[deviceType.toLowerCase()]?.[service] || 99;
+  const basePrice = basePrices[deviceType.toLowerCase()]?.[backendServiceName] || 99;
   const tierMultiplier = tierMultipliers[tier] || 1.0;
   const brandMultiplier = brandMultipliers[brand.toLowerCase()] || 1.0;
 
@@ -245,13 +312,13 @@ function getStaticPriceCalculation(
   return {
     service: {
       id: 1,
-      name: service,
-      display_name: service.split('_').map(word => 
+      name: backendServiceName,
+      display_name: serviceDisplayNames[service] || service.split('-').map(word => 
         word.charAt(0).toUpperCase() + word.slice(1)
       ).join(' '),
       estimated_duration_minutes: 45,
       warranty_period_days: tier === 'premium' ? 180 : 90,
-      is_doorstep_eligible: true
+      is_doorstep_eligible: !service.includes('other') && !service.includes('water-damage')
     },
     device: {
       type: deviceType,
