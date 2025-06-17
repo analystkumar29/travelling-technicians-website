@@ -262,8 +262,30 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Service Area Checker - Moved Above the Fold */}
+                <div className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-xl p-4 sm:p-6 border border-teal-200">
+                  <div className="flex items-center justify-center mb-4">
+                    <FaMapMarkerAlt className="text-teal-600 mr-2" />
+                    <h3 className="text-base sm:text-lg font-bold text-center text-gray-900">
+                      ⚡ Check Same-Day Availability
+                    </h3>
+                  </div>
+                  <PostalCodeChecker 
+                    variant="compact"
+                    onSuccess={(result, postalCode) => {
+                      // Auto-scroll to CTAs after successful validation
+                      setTimeout(() => {
+                        const ctaSection = document.querySelector('.hero-cta-section');
+                        if (ctaSection) {
+                          ctaSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                      }, 1000);
+                    }}
+                  />
+                </div>
+
                 {/* Mobile-Optimized CTAs */}
-                <div className="space-y-4">
+                <div className="space-y-4 hero-cta-section">
                   <Link 
                     href={`/book-online?deviceType=${deviceType}`} 
                     className="group relative w-full bg-gradient-to-r from-accent-500 to-accent-600 text-white text-center py-4 px-6 rounded-xl font-bold text-base sm:text-lg hover:from-accent-600 hover:to-accent-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 flex items-center justify-center min-h-[48px]"
@@ -328,13 +350,6 @@ export default function Home() {
                   </p>
                 </div>
               </div>
-            </div>
-          </div>
-
-            {/* Mobile-Optimized Service Area Checker */}
-            <div className="mt-8 bg-white rounded-xl p-4 sm:p-6 shadow-lg">
-              <h3 className="text-base sm:text-lg font-bold mb-4 text-center">⚡ Check Same-Day Availability</h3>
-              <PostalCodeChecker />
             </div>
           </div>
         </div>

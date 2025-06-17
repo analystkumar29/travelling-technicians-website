@@ -101,13 +101,14 @@ class MyDocument extends Document {
           
           {/* Theme Color */}
           <meta name="theme-color" content="#0d9488" />
+          <meta name="msapplication-TileColor" content="#0d9488" />
           
-          {/* Favicon */}
-          <link rel="icon" href="/favicon.ico" />
-          <link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png" />
-          <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png" />
-          <link rel="icon" type="image/png" sizes="192x192" href="/favicons/favicon-192x192.png" />
-          <link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png" />
+          {/* Favicon - Updated with cache busting */}
+          <link rel="icon" href="/favicon.ico?v=2024" />
+          <link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png?v=2024" />
+          <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png?v=2024" />
+          <link rel="icon" type="image/png" sizes="192x192" href="/favicons/favicon-192x192.png?v=2024" />
+          <link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png?v=2024" />
           
           {/* Add the cache cleaning script */}
           <script src="/clean-cache.js" async></script>
