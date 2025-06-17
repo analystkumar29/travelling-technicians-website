@@ -100,9 +100,9 @@ class MyDocument extends Document {
           <link rel="manifest" href="/site.webmanifest" />
           
           {/* Theme Color */}
-          <meta name="theme-color" content="#1e40af" />
-          <meta name="msapplication-TileColor" content="#1e40af" />
-          <meta name="msapplication-navbutton-color" content="#1e40af" />
+                  <meta name="theme-color" content="#0369a1" />
+        <meta name="msapplication-TileColor" content="#0369a1" />
+        <meta name="msapplication-navbutton-color" content="#0369a1" />
           <meta name="apple-mobile-web-app-status-bar-style" content="default" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
           

@@ -23,7 +23,7 @@ const Header = () => {
   };
   
   return (
-    <nav className="bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900 text-white shadow-lg relative z-50">
+    <nav className="bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 text-white shadow-lg relative z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
