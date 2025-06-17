@@ -105,14 +105,19 @@ class MyDocument extends Document {
         <meta name="msapplication-navbutton-color" content="#075985" />
           <meta name="apple-mobile-web-app-status-bar-style" content="default" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-title" content="TT Repair" />
           
-          {/* Favicon - Updated with cache busting */}
-          <link rel="icon" href="/favicon.ico?v=2024&t=orange" />
-          <link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png?v=2024&t=orange" />
-          <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png?v=2024&t=orange" />
-          <link rel="icon" type="image/png" sizes="192x192" href="/favicons/favicon-192x192.png?v=2024&t=orange" />
-          <link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png?v=2024&t=orange" />
-          <link rel="shortcut icon" href="/favicon.ico?v=2024&t=orange" />
+          {/* PWA Splash Screens for iOS */}
+          <link rel="apple-touch-startup-image" href="/favicons/android-chrome-512x512.png?v=2024.2&orange=true" />
+          <meta name="mobile-web-app-capable" content="yes" />
+          
+          {/* Favicon - Orange logo with strong cache busting */}
+          <link rel="icon" href="/favicon.ico?v=2024.2&orange=true" />
+          <link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png?v=2024.2&orange=true" />
+          <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png?v=2024.2&orange=true" />
+          <link rel="icon" type="image/png" sizes="192x192" href="/favicons/favicon-192x192.png?v=2024.2&orange=true" />
+          <link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png?v=2024.2&orange=true" />
+          <link rel="shortcut icon" href="/favicon.ico?v=2024.2&orange=true" />
           
           {/* Add the cache cleaning script */}
           <script src="/clean-cache.js" async></script>
@@ -184,7 +189,7 @@ class MyDocument extends Document {
           <link rel="preload" href="/images/logo/logo-orange.png" as="image" type="image/png" />
           
           {/* Force search engines to update favicon */}
-          <meta property="og:image" content="/favicons/android-chrome-512x512.png?v=2024&t=orange" />
+          <meta property="og:image" content="/favicons/android-chrome-512x512.png?v=2024.2&orange=true" />
           <meta name="msapplication-config" content="none" />
 
           {/* Moved Scripts from _app.tsx */}
