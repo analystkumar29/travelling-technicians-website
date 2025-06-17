@@ -5,9 +5,22 @@
 CREATE OR REPLACE FUNCTION create_warranty_on_repair_completion()
 RETURNS TRIGGER AS $$
 DECLARE
-    warranty_duration INTEGER := 90; -- Default 90 days warranty
+    warranty_duration INTEGER := 90; -- Default 90 days warranty (Standard tier)
     warranty_code TEXT;
+    booking_tier TEXT;
 BEGIN
+    -- Get the pricing tier from the booking
+    SELECT pricing_tier INTO booking_tier
+    FROM bookings 
+    WHERE id = NEW.booking_id;
+    
+    -- Set warranty duration based on tier
+    IF booking_tier = 'premium' THEN
+        warranty_duration := 180; -- 6 months for Premium
+    ELSE
+        warranty_duration := 90;  -- 3 months for Standard (default)
+    END IF;
+    
     -- Generate unique warranty code
     warranty_code := 'TTW-' || 
                     TO_CHAR(NEW.completed_at, 'YYYYMMDD') || '-' || 

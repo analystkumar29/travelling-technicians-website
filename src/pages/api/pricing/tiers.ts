@@ -83,11 +83,11 @@ function getStaticPricingTiers(): PricingTier[] {
       id: 1,
       name: 'standard',
       display_name: 'Standard Repair',
-      description: 'Quality repair with standard timeframe and full warranty',
+      description: 'Quality repair with standard timeframe and 3-month warranty',
       price_multiplier: 1.0,
-      estimated_delivery_hours: 24,
+      estimated_delivery_hours: 48,
       includes_features: [
-        '1-Year Warranty',
+        '3-Month Warranty',
         'Quality Parts',
         'Professional Service',
         'Free Pickup & Delivery (Doorstep)',
@@ -100,11 +100,11 @@ function getStaticPricingTiers(): PricingTier[] {
       id: 2,
       name: 'premium',
       display_name: 'Premium Service',
-      description: 'Priority service with premium parts and expedited handling',
+      description: 'Priority service with premium parts and 6-month warranty',
       price_multiplier: 1.25,
-      estimated_delivery_hours: 12,
+      estimated_delivery_hours: 24,
       includes_features: [
-        '1-Year Warranty',
+        '6-Month Warranty',
         'Premium Parts',
         'Priority Service',
         'Free Pickup & Delivery (Doorstep)',
@@ -114,43 +114,6 @@ function getStaticPricingTiers(): PricingTier[] {
       ],
       is_active: true,
       sort_order: 2
-    },
-    {
-      id: 3,
-      name: 'same_day',
-      display_name: 'Same Day Service',
-      description: 'Urgent repair completed within hours with premium service',
-      price_multiplier: 1.5,
-      estimated_delivery_hours: 4,
-      includes_features: [
-        '1-Year Warranty',
-        'Premium Parts',
-        'Same Day Completion',
-        'Free Pickup & Delivery (Doorstep)',
-        'Free Diagnostics',
-        'Priority Technician Assignment',
-        'Rush Service Fee Included',
-        'Quality Assurance Check'
-      ],
-      is_active: true,
-      sort_order: 3
-    },
-    {
-      id: 4,
-      name: 'economy',
-      display_name: 'Economy Repair',
-      description: 'Budget-friendly repair with quality parts and standard warranty',
-      price_multiplier: 0.85,
-      estimated_delivery_hours: 48,
-      includes_features: [
-        '6-Month Warranty',
-        'Quality Parts',
-        'Professional Service',
-        'Free Pickup & Delivery (Doorstep)',
-        'Free Diagnostics'
-      ],
-      is_active: true,
-      sort_order: 4
     }
   ];
 } 

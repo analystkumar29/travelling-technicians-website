@@ -228,25 +228,15 @@ function getStaticPriceCalculation(
 
   // Get tier info
   const tierInfo = {
-    economy: {
-      display_name: 'Economy Repair',
-      estimated_delivery_hours: 48,
-      includes_features: ['6-Month Warranty', 'Quality Parts', 'Professional Service']
-    },
     standard: {
       display_name: 'Standard Repair',
-      estimated_delivery_hours: 24,
-      includes_features: ['1-Year Warranty', 'Quality Parts', 'Professional Service', 'Free Pickup & Delivery']
+      estimated_delivery_hours: 48,
+      includes_features: ['3-Month Warranty', 'Quality Parts', 'Professional Service', 'Free Pickup & Delivery (Doorstep)', 'Free Diagnostics']
     },
     premium: {
       display_name: 'Premium Service',
-      estimated_delivery_hours: 12,
-      includes_features: ['1-Year Warranty', 'Premium Parts', 'Priority Service', 'Free Pickup & Delivery', 'Express Handling']
-    },
-    same_day: {
-      display_name: 'Same Day Service',
-      estimated_delivery_hours: 4,
-      includes_features: ['1-Year Warranty', 'Premium Parts', 'Same Day Completion', 'Free Pickup & Delivery', 'Priority Assignment']
+      estimated_delivery_hours: 24,
+      includes_features: ['6-Month Warranty', 'Premium Parts', 'Priority Service', 'Free Pickup & Delivery (Doorstep)', 'Free Diagnostics', 'Express Handling', 'Quality Assurance Check']
     }
   };
 
@@ -260,7 +250,7 @@ function getStaticPriceCalculation(
         word.charAt(0).toUpperCase() + word.slice(1)
       ).join(' '),
       estimated_duration_minutes: 45,
-      warranty_period_days: tier === 'economy' ? 180 : 365,
+      warranty_period_days: tier === 'premium' ? 180 : 90,
       is_doorstep_eligible: true
     },
     device: {

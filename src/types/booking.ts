@@ -32,6 +32,9 @@ export interface CreateBookingRequest {
   serviceType: string | string[]; // Can be single service or array of services
   issueDescription?: string;
   
+  // Pricing tier selection
+  pricingTier?: 'standard' | 'premium'; // Service tier selection
+  
   appointmentDate: string;  // YYYY-MM-DD format
   appointmentTime: string;  // HH-HH format (e.g., "09-11" for 9 AM to 11 AM)
   
