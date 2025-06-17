@@ -188,6 +188,84 @@
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
+/* Mobile-specific optimizations */
+@media (max-width: 768px) {
+  /* Improve touch targets on mobile */
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Prevent zoom on input focus */
+  input, select, textarea {
+    font-size: 16px;
+  }
+  
+  /* Better mobile spacing */
+  .container-custom {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* Safe area support for newer iPhones */
+@supports (padding: max(0px)) {
+  .safe-area-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  
+  .safe-area-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+}
+
+/* Mobile-optimized animations */
+@keyframes subtle-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: subtle-pulse 3s ease-in-out infinite;
+}
+
+/* Enhanced mobile touch feedback */
+@media (hover: none) {
+  .hover\:scale-105:active {
+    transform: scale(0.95);
+  }
+  
+  .hover\:shadow-lg:active {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Mobile-specific button improvements */
+.mobile-touch-target {
+  min-height: 48px;
+  min-width: 48px;
+  padding: 12px 16px;
+}
+
+/* Smooth transitions for mobile */
+.mobile-transition {
+  transition: all 0.2s ease-out;
+}
+
+/* Better mobile focus states */
+@media (max-width: 768px) {
+  button:focus,
+  a:focus,
+  input:focus {
+    outline: 2px solid #3B82F6;
+    outline-offset: 2px;
+  }
+}
+
 /* Navigation state indicators */
 .loading-navigation {
   cursor: progress;

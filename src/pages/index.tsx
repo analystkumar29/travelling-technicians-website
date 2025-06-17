@@ -102,6 +102,8 @@ export default function Home() {
   const [selectedIssue, setSelectedIssue] = useState<string | null>(null);
   const [selectedTestimonial, setSelectedTestimonial] = useState(0);
   const [showPricingPreview, setShowPricingPreview] = useState(false);
+  const [showFAB, setShowFAB] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const testimonialsRef = useRef<HTMLDivElement>(null);
 
   // Rotate testimonials automatically
@@ -115,11 +117,27 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  // Temporarily disable all UI enhancements to prevent infinite reload loop
+  // Smart FAB scroll behavior
   useEffect(() => {
-    console.log('Homepage loaded - UI enhancements disabled to prevent reload loop');
-    
-    // Basic cleanup only
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Show FAB when scrolling up or at top, hide when scrolling down
+      if (currentScrollY < lastScrollY || currentScrollY < 100) {
+        setShowFAB(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 200) {
+        setShowFAB(false);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
+
+  // Basic cleanup
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       document.body.classList.remove('loading-navigation');
       document.body.classList.remove('navigation-stuck');
@@ -135,143 +153,158 @@ export default function Home() {
 
   return (
     <Layout>
-      {/* Mobile Floating Action Button */}
-      <div className="fixed bottom-4 left-4 right-4 md:hidden z-50">
-        <div className="bg-gradient-to-r from-accent-500 to-accent-600 text-white py-4 px-6 rounded-xl shadow-2xl flex items-center justify-between">
-          <div>
-            <div className="font-bold text-lg">Emergency Repair?</div>
-            <div className="text-sm opacity-90">Same-day service available</div>
+      {/* Smart Mobile Floating Action Button */}
+      <div className={`fixed bottom-0 left-0 right-0 md:hidden z-50 transition-transform duration-300 ${
+        showFAB ? 'translate-y-0' : 'translate-y-full'
+      }`}>
+        {/* Safe area spacing for iPhone home indicator */}
+        <div className="bg-gradient-to-r from-accent-500 to-accent-600 text-white p-4 shadow-2xl">
+          <div className="flex items-center justify-between max-w-sm mx-auto">
+            <div className="flex-1">
+              <div className="font-bold text-base">📱 Device Broken?</div>
+              <div className="text-xs opacity-90">Free quote in 2 minutes</div>
+            </div>
+            <Link 
+              href="/book-online" 
+              className="bg-white text-accent-600 px-4 py-3 rounded-lg font-bold text-sm hover:bg-gray-100 transition-colors ml-3 flex-shrink-0 min-h-[44px] flex items-center justify-center"
+            >
+              Fix Now
+            </Link>
           </div>
-          <Link href="/book-online" className="bg-white text-accent-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-gray-100 transition-colors">
-            Book Now
-          </Link>
         </div>
+        {/* Safe area for iPhone home indicator */}
+        <div className="bg-accent-600 h-safe-area-inset-bottom"></div>
       </div>
 
-      {/* Redesigned Hero Section - Simplified & Mobile-First */}
-      <section className="py-8 md:py-12 bg-gradient-to-br from-primary-50 to-primary-100">
-        <div className="container-custom">
-          {/* Urgency Banner */}
-          <div className="bg-accent-500 text-white text-center py-2 px-4 rounded-lg mb-6 text-sm md:text-base">
-            🚨 <strong>Limited Time:</strong> Same-day repair slots available today in your area!
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-            <div>
-              {/* Stronger, Action-Oriented Headline */}
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-gray-900 leading-tight">
-                Get Your Device Fixed Today
-                <span className="block text-accent-600">At Your Doorstep</span>
-              </h1>
-              
-              <p className="text-lg md:text-xl mb-6 text-gray-700">
-                Professional repair technicians come to you. Most fixes completed in 30-90 minutes with 90-day warranty.
-              </p>
-
-              {/* Immediate Pricing Preview */}
-              <div className="bg-white rounded-lg p-4 mb-6 shadow-md border-l-4 border-green-500">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-bold text-lg text-gray-900">Quick Pricing Preview</h3>
-                  <span className="text-green-600 font-bold text-sm">✓ No Hidden Fees</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-sm">
-                  <div className="text-center">
-                    <div className="font-bold text-accent-600">📱 Mobile</div>
-                    <div className="text-gray-600">{pricingData.mobile.range}</div>
-                    <div className="text-xs text-gray-500">{pricingData.mobile.time}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-bold text-accent-600">💻 Laptop</div>
-                    <div className="text-gray-600">{pricingData.laptop.range}</div>
-                    <div className="text-xs text-gray-500">{pricingData.laptop.time}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-bold text-accent-600">📲 Tablet</div>
-                    <div className="text-gray-600">{pricingData.tablet.range}</div>
-                    <div className="text-xs text-gray-500">{pricingData.tablet.time}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Simplified Device Selection - More Action-Oriented */}
-              <div className="mb-6">
-                <h3 className="text-lg font-bold mb-3 text-center md:text-left">What needs fixing?</h3>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { type: 'mobile', icon: FaMobile, label: 'Mobile', price: pricingData.mobile.common },
-                    { type: 'laptop', icon: FaLaptop, label: 'Laptop', price: pricingData.laptop.common },
-                    { type: 'tablet', icon: FaTabletAlt, label: 'Tablet', price: pricingData.tablet.common }
-                  ].map(({ type, icon: Icon, label, price }) => (
-                    <button 
-                      key={type}
-                      onClick={() => {
-                        setDeviceType(type as 'mobile' | 'laptop' | 'tablet');
-                        setShowPricingPreview(true);
-                      }}
-                      className={`group relative overflow-hidden p-4 md:p-6 rounded-xl border-2 transition-all duration-300 ${
-                        deviceType === type 
-                          ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white border-primary-600 shadow-xl transform scale-105' 
-                          : 'bg-white text-gray-800 border-gray-200 hover:border-primary-400 hover:shadow-lg hover:scale-102'
-                      }`}
-                    >
-                      <div className="relative z-10">
-                        <Icon className="mx-auto mb-2 text-2xl md:text-3xl" />
-                        <div className="font-bold text-sm md:text-base">{label}</div>
-                        <div className={`text-xs md:text-sm ${deviceType === type ? 'text-primary-100' : 'text-gray-500'}`}>
-                          from {price}
-                        </div>
-                      </div>
-                      {deviceType === type && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-primary-600/20 to-primary-700/20 rounded-xl"></div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Powerful Primary CTAs */}
-              <div className="space-y-3 mb-6">
-                <Link 
-                  href={`/book-online?deviceType=${deviceType}`} 
-                  className="group relative w-full bg-gradient-to-r from-accent-500 to-accent-600 text-white text-center py-4 px-6 rounded-xl font-bold text-lg hover:from-accent-600 hover:to-accent-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center"
-                >
-                  <span className="mr-2">🚀 Get Fixed Today - Free Quote</span>
-                  <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
-                </Link>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <a 
-                    href="tel:+16045551234" 
-                    className="bg-green-600 hover:bg-green-700 text-white text-center py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center"
-                  >
-                    <FaPhone className="mr-2" />
-                    Emergency Call
-                  </a>
-                  <Link 
-                    href={`/services/${deviceType}-repair`} 
-                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-center py-3 px-4 rounded-lg font-semibold transition-colors"
-                  >
-                    See All Services
-                  </Link>
-                </div>
-              </div>
-
-              {/* Trust Indicators */}
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm">
-                <div className="flex items-center text-green-600">
-                  <FaCheckCircle className="mr-1" />
-                  <span>90-Day Warranty</span>
-                </div>
-                <div className="flex items-center text-green-600">
-                  <FaCheckCircle className="mr-1" />
-                  <span>Same-Day Service</span>
-                </div>
-                <div className="flex items-center text-green-600">
-                  <FaCheckCircle className="mr-1" />
-                  <span>Certified Techs</span>
-                </div>
-              </div>
+      {/* Redesigned Hero Section - Mobile-Optimized */}
+      <section className="py-6 md:py-12 bg-gradient-to-br from-primary-50 to-primary-100">
+        <div className="container-custom px-4 sm:px-6">
+          {/* Add bottom padding for mobile FAB */}
+          <div className="pb-20 md:pb-0">
+            {/* Urgency Banner */}
+            <div className="bg-accent-500 text-white text-center py-3 px-4 rounded-lg mb-6 text-sm md:text-base">
+              🚨 <strong>Limited Time:</strong> Same-day repair slots available today in your area!
             </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+              <div className="space-y-6">
+                {/* Mobile-Optimized Headline */}
+                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight">
+                  Get Your Device Fixed Today
+                  <span className="block text-accent-600">At Your Doorstep</span>
+                </h1>
+                
+                <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed">
+                  Professional repair technicians come to you. Most fixes completed in 30-90 minutes with 90-day warranty.
+                </p>
+
+                {/* Mobile-Optimized Pricing Preview */}
+                <div className="bg-white rounded-xl p-4 sm:p-6 shadow-md border-l-4 border-green-500">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-base sm:text-lg text-gray-900">Quick Pricing Preview</h3>
+                    <span className="text-green-600 font-bold text-xs sm:text-sm">✓ No Hidden Fees</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                    <div className="text-center">
+                      <div className="text-lg sm:text-xl mb-1">📱</div>
+                      <div className="font-bold text-xs sm:text-sm text-accent-600">Mobile</div>
+                      <div className="text-sm sm:text-base font-semibold text-gray-800">{pricingData.mobile.range}</div>
+                      <div className="text-xs text-gray-500">{pricingData.mobile.time}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg sm:text-xl mb-1">💻</div>
+                      <div className="font-bold text-xs sm:text-sm text-accent-600">Laptop</div>
+                      <div className="text-sm sm:text-base font-semibold text-gray-800">{pricingData.laptop.range}</div>
+                      <div className="text-xs text-gray-500">{pricingData.laptop.time}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg sm:text-xl mb-1">📲</div>
+                      <div className="font-bold text-xs sm:text-sm text-accent-600">Tablet</div>
+                      <div className="text-sm sm:text-base font-semibold text-gray-800">{pricingData.tablet.range}</div>
+                      <div className="text-xs text-gray-500">{pricingData.tablet.time}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mobile-Optimized Device Selection */}
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold mb-4 text-center md:text-left">What needs fixing?</h3>
+                  <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                    {[
+                      { type: 'mobile', icon: FaMobile, label: 'Mobile', price: pricingData.mobile.common },
+                      { type: 'laptop', icon: FaLaptop, label: 'Laptop', price: pricingData.laptop.common },
+                      { type: 'tablet', icon: FaTabletAlt, label: 'Tablet', price: pricingData.tablet.common }
+                    ].map(({ type, icon: Icon, label, price }) => (
+                      <button 
+                        key={type}
+                        onClick={() => {
+                          setDeviceType(type as 'mobile' | 'laptop' | 'tablet');
+                          setShowPricingPreview(true);
+                        }}
+                        className={`group relative overflow-hidden p-4 sm:p-6 md:p-6 rounded-xl border-2 transition-all duration-300 min-h-[80px] sm:min-h-[100px] active:scale-95 ${
+                          deviceType === type 
+                            ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white border-primary-600 shadow-xl transform scale-105' 
+                            : 'bg-white text-gray-800 border-gray-200 hover:border-primary-400 hover:shadow-lg hover:scale-102'
+                        }`}
+                      >
+                        <div className="relative z-10 h-full flex flex-col items-center justify-center">
+                          <Icon className="mb-2 text-xl sm:text-2xl md:text-3xl" />
+                          <div className="font-bold text-xs sm:text-sm md:text-base">{label}</div>
+                          <div className={`text-xs sm:text-xs md:text-sm ${deviceType === type ? 'text-primary-100' : 'text-gray-500'}`}>
+                            from {price}
+                          </div>
+                        </div>
+                        {deviceType === type && (
+                          <div className="absolute inset-0 bg-gradient-to-r from-primary-600/20 to-primary-700/20 rounded-xl"></div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Mobile-Optimized CTAs */}
+                <div className="space-y-4">
+                  <Link 
+                    href={`/book-online?deviceType=${deviceType}`} 
+                    className="group relative w-full bg-gradient-to-r from-accent-500 to-accent-600 text-white text-center py-4 px-6 rounded-xl font-bold text-base sm:text-lg hover:from-accent-600 hover:to-accent-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 flex items-center justify-center min-h-[48px]"
+                  >
+                    <span className="mr-2">🚀 Get Fixed Today - Free Quote</span>
+                    <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                  
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <a 
+                      href="tel:+16045551234" 
+                      className="bg-green-600 hover:bg-green-700 text-white text-center py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center min-h-[48px] active:scale-95"
+                    >
+                      <FaPhone className="mr-1 sm:mr-2" />
+                      <span className="text-sm sm:text-base">Emergency Call</span>
+                    </a>
+                    <Link 
+                      href={`/services/${deviceType}-repair`} 
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-center py-3 px-4 rounded-lg font-semibold transition-colors min-h-[48px] flex items-center justify-center active:scale-95"
+                    >
+                      <span className="text-sm sm:text-base">See All Services</span>
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Mobile-Optimized Trust Indicators */}
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 sm:gap-4">
+                  <div className="flex items-center text-green-600 bg-green-50 px-3 py-2 rounded-lg">
+                    <FaCheckCircle className="mr-1 text-sm" />
+                    <span className="text-xs sm:text-sm font-medium">90-Day Warranty</span>
+                  </div>
+                  <div className="flex items-center text-green-600 bg-green-50 px-3 py-2 rounded-lg">
+                    <FaCheckCircle className="mr-1 text-sm" />
+                    <span className="text-xs sm:text-sm font-medium">Same-Day Service</span>
+                  </div>
+                  <div className="flex items-center text-green-600 bg-green-50 px-3 py-2 rounded-lg">
+                    <FaCheckCircle className="mr-1 text-sm" />
+                    <span className="text-xs sm:text-sm font-medium">Certified Techs</span>
+                  </div>
+                </div>
+              </div>
             
             {/* Hero Image with Overlay */}
             <div className="relative rounded-2xl overflow-hidden shadow-2xl h-80 md:h-96">
@@ -298,10 +331,11 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Service Area Checker - Moved Higher */}
-          <div className="mt-8 bg-white rounded-xl p-6 shadow-lg">
-            <h3 className="text-lg font-bold mb-4 text-center">⚡ Check Same-Day Availability</h3>
-            <PostalCodeChecker />
+            {/* Mobile-Optimized Service Area Checker */}
+            <div className="mt-8 bg-white rounded-xl p-4 sm:p-6 shadow-lg">
+              <h3 className="text-base sm:text-lg font-bold mb-4 text-center">⚡ Check Same-Day Availability</h3>
+              <PostalCodeChecker />
+            </div>
           </div>
         </div>
       </section>
