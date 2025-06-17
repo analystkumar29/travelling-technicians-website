@@ -328,26 +328,27 @@ export default function Home() {
                 </div>
               </div>
             
-            {/* Hero Image with Overlay */}
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl h-80 md:h-96">
-              <Image 
-                src="/images/services/doorstep-repair-tech.jpg" 
-                alt="Technician repairing a device at customer's doorstep" 
-                className="object-cover"
-                fill={true}
-                priority={true}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end">
-                <div className="p-6 w-full">
-                  <div className="inline-block bg-accent-500 text-white text-sm px-3 py-1 rounded-full mb-3">
-                    ✨ Doorstep Service
+              {/* Hero Image with Overlay */}
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl h-80 md:h-96">
+                <Image 
+                  src="/images/services/doorstep-repair-tech.jpg" 
+                  alt="Technician repairing a device at customer's doorstep" 
+                  className="object-cover"
+                  fill={true}
+                  priority={true}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end">
+                  <div className="p-6 w-full">
+                    <div className="inline-block bg-accent-500 text-white text-sm px-3 py-1 rounded-full mb-3">
+                      ✨ Doorstep Service
+                    </div>
+                    <h3 className="text-white text-xl md:text-2xl font-bold mb-2">
+                      Skip the repair shop chaos
+                    </h3>
+                    <p className="text-white/90 text-sm md:text-base">
+                      Professional repair at your location. Watch your device get fixed!
+                    </p>
                   </div>
-                  <h3 className="text-white text-xl md:text-2xl font-bold mb-2">
-                    Skip the repair shop chaos
-                  </h3>
-                  <p className="text-white/90 text-sm md:text-base">
-                    Professional repair at your location. Watch your device get fixed!
-                  </p>
                 </div>
               </div>
             </div>
