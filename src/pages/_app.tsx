@@ -90,7 +90,7 @@ export default function App({ Component, pageProps }: AppProps) {
         {/* Favicon Configuration */}
         <link rel="manifest" href="/manifest.json" />
         <link rel="manifest" href="/site.webmanifest" />
-        <meta name="theme-color" content="#0d9488" />
+        <meta name="theme-color" content="#075985" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png" />
