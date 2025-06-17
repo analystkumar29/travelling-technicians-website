@@ -163,7 +163,7 @@
   padding: 16px 20px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   border: 1px solid rgba(59, 130, 246, 0.1);
-  z-index: 50;
+  z-index: 40; /* Lower z-index to stay below mobile menus */
   animation: slideInFromRight 0.3s ease-out;
   min-width: 200px;
   backdrop-filter: blur(10px);
@@ -361,19 +361,79 @@
 /* 15. Responsive Enhancements */
 @media (max-width: 768px) {
   .floating-progress {
-    top: 10px;
-    right: 10px;
-    left: 10px;
-    padding: 12px 16px;
-    min-width: auto;
-    max-width: calc(100vw - 20px);
+    top: 80px; /* Move below header/menu */
+    right: 8px;
+    left: auto; /* Remove left positioning to keep it on the right */
+    padding: 8px 12px; /* Smaller padding */
+    min-width: 140px; /* Smaller minimum width */
+    max-width: 160px; /* Constrain maximum width */
+    font-size: 11px; /* Smaller text */
+    border-radius: 12px; /* Smaller radius */
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); /* Reduced shadow */
   }
   
   .floating-progress-bar {
     width: 100%;
-    height: 4px;
+    height: 3px; /* Thinner progress bar */
+  }
+
+  /* Make text smaller on mobile */
+  .floating-progress .text-xs {
+    font-size: 10px;
+  }
+
+  /* Adjust spacing for mobile */
+  .floating-progress .mb-2 {
+    margin-bottom: 4px;
+  }
+
+  .floating-progress .mt-2 {
+    margin-top: 4px;
+  }
+
+  .floating-progress .mt-1 {
+    margin-top: 2px;
+  }
+}
+
+/* Extra small screens - very compact progress bar */
+@media (max-width: 480px) {
+  .floating-progress {
+    top: 70px; /* Even closer to top on small screens */
+    right: 6px;
+    padding: 6px 10px; /* Very compact padding */
+    min-width: 120px; /* Even smaller minimum width */
+    max-width: 140px; /* Smaller maximum width */
+    font-size: 10px; /* Very small text */
+    border-radius: 10px; /* Smaller radius */
   }
   
+  .floating-progress-bar {
+    height: 2px; /* Very thin progress bar */
+  }
+
+  /* Hide the "Next:" text on very small screens to save space */
+  .floating-progress .text-xs.text-gray-500 {
+    display: none;
+  }
+
+  /* Make the main progress text even smaller */
+  .floating-progress .text-xs {
+    font-size: 9px;
+    line-height: 1.2;
+  }
+
+  /* Hide progress bar when user is interacting with inputs on small screens */
+  body:has(input:focus) .floating-progress,
+  body:has(textarea:focus) .floating-progress,
+  body:has(select:focus) .floating-progress {
+    opacity: 0.3;
+    pointer-events: none;
+    transition: opacity 0.2s ease-out;
+  }
+}
+
+@media (max-width: 768px) {
   .device-card:hover {
     transform: none;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
