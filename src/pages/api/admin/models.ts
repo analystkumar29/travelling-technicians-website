@@ -93,7 +93,7 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse<ApiResponse>,
     }
 
     // Transform the data to include brand information
-    const transformedModels = (models || []).map(model => ({
+    const transformedModels = (models || []).map((model: any) => ({
       ...model,
       brand: {
         id: model.brands.id,

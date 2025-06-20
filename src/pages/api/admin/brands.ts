@@ -79,7 +79,7 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse<ApiResponse>,
     }
 
     // Transform the data to include device_type name
-    const transformedBrands = (brands || []).map(brand => ({
+    const transformedBrands = (brands || []).map((brand: any) => ({
       ...brand,
       device_type: brand.device_types?.display_name || brand.device_types?.name
     }));
