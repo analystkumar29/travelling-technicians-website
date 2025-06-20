@@ -684,7 +684,6 @@ export default function AdminBookings() {
                       )}
                     </div>
                   </li>
-              ))}
                 ))
               )}
             </ul>
