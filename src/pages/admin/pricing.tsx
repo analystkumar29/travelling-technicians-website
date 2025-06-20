@@ -84,6 +84,7 @@ export default function PricingAdmin() {
   const [pricingFilters, setPricingFilters] = useState({
     deviceType: 'all',
     brand: 'all',
+    model: 'all',
     service: 'all',
     tier: 'all'
   });
@@ -365,6 +366,39 @@ export default function PricingAdmin() {
       setError('Error updating prices');
       console.error('Error updating prices:', err);
     }
+  };
+
+  // Filter pricing data based on selected filters
+  const getFilteredPricing = () => {
+    return dynamicPricing.filter((pricing) => {
+      const deviceTypeMatch = pricingFilters.deviceType === 'all' || 
+        (pricing.brand_name && deviceModels.find(m => m.id === pricing.model_id)?.brand?.device_type?.toLowerCase() === pricingFilters.deviceType);
+      
+      const brandMatch = pricingFilters.brand === 'all' || 
+        (pricing.brand_name && pricing.brand_name.toLowerCase() === pricingFilters.brand.toLowerCase());
+      
+      const modelMatch = pricingFilters.model === 'all' || 
+        (pricing.model_name && pricing.model_name.toLowerCase().includes(pricingFilters.model.toLowerCase())) ||
+        (pricing.device_model && pricing.device_model.toLowerCase().includes(pricingFilters.model.toLowerCase()));
+      
+      const serviceMatch = pricingFilters.service === 'all' || 
+        (pricing.service_name && pricing.service_name.toLowerCase().includes(pricingFilters.service.toLowerCase()));
+      
+      const tierMatch = pricingFilters.tier === 'all' || 
+        (pricing.tier_name && pricing.tier_name.toLowerCase().includes(pricingFilters.tier.toLowerCase()));
+      
+      return deviceTypeMatch && brandMatch && modelMatch && serviceMatch && tierMatch;
+    });
+  };
+
+  // Get unique values for filter dropdowns
+  const getUniqueFilterValues = () => {
+    const brands = [...new Set(dynamicPricing.map(p => p.brand_name).filter(Boolean))];
+    const models = [...new Set(dynamicPricing.map(p => p.model_name || p.device_model).filter(Boolean))];
+    const services = [...new Set(dynamicPricing.map(p => p.service_name).filter(Boolean))];
+    const tiers = [...new Set(dynamicPricing.map(p => p.tier_name).filter(Boolean))];
+    
+    return { brands, models, services, tiers };
   };
 
   // Device-Specific Pricing Functions
@@ -895,7 +929,7 @@ export default function PricingAdmin() {
             {/* Pricing Filters */}
             <div className="bg-white shadow rounded-lg p-6">
               <h2 className="text-xl font-semibold mb-4">Filter Pricing</h2>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Device Type</label>
                   <select
@@ -917,12 +951,26 @@ export default function PricingAdmin() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
                   >
                     <option value="all">All Brands</option>
-                    <option value="apple">Apple</option>
-                    <option value="samsung">Samsung</option>
-                    <option value="google">Google</option>
-                    <option value="dell">Dell</option>
-                    <option value="hp">HP</option>
-                    <option value="lenovo">Lenovo</option>
+                    {getUniqueFilterValues().brands.map((brand) => (
+                      <option key={brand} value={brand}>
+                        {brand}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
+                  <select
+                    value={pricingFilters.model}
+                    onChange={(e) => setPricingFilters({...pricingFilters, model: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                    <option value="all">All Models</option>
+                    {getUniqueFilterValues().models.map((model) => (
+                      <option key={model} value={model}>
+                        {model}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -933,9 +981,11 @@ export default function PricingAdmin() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
                   >
                     <option value="all">All Services</option>
-                    <option value="screen_replacement">Screen Replacement</option>
-                    <option value="battery_replacement">Battery Replacement</option>
-                    <option value="charging_port_repair">Charging Port Repair</option>
+                    {getUniqueFilterValues().services.map((service) => (
+                      <option key={service} value={service}>
+                        {service}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -946,71 +996,118 @@ export default function PricingAdmin() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
                   >
                     <option value="all">All Tiers</option>
-                    <option value="standard">Standard</option>
-                    <option value="premium">Premium</option>
-                    <option value="same_day">Same Day</option>
+                    {getUniqueFilterValues().tiers.map((tier) => (
+                      <option key={tier} value={tier}>
+                        {tier}
+                      </option>
+                    ))}
                   </select>
                 </div>
+              </div>
+              
+              {/* Clear Filters Button */}
+              <div className="mt-4">
+                <button
+                  onClick={() => setPricingFilters({
+                    deviceType: 'all',
+                    brand: 'all',
+                    model: 'all',
+                    service: 'all',
+                    tier: 'all'
+                  })}
+                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                >
+                  Clear All Filters
+                </button>
               </div>
             </div>
 
             {/* Dynamic Pricing List */}
             <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-xl font-semibold mb-4">Dynamic Pricing ({dynamicPricing.length} records)</h2>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tier</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Base Price</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discounted</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {dynamicPricing.slice(0, 50).map((pricing) => (
-                      <tr key={pricing.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {pricing.service_name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {pricing.brand_name} {pricing.device_model}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {pricing.tier_name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          ${pricing.base_price}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {pricing.discounted_price ? `$${pricing.discounted_price}` : '-'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            pricing.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {pricing.is_active ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => {/* Handle edit pricing */}}
-                            className="text-indigo-600 hover:text-indigo-900 mr-3"
-                          >
-                            Edit
-                          </button>
-                        </td>
+              <h2 className="text-xl font-semibold mb-4">
+                Dynamic Pricing ({getFilteredPricing().length} of {dynamicPricing.length} records)
+              </h2>
+              
+              {getFilteredPricing().length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  {dynamicPricing.length === 0 ? (
+                    <>
+                      <p>No pricing records found.</p>
+                      <p className="text-sm mt-2">Use the Device-Specific Pricing tab to add pricing entries.</p>
+                    </>
+                  ) : (
+                    <>
+                      <p>No pricing records match the current filters.</p>
+                      <p className="text-sm mt-2">Try adjusting your filters or click "Clear All Filters".</p>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tier</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Base Price</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discounted</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {dynamicPricing.length > 50 && (
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {getFilteredPricing().slice(0, 50).map((pricing) => (
+                        <tr key={pricing.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {pricing.service_name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div>
+                              <div className="font-medium">{pricing.brand_name} {pricing.model_name || pricing.device_model}</div>
+                              <div className="text-xs text-gray-400">{pricing.brand_name}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {pricing.tier_name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                            ${pricing.base_price}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {pricing.discounted_price ? `$${pricing.discounted_price}` : '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              pricing.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {pricing.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button
+                              onClick={() => handleEditDevicePricing(pricing)}
+                              className="text-indigo-600 hover:text-indigo-900 mr-3"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteDevicePricing(pricing.id)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              
+              {getFilteredPricing().length > 50 && (
                 <div className="mt-4 text-center text-gray-500">
-                  Showing first 50 of {dynamicPricing.length} pricing records
+                  Showing first 50 of {getFilteredPricing().length} filtered pricing records
                 </div>
               )}
             </div>
@@ -1185,50 +1282,54 @@ export default function PricingAdmin() {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {dynamicPricing.map((pricing) => (
-                        <tr key={pricing.id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            <div>
-                              <div className="font-medium">{pricing.brand_name} {pricing.device_model}</div>
-                              <div className="text-xs text-gray-500">{pricing.brand_name}</div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {pricing.service_name}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {pricing.tier_name}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            ${pricing.base_price}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {pricing.discounted_price ? `$${pricing.discounted_price}` : '-'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {pricing.cost_price ? `$${pricing.cost_price}` : '-'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              pricing.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                            }`}>
-                              {pricing.is_active ? 'Active' : 'Inactive'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button
-                              onClick={() => handleEditDevicePricing(pricing)}
-                              className="text-indigo-600 hover:text-indigo-900 mr-3"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteDevicePricing(pricing.id)}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
+                                                 <tr key={pricing.id}>
+                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                             <div>
+                               <div className="font-medium">{pricing.brand_name} {pricing.model_name || pricing.device_model}</div>
+                               <div className="text-xs text-gray-400">{pricing.brand_name}</div>
+                             </div>
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                             {pricing.service_name}
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                             {pricing.tier_name}
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                             ${pricing.base_price}
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                             {pricing.discounted_price ? (
+                               <span className="text-orange-600 font-medium">${pricing.discounted_price}</span>
+                             ) : '-'}
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                             {pricing.cost_price ? (
+                               <span className="text-gray-700">${pricing.cost_price}</span>
+                             ) : '-'}
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap">
+                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                               pricing.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                             }`}>
+                               {pricing.is_active ? 'Active' : 'Inactive'}
+                             </span>
+                           </td>
+                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                             <button
+                               onClick={() => handleEditDevicePricing(pricing)}
+                               className="text-indigo-600 hover:text-indigo-900 mr-3"
+                             >
+                               Edit
+                             </button>
+                             <button
+                               onClick={() => handleDeleteDevicePricing(pricing.id)}
+                               className="text-red-600 hover:text-red-900"
+                             >
+                               Delete
+                             </button>
+                           </td>
+                         </tr>
                       ))}
                     </tbody>
                   </table>
