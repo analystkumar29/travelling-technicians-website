@@ -17,6 +17,7 @@ interface DynamicPricing {
   model_name?: string;
   tier_name?: string;
   brand_name?: string;
+  device_type?: string;
 }
 
 interface ApiResponse {
@@ -81,7 +82,12 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse<ApiResponse>,
           brands!inner(
             id,
             name,
-            display_name
+            display_name,
+            device_types!inner(
+              id,
+              name,
+              display_name
+            )
           )
         ),
         pricing_tiers!inner(
@@ -128,6 +134,7 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse<ApiResponse>,
       model_name: entry.device_models?.display_name || entry.device_models?.name,
       brand_name: entry.device_models?.brands?.display_name || entry.device_models?.brands?.name,
       tier_name: entry.pricing_tiers?.display_name || entry.pricing_tiers?.name,
+      device_type: entry.device_models?.brands?.device_types?.name,
       created_at: entry.created_at,
       updated_at: entry.updated_at
     }));

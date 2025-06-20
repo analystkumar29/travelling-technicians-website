@@ -36,6 +36,7 @@ interface DynamicPricing {
   model_name?: string;
   brand_name?: string;
   tier_name?: string;
+  device_type?: string;
   base_price: number;
   discounted_price?: number;
   cost_price?: number;
@@ -372,7 +373,7 @@ export default function PricingAdmin() {
   const getFilteredPricing = () => {
     return dynamicPricing.filter((pricing) => {
       const deviceTypeMatch = pricingFilters.deviceType === 'all' || 
-        (pricing.brand_name && deviceModels.find(m => m.id === pricing.model_id)?.brand?.device_type?.toLowerCase() === pricingFilters.deviceType);
+        (pricing.device_type && pricing.device_type.toLowerCase() === pricingFilters.deviceType.toLowerCase());
       
       const brandMatch = pricingFilters.brand === 'all' || 
         (pricing.brand_name && pricing.brand_name.toLowerCase() === pricingFilters.brand.toLowerCase());
@@ -1053,6 +1054,7 @@ export default function PricingAdmin() {
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device Type</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tier</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Base Price</th>
@@ -1066,6 +1068,16 @@ export default function PricingAdmin() {
                         <tr key={pricing.id}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {pricing.service_name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              pricing.device_type === 'mobile' ? 'bg-blue-100 text-blue-800' :
+                              pricing.device_type === 'laptop' ? 'bg-green-100 text-green-800' :
+                              pricing.device_type === 'tablet' ? 'bg-purple-100 text-purple-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {pricing.device_type ? pricing.device_type.charAt(0).toUpperCase() + pricing.device_type.slice(1) : 'Unknown'}
+                            </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             <div>
