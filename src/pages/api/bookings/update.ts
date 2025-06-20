@@ -130,8 +130,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }
 
           technician = newTechnician;
-        } else {
+        } else if (technicians && technicians.length > 0) {
           technician = technicians[0];
+        } else {
+          throw new Error('No technicians available');
         }
         
         // Create repair completion record
