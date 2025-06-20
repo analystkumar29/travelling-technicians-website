@@ -434,15 +434,31 @@ export default function PricingAdmin() {
 
   // Get unique values for filter dropdowns
   const getUniqueFilterValues = () => {
-    const brandSet = new Set(dynamicPricing.map(p => p.brand_name).filter(Boolean));
-    const modelSet = new Set(dynamicPricing.map(p => p.model_name || p.device_model).filter(Boolean));
-    const serviceSet = new Set(dynamicPricing.map(p => p.service_name).filter(Boolean));
-    const tierSet = new Set(dynamicPricing.map(p => p.tier_name).filter(Boolean));
+    // Get brands from both dynamic pricing data AND device models
+    const brandSet = new Set();
+    dynamicPricing.forEach(p => p.brand_name && brandSet.add(p.brand_name));
+    deviceModels.forEach(m => m.brand?.display_name && brandSet.add(m.brand.display_name));
     
-    const brands = Array.from(brandSet);
-    const models = Array.from(modelSet);
-    const services = Array.from(serviceSet);
-    const tiers = Array.from(tierSet);
+    // Get models from both dynamic pricing data AND device models  
+    const modelSet = new Set();
+    dynamicPricing.forEach(p => (p.model_name || p.device_model) && modelSet.add(p.model_name || p.device_model));
+    deviceModels.forEach(m => m.display_name && modelSet.add(m.display_name));
+    
+    // Get services from both dynamic pricing data AND services list
+    const serviceSet = new Set();
+    dynamicPricing.forEach(p => p.service_name && serviceSet.add(p.service_name));
+    services.forEach(s => s.display_name && serviceSet.add(s.display_name));
+    deviceServices.forEach(s => s.display_name && serviceSet.add(s.display_name));
+    
+    // Get tiers from both dynamic pricing data AND pricing tiers list
+    const tierSet = new Set();
+    dynamicPricing.forEach(p => p.tier_name && tierSet.add(p.tier_name));
+    pricingTiers.forEach(t => t.display_name && tierSet.add(t.display_name));
+    
+    const brands = Array.from(brandSet).sort();
+    const models = Array.from(modelSet).sort();
+    const services = Array.from(serviceSet).sort();
+    const tiers = Array.from(tierSet).sort();
     
     return { brands, models, services, tiers };
   };
