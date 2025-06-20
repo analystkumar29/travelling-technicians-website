@@ -103,6 +103,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           .eq('is_active', true)
           .limit(1);
 
+        let technician;
+
         if (techError || !technicians || technicians.length === 0) {
           apiLogger.warn('No active technicians found, creating default technician');
           
@@ -127,10 +129,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             throw new Error('Could not create technician for repair completion');
           }
 
-          technicians[0] = newTechnician;
+          technician = newTechnician;
+        } else {
+          technician = technicians[0];
         }
-
-        const technician = technicians[0];
         
         // Create repair completion record
         const repairCompletionData = {
