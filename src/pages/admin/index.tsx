@@ -279,6 +279,44 @@ export default function AdminDashboard() {
             <p className="mt-2 text-gray-600">Welcome back! Here's what's happening with your business today.</p>
           </div>
 
+          {/* Quick Navigation */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+            <Link href="/admin/bookings" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
+              <div className="text-blue-600 mb-2">
+                <FaCalendarAlt className="h-6 w-6 mx-auto" />
+              </div>
+              <h3 className="text-sm font-medium text-gray-900">Bookings</h3>
+            </Link>
+
+            <Link href="/admin/warranties" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
+              <div className="text-green-600 mb-2">
+                <FaShieldAlt className="h-6 w-6 mx-auto" />
+              </div>
+              <h3 className="text-sm font-medium text-gray-900">Warranties</h3>
+            </Link>
+
+            <Link href="/admin/technicians" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
+              <div className="text-purple-600 mb-2">
+                <FaTools className="h-6 w-6 mx-auto" />
+              </div>
+              <h3 className="text-sm font-medium text-gray-900">Technicians</h3>
+            </Link>
+
+            <Link href="/admin/devices" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
+              <div className="text-indigo-600 mb-2">
+                <FaPhone className="h-6 w-6 mx-auto" />
+              </div>
+              <h3 className="text-sm font-medium text-gray-900">Devices</h3>
+            </Link>
+
+            <Link href="/admin/pricing" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
+              <div className="text-yellow-600 mb-2">
+                <FaDollarSign className="h-6 w-6 mx-auto" />
+              </div>
+              <h3 className="text-sm font-medium text-gray-900">Pricing</h3>
+            </Link>
+          </div>
+
           {/* Quick Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-white overflow-hidden shadow rounded-lg">
