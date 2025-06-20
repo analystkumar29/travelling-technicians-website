@@ -14,12 +14,7 @@
       "SHARP_IGNORE_GLOBAL_LIBVIPS": "1"
     }
   },
-  "routes": [
-    {
-      "src": "/admin/(.*)",
-      "dest": "/admin/$1"
-    }
-  ],
+
   "headers": [
     {
       "source": "/api/(.*)",
