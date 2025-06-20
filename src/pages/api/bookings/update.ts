@@ -88,16 +88,102 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
+    const updatedBooking = data[0];
+
+    // If status was changed to 'completed', create a repair completion record
+    // This will trigger automatic warranty creation
+    if (status === 'completed') {
+      apiLogger.info('Booking marked as completed, creating repair completion record');
+      
+      try {
+        // First, ensure we have a technician (get the first available one)
+        const { data: technicians, error: techError } = await supabase
+          .from('technicians')
+          .select('id, full_name')
+          .eq('is_active', true)
+          .limit(1);
+
+        if (techError || !technicians || technicians.length === 0) {
+          apiLogger.warn('No active technicians found, creating default technician');
+          
+          // Create a default technician if none exists
+          const { data: newTechnician, error: createTechError } = await supabase
+            .from('technicians')
+            .upsert({
+              full_name: 'The Travelling Technicians',
+              email: 'admin@thetravellingtechnicians.com',
+              phone: '604-000-0000',
+              specializations: ['mobile', 'laptop'],
+              active_service_areas: ['V5K', 'V5L', 'V5M'],
+              is_active: true,
+              hourly_rate: 85.00,
+              max_daily_bookings: 10
+            }, { onConflict: 'email' })
+            .select('id, full_name')
+            .single();
+
+          if (createTechError) {
+            apiLogger.error('Failed to create default technician', { error: createTechError });
+            throw new Error('Could not create technician for repair completion');
+          }
+
+          technicians[0] = newTechnician;
+        }
+
+        const technician = technicians[0];
+        
+        // Create repair completion record
+        const repairCompletionData = {
+          booking_id: updatedBooking.id,
+          technician_id: technician.id,
+          completed_at: new Date().toISOString(),
+          repair_notes: `Repair completed via admin dashboard by ${technician.full_name}`,
+          parts_used: JSON.stringify([
+            {
+              name: `${updatedBooking.device_brand} ${updatedBooking.device_model} Repair`,
+              description: `${updatedBooking.service_type} service`,
+              cost: 100 // Default cost, can be updated later
+            }
+          ]),
+          repair_duration: 60 // Default 1 hour, can be updated later
+        };
+
+        const { data: repairCompletion, error: repairError } = await supabase
+          .from('repair_completions')
+          .insert(repairCompletionData)
+          .select()
+          .single();
+
+        if (repairError) {
+          apiLogger.error('Failed to create repair completion', { error: repairError });
+          // Don't fail the whole request, just log the error
+          apiLogger.warn('Booking updated but repair completion failed - warranty may not be created');
+        } else {
+          apiLogger.info('Repair completion created successfully', { 
+            repairCompletionId: repairCompletion.id,
+            bookingId: updatedBooking.id,
+            technicianId: technician.id
+          });
+        }
+
+      } catch (repairCompletionError) {
+        apiLogger.error('Error in repair completion process', { 
+          error: repairCompletionError instanceof Error ? repairCompletionError.message : 'Unknown error'
+        });
+        // Don't fail the whole request, just log the error
+      }
+    }
+
     apiLogger.info('Successfully updated booking', { 
-      id: data[0].id, 
-      reference: data[0].reference_number,
+      id: updatedBooking.id, 
+      reference: updatedBooking.reference_number,
       updatedFields: Object.keys(updateData)
     });
 
     return res.status(200).json({
       success: true,
       message: 'Booking updated successfully',
-      booking: data[0],
+      booking: updatedBooking,
     });
   } catch (error) {
     apiLogger.error('Unexpected error updating booking', {
