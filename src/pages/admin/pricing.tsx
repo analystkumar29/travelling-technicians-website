@@ -89,6 +89,10 @@ export default function PricingAdmin() {
     service: 'all',
     tier: 'all'
   });
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
 
   // Device-Specific Pricing State
   const [devicePricingForm, setDevicePricingForm] = useState({
@@ -136,14 +140,20 @@ export default function PricingAdmin() {
   // Load Services
   const loadServices = async () => {
     try {
-      const response = await fetch('/api/pricing/services');
-      const data = await response.json();
+      // Load services for all device types
+      const deviceTypes = ['mobile', 'laptop', 'tablet'];
+      const allServices = [];
       
-      if (data.success) {
-        setServices(data.services || []);
-      } else {
-        setError('Failed to load services');
+      for (const deviceType of deviceTypes) {
+        const response = await fetch(`/api/pricing/services?deviceType=${deviceType}`);
+        const data = await response.json();
+        
+        if (data.success && data.services) {
+          allServices.push(...data.services);
+        }
       }
+      
+      setServices(allServices);
     } catch (err) {
       setError('Error loading services');
       console.error('Error loading services:', err);
@@ -184,12 +194,20 @@ export default function PricingAdmin() {
   // Load Device Services  
   const loadDeviceServices = async () => {
     try {
-      const response = await fetch('/api/pricing/services?deviceType=all');
-      const data = await response.json();
+      // Load services for all device types
+      const deviceTypes = ['mobile', 'laptop', 'tablet'];
+      const allServices = [];
       
-      if (data.success) {
-        setDeviceServices(data.services || []);
+      for (const deviceType of deviceTypes) {
+        const response = await fetch(`/api/pricing/services?deviceType=${deviceType}`);
+        const data = await response.json();
+        
+        if (data.success && data.services) {
+          allServices.push(...data.services);
+        }
       }
+      
+      setDeviceServices(allServices);
     } catch (err) {
       console.error('Error loading device services:', err);
     }
@@ -371,7 +389,7 @@ export default function PricingAdmin() {
 
   // Filter pricing data based on selected filters
   const getFilteredPricing = () => {
-    return dynamicPricing.filter((pricing) => {
+    const filtered = dynamicPricing.filter((pricing) => {
       const deviceTypeMatch = pricingFilters.deviceType === 'all' || 
         (pricing.device_type && pricing.device_type.toLowerCase() === pricingFilters.deviceType.toLowerCase());
       
@@ -390,6 +408,28 @@ export default function PricingAdmin() {
       
       return deviceTypeMatch && brandMatch && modelMatch && serviceMatch && tierMatch;
     });
+    
+    return filtered;
+  };
+  
+  // Get paginated results
+  const getPaginatedPricing = () => {
+    const filtered = getFilteredPricing();
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filtered.slice(startIndex, endIndex);
+  };
+  
+  // Get total pages
+  const getTotalPages = () => {
+    const filteredCount = getFilteredPricing().length;
+    return Math.ceil(filteredCount / itemsPerPage);
+  };
+  
+  // Reset pagination when filters change
+  const handleFilterChange = (newFilters: any) => {
+    setPricingFilters(newFilters);
+    setCurrentPage(1);
   };
 
   // Get unique values for filter dropdowns
@@ -940,7 +980,7 @@ export default function PricingAdmin() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Device Type</label>
                   <select
                     value={pricingFilters.deviceType}
-                    onChange={(e) => setPricingFilters({...pricingFilters, deviceType: e.target.value})}
+                    onChange={(e) => handleFilterChange({...pricingFilters, deviceType: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
                   >
                     <option value="all">All Device Types</option>
@@ -953,7 +993,7 @@ export default function PricingAdmin() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
                   <select
                     value={pricingFilters.brand}
-                    onChange={(e) => setPricingFilters({...pricingFilters, brand: e.target.value})}
+                    onChange={(e) => handleFilterChange({...pricingFilters, brand: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
                   >
                     <option value="all">All Brands</option>
@@ -968,7 +1008,7 @@ export default function PricingAdmin() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
                   <select
                     value={pricingFilters.model}
-                    onChange={(e) => setPricingFilters({...pricingFilters, model: e.target.value})}
+                    onChange={(e) => handleFilterChange({...pricingFilters, model: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
                   >
                     <option value="all">All Models</option>
@@ -983,7 +1023,7 @@ export default function PricingAdmin() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
                   <select
                     value={pricingFilters.service}
-                    onChange={(e) => setPricingFilters({...pricingFilters, service: e.target.value})}
+                    onChange={(e) => handleFilterChange({...pricingFilters, service: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
                   >
                     <option value="all">All Services</option>
@@ -998,7 +1038,7 @@ export default function PricingAdmin() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Tier</label>
                   <select
                     value={pricingFilters.tier}
-                    onChange={(e) => setPricingFilters({...pricingFilters, tier: e.target.value})}
+                    onChange={(e) => handleFilterChange({...pricingFilters, tier: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
                   >
                     <option value="all">All Tiers</option>
@@ -1014,7 +1054,7 @@ export default function PricingAdmin() {
               {/* Clear Filters Button */}
               <div className="mt-4">
                 <button
-                  onClick={() => setPricingFilters({
+                  onClick={() => handleFilterChange({
                     deviceType: 'all',
                     brand: 'all',
                     model: 'all',
@@ -1030,9 +1070,16 @@ export default function PricingAdmin() {
 
             {/* Dynamic Pricing List */}
             <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-xl font-semibold mb-4">
-                Dynamic Pricing ({getFilteredPricing().length} of {dynamicPricing.length} records)
-              </h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">
+                  Dynamic Pricing ({getFilteredPricing().length} of {dynamicPricing.length} records)
+                </h2>
+                {getFilteredPricing().length > itemsPerPage && (
+                  <div className="text-sm text-gray-600">
+                    Page {currentPage} of {getTotalPages()} (showing {Math.min(itemsPerPage, getFilteredPricing().length - (currentPage - 1) * itemsPerPage)} entries)
+                  </div>
+                )}
+              </div>
               
               {getFilteredPricing().length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
@@ -1064,7 +1111,7 @@ export default function PricingAdmin() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {getFilteredPricing().slice(0, 50).map((pricing) => (
+                      {getPaginatedPricing().map((pricing) => (
                         <tr key={pricing.id}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {pricing.service_name}
@@ -1122,9 +1169,87 @@ export default function PricingAdmin() {
                 </div>
               )}
               
-              {getFilteredPricing().length > 50 && (
-                <div className="mt-4 text-center text-gray-500">
-                  Showing first 50 of {getFilteredPricing().length} filtered pricing records
+              {/* Pagination Controls */}
+              {getFilteredPricing().length > itemsPerPage && (
+                <div className="mt-6 flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                      className={`px-3 py-1 rounded ${
+                        currentPage === 1 
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      First
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className={`px-3 py-1 rounded ${
+                        currentPage === 1 
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      Previous
+                    </button>
+                  </div>
+                  
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: Math.min(7, getTotalPages()) }, (_, i) => {
+                      let pageNum;
+                      if (getTotalPages() <= 7) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 4) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= getTotalPages() - 3) {
+                        pageNum = getTotalPages() - 6 + i;
+                      } else {
+                        pageNum = currentPage - 3 + i;
+                      }
+                      
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`px-3 py-1 rounded ${
+                            pageNum === currentPage
+                              ? 'bg-primary-600 text-white'
+                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      disabled={currentPage === getTotalPages()}
+                      className={`px-3 py-1 rounded ${
+                        currentPage === getTotalPages() 
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      Next
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(getTotalPages())}
+                      disabled={currentPage === getTotalPages()}
+                      className={`px-3 py-1 rounded ${
+                        currentPage === getTotalPages() 
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      Last
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
