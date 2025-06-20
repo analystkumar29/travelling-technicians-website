@@ -215,8 +215,8 @@ export default function AdminDashboard() {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
       case 'confirmed': return 'bg-blue-100 text-blue-800';
-      case 'in_progress': return 'bg-purple-100 text-purple-800';
       case 'completed': return 'bg-green-100 text-green-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -432,10 +432,10 @@ export default function AdminDashboard() {
                         )}
                         {appointment.status === 'confirmed' && (
                           <button
-                            onClick={() => updateBookingStatus(appointment.id, 'in_progress')}
-                            className="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
+                            onClick={() => updateBookingStatus(appointment.id, 'completed')}
+                            className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
                           >
-                            Start Repair
+                            Complete Repair
                           </button>
                         )}
                         <Link
