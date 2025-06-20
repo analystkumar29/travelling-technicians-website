@@ -393,10 +393,15 @@ export default function PricingAdmin() {
 
   // Get unique values for filter dropdowns
   const getUniqueFilterValues = () => {
-    const brands = [...new Set(dynamicPricing.map(p => p.brand_name).filter(Boolean))];
-    const models = [...new Set(dynamicPricing.map(p => p.model_name || p.device_model).filter(Boolean))];
-    const services = [...new Set(dynamicPricing.map(p => p.service_name).filter(Boolean))];
-    const tiers = [...new Set(dynamicPricing.map(p => p.tier_name).filter(Boolean))];
+    const brandSet = new Set(dynamicPricing.map(p => p.brand_name).filter(Boolean));
+    const modelSet = new Set(dynamicPricing.map(p => p.model_name || p.device_model).filter(Boolean));
+    const serviceSet = new Set(dynamicPricing.map(p => p.service_name).filter(Boolean));
+    const tierSet = new Set(dynamicPricing.map(p => p.tier_name).filter(Boolean));
+    
+    const brands = Array.from(brandSet);
+    const models = Array.from(modelSet);
+    const services = Array.from(serviceSet);
+    const tiers = Array.from(tierSet);
     
     return { brands, models, services, tiers };
   };
