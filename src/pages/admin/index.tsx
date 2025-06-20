@@ -183,6 +183,8 @@ export default function AdminDashboard() {
 
   const updateBookingStatus = async (id: string, newStatus: string) => {
     try {
+      console.log('Updating booking status:', { id, newStatus });
+      
       const response = await fetch('/api/bookings/update', {
         method: 'POST',
         headers: {
@@ -191,13 +193,21 @@ export default function AdminDashboard() {
         body: JSON.stringify({ id, status: newStatus }),
       });
 
+      console.log('Response status:', response.status, response.statusText);
+
       if (!response.ok) {
-        throw new Error('Failed to update booking status');
+        const errorData = await response.text();
+        console.error('API Error Response:', errorData);
+        throw new Error(`Failed to update booking status: ${response.status} ${response.statusText}`);
       }
+
+      const result = await response.json();
+      console.log('Update successful:', result);
 
       await fetchDashboardData();
     } catch (err) {
-      alert('Failed to update booking status');
+      console.error('Update booking status error:', err);
+      alert(`Failed to update booking status: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
