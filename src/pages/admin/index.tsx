@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
-import { supabase } from '@/utils/supabaseClient';
 import Link from 'next/link';
 import { 
   FaCalendarAlt, 
@@ -97,35 +96,36 @@ export default function AdminDashboard() {
   };
 
   const fetchStats = async () => {
-    const { data: bookings, error: bookingsError } = await supabase
-      .from('bookings')
-      .select('status, created_at, booking_date');
+    const response = await fetch('/api/bookings');
+    if (!response.ok) {
+      throw new Error('Failed to fetch bookings');
+    }
+    const bookingsData = await response.json();
+    const bookings: RecentBooking[] = bookingsData.bookings || [];
 
-    if (bookingsError) throw bookingsError;
-
-    const { data: warranties, error: warrantiesError } = await supabase
-      .from('warranties')
-      .select('status');
-
-    if (warrantiesError) throw warrantiesError;
+    const warrantiesResponse = await fetch('/api/warranties');
+    let warranties: any[] = [];
+    if (warrantiesResponse.ok) {
+      const warrantiesData = await warrantiesResponse.json();
+      warranties = warrantiesData.warranties || [];
+    }
 
     const today = new Date().toISOString().split('T')[0];
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-    const totalBookings = bookings?.length || 0;
-    const pendingBookings = bookings?.filter(b => b.status === 'pending').length || 0;
-    const confirmedBookings = bookings?.filter(b => b.status === 'confirmed').length || 0;
-    const completedBookings = bookings?.filter(b => b.status === 'completed').length || 0;
-    const todayBookings = bookings?.filter(b => b.booking_date === today).length || 0;
+    const totalBookings = bookings.length || 0;
+    const pendingBookings = bookings.filter((b: RecentBooking) => b.status === 'pending').length || 0;
+    const confirmedBookings = bookings.filter((b: RecentBooking) => b.status === 'confirmed').length || 0;
+    const completedBookings = bookings.filter((b: RecentBooking) => b.status === 'completed').length || 0;
+    const todayBookings = bookings.filter((b: RecentBooking) => b.booking_date === today).length || 0;
     
-    const totalWarranties = warranties?.length || 0;
-    const activeWarranties = warranties?.filter(w => w.status === 'active').length || 0;
+    const totalWarranties = warranties.length || 0;
+    const activeWarranties = warranties.filter((w: any) => w.status === 'active').length || 0;
 
-    // Estimate revenue (you can make this more accurate with actual pricing data)
-    const thisWeekBookings = bookings?.filter(b => 
+    const thisWeekBookings = bookings.filter((b: RecentBooking) => 
       b.created_at >= oneWeekAgo && b.status === 'completed'
     ).length || 0;
-    const thisWeekRevenue = thisWeekBookings * 120; // Average repair cost estimate
+    const thisWeekRevenue = thisWeekBookings * 120;
 
     setStats({
       totalBookings,
@@ -140,45 +140,62 @@ export default function AdminDashboard() {
   };
 
   const fetchRecentBookings = async () => {
-    const { data, error } = await supabase
-      .from('bookings')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(5);
-
-    if (error) throw error;
-    setRecentBookings(data || []);
+    const response = await fetch('/api/bookings');
+    if (!response.ok) {
+      throw new Error('Failed to fetch recent bookings');
+    }
+    const data = await response.json();
+    const bookings: RecentBooking[] = data.bookings || [];
+    
+    // Get the 5 most recent bookings
+    const recentBookings = bookings
+      .sort((a: RecentBooking, b: RecentBooking) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 5);
+    
+    setRecentBookings(recentBookings);
   };
 
   const fetchUpcomingAppointments = async () => {
+    const response = await fetch('/api/bookings');
+    if (!response.ok) {
+      throw new Error('Failed to fetch upcoming appointments');
+    }
+    const data = await response.json();
+    const bookings: UpcomingAppointment[] = data.bookings || [];
+    
     const today = new Date().toISOString().split('T')[0];
     
-    const { data, error } = await supabase
-      .from('bookings')
-      .select('*')
-      .gte('booking_date', today)
-      .in('status', ['confirmed', 'pending'])
-      .order('booking_date', { ascending: true })
-      .order('booking_time', { ascending: true })
-      .limit(5);
-
-    if (error) throw error;
-    setUpcomingAppointments(data || []);
+    // Filter for upcoming appointments
+    const upcomingAppointments = bookings
+      .filter((booking: UpcomingAppointment) => 
+        booking.booking_date >= today && 
+        ['confirmed', 'pending'].includes(booking.status)
+      )
+      .sort((a: UpcomingAppointment, b: UpcomingAppointment) => {
+        const dateA = new Date(`${a.booking_date} ${a.booking_time}`);
+        const dateB = new Date(`${b.booking_date} ${b.booking_time}`);
+        return dateA.getTime() - dateB.getTime();
+      })
+      .slice(0, 5);
+    
+    setUpcomingAppointments(upcomingAppointments);
   };
 
   const updateBookingStatus = async (id: string, newStatus: string) => {
     try {
-      const { error } = await supabase
-        .from('bookings')
-        .update({ status: newStatus })
-        .eq('id', id);
+      const response = await fetch('/api/bookings/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id, status: newStatus }),
+      });
 
-      if (error) {
-        alert('Error updating status: ' + error.message);
-      } else {
-        // Refresh data
-        await fetchDashboardData();
+      if (!response.ok) {
+        throw new Error('Failed to update booking status');
       }
+
+      await fetchDashboardData();
     } catch (err) {
       alert('Failed to update booking status');
     }

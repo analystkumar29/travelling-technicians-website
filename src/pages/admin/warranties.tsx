@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
-import { supabase } from '@/utils/supabaseClient';
 import Link from 'next/link';
 import { 
   FaShieldAlt, 
@@ -16,7 +15,8 @@ import {
   FaClock,
   FaExternalLinkAlt,
   FaEdit,
-  FaPlus
+  FaPlus,
+  FaStickyNote
 } from 'react-icons/fa';
 
 interface Warranty {
@@ -79,49 +79,16 @@ export default function AdminWarranties() {
   const fetchWarranties = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('warranties')
-        .select(`
-          *,
-          booking:booking_id (
-            reference_number,
-            customer_name,
-            customer_email,
-            customer_phone,
-            device_type,
-            device_brand,
-            device_model,
-            service_type,
-            address
-          ),
-          technician:technician_id (
-            full_name,
-            email,
-            phone
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        setError(error.message);
-      } else {
-        // Calculate days remaining for each warranty
-        const now = new Date();
-        const processedWarranties = (data || []).map(warranty => {
-          const expiryDate = new Date(warranty.expiry_date);
-          const daysRemaining = Math.max(0, Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
-          
-          return {
-            ...warranty,
-            days_remaining: daysRemaining
-          };
-        });
-        
-        setWarranties(processedWarranties);
+      const response = await fetch('/api/warranties');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch warranties');
       }
+      
+      const data = await response.json();
+      setWarranties(data.warranties || []);
     } catch (err) {
       setError('Failed to fetch warranties');
-      console.error('Warranty fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -163,17 +130,20 @@ export default function AdminWarranties() {
 
   const updateWarrantyStatus = async (id: string, newStatus: string) => {
     try {
-      const { error } = await supabase
-        .from('warranties')
-        .update({ status: newStatus })
-        .eq('id', id);
+      const response = await fetch('/api/warranties/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id, status: newStatus }),
+      });
 
-      if (error) {
-        alert('Error updating warranty status: ' + error.message);
-      } else {
-        // Refresh warranties
-        await fetchWarranties();
+      if (!response.ok) {
+        throw new Error('Failed to update warranty status');
       }
+
+      // Refresh warranties
+      fetchWarranties();
     } catch (err) {
       alert('Failed to update warranty status');
     }
@@ -185,17 +155,20 @@ export default function AdminWarranties() {
       const existingNotes = warranty?.notes || '';
       const newNotes = existingNotes ? `${existingNotes}\n\n${new Date().toLocaleString()}: ${note}` : `${new Date().toLocaleString()}: ${note}`;
       
-      const { error } = await supabase
-        .from('warranties')
-        .update({ notes: newNotes })
-        .eq('id', id);
+      const response = await fetch('/api/warranties/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id, notes: newNotes }),
+      });
 
-      if (error) {
-        alert('Error adding note: ' + error.message);
-      } else {
-        await fetchWarranties();
-        setShowModal(false);
+      if (!response.ok) {
+        throw new Error('Failed to add note');
       }
+
+      await fetchWarranties();
+      setShowModal(false);
     } catch (err) {
       alert('Failed to add note');
     }

@@ -120,7 +120,10 @@ async function handleGetWarranties(req: NextApiRequest, res: NextApiResponse) {
       };
     });
     
-    return res.status(200).json(processedData);
+    return res.status(200).json({
+      success: true,
+      warranties: processedData
+    });
   } catch (error) {
     logger.error('Unexpected error in warranties API:', error);
     return res.status(500).json({ error: 'Internal Server Error' });

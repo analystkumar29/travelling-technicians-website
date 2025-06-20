@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
-import { supabase } from '@/utils/supabaseClient';
 import Link from 'next/link';
 import { 
   FaCalendarAlt, 
@@ -17,7 +16,8 @@ import {
   FaClock,
   FaUser,
   FaPlus,
-  FaNotesMedical
+  FaNotesMedical,
+  FaStickyNote
 } from 'react-icons/fa';
 
 interface Booking {
@@ -74,16 +74,14 @@ export default function AdminBookings() {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('bookings')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        setError(error.message);
-      } else {
-        setBookings(data || []);
+      const response = await fetch('/api/bookings');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch bookings');
       }
+      
+      const data = await response.json();
+      setBookings(data.bookings || []);
     } catch (err) {
       setError('Failed to fetch bookings');
     } finally {
@@ -152,17 +150,20 @@ export default function AdminBookings() {
 
   const updateBookingStatus = async (id: string, newStatus: string) => {
     try {
-      const { error } = await supabase
-        .from('bookings')
-        .update({ status: newStatus })
-        .eq('id', id);
+      const response = await fetch('/api/bookings/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id, status: newStatus }),
+      });
 
-      if (error) {
-        alert('Error updating status: ' + error.message);
-      } else {
-        // Refresh bookings
-        fetchBookings();
+      if (!response.ok) {
+        throw new Error('Failed to update booking status');
       }
+
+      // Refresh bookings
+      fetchBookings();
     } catch (err) {
       alert('Failed to update booking status');
     }
@@ -174,17 +175,20 @@ export default function AdminBookings() {
       const existingNotes = booking?.notes || '';
       const newNotes = existingNotes ? `${existingNotes}\n\n${new Date().toLocaleString()}: ${note}` : `${new Date().toLocaleString()}: ${note}`;
       
-      const { error } = await supabase
-        .from('bookings')
-        .update({ notes: newNotes })
-        .eq('id', id);
+      const response = await fetch('/api/bookings/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id, notes: newNotes }),
+      });
 
-      if (error) {
-        alert('Error adding note: ' + error.message);
-      } else {
-        await fetchBookings();
-        setShowModal(false);
+      if (!response.ok) {
+        throw new Error('Failed to add note');
       }
+
+      await fetchBookings();
+      setShowModal(false);
     } catch (err) {
       alert('Failed to add note');
     }
