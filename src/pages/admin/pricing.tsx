@@ -28,17 +28,23 @@ interface Service {
 
 interface DynamicPricing {
   id: number;
-  service_name: string;
-  device_model: string;
-  brand_name: string;
-  tier_name: string;
+  service_id?: number;
+  model_id?: number;
+  pricing_tier_id?: number;
+  service_name?: string;
+  device_model?: string;
+  model_name?: string;
+  brand_name?: string;
+  tier_name?: string;
   base_price: number;
   discounted_price?: number;
   cost_price?: number;
   is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
-type TabType = 'tiers' | 'services' | 'pricing';
+type TabType = 'tiers' | 'services' | 'pricing' | 'device-pricing';
 
 export default function PricingAdmin() {
   const router = useRouter();
@@ -82,11 +88,27 @@ export default function PricingAdmin() {
     tier: 'all'
   });
 
+  // Device-Specific Pricing State
+  const [devicePricingForm, setDevicePricingForm] = useState({
+    service_id: '',
+    model_id: '',
+    pricing_tier_id: '',
+    base_price: '',
+    discounted_price: '',
+    cost_price: '',
+    is_active: true
+  });
+  const [editingDevicePricing, setEditingDevicePricing] = useState<DynamicPricing | null>(null);
+  const [deviceModels, setDeviceModels] = useState<any[]>([]);
+  const [deviceServices, setDeviceServices] = useState<any[]>([]);
+
   // Load data on component mount
   useEffect(() => {
     loadPricingTiers();
     loadServices();
     loadDynamicPricing();
+    loadDeviceModels();
+    loadDeviceServices();
   }, []);
 
   // Load Pricing Tiers
@@ -140,6 +162,34 @@ export default function PricingAdmin() {
     } catch (err) {
       setError('Error loading dynamic pricing');
       console.error('Error loading dynamic pricing:', err);
+    }
+  };
+
+  // Load Device Models
+  const loadDeviceModels = async () => {
+    try {
+      const response = await fetch('/api/admin/models');
+      const data = await response.json();
+      
+      if (data.success) {
+        setDeviceModels(data.models || []);
+      }
+    } catch (err) {
+      console.error('Error loading device models:', err);
+    }
+  };
+
+  // Load Device Services  
+  const loadDeviceServices = async () => {
+    try {
+      const response = await fetch('/api/pricing/services?deviceType=all');
+      const data = await response.json();
+      
+      if (data.success) {
+        setDeviceServices(data.services || []);
+      }
+    } catch (err) {
+      console.error('Error loading device services:', err);
     }
   };
 
@@ -317,6 +367,87 @@ export default function PricingAdmin() {
     }
   };
 
+  // Device-Specific Pricing Functions
+  const handleDevicePricingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const pricingData = {
+        service_id: parseInt(devicePricingForm.service_id),
+        model_id: parseInt(devicePricingForm.model_id),
+        pricing_tier_id: parseInt(devicePricingForm.pricing_tier_id),
+        base_price: parseFloat(devicePricingForm.base_price),
+        discounted_price: devicePricingForm.discounted_price ? parseFloat(devicePricingForm.discounted_price) : null,
+        cost_price: devicePricingForm.cost_price ? parseFloat(devicePricingForm.cost_price) : null,
+        is_active: devicePricingForm.is_active
+      };
+
+      const url = editingDevicePricing 
+        ? `/api/admin/dynamic-pricing?id=${editingDevicePricing.id}`
+        : '/api/admin/dynamic-pricing';
+      
+      const response = await fetch(url, {
+        method: editingDevicePricing ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pricingData)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        loadDynamicPricing();
+        setDevicePricingForm({
+          service_id: '',
+          model_id: '',
+          pricing_tier_id: '',
+          base_price: '',
+          discounted_price: '',
+          cost_price: '',
+          is_active: true
+        });
+        setEditingDevicePricing(null);
+      } else {
+        setError(data.message || 'Failed to save device pricing');
+      }
+    } catch (err) {
+      setError('Error saving device pricing');
+      console.error('Error saving device pricing:', err);
+    }
+  };
+
+  const handleEditDevicePricing = (pricing: DynamicPricing) => {
+    setEditingDevicePricing(pricing);
+    setDevicePricingForm({
+      service_id: pricing.service_id?.toString() || '',
+      model_id: pricing.model_id?.toString() || '',
+      pricing_tier_id: pricing.pricing_tier_id?.toString() || '',
+      base_price: pricing.base_price?.toString() || '',
+      discounted_price: pricing.discounted_price?.toString() || '',
+      cost_price: pricing.cost_price?.toString() || '',
+      is_active: pricing.is_active
+    });
+  };
+
+  const handleDeleteDevicePricing = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this pricing entry?')) return;
+
+    try {
+      const response = await fetch(`/api/admin/dynamic-pricing?id=${id}`, {
+        method: 'DELETE'
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        loadDynamicPricing();
+      } else {
+        setError(data.message || 'Failed to delete pricing entry');
+      }
+    } catch (err) {
+      setError('Error deleting pricing entry');
+      console.error('Error deleting pricing entry:', err);
+    }
+  };
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
@@ -348,7 +479,8 @@ export default function PricingAdmin() {
             {[
               { key: 'tiers', label: 'Pricing Tiers', count: pricingTiers.length },
               { key: 'services', label: 'Services', count: services.length },
-              { key: 'pricing', label: 'Dynamic Pricing', count: dynamicPricing.length }
+              { key: 'pricing', label: 'Dynamic Pricing', count: dynamicPricing.length },
+              { key: 'device-pricing', label: 'Device-Specific Pricing', count: dynamicPricing.length }
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -881,6 +1013,250 @@ export default function PricingAdmin() {
                   Showing first 50 of {dynamicPricing.length} pricing records
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Device-Specific Pricing Tab */}
+        {activeTab === 'device-pricing' && (
+          <div className="space-y-6">
+            {/* Add Device-Specific Pricing Form */}
+            <div className="bg-white shadow rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">
+                {editingDevicePricing ? 'Edit Device Pricing' : 'Set Device-Specific Pricing'}
+              </h2>
+              <p className="text-gray-600 mb-4">
+                Set specific prices for individual device models and services. For example: iPhone 16 screen repair = $225, battery replacement = $100.
+              </p>
+              
+              <form onSubmit={handleDevicePricingSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Device Model</label>
+                  <select
+                    value={devicePricingForm.model_id}
+                    onChange={(e) => setDevicePricingForm({...devicePricingForm, model_id: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    required
+                  >
+                    <option value="">Select Device Model</option>
+                    {deviceModels.map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.brand?.name} {model.name} ({model.brand?.device_type})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
+                  <select
+                    value={devicePricingForm.service_id}
+                    onChange={(e) => setDevicePricingForm({...devicePricingForm, service_id: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    required
+                  >
+                    <option value="">Select Service</option>
+                    {deviceServices.map((service) => (
+                      <option key={service.id} value={service.id}>
+                        {service.display_name} ({service.device_type})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Pricing Tier</label>
+                  <select
+                    value={devicePricingForm.pricing_tier_id}
+                    onChange={(e) => setDevicePricingForm({...devicePricingForm, pricing_tier_id: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    required
+                  >
+                    <option value="">Select Pricing Tier</option>
+                    {pricingTiers.map((tier) => (
+                      <option key={tier.id} value={tier.id}>
+                        {tier.display_name} ({tier.price_multiplier}x)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Base Price (CAD)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={devicePricingForm.base_price}
+                    onChange={(e) => setDevicePricingForm({...devicePricingForm, base_price: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    placeholder="225.00"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Discounted Price (Optional)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={devicePricingForm.discounted_price}
+                    onChange={(e) => setDevicePricingForm({...devicePricingForm, discounted_price: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    placeholder="200.00"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cost Price (Optional)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={devicePricingForm.cost_price}
+                    onChange={(e) => setDevicePricingForm({...devicePricingForm, cost_price: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    placeholder="150.00"
+                  />
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={devicePricingForm.is_active}
+                    onChange={(e) => setDevicePricingForm({...devicePricingForm, is_active: e.target.checked})}
+                    className="mr-2"
+                  />
+                  <label className="text-sm font-medium text-gray-700">Active</label>
+                </div>
+
+                <div className="lg:col-span-3">
+                  <button
+                    type="submit"
+                    className="px-6 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 mr-2"
+                  >
+                    {editingDevicePricing ? 'Update' : 'Set'} Device Pricing
+                  </button>
+                  {editingDevicePricing && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingDevicePricing(null);
+                        setDevicePricingForm({
+                          service_id: '',
+                          model_id: '',
+                          pricing_tier_id: '',
+                          base_price: '',
+                          discounted_price: '',
+                          cost_price: '',
+                          is_active: true
+                        });
+                      }}
+                      className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
+
+            {/* Device-Specific Pricing List */}
+            <div className="bg-white shadow rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">Device-Specific Pricing ({dynamicPricing.length} entries)</h2>
+              
+              {dynamicPricing.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No device-specific pricing set yet.</p>
+                  <p className="text-sm mt-2">Use the form above to set specific prices for device models like iPhone 16.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tier</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Base Price</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discounted</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {dynamicPricing.map((pricing) => (
+                        <tr key={pricing.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <div>
+                              <div className="font-medium">{pricing.brand_name} {pricing.device_model}</div>
+                              <div className="text-xs text-gray-500">{pricing.brand_name}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {pricing.service_name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {pricing.tier_name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            ${pricing.base_price}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {pricing.discounted_price ? `$${pricing.discounted_price}` : '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {pricing.cost_price ? `$${pricing.cost_price}` : '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              pricing.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {pricing.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button
+                              onClick={() => handleEditDevicePricing(pricing)}
+                              className="text-indigo-600 hover:text-indigo-900 mr-3"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteDevicePricing(pricing.id)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Examples */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-blue-900 mb-2">Quick Examples</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
+                <div>
+                  <p className="font-medium mb-1">iPhone 16 Screen Repair:</p>
+                  <p>Model: iPhone 16, Service: Screen Replacement, Tier: Standard, Price: $225</p>
+                </div>
+                <div>
+                  <p className="font-medium mb-1">iPhone 16 Battery Replacement:</p>
+                  <p>Model: iPhone 16, Service: Battery Replacement, Tier: Standard, Price: $100</p>
+                </div>
+                <div>
+                  <p className="font-medium mb-1">MacBook Pro M3 Screen Repair:</p>
+                  <p>Model: MacBook Pro M3, Service: Screen Replacement, Tier: Premium, Price: $450</p>
+                </div>
+                <div>
+                  <p className="font-medium mb-1">Samsung Galaxy S24 Screen:</p>
+                  <p>Model: Galaxy S24, Service: Screen Replacement, Tier: Standard, Price: $200</p>
+                </div>
+              </div>
             </div>
           </div>
         )}
