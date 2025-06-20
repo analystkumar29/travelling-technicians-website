@@ -64,34 +64,7 @@ export default async function handler(
     // Get Supabase client
     const supabase = getServiceSupabase();
 
-    // First, check if the dynamic tables exist
-    const { data: tablesExist, error: tableCheckError } = await supabase
-      .from('information_schema.tables')
-      .select('table_name')
-      .eq('table_schema', 'public')
-      .in('table_name', ['brands', 'models']);
-
-    if (tableCheckError || !tablesExist || tablesExist.length === 0) {
-      // Tables don't exist yet, return fallback static data
-      apiLogger.info('Dynamic tables not found, using fallback static data');
-      const staticModels = getStaticModels(deviceType as string, brand as string);
-      
-      return res.status(200).json({
-        success: true,
-        models: staticModels.map((name, index) => ({
-          id: index + 1,
-          name,
-          brand_id: 1,
-          brand_name: brand as string,
-          device_type: deviceType as string,
-          is_active: true,
-          sort_order: index,
-          created_at: new Date().toISOString()
-        }))
-      });
-    }
-
-    // Try to fetch from dynamic tables
+    // Fetch from dynamic tables
     try {
       // Join brands and models tables to get models for specific brand and device type
       const { data: models, error: modelsError } = await supabase
@@ -116,7 +89,7 @@ export default async function handler(
           )
         `)
         .eq('brands.device_types.name', deviceType)
-        .eq('brands.name', brand)
+        .or(`name.ilike.%${brand}%,display_name.ilike.%${brand}%`, { foreignTable: 'brands' })
         .eq('is_active', true)
         .order('sort_order', { ascending: true })
         .order('name', { ascending: true });
