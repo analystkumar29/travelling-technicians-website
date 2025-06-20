@@ -232,8 +232,8 @@ export default function AdminBookings() {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
       case 'confirmed': return 'bg-blue-100 text-blue-800';
-      case 'in_progress': return 'bg-purple-100 text-purple-800';
       case 'completed': return 'bg-green-100 text-green-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -513,8 +513,8 @@ export default function AdminBookings() {
                     <option value="all">All Status</option>
                     <option value="pending">Pending</option>
                     <option value="confirmed">Confirmed</option>
-                    <option value="in_progress">In Progress</option>
                     <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
                   </select>
                 </div>
 
@@ -672,19 +672,10 @@ export default function AdminBookings() {
 
                       {booking.status === 'confirmed' && (
                         <button
-                          onClick={() => updateBookingStatus(booking.id, 'in_progress')}
-                          className="px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
-                        >
-                          Start Repair
-                        </button>
-                      )}
-
-                      {booking.status === 'in_progress' && (
-                        <button
                           onClick={() => updateBookingStatus(booking.id, 'completed')}
                           className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
                         >
-                          Complete
+                          Complete Repair
                         </button>
                       )}
 

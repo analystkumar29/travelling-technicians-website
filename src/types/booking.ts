@@ -11,15 +11,13 @@ import type { ReactNode } from 'react';
 export type DeviceType = 'mobile' | 'laptop' | 'tablet' | 'unknown';
 
 /**
- * Possible booking statuses
+ * Possible booking statuses (must match database constraint)
  */
 export type BookingStatus = 
   | 'pending'     // Booking is waiting for confirmation
   | 'confirmed'   // Booking has been confirmed but not completed
   | 'completed'   // Service has been completed
-  | 'cancelled'   // Booking was cancelled by the customer
-  | 'no_show'     // Customer did not show up
-  | 'rescheduled';  // Booking was rescheduled
+  | 'cancelled';  // Booking was cancelled by the customer
 
 /**
  * Data needed to create a booking
