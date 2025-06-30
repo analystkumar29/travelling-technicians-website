@@ -16,7 +16,7 @@ import {
   FaMapMarkerAlt
 } from 'react-icons/fa';
 
-interface DashboardStats {
+interface ManagementStats {
   totalBookings: number;
   pendingBookings: number;
   confirmedBookings: number;
@@ -59,8 +59,8 @@ interface UpcomingAppointment {
   status: string;
 }
 
-export default function AdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats>({
+export default function AdminManagement() {
+  const [stats, setStats] = useState<ManagementStats>({
     totalBookings: 0,
     pendingBookings: 0,
     confirmedBookings: 0,
@@ -76,10 +76,10 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchDashboardData();
+    fetchManagementData();
   }, []);
 
-  const fetchDashboardData = async () => {
+  const fetchManagementData = async () => {
     try {
       setLoading(true);
       await Promise.all([
@@ -88,8 +88,8 @@ export default function AdminDashboard() {
         fetchUpcomingAppointments()
       ]);
     } catch (err) {
-      setError('Failed to load dashboard data');
-      console.error('Dashboard fetch error:', err);
+      setError('Failed to load management data');
+      console.error('Management fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -204,7 +204,7 @@ export default function AdminDashboard() {
       const result = await response.json();
       console.log('Update successful:', result);
 
-      await fetchDashboardData();
+      await fetchManagementData();
     } catch (err) {
       console.error('Update booking status error:', err);
       alert(`Failed to update booking status: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -240,7 +240,7 @@ export default function AdminDashboard() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading dashboard...</p>
+              <p className="mt-4 text-gray-600">Loading management...</p>
             </div>
           </div>
         </div>
@@ -275,41 +275,41 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Admin Management</h1>
             <p className="mt-2 text-gray-600">Welcome back! Here's what's happening with your business today.</p>
           </div>
 
           {/* Quick Navigation */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-                          <Link href="/dashboard/bookings" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
+                          <Link href="/management/bookings" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
               <div className="text-blue-600 mb-2">
                 <FaCalendarAlt className="h-6 w-6 mx-auto" />
               </div>
               <h3 className="text-sm font-medium text-gray-900">Bookings</h3>
             </Link>
 
-                          <Link href="/dashboard/warranties" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
+                          <Link href="/management/warranties" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
               <div className="text-green-600 mb-2">
                 <FaShieldAlt className="h-6 w-6 mx-auto" />
               </div>
               <h3 className="text-sm font-medium text-gray-900">Warranties</h3>
             </Link>
 
-                          <Link href="/dashboard/technicians" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
+                          <Link href="/management/technicians" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
               <div className="text-purple-600 mb-2">
                 <FaTools className="h-6 w-6 mx-auto" />
               </div>
               <h3 className="text-sm font-medium text-gray-900">Technicians</h3>
             </Link>
 
-                          <Link href="/dashboard/devices" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
+                          <Link href="/management/devices" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
               <div className="text-indigo-600 mb-2">
                 <FaPhone className="h-6 w-6 mx-auto" />
               </div>
               <h3 className="text-sm font-medium text-gray-900">Devices</h3>
             </Link>
 
-                          <Link href="/dashboard/pricing" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
+                          <Link href="/management/pricing" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
               <div className="text-yellow-600 mb-2">
                 <FaDollarSign className="h-6 w-6 mx-auto" />
               </div>
@@ -358,7 +358,7 @@ export default function AdminDashboard() {
               </div>
               <div className="bg-gray-50 px-5 py-3">
                 <div className="text-sm">
-                  <Link href="/dashboard/bookings" className="text-orange-600 hover:text-orange-900 font-medium">
+                  <Link href="/management/bookings" className="text-orange-600 hover:text-orange-900 font-medium">
                     View all appointments →
                   </Link>
                 </div>
@@ -381,7 +381,7 @@ export default function AdminDashboard() {
               </div>
               <div className="bg-gray-50 px-5 py-3">
                 <div className="text-sm">
-                  <Link href="/dashboard/warranties" className="text-green-600 hover:text-green-900 font-medium">
+                  <Link href="/management/warranties" className="text-green-600 hover:text-green-900 font-medium">
                     Manage warranties →
                   </Link>
                 </div>
@@ -477,7 +477,7 @@ export default function AdminDashboard() {
                           </button>
                         )}
                         <Link
-                          href={`/dashboard/bookings`}
+                          href={`/management/bookings`}
                           className="px-3 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 inline-block"
                         >
                           View Details
@@ -544,7 +544,7 @@ export default function AdminDashboard() {
               </div>
               <div className="px-6 py-3 bg-gray-50">
                 <Link 
-                  href="/dashboard/bookings"
+                  href="/management/bookings"
                   className="text-sm text-primary-600 hover:text-primary-900 font-medium"
                 >
                   View all bookings →
@@ -561,7 +561,7 @@ export default function AdminDashboard() {
             <div className="px-6 py-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Link
-                  href="/dashboard/bookings"
+                  href="/management/bookings"
                   className="flex items-center justify-center px-4 py-6 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
                 >
                   <div className="text-center">
@@ -571,7 +571,7 @@ export default function AdminDashboard() {
                 </Link>
                 
                 <Link
-                  href="/dashboard/warranties"
+                  href="/management/warranties"
                   className="flex items-center justify-center px-4 py-6 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
                 >
                   <div className="text-center">

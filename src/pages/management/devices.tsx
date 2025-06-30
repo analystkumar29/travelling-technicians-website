@@ -95,7 +95,7 @@ export default function DevicesAdmin() {
   const loadDeviceTypes = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/dashboard/device-types');
+      const response = await fetch('/api/management/device-types');
       const data = await response.json();
       
       if (data.success) {
@@ -114,7 +114,7 @@ export default function DevicesAdmin() {
   // Load Brands
   const loadBrands = async () => {
     try {
-      const response = await fetch('/api/dashboard/brands');
+      const response = await fetch('/api/management/brands');
       const data = await response.json();
       
       if (data.success) {
@@ -131,7 +131,7 @@ export default function DevicesAdmin() {
   // Load Models
   const loadModels = async () => {
     try {
-      const response = await fetch('/api/dashboard/models');
+      const response = await fetch('/api/management/models');
       const data = await response.json();
       
       if (data.success) {
@@ -150,8 +150,8 @@ export default function DevicesAdmin() {
     e.preventDefault();
     try {
       const url = editingDeviceType 
-        ? `/api/dashboard/device-types/${editingDeviceType.id}`
-        : '/api/dashboard/device-types';
+        ? `/api/management/device-types/${editingDeviceType.id}`
+        : '/api/management/device-types';
       
       const response = await fetch(url, {
         method: editingDeviceType ? 'PUT' : 'POST',
@@ -188,7 +188,7 @@ export default function DevicesAdmin() {
     if (!confirm('Are you sure you want to delete this device type?')) return;
     
     try {
-      const response = await fetch(`/api/dashboard/device-types/${id}`, {
+      const response = await fetch(`/api/management/device-types/${id}`, {
         method: 'DELETE'
       });
       
@@ -210,8 +210,8 @@ export default function DevicesAdmin() {
     e.preventDefault();
     try {
       const url = editingBrand 
-        ? `/api/dashboard/brands/${editingBrand.id}`
-        : '/api/dashboard/brands';
+        ? `/api/management/brands/${editingBrand.id}`
+        : '/api/management/brands';
       
       const response = await fetch(url, {
         method: editingBrand ? 'PUT' : 'POST',
@@ -259,7 +259,7 @@ export default function DevicesAdmin() {
     if (!confirm('Are you sure you want to delete this brand?')) return;
     
     try {
-      const response = await fetch(`/api/dashboard/brands/${id}`, {
+      const response = await fetch(`/api/management/brands/${id}`, {
         method: 'DELETE'
       });
       
@@ -281,8 +281,8 @@ export default function DevicesAdmin() {
     e.preventDefault();
     try {
       const url = editingModel 
-        ? `/api/dashboard/models/${editingModel.id}`
-        : '/api/dashboard/models';
+        ? `/api/management/models/${editingModel.id}`
+        : '/api/management/models';
       
       const modelData = {
         ...modelForm,
@@ -342,7 +342,7 @@ export default function DevicesAdmin() {
     if (!confirm('Are you sure you want to delete this model?')) return;
     
     try {
-      const response = await fetch(`/api/dashboard/models/${id}`, {
+      const response = await fetch(`/api/management/models/${id}`, {
         method: 'DELETE'
       });
       
@@ -375,7 +375,7 @@ export default function DevicesAdmin() {
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Device Management</h1>
           <button
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push('/management')}
             className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
           >
             Back to Admin

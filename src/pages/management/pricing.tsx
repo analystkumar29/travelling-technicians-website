@@ -163,7 +163,7 @@ export default function PricingAdmin() {
   // Load Dynamic Pricing
   const loadDynamicPricing = async () => {
     try {
-              const response = await fetch('/api/dashboard/dynamic-pricing');
+              const response = await fetch('/api/management/dynamic-pricing');
       const data = await response.json();
       
       if (data.success) {
@@ -180,7 +180,7 @@ export default function PricingAdmin() {
   // Load Device Models
   const loadDeviceModels = async () => {
     try {
-              const response = await fetch('/api/dashboard/models');
+              const response = await fetch('/api/management/models');
       const data = await response.json();
       
       if (data.success) {
@@ -223,8 +223,8 @@ export default function PricingAdmin() {
       };
 
       const url = editingTier 
-        ? `/api/dashboard/pricing-tiers/${editingTier.id}`
-        : '/api/dashboard/pricing-tiers';
+        ? `/api/management/pricing-tiers/${editingTier.id}`
+        : '/api/management/pricing-tiers';
       
       const response = await fetch(url, {
         method: editingTier ? 'PUT' : 'POST',
@@ -274,7 +274,7 @@ export default function PricingAdmin() {
     if (!confirm('Are you sure you want to delete this pricing tier?')) return;
     
     try {
-              const response = await fetch(`/api/dashboard/pricing-tiers/${id}`, {
+              const response = await fetch(`/api/management/pricing-tiers/${id}`, {
         method: 'DELETE'
       });
       
@@ -296,8 +296,8 @@ export default function PricingAdmin() {
     e.preventDefault();
     try {
       const url = editingService 
-        ? `/api/dashboard/services/${editingService.id}`
-        : '/api/dashboard/services';
+        ? `/api/management/services/${editingService.id}`
+        : '/api/management/services';
       
       const response = await fetch(url, {
         method: editingService ? 'PUT' : 'POST',
@@ -345,7 +345,7 @@ export default function PricingAdmin() {
     if (!confirm('Are you sure you want to delete this service?')) return;
     
     try {
-              const response = await fetch(`/api/dashboard/services/${id}`, {
+              const response = await fetch(`/api/management/services/${id}`, {
         method: 'DELETE'
       });
       
@@ -367,7 +367,7 @@ export default function PricingAdmin() {
     if (!confirm(`Are you sure you want to ${percentage > 0 ? 'increase' : 'decrease'} all prices by ${Math.abs(percentage)}%?`)) return;
     
     try {
-              const response = await fetch('/api/dashboard/bulk-price-update', {
+              const response = await fetch('/api/management/bulk-price-update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ percentage })
@@ -497,8 +497,8 @@ export default function PricingAdmin() {
       };
 
       const url = editingDevicePricing 
-        ? `/api/dashboard/dynamic-pricing?id=${editingDevicePricing.id}`
-        : '/api/dashboard/dynamic-pricing';
+        ? `/api/management/dynamic-pricing?id=${editingDevicePricing.id}`
+        : '/api/management/dynamic-pricing';
       
       const response = await fetch(url, {
         method: editingDevicePricing ? 'PUT' : 'POST',
@@ -546,7 +546,7 @@ export default function PricingAdmin() {
     if (!confirm('Are you sure you want to delete this pricing entry?')) return;
 
     try {
-              const response = await fetch(`/api/dashboard/dynamic-pricing?id=${id}`, {
+              const response = await fetch(`/api/management/dynamic-pricing?id=${id}`, {
         method: 'DELETE'
       });
       
@@ -569,7 +569,7 @@ export default function PricingAdmin() {
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Pricing Management</h1>
           <button
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push('/management')}
             className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
           >
             Back to Admin

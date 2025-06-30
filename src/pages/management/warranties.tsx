@@ -355,10 +355,10 @@ export default function AdminWarranties() {
                 <p className="mt-2 text-gray-600">Manage customer warranties and claims</p>
               </div>
               <Link
-                href="/dashboard"
+                href="/management"
                 className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
               >
-                Back to Dashboard
+                Back to Management
               </Link>
             </div>
           </div>
@@ -636,7 +636,7 @@ export default function AdminWarranties() {
                       )}
                       
                       <Link
-                        href={`/dashboard/bookings`}
+                        href={`/management/bookings`}
                         className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 inline-flex items-center"
                       >
                         <FaExternalLinkAlt className="mr-1" />

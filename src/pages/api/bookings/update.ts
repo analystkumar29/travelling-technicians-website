@@ -22,7 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Determine what we're updating and how to identify the booking
     if (id) {
-      // Update by ID (admin dashboard style)
+      // Update by ID (admin management style)
       whereClause = { id };
       if (status) updateData.status = status;
       if (notes !== undefined) updateData.notes = notes;
@@ -141,7 +141,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           booking_id: updatedBooking.id,
           technician_id: technician.id,
           completed_at: new Date().toISOString(),
-          repair_notes: `Repair completed via admin dashboard by ${technician.full_name}`,
+          repair_notes: `Repair completed via admin management by ${technician.full_name}`,
           parts_used: JSON.stringify([
             {
               name: `${updatedBooking.device_brand} ${updatedBooking.device_model} Repair`,
