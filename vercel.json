@@ -17,36 +17,53 @@
 
   "headers": [
     {
-      "source": "/api/(bookings|send-|check-|pricing|devices|geocode|ping).*",
+      "source": "/api/bookings/(.*)",
       "headers": [
         {
-          "key": "Access-Control-Allow-Credentials",
-          "value": "true"
-        },
+          "key": "X-Vercel-Protection",
+          "value": "bypass"
+        }
+      ]
+    },
+    {
+      "source": "/api/send-*(.*)",
+      "headers": [
         {
-          "key": "Access-Control-Allow-Origin",
-          "value": "https://travelling-technicians.ca"
-        },
+          "key": "X-Vercel-Protection",
+          "value": "bypass"
+        }
+      ]
+    },
+    {
+      "source": "/api/check-*(.*)",
+      "headers": [
         {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT"
-        },
+          "key": "X-Vercel-Protection",
+          "value": "bypass"
+        }
+      ]
+    },
+    {
+      "source": "/api/pricing/(.*)",
+      "headers": [
         {
-          "key": "Access-Control-Allow-Headers",
-          "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
-        },
+          "key": "X-Vercel-Protection",
+          "value": "bypass"
+        }
+      ]
+    },
+    {
+      "source": "/api/devices/(.*)",
+      "headers": [
         {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        },
+          "key": "X-Vercel-Protection",
+          "value": "bypass"
+        }
+      ]
+    },
+    {
+      "source": "/api/geocode",
+      "headers": [
         {
           "key": "X-Vercel-Protection",
           "value": "bypass"
