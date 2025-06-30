@@ -132,23 +132,33 @@ export async function sendBookingConfirmationEmail(data: BookingConfirmationEmai
       isServer: typeof window === 'undefined'
     });
     
-    // Check if SendGrid is configured before attempting to send
-    if (!process.env.SENDGRID_API_KEY) {
-      emailLogger.warn('SendGrid API key not configured - simulating email', {
-        to: data.to,
-        subject: 'Your Booking Confirmation - The Travelling Technicians',
-        reference: data.referenceNumber,
-        date: formattedDate,
-        time: formattedTime
-      });
-      
-      // Simulate a delay for the API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      return true;
-    }
+    // Log environment check (client-side may not have access to server env vars)
+    const clientSideEnvCheck = process.env.SENDGRID_API_KEY;
+    emailLogger.info('🔍 EMAIL SERVICE - Environment Check', {
+      isServer: typeof window === 'undefined',
+      clientSideHasSendGrid: !!clientSideEnvCheck,
+      sendGridKeyPrefix: clientSideEnvCheck ? clientSideEnvCheck.substring(0, 3) + '...' : 'undefined',
+      to: data.to,
+      reference: data.referenceNumber
+    });
+    
+    // Don't do client-side environment check - let the server API handle it
+    emailLogger.info('🚀 EMAIL SERVICE - Proceeding to call email API endpoint', {
+      url: fullUrl,
+      emailData: {
+        ...emailData,
+        to: '[REDACTED]'
+      }
+    });
     
     // Send the email using the API with full URL
+    emailLogger.info('🌐 EMAIL SERVICE - Making API request', {
+      url: fullUrl,
+      method: 'POST',
+      dataKeys: Object.keys(emailData),
+      reference: data.referenceNumber
+    });
+
     const response = await fetch(fullUrl, {
       method: 'POST',
       headers: {
@@ -157,16 +167,33 @@ export async function sendBookingConfirmationEmail(data: BookingConfirmationEmai
       body: JSON.stringify(emailData),
     });
     
+    emailLogger.info('📡 EMAIL SERVICE - API response received', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      reference: data.referenceNumber,
+      headers: Object.fromEntries(response.headers.entries())
+    });
+    
     if (!response.ok) {
       const errorData = await response.json();
+      emailLogger.error('❌ EMAIL SERVICE - API error response', {
+        status: response.status,
+        errorData,
+        reference: data.referenceNumber
+      });
       throw new Error(errorData.message || `Email API responded with ${response.status}`);
     }
     
     const result = await response.json();
     
-    emailLogger.info('Email sent successfully', { 
+    emailLogger.info('✅ EMAIL SERVICE - API success response', { 
       reference: data.referenceNumber,
-      success: result.success
+      success: result.success,
+      message: result.message,
+      sentTo: result.sentTo,
+      hasDebugInfo: !!result.debug,
+      fullResult: result
     });
     
     return true;

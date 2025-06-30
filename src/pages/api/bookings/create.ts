@@ -229,29 +229,47 @@ export default async function handler(
       id: booking.id
     });
     
-    // Send confirmation email
+    // 🔍 DETAILED EMAIL CONFIRMATION PROCESS
+    const emailData = {
+      to: normalizedBookingData.customerEmail,
+      name: normalizedBookingData.customerName,
+      referenceNumber,
+      appointmentDate: normalizedBookingData.appointmentDate,
+      appointmentTime: normalizedBookingData.appointmentTime,
+      service: normalizedBookingData.serviceType,
+      deviceType: normalizedBookingData.deviceType,
+      deviceBrand: normalizedBookingData.deviceBrand,
+      deviceModel: normalizedBookingData.deviceModel,
+      address: normalizedBookingData.address,
+      city: normalizedBookingData.city,
+      postalCode: normalizedBookingData.postalCode,
+      province: normalizedBookingData.province
+    };
+
+    apiLogger.info('📧 BOOKING API - Starting email confirmation process', {
+      reference: referenceNumber,
+      bookingId: booking.id,
+      customerEmail: normalizedBookingData.customerEmail?.substring(0, 3) + '***',
+      hasEmailService: true,
+      emailDataKeys: Object.keys(emailData),
+      timestamp: new Date().toISOString()
+    });
+
     try {
-      await sendBookingConfirmationEmail({
-        to: normalizedBookingData.customerEmail,
-        name: normalizedBookingData.customerName,
-        referenceNumber,
-        appointmentDate: normalizedBookingData.appointmentDate,
-        appointmentTime: normalizedBookingData.appointmentTime,
-        service: normalizedBookingData.serviceType,
-        deviceType: normalizedBookingData.deviceType,
-        deviceBrand: normalizedBookingData.deviceBrand,
-        deviceModel: normalizedBookingData.deviceModel,
-        address: normalizedBookingData.address,
-        city: normalizedBookingData.city,
-        postalCode: normalizedBookingData.postalCode,
-        province: normalizedBookingData.province
-      });
+      const emailResult = await sendBookingConfirmationEmail(emailData);
       
-      apiLogger.info('Confirmation email sent', { email: normalizedBookingData.customerEmail });
+      apiLogger.info('✅ BOOKING API - Email confirmation process completed', { 
+        reference: referenceNumber,
+        emailResult,
+        success: true
+      });
     } catch (emailError) {
       // Log the error but don't fail the request
-      apiLogger.error('Failed to send confirmation email', {
-        error: emailError instanceof Error ? emailError.message : 'Unknown error'
+      apiLogger.error('❌ BOOKING API - Email confirmation failed', {
+        reference: referenceNumber,
+        error: emailError instanceof Error ? emailError.message : 'Unknown error',
+        stack: emailError instanceof Error ? emailError.stack : undefined,
+        bookingStillCreated: true
       });
     }
     
