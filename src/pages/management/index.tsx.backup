@@ -15,9 +15,7 @@ import {
   FaEdit,
   FaPhone,
   FaEnvelope,
-  FaMapMarkerAlt,
-  FaSignOutAlt,
-  FaSpinner
+  FaMapMarkerAlt
 } from 'react-icons/fa';
 
 interface ManagementStats {
@@ -112,7 +110,6 @@ const withAuth = (WrappedComponent: React.ComponentType) => {
 };
 
 export default withAuth(function AdminManagement() {
-  const router = useRouter();
   const [stats, setStats] = useState<ManagementStats>({
     totalBookings: 0,
     pendingBookings: 0,
@@ -127,47 +124,10 @@ export default withAuth(function AdminManagement() {
   const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingAppointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     fetchManagementData();
   }, []);
-
-  // Logout function
-  const handleLogout = async () => {
-    if (isLoggingOut) return;
-    
-    setIsLoggingOut(true);
-    
-    try {
-      const response = await fetch('/api/management/logout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Clear any client-side auth state
-        document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-        
-        // Redirect to login page with logout message
-        router.push('/login?message=logged_out');
-      } else {
-        console.error('Logout failed:', data.message);
-        // Still redirect even if API call fails
-        router.push('/login');
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Still redirect even if there's an error
-      router.push('/login');
-    } finally {
-      setIsLoggingOut(false);
-    }
-  };
 
   const fetchManagementData = async () => {
     try {
@@ -343,11 +303,12 @@ export default withAuth(function AdminManagement() {
       <Layout>
         <div className="min-h-screen bg-gray-50 py-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <p className="text-red-600">{error}</p>
+            <div className="text-center text-red-600">
+              <FaExclamationTriangle className="mx-auto h-12 w-12 mb-4" />
+              <p>Error: {error}</p>
               <button 
-                onClick={fetchManagementData}
-                className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+                onClick={() => window.location.reload()} 
+                className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
               >
                 Retry
               </button>
@@ -362,38 +323,50 @@ export default withAuth(function AdminManagement() {
     <Layout>
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header with Logout */}
-          <div className="mb-8 flex justify-between items-start">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Admin Management</h1>
-              <p className="mt-2 text-gray-600">Welcome back! Here's what's happening with your business today.</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link 
-                href="/"
-                className="text-gray-500 hover:text-gray-700 text-sm"
-              >
-                View Website
-              </Link>
-              <button
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isLoggingOut ? (
-                  <>
-                    <FaSpinner className="h-4 w-4 mr-2 animate-spin" />
-                    Logging out...
-                  </>
-                ) : (
-                  <>
-                    <FaSignOutAlt className="h-4 w-4 mr-2" />
-                    Logout
-                  </>
-                )}
-              </button>
-            </div>
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Admin Management</h1>
+            <p className="mt-2 text-gray-600">Welcome back! Here's what's happening with your business today.</p>
           </div>
+
+          {/* Quick Navigation */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+                          <Link href="/management/bookings" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
+              <div className="text-blue-600 mb-2">
+                <FaCalendarAlt className="h-6 w-6 mx-auto" />
+              </div>
+              <h3 className="text-sm font-medium text-gray-900">Bookings</h3>
+            </Link>
+
+                          <Link href="/management/warranties" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
+              <div className="text-green-600 mb-2">
+                <FaShieldAlt className="h-6 w-6 mx-auto" />
+              </div>
+              <h3 className="text-sm font-medium text-gray-900">Warranties</h3>
+            </Link>
+
+                          <Link href="/management/technicians" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
+              <div className="text-purple-600 mb-2">
+                <FaTools className="h-6 w-6 mx-auto" />
+              </div>
+              <h3 className="text-sm font-medium text-gray-900">Technicians</h3>
+            </Link>
+
+                          <Link href="/management/devices" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
+              <div className="text-indigo-600 mb-2">
+                <FaPhone className="h-6 w-6 mx-auto" />
+              </div>
+              <h3 className="text-sm font-medium text-gray-900">Devices</h3>
+            </Link>
+
+                          <Link href="/management/pricing" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
+              <div className="text-yellow-600 mb-2">
+                <FaDollarSign className="h-6 w-6 mx-auto" />
+              </div>
+              <h3 className="text-sm font-medium text-gray-900">Pricing</h3>
+            </Link>
+          </div>
+
           {/* Quick Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-white overflow-hidden shadow rounded-lg">
