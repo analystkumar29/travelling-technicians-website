@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { logger } from '@/utils/logger';
-import { applyAllRouterFixes } from '@/utils/fix-router-errors';
+import { applyAllRouterFixes } from '@/utils/fix-router-errors.js';
 
 // Create module logger
 const routerErrorLogger = logger?.createModuleLogger 

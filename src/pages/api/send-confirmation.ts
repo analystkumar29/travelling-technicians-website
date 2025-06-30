@@ -3,13 +3,23 @@ import sgMail from '@sendgrid/mail';
 import crypto from 'crypto';
 import { logger } from '@/utils/logger';
 
-// Set up SendGrid API key if available
+// Initialize SendGrid
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 }
 
 // Create a module logger
 const emailLogger = logger.createModuleLogger('send-confirmation');
+
+// Ensure required environment variables are set
+const VERIFICATION_SECRET = process.env.BOOKING_VERIFICATION_SECRET;
+
+if (!VERIFICATION_SECRET) {
+  throw new Error('BOOKING_VERIFICATION_SECRET environment variable is required for secure token generation');
+}
+
+// Type assertion to help TypeScript understand the variable is defined
+const SECRET: string = VERIFICATION_SECRET;
 
 // Email data interface
 interface EmailData {
@@ -27,12 +37,12 @@ interface EmailData {
 
 // Generate a secure token for email verification
 function generateVerificationToken(email: string, bookingReference: string): string {
-  // In production, you would use a database to store these tokens
-  // For simplicity, we're creating a hash based on email + reference + secret
-  const secretKey = process.env.SENDGRID_API_KEY?.substring(0, 8) || 'defaultSecret';
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const data = `${email.toLowerCase()}:${bookingReference}:${timestamp}`;
+  
   return crypto
-    .createHmac('sha256', secretKey)
-    .update(`${email}-${bookingReference}-${Date.now()}`)
+    .createHmac('sha256', SECRET)
+    .update(data)
     .digest('hex');
 }
 
