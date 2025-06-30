@@ -22,7 +22,7 @@ const AdminLogin: React.FC = () => {
   const [attempts, setAttempts] = useState(0);
   
   // Get redirect URL from query params
-  const redirectTo = router.query.redirectTo as string || '/admin';
+  const redirectTo = router.query.redirectTo as string || '/dashboard';
 
   // Check if already logged in
   useEffect(() => {
@@ -59,7 +59,7 @@ const AdminLogin: React.FC = () => {
     try {
       loginLogger.debug('Attempting admin login');
       
-      const response = await fetch('/api/admin/login', {
+      const response = await fetch('/api/dashboard/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

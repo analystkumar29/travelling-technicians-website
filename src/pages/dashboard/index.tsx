@@ -281,35 +281,35 @@ export default function AdminDashboard() {
 
           {/* Quick Navigation */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-            <Link href="/admin/bookings" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
+                          <Link href="/dashboard/bookings" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
               <div className="text-blue-600 mb-2">
                 <FaCalendarAlt className="h-6 w-6 mx-auto" />
               </div>
               <h3 className="text-sm font-medium text-gray-900">Bookings</h3>
             </Link>
 
-            <Link href="/admin/warranties" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
+                          <Link href="/dashboard/warranties" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
               <div className="text-green-600 mb-2">
                 <FaShieldAlt className="h-6 w-6 mx-auto" />
               </div>
               <h3 className="text-sm font-medium text-gray-900">Warranties</h3>
             </Link>
 
-            <Link href="/admin/technicians" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
+                          <Link href="/dashboard/technicians" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
               <div className="text-purple-600 mb-2">
                 <FaTools className="h-6 w-6 mx-auto" />
               </div>
               <h3 className="text-sm font-medium text-gray-900">Technicians</h3>
             </Link>
 
-            <Link href="/admin/devices" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
+                          <Link href="/dashboard/devices" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
               <div className="text-indigo-600 mb-2">
                 <FaPhone className="h-6 w-6 mx-auto" />
               </div>
               <h3 className="text-sm font-medium text-gray-900">Devices</h3>
             </Link>
 
-            <Link href="/admin/pricing" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
+                          <Link href="/dashboard/pricing" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow text-center">
               <div className="text-yellow-600 mb-2">
                 <FaDollarSign className="h-6 w-6 mx-auto" />
               </div>
@@ -358,7 +358,7 @@ export default function AdminDashboard() {
               </div>
               <div className="bg-gray-50 px-5 py-3">
                 <div className="text-sm">
-                  <Link href="/admin/bookings" className="text-orange-600 hover:text-orange-900 font-medium">
+                  <Link href="/dashboard/bookings" className="text-orange-600 hover:text-orange-900 font-medium">
                     View all appointments →
                   </Link>
                 </div>
@@ -381,7 +381,7 @@ export default function AdminDashboard() {
               </div>
               <div className="bg-gray-50 px-5 py-3">
                 <div className="text-sm">
-                  <Link href="/admin/warranties" className="text-green-600 hover:text-green-900 font-medium">
+                  <Link href="/dashboard/warranties" className="text-green-600 hover:text-green-900 font-medium">
                     Manage warranties →
                   </Link>
                 </div>
@@ -477,7 +477,7 @@ export default function AdminDashboard() {
                           </button>
                         )}
                         <Link
-                          href={`/admin/bookings`}
+                          href={`/dashboard/bookings`}
                           className="px-3 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 inline-block"
                         >
                           View Details
@@ -544,7 +544,7 @@ export default function AdminDashboard() {
               </div>
               <div className="px-6 py-3 bg-gray-50">
                 <Link 
-                  href="/admin/bookings"
+                  href="/dashboard/bookings"
                   className="text-sm text-primary-600 hover:text-primary-900 font-medium"
                 >
                   View all bookings →
@@ -561,7 +561,7 @@ export default function AdminDashboard() {
             <div className="px-6 py-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Link
-                  href="/admin/bookings"
+                  href="/dashboard/bookings"
                   className="flex items-center justify-center px-4 py-6 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
                 >
                   <div className="text-center">
@@ -571,7 +571,7 @@ export default function AdminDashboard() {
                 </Link>
                 
                 <Link
-                  href="/admin/warranties"
+                  href="/dashboard/warranties"
                   className="flex items-center justify-center px-4 py-6 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
                 >
                   <div className="text-center">

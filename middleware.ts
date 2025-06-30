@@ -42,8 +42,8 @@ function verifyToken(token: string): { username: string; isAdmin: boolean } | nu
 }
 
 export function middleware(request: NextRequest) {
-  // Secure admin routes with authentication check
-  if (request.nextUrl.pathname.startsWith('/admin')) {
+  // Secure dashboard routes with authentication check
+  if (request.nextUrl.pathname.startsWith('/dashboard')) {
     // Check for authentication token in cookies or headers
     const authToken = request.cookies.get('auth-token')?.value || 
                      request.headers.get('authorization')?.replace('Bearer ', '');
@@ -69,8 +69,8 @@ export function middleware(request: NextRequest) {
       return response;
     }
     
-    // Token is valid, allow access to admin routes
-    console.log(`Admin access granted to: ${tokenData.username}`);
+    // Token is valid, allow access to dashboard routes
+    console.log(`Dashboard access granted to: ${tokenData.username}`);
   }
   
   // Security headers for all routes
@@ -87,7 +87,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/admin/:path*',
+    '/dashboard/:path*',
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ]
 } 

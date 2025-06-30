@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { getServiceSupabase } from '@/utils/supabaseClient';
 import { logger } from '@/utils/logger';
 
-const apiLogger = logger.createModuleLogger('api/admin/brands');
+const apiLogger = logger.createModuleLogger('api/dashboard/brands');
 
 interface Brand {
   id?: number;

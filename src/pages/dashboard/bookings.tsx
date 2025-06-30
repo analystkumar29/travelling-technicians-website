@@ -392,7 +392,7 @@ export default function AdminBookings() {
                 <p className="mt-2 text-gray-600">Manage customer bookings and appointments</p>
               </div>
               <Link
-                href="/admin"
+                href="/dashboard"
                 className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
               >
                 Back to Dashboard
