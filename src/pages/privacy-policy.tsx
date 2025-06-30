@@ -4,8 +4,8 @@ import Link from 'next/link';
 export default function PrivacyPolicyPage() {
   return (
     <Layout 
-      title="Privacy Policy | The Travelling Technicians"
-      description="Our privacy policy explains how we collect, use, and protect your personal information when you use our mobile and laptop repair services."
+      title="Privacy Policy"
+      metaDescription="Our privacy policy explains how we collect, use, and protect your personal information when you use our mobile and laptop repair services."
     >
       <div className="py-16 bg-white">
         <div className="container-custom max-w-4xl">

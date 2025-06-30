@@ -4,8 +4,8 @@ import Link from 'next/link';
 export default function TermsConditionsPage() {
   return (
     <Layout 
-      title="Terms and Conditions | The Travelling Technicians"
-      description="Terms and conditions for using The Travelling Technicians mobile and laptop repair services in the Lower Mainland, BC."
+      title="Terms and Conditions"
+      metaDescription="Terms and conditions for using The Travelling Technicians mobile and laptop repair services in the Lower Mainland, BC."
     >
       <div className="py-16 bg-white">
         <div className="container-custom max-w-4xl">
