@@ -26,7 +26,7 @@
       ]
     },
     {
-      "source": "/api/send-*(.*)",
+      "source": "/api/send-confirmation",
       "headers": [
         {
           "key": "X-Vercel-Protection",
@@ -35,7 +35,25 @@
       ]
     },
     {
-      "source": "/api/check-*(.*)",
+      "source": "/api/send-reschedule-confirmation",
+      "headers": [
+        {
+          "key": "X-Vercel-Protection",
+          "value": "bypass"
+        }
+      ]
+    },
+    {
+      "source": "/api/check-env",
+      "headers": [
+        {
+          "key": "X-Vercel-Protection",
+          "value": "bypass"
+        }
+      ]
+    },
+    {
+      "source": "/api/check-postal-code",
       "headers": [
         {
           "key": "X-Vercel-Protection",
