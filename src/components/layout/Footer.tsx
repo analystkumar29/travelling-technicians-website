@@ -28,8 +28,8 @@ export default function Footer() {
             <div className="space-y-2">
               <div className="flex items-center group">
                 <FaPhone className="text-primary-400 mr-2 group-hover:text-primary-300 transition-colors duration-300" />
-                <a href="tel:6041234567" className="group-hover:text-primary-300 transition-colors duration-300">
-                  (604) 123-4567
+                <a href="tel:7783899251" className="group-hover:text-primary-300 transition-colors duration-300">
+                  (778) 389-9251
                 </a>
               </div>
               <div className="flex items-center group">

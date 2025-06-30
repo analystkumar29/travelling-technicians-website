@@ -130,10 +130,10 @@ export default function ContactPage() {
                 Speak directly with our customer service team
               </p>
               <a 
-                href="tel:+16041234567" 
+                href="tel:+17783899251" 
                 className="text-xl font-bold text-primary-600 hover:text-primary-800 transition-colors block"
               >
-                (604) 123-4567
+                (778) 389-9251
               </a>
               <p className="text-sm text-gray-500 mt-2">
                 Available during business hours
@@ -381,7 +381,7 @@ export default function ContactPage() {
                       </p>
                       <div className="flex items-center text-primary-600">
                         <FaPhone className="mr-2" />
-                        <span className="font-medium">(604) 123-4567 ext. 2</span>
+                        <span className="font-medium">(778) 389-9251 ext. 2</span>
                       </div>
                     </div>
                   </div>

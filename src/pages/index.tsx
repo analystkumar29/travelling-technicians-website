@@ -32,33 +32,7 @@ const deviceBrands = [
   { id: 'huawei', name: 'Huawei', image: '/images/brands/huawei.svg' },
 ];
 
-// Common issues
-const commonIssues = {
-  mobile: [
-    { id: 'screen', name: 'Screen Replacement', image: '/images/screen.png', doorstep: true },
-    { id: 'battery', name: 'Battery Replacement', image: '/images/battery.png', doorstep: true },
-    { id: 'charging', name: 'Charging Port Repair', image: '/images/charging.png', doorstep: true },
-    { id: 'camera', name: 'Camera Repair', image: '/images/camera.png', doorstep: true },
-    { id: 'water', name: 'Water Damage', image: '/images/water-damage.png', doorstep: false },
-    { id: 'audio', name: 'Speaker/Mic Repair', image: '/images/speaker.png', doorstep: true },
-  ],
-  laptop: [
-    { id: 'screen', name: 'Screen Replacement', image: '/images/laptop-screen.png', doorstep: true },
-    { id: 'battery', name: 'Battery Replacement', image: '/images/laptop-battery.png', doorstep: true },
-    { id: 'keyboard', name: 'Keyboard Repair', image: '/images/laptop-keyboard.png', doorstep: true },
-    { id: 'harddrive', name: 'HDD/SSD Upgrade', image: '/images/harddrive.png', doorstep: true },
-    { id: 'ram', name: 'RAM Upgrade', image: '/images/ram.png', doorstep: true },
-    { id: 'os', name: 'OS Installation', image: '/images/os.png', doorstep: true },
-  ],
-  tablet: [
-    { id: 'screen', name: 'Screen Replacement', image: '/images/tablet-screen.png', doorstep: true },
-    { id: 'battery', name: 'Battery Replacement', image: '/images/tablet-battery.png', doorstep: true },
-    { id: 'charging', name: 'Charging Port Repair', image: '/images/tablet-charging.png', doorstep: true },
-    { id: 'camera', name: 'Camera Repair', image: '/images/tablet-camera.png', doorstep: true },
-    { id: 'button', name: 'Button Repair', image: '/images/tablet-button.png', doorstep: true },
-    { id: 'software', name: 'Software Issues', image: '/images/tablet-software.png', doorstep: true },
-  ]
-};
+
 
 // Testimonials - focusing only on target cities
 const testimonials = [
@@ -296,7 +270,7 @@ export default function Home() {
                   
                   <div className="grid grid-cols-2 gap-3 sm:gap-4">
                     <a 
-                      href="tel:+16045551234" 
+                      href="tel:+17783899251" 
                       className="bg-green-600 hover:bg-green-700 text-white text-center py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center min-h-[48px] active:scale-95"
                     >
                       <FaPhone className="mr-1 sm:mr-2" />
@@ -581,11 +555,11 @@ export default function Home() {
               
               <div className="flex items-center justify-center space-x-4 text-sm">
                 <a 
-                  href="tel:+16045551234" 
+                  href="tel:+17783899251" 
                   className="flex items-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
                 >
                   <FaPhone className="mr-2" />
-                  Call Now: (604) 555-1234
+                  Call Now: (778) 389-9251
                 </a>
                 <span className="text-accent-100">or</span>
                 <span className="text-accent-100">2-minute online booking</span>
