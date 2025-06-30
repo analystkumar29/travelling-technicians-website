@@ -42,8 +42,17 @@ function verifyToken(token: string): { username: string; isAdmin: boolean } | nu
 }
 
 export function middleware(request: NextRequest) {
+  console.log('🔍 MIDDLEWARE CALLED:', request.nextUrl.pathname);
+  
+  // Test if middleware works at all
+  if (request.nextUrl.pathname === '/test-middleware') {
+    console.log('🧪 TEST MIDDLEWARE TRIGGERED');
+    return NextResponse.json({ message: 'Middleware is working!' });
+  }
+  
   // Secure management routes with authentication check
   if (request.nextUrl.pathname.startsWith('/management')) {
+    console.log('🔒 MANAGEMENT ROUTE DETECTED:', request.nextUrl.pathname);
     // Check for authentication token in cookies or headers
     const authToken = request.cookies.get('auth-token')?.value || 
                      request.headers.get('authorization')?.replace('Bearer ', '');
@@ -87,7 +96,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/management/:path*',
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ]
 } 

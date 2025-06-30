@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import Head from 'next/head';
 import Layout from '@/components/layout/Layout';
 import Link from 'next/link';
 import { 
@@ -59,7 +61,55 @@ interface UpcomingAppointment {
   status: string;
 }
 
-export default function AdminManagement() {
+// Add authentication check component
+const withAuth = (WrappedComponent: React.ComponentType) => {
+  return function AuthenticatedComponent(props: any) {
+    const router = useRouter();
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+      const checkAuth = () => {
+        // Check for auth token in cookies
+        const authToken = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('auth-token='))
+          ?.split('=')[1];
+
+        if (!authToken) {
+          // No token, redirect to login
+          router.push('/login?redirectTo=' + encodeURIComponent(router.asPath));
+          return;
+        }
+
+        // Token exists, validate it
+        setIsAuthenticated(true);
+        setIsLoading(false);
+      };
+
+      checkAuth();
+    }, [router]);
+
+    if (isLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Verifying authentication...</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (!isAuthenticated) {
+      return null; // Will redirect
+    }
+
+    return <WrappedComponent {...props} />;
+  };
+};
+
+export default withAuth(function AdminManagement() {
   const [stats, setStats] = useState<ManagementStats>({
     totalBookings: 0,
     pendingBookings: 0,
@@ -596,4 +646,4 @@ export default function AdminManagement() {
       </div>
     </Layout>
   );
-} 
+}); 
