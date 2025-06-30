@@ -8,7 +8,7 @@ const authLogger = logger.createModuleLogger('AdminAuth');
 // Environment variables for admin credentials
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
-const JWT_SECRET = process.env.JWT_SECRET || process.env.BOOKING_VERIFICATION_SECRET;
+const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET;
 
 // Rate limiting storage (in production, use Redis)
 const loginAttempts = new Map<string, { count: number; lastAttempt: number }>();
@@ -47,8 +47,8 @@ function verifyPassword(password: string, storedHash: string): boolean {
  * Generate JWT-like token for admin sessions
  */
 function generateToken(username: string): string {
-  if (!JWT_SECRET) {
-    throw new Error('JWT_SECRET environment variable is required');
+  if (!ADMIN_JWT_SECRET) {
+    throw new Error('ADMIN_JWT_SECRET environment variable is required');
   }
   
   const payload = {
@@ -62,7 +62,7 @@ function generateToken(username: string): string {
   const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
   
   const signature = crypto
-    .createHmac('sha256', JWT_SECRET)
+    .createHmac('sha256', ADMIN_JWT_SECRET)
     .update(`${header}.${payloadB64}`)
     .digest('base64url');
     
@@ -73,8 +73,8 @@ function generateToken(username: string): string {
  * Verify JWT-like token
  */
 function verifyToken(token: string): { username: string; isAdmin: boolean } | null {
-  if (!JWT_SECRET) {
-    throw new Error('JWT_SECRET environment variable is required');
+  if (!ADMIN_JWT_SECRET) {
+    throw new Error('ADMIN_JWT_SECRET environment variable is required');
   }
   
   try {
@@ -82,7 +82,7 @@ function verifyToken(token: string): { username: string; isAdmin: boolean } | nu
     
     // Verify signature
     const expectedSignature = crypto
-      .createHmac('sha256', JWT_SECRET)
+      .createHmac('sha256', ADMIN_JWT_SECRET)
       .update(`${header}.${payload}`)
       .digest('base64url');
       

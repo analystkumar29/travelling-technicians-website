@@ -3,10 +3,10 @@ import crypto from 'crypto';
 
 // Token verification function (duplicated from login API for middleware use)
 function verifyToken(token: string): { username: string; isAdmin: boolean } | null {
-  const JWT_SECRET = process.env.JWT_SECRET || process.env.BOOKING_VERIFICATION_SECRET;
+  const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET;
   
-  if (!JWT_SECRET) {
-    console.error('JWT_SECRET environment variable is required');
+  if (!ADMIN_JWT_SECRET) {
+    console.error('ADMIN_JWT_SECRET environment variable is required');
     return null;
   }
   
@@ -15,7 +15,7 @@ function verifyToken(token: string): { username: string; isAdmin: boolean } | nu
     
     // Verify signature
     const expectedSignature = crypto
-      .createHmac('sha256', JWT_SECRET)
+      .createHmac('sha256', ADMIN_JWT_SECRET)
       .update(`${header}.${payload}`)
       .digest('base64url');
       
