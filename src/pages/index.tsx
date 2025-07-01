@@ -6,6 +6,7 @@ import { FaTools, FaClock, FaShieldAlt, FaCheckCircle, FaMapMarkerAlt, FaStar, F
 import PostalCodeChecker from '@/components/PostalCodeChecker';
 import { initUIEnhancements } from '@/utils/ui-enhancements';
 import { testSupabaseConnection, supabase } from '@/utils/supabaseClient';
+import { trackLocationEvent } from '@/utils/analytics';
 
 // Component to render device brand image with proper dimensions
 const BrandImage = ({ src, alt }: { src: string, alt: string }) => {
@@ -497,16 +498,24 @@ export default function Home() {
           <div className="bg-white rounded-xl p-6 shadow-sm">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
               {[
-                'Vancouver', 'Burnaby', 'Richmond', 'Surrey',
-                'North Vancouver', 'West Vancouver', 'Coquitlam', 'New Westminster'
+                { name: 'Vancouver', slug: 'vancouver' },
+                { name: 'Burnaby', slug: 'burnaby' },
+                { name: 'Richmond', slug: 'richmond' },
+                { name: 'Chilliwack', slug: 'chilliwack' },
+                { name: 'North Vancouver', slug: 'north-vancouver' },
+                { name: 'West Vancouver', slug: 'west-vancouver' },
+                { name: 'Coquitlam', slug: 'coquitlam' },
+                { name: 'New Westminster', slug: 'new-westminster' }
               ].map((city, index) => (
-                <div 
+                <Link 
                   key={index}
-                  className="bg-primary-50 rounded-lg p-3 text-center text-sm hover:bg-primary-100 transition-colors"
+                  href={`/repair/${city.slug}`}
+                  className="bg-primary-50 rounded-lg p-3 text-center text-sm hover:bg-primary-100 transition-colors block"
+                  onClick={() => trackLocationEvent('area_selected', city.name)}
                 >
                   <FaMapMarkerAlt className="inline-block mr-1 text-primary-600" />
-                  {city}
-                </div>
+                  {city.name}
+                </Link>
               ))}
             </div>
             
