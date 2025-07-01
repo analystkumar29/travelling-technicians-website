@@ -197,6 +197,350 @@ class MyDocument extends Document {
             {routerFixScript}
           </Script>
           <Script id="error-handler" src="/error-handler.js" strategy="beforeInteractive" />
+
+          {/* Local Business Schema for Better Local SEO */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "LocalBusiness",
+                "@id": "https://www.travelling-technicians.ca/#business",
+                "name": "The Travelling Technicians",
+                "description": "Professional mobile phone and laptop repair services with same-day doorstep service across Vancouver, Burnaby, Richmond, and surrounding Lower Mainland areas.",
+                "url": "https://www.travelling-technicians.ca",
+                "telephone": "+1-778-389-9251",
+                "email": "info@travelling-technicians.ca",
+                "priceRange": "$79-$249",
+                "openingHours": "Mo-Fr 08:00-20:00, Sa 09:00-18:00, Su 10:00-17:00",
+                "areaServed": [
+                  {
+                    "@type": "City",
+                    "name": "Vancouver",
+                    "addressRegion": "BC",
+                    "addressCountry": "CA"
+                  },
+                  {
+                    "@type": "City", 
+                    "name": "Burnaby",
+                    "addressRegion": "BC",
+                    "addressCountry": "CA"
+                  },
+                  {
+                    "@type": "City",
+                    "name": "Richmond",
+                    "addressRegion": "BC", 
+                    "addressCountry": "CA"
+                  },
+                  {
+                    "@type": "City",
+                    "name": "North Vancouver",
+                    "addressRegion": "BC",
+                    "addressCountry": "CA"
+                  },
+                  {
+                    "@type": "City",
+                    "name": "New Westminster",
+                    "addressRegion": "BC",
+                    "addressCountry": "CA"
+                  },
+                  {
+                    "@type": "City",
+                    "name": "Coquitlam",
+                    "addressRegion": "BC",
+                    "addressCountry": "CA"
+                  },
+                  {
+                    "@type": "City",
+                    "name": "West Vancouver", 
+                    "addressRegion": "BC",
+                    "addressCountry": "CA"
+                  }
+                ],
+                "address": {
+                  "@type": "PostalAddress",
+                  "addressLocality": "Vancouver",
+                  "addressRegion": "BC",
+                  "addressCountry": "CA",
+                  "postalCode": "V6B 1A1"
+                },
+                "geo": {
+                  "@type": "GeoCoordinates",
+                  "latitude": "49.2827",
+                  "longitude": "-123.1207"
+                },
+                "hasOfferCatalog": {
+                  "@type": "OfferCatalog",
+                  "name": "Mobile and Laptop Repair Services",
+                  "itemListElement": [
+                    {
+                      "@type": "Offer",
+                      "itemOffered": {
+                        "@type": "Service",
+                        "name": "Mobile Phone Screen Repair",
+                        "description": "Professional iPhone and Android screen replacement service"
+                      }
+                    },
+                    {
+                      "@type": "Offer", 
+                      "itemOffered": {
+                        "@type": "Service",
+                        "name": "Mobile Phone Battery Replacement",
+                        "description": "Battery replacement for all major smartphone brands"
+                      }
+                    },
+                    {
+                      "@type": "Offer",
+                      "itemOffered": {
+                        "@type": "Service", 
+                        "name": "Laptop Screen Repair",
+                        "description": "Laptop and MacBook screen replacement service"
+                      }
+                    },
+                    {
+                      "@type": "Offer",
+                      "itemOffered": {
+                        "@type": "Service",
+                        "name": "Laptop Battery Replacement", 
+                        "description": "Professional laptop battery replacement and upgrade"
+                      }
+                    }
+                  ]
+                },
+                "aggregateRating": {
+                  "@type": "AggregateRating",
+                  "ratingValue": "4.8",
+                  "reviewCount": "127",
+                  "bestRating": "5",
+                  "worstRating": "1"
+                },
+                "review": [
+                  {
+                    "@type": "Review",
+                    "reviewRating": {
+                      "@type": "Rating", 
+                      "ratingValue": "5",
+                      "bestRating": "5"
+                    },
+                    "author": {
+                      "@type": "Person",
+                      "name": "Sarah J."
+                    },
+                    "reviewBody": "Excellent service! The technician came to my home and fixed my iPhone screen quickly. Very professional and convenient.",
+                    "datePublished": "2024-12-15"
+                  },
+                  {
+                    "@type": "Review",
+                    "reviewRating": {
+                      "@type": "Rating",
+                      "ratingValue": "5", 
+                      "bestRating": "5"
+                    },
+                    "author": {
+                      "@type": "Person",
+                      "name": "Michael C."
+                    },
+                    "reviewBody": "Had my MacBook battery replaced at home. Professional service and saved me a trip to the mall. Highly recommend!",
+                    "datePublished": "2024-12-10"
+                  }
+                ],
+                "sameAs": [
+                  "https://www.facebook.com/travellingtechnicians",
+                  "https://www.instagram.com/travellingtechnicians", 
+                  "https://www.linkedin.com/company/travelling-technicians"
+                ]
+              })
+            }}
+          />
+
+          {/* Service Schema for Mobile Repair */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "Service",
+                "name": "Mobile Phone Repair Vancouver",
+                "description": "Professional mobile phone repair services including screen replacement, battery replacement, and more across Vancouver and Lower Mainland.",
+                "provider": {
+                  "@type": "LocalBusiness",
+                  "name": "The Travelling Technicians"
+                },
+                "areaServed": "Vancouver, BC",
+                "hasOfferCatalog": {
+                  "@type": "OfferCatalog",
+                  "name": "Mobile Repair Services",
+                  "itemListElement": [
+                    {
+                      "@type": "Offer",
+                      "itemOffered": {
+                        "@type": "Service",
+                        "name": "iPhone Screen Repair",
+                        "description": "Professional iPhone screen replacement with same-day service"
+                      },
+                      "priceSpecification": {
+                        "@type": "PriceSpecification",
+                        "priceCurrency": "CAD", 
+                        "price": "129-189"
+                      }
+                    },
+                    {
+                      "@type": "Offer",
+                      "itemOffered": {
+                        "@type": "Service",
+                        "name": "Samsung Screen Repair",
+                        "description": "Samsung Galaxy screen replacement service"
+                      },
+                      "priceSpecification": {
+                        "@type": "PriceSpecification",
+                        "priceCurrency": "CAD",
+                        "price": "99-169"
+                      }
+                    }
+                  ]
+                }
+              })
+            }}
+          />
+
+          {/* FAQ Schema for Better SERP Features */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "FAQPage",
+                "mainEntity": [
+                  {
+                    "@type": "Question",
+                    "name": "How much does mobile screen repair cost?",
+                    "acceptedAnswer": {
+                      "@type": "Answer",
+                      "text": "Mobile screen repair costs range from $79-$189 depending on the device model. iPhone screen repairs typically cost $129-$189, while Android screen repairs range from $79-$149."
+                    }
+                  },
+                  {
+                    "@type": "Question", 
+                    "name": "Do you offer same-day mobile repair service?",
+                    "acceptedAnswer": {
+                      "@type": "Answer",
+                      "text": "Yes, we offer same-day mobile repair service across Vancouver, Burnaby, Richmond, and surrounding areas. Most repairs are completed within 30-90 minutes at your location."
+                    }
+                  },
+                  {
+                    "@type": "Question",
+                    "name": "What areas do you serve for mobile repair?",
+                    "acceptedAnswer": {
+                      "@type": "Answer", 
+                      "text": "We provide mobile repair services across Vancouver, Burnaby, Richmond, North Vancouver, New Westminster, Coquitlam, West Vancouver, and surrounding Lower Mainland areas."
+                    }
+                  },
+                  {
+                    "@type": "Question",
+                    "name": "What warranty do you offer on mobile repairs?",
+                    "acceptedAnswer": {
+                      "@type": "Answer",
+                      "text": "We offer a 90-day warranty on all mobile phone repairs, covering both parts and labor. This ensures your peace of mind with our professional repair services."
+                    }
+                  }
+                ]
+              })
+            }}
+          />
+          {/* Service Schema for Mobile Repair */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "Service",
+                "name": "Mobile Phone Repair Vancouver",
+                "description": "Professional mobile phone repair services including screen replacement, battery replacement, and more across Vancouver and Lower Mainland.",
+                "provider": {
+                  "@type": "LocalBusiness",
+                  "name": "The Travelling Technicians"
+                },
+                "areaServed": "Vancouver, BC",
+                "hasOfferCatalog": {
+                  "@type": "OfferCatalog",
+                  "name": "Mobile Repair Services",
+                  "itemListElement": [
+                    {
+                      "@type": "Offer",
+                      "itemOffered": {
+                        "@type": "Service",
+                        "name": "iPhone Screen Repair",
+                        "description": "Professional iPhone screen replacement with same-day service"
+                      },
+                      "priceSpecification": {
+                        "@type": "PriceSpecification",
+                        "priceCurrency": "CAD", 
+                        "price": "129-189"
+                      }
+                    },
+                    {
+                      "@type": "Offer",
+                      "itemOffered": {
+                        "@type": "Service",
+                        "name": "Samsung Screen Repair",
+                        "description": "Samsung Galaxy screen replacement service"
+                      },
+                      "priceSpecification": {
+                        "@type": "PriceSpecification",
+                        "priceCurrency": "CAD",
+                        "price": "99-169"
+                      }
+                    }
+                  ]
+                }
+              })
+            }}
+          />
+
+          {/* FAQ Schema for Better SERP Features */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "FAQPage",
+                "mainEntity": [
+                  {
+                    "@type": "Question",
+                    "name": "How much does mobile screen repair cost?",
+                    "acceptedAnswer": {
+                      "@type": "Answer",
+                      "text": "Mobile screen repair costs range from $79-$189 depending on the device model. iPhone screen repairs typically cost $129-$189, while Android screen repairs range from $79-$149."
+                    }
+                  },
+                  {
+                    "@type": "Question", 
+                    "name": "Do you offer same-day mobile repair service?",
+                    "acceptedAnswer": {
+                      "@type": "Answer",
+                      "text": "Yes, we offer same-day mobile repair service across Vancouver, Burnaby, Richmond, and surrounding areas. Most repairs are completed within 30-90 minutes at your location."
+                    }
+                  },
+                  {
+                    "@type": "Question",
+                    "name": "What areas do you serve for mobile repair?",
+                    "acceptedAnswer": {
+                      "@type": "Answer", 
+                      "text": "We provide mobile repair services across Vancouver, Burnaby, Richmond, North Vancouver, New Westminster, Coquitlam, West Vancouver, and surrounding Lower Mainland areas."
+                    }
+                  },
+                  {
+                    "@type": "Question",
+                    "name": "What warranty do you offer on mobile repairs?",
+                    "acceptedAnswer": {
+                      "@type": "Answer",
+                      "text": "We offer a 90-day warranty on all mobile phone repairs, covering both parts and labor. This ensures your peace of mind with our professional repair services."
+                    }
+                  }
+                ]
+              })
+            }}
+          />
         </Head>
         <body>
           {/* Add fallback text that will be shown if JS fails to load */}
