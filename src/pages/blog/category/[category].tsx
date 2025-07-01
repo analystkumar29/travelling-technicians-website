@@ -190,7 +190,7 @@ export default function CategoryPage() {
                       </div>
                       <div className="p-5">
                         <div className="flex items-center mb-2">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-primary-100 text-primary-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium blog-category-badge">
                             {post.category}
                           </span>
                           <span className="text-gray-500 text-sm ml-3 flex items-center">

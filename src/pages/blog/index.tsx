@@ -94,7 +94,7 @@ export default function BlogPage() {
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="pt-16 pb-20 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
+      <section className="pt-16 pb-20 blog-hero text-white">
         <div className="container-custom">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-4xl md:text-5xl font-bold mb-6">
@@ -142,18 +142,18 @@ export default function BlogPage() {
           <h2 className="text-3xl font-bold mb-8">Featured Articles</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {blogPosts.filter(post => post.featured).map((post) => (
-              <div key={post.id} className="card overflow-hidden hover:shadow-custom-lg transition-shadow">
-                <div className="relative h-60 w-full">
+              <div key={post.id} className="card blog-card overflow-hidden">
+                <div className="relative h-60 w-full blog-image-container">
                   <Image 
                     src={post.image} 
                     alt={post.title} 
-                    layout="fill"
+                    fill
                     className="object-cover"
                   />
                 </div>
                 <div className="p-6">
                   <div className="flex items-center mb-3">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-primary-100 text-primary-800">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium blog-category-badge">
                       {post.category}
                     </span>
                     <span className="text-gray-500 text-sm ml-3 flex items-center">
@@ -193,18 +193,18 @@ export default function BlogPage() {
           <h2 className="text-3xl font-bold mb-8">All Articles</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {blogPosts.map((post) => (
-              <div key={post.id} className="card hover:shadow-custom-lg transition-shadow">
-                <div className="relative h-48 w-full">
+              <div key={post.id} className="card blog-card">
+                <div className="relative h-48 w-full blog-image-container">
                   <Image 
                     src={post.image} 
                     alt={post.title} 
-                    layout="fill"
+                    fill
                     className="object-cover"
                   />
                 </div>
                 <div className="p-5">
                   <div className="flex items-center mb-2">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-primary-100 text-primary-800">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium blog-category-badge">
                       {post.category}
                     </span>
                     <span className="text-gray-500 text-sm ml-3 flex items-center">

@@ -46,7 +46,7 @@ export default function SignsYourPhoneNeedsRepairPost() {
               <Image 
                 src="https://images.unsplash.com/photo-1592899677977-9c10ca588bbd" 
                 alt="Cracked smartphone screen" 
-                layout="fill"
+                fill
                 className="object-cover"
               />
             </div>

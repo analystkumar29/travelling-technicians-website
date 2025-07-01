@@ -376,4 +376,7 @@
   body {
     @apply bg-background text-foreground;
   }
-} 
+}
+
+/* Blog Enhancements */
+@import './blog-enhancements.css'; 
