@@ -397,9 +397,10 @@ export default function PostalCodeChecker({
             
             {!onSuccess && !onError && (
               <div className="mt-4">
-                <Link href="/book-online" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                  <span className="inline-flex items-center">
-                    Book a Repair Now <FaArrowRight className="ml-2" />
+                <Link href="/book-online" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 book-now-button-pulse enhanced-button">
+                  <span className="button-gradient"></span>
+                  <span className="inline-flex items-center relative z-10">
+                    Book a Repair Now <FaArrowRight className="ml-2 button-icon" />
                   </span>
                 </Link>
               </div>
@@ -486,11 +487,7 @@ export default function PostalCodeChecker({
           <div className="mt-4 text-sm text-gray-500 flex items-start">
             <FaInfoCircle className="h-4 w-4 mr-2 text-gray-400 mt-0.5" />
             <p>
-              We service most areas in the Lower Mainland, including Vancouver, Burnaby, Richmond, 
-              Surrey, Coquitlam, Port Coquitlam, North Vancouver, West Vancouver, New Westminster, 
-              Delta, Langley, Maple Ridge, Pitt Meadows, and White Rock. 
-              We also cover Squamish, Whistler, Victoria, Nanaimo, and Fraser Valley 
-              communities up to Chilliwack with adjusted service timeframes and travel fees for some areas.
+              We service most areas in the Lower Mainland, including Vancouver, Burnaby, Richmond, New Westminster, North Vancouver, West Vancouver, Coquitlam, and Chilliwack. Service timeframes and travel fees may vary for some areas.
             </p>
           </div>
         )}

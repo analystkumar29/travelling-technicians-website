@@ -8,73 +8,73 @@ const blogPosts = [
   {
     id: 'signs-phone-needs-repair',
     slug: 'signs-your-phone-needs-repair',
-    title: '5 Warning Signs Your Phone Needs Repair',
-    excerpt: 'Learn to recognize the early warning signs that your phone needs professional attention before small issues become major problems.',
-    date: 'March 15, 2023',
+    title: 'Signs Your Phone Needs Repair',
+    excerpt: 'Learn to recognize the warning signs that indicate your phone needs professional repair.',
+    date: '2024-03-15',
     author: 'Alex Chen',
-    category: 'Mobile Repair',
+    category: 'Phone Repair',
     readTime: '5 min read',
-    image: 'https://images.unsplash.com/photo-1592899677977-9c10ca588bbd',
+    image: '/images/blog/phone-repair-signs.jpg',
     featured: true
   },
   {
     id: 'extend-laptop-battery',
     slug: 'how-to-extend-your-laptop-battery-life',
     title: 'How to Extend Your Laptop Battery Life',
-    excerpt: 'Simple but effective tips to maximize your laptop battery lifespan and get more usage time between charges.',
-    date: 'April 2, 2023',
+    excerpt: 'Essential tips and tricks to maximize your laptop battery performance.',
+    date: '2024-03-10',
     author: 'Sarah Johnson',
-    category: 'Laptop Maintenance',
+    category: 'Laptop Repair',
     readTime: '7 min read',
-    image: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed',
+    image: '/images/blog/laptop-battery.jpg',
     featured: true
   },
   {
     id: 'water-damage-rescue',
     slug: 'water-damage-first-aid-for-devices',
     title: 'Water Damage First Aid for Your Devices',
-    excerpt: 'The critical first steps to take when your phone or laptop gets wet that can save your device from permanent damage.',
-    date: 'February 10, 2023',
+    excerpt: 'Quick steps to take when your device gets wet - emergency response that can save your phone or laptop.',
+    date: '2024-03-05',
     author: 'Michael Tran',
     category: 'Emergency Repair',
     readTime: '6 min read',
-    image: 'https://images.unsplash.com/photo-1563884072595-24fccfa2c5c2',
+    image: '/images/blog/water-damage-repair.jpg',
     featured: false
   },
   {
     id: 'worth-repair-replace',
     slug: 'repair-or-replace-making-the-right-decision',
-    title: 'Repair or Replace? Making the Right Decision',
-    excerpt: 'How to determine whether it\'s more cost-effective to repair your existing device or invest in a new one.',
-    date: 'May 5, 2023',
+    title: 'Why Choose Doorstep Repair Services',
+    excerpt: 'Discover the benefits of professional doorstep repair services.',
+    date: '2024-03-01',
     author: 'Jamie Garcia',
-    category: 'Consumer Guide',
+    category: 'Services',
     readTime: '8 min read',
-    image: 'https://images.unsplash.com/photo-1585399000684-d2f72660f092',
+    image: '/images/blog/doorstep-service.jpg',
     featured: false
   },
   {
     id: 'screen-protection',
     slug: 'ultimate-guide-to-screen-protection',
     title: 'The Ultimate Guide to Screen Protection',
-    excerpt: 'Compare different types of screen protectors and learn proper installation techniques for maximum protection.',
-    date: 'January 22, 2023',
+    excerpt: 'Everything you need to know about protecting your device screens from scratches, cracks, and damage.',
+    date: '2024-02-25',
     author: 'Chris Lee',
     category: 'Mobile Accessories',
     readTime: '6 min read',
-    image: 'https://images.unsplash.com/photo-1608503396060-0322b3e88af7',
+    image: '/images/blog/screen-protection.jpg',
     featured: false
   },
   {
     id: 'laptop-cleaning',
-    slug: 'properly-cleaning-your-laptop-inside-and-out',
-    title: 'Properly Cleaning Your Laptop Inside and Out',
-    excerpt: 'Step-by-step guide to safely clean your laptop, including keyboard, screen, vents and internals for better performance.',
-    date: 'June 12, 2023',
+    slug: 'data-recovery-services-explained',
+    title: 'Data Recovery Services Explained',
+    excerpt: 'Understanding professional data recovery services and when you need them.',
+    date: '2024-02-20',
     author: 'Emma Wright',
-    category: 'Laptop Maintenance',
+    category: 'Services',
     readTime: '9 min read',
-    image: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed',
+    image: '/images/blog/data-recovery.jpg',
     featured: false
   }
 ];
@@ -94,7 +94,7 @@ export default function BlogPage() {
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="pt-16 pb-20 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
+      <section className="pt-16 pb-20 blog-hero text-white">
         <div className="container-custom">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-4xl md:text-5xl font-bold mb-6">
@@ -142,18 +142,18 @@ export default function BlogPage() {
           <h2 className="text-3xl font-bold mb-8">Featured Articles</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {blogPosts.filter(post => post.featured).map((post) => (
-              <div key={post.id} className="card overflow-hidden hover:shadow-custom-lg transition-shadow">
-                <div className="relative h-60 w-full">
+              <div key={post.id} className="card blog-card overflow-hidden">
+                <div className="relative h-60 w-full blog-image-container">
                   <Image 
                     src={post.image} 
                     alt={post.title} 
-                    layout="fill"
+                    fill
                     className="object-cover"
                   />
                 </div>
                 <div className="p-6">
                   <div className="flex items-center mb-3">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-primary-100 text-primary-800">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium blog-category-badge">
                       {post.category}
                     </span>
                     <span className="text-gray-500 text-sm ml-3 flex items-center">
@@ -193,18 +193,18 @@ export default function BlogPage() {
           <h2 className="text-3xl font-bold mb-8">All Articles</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {blogPosts.map((post) => (
-              <div key={post.id} className="card hover:shadow-custom-lg transition-shadow">
-                <div className="relative h-48 w-full">
+              <div key={post.id} className="card blog-card">
+                <div className="relative h-48 w-full blog-image-container">
                   <Image 
                     src={post.image} 
                     alt={post.title} 
-                    layout="fill"
+                    fill
                     className="object-cover"
                   />
                 </div>
                 <div className="p-5">
                   <div className="flex items-center mb-2">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-primary-100 text-primary-800">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium blog-category-badge">
                       {post.category}
                     </span>
                     <span className="text-gray-500 text-sm ml-3 flex items-center">

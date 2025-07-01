@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, FormEvent } from 'react';
+import React, { useState, useEffect, useRef, FormEvent, useCallback } from 'react';
 import { FaMapMarkerAlt, FaSpinner } from 'react-icons/fa';
 import { checkServiceArea } from '@/utils/locationUtils';
 
@@ -29,6 +29,7 @@ interface AddressAutocompleteProps {
   className?: string;
   disabled?: boolean;
   required?: boolean;
+  apiKey: string;
 }
 
 export default function AddressAutocomplete({
@@ -40,7 +41,8 @@ export default function AddressAutocomplete({
   onChange,
   onError,
   disabled = false,
-  required = false
+  required = false,
+  apiKey
 }: AddressAutocompleteProps) {
   const [inputValue, setInputValue] = useState(initialValue || '');
   const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -52,13 +54,46 @@ export default function AddressAutocomplete({
   const inputRef = useRef<HTMLInputElement>(null);
   const scriptRef = useRef<HTMLScriptElement | null>(null);
   const callbackName = useRef(`jsonp_callback_${Date.now()}_${Math.round(Math.random() * 100000)}`);
+  const stableCallbackRef = useRef<Function | null>(null);
   const [extractedPostalCode, setExtractedPostalCode] = useState('');
   const [userEnteredAddress, setUserEnteredAddress] = useState('');
   const [userEnteredStreetNumber, setUserEnteredStreetNumber] = useState('');
+  const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+  const placesServiceRef = useRef<any>(null);
+  const autocompleteServiceRef = useRef<any>(null);
+  const debouncedFetchSuggestions = useRef<((input: string) => void) | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const fetchSuggestions = useCallback(async (input: string) => {
+    if (!input) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    if (autocompleteServiceRef.current && (window as any).google && (window as any).google.maps && (window as any).google.maps.places) {
+      autocompleteServiceRef.current.getPlacePredictions(
+        { input },
+        (predictions: any[] | null, status: any) => {
+          if (status !== (window as any).google.maps.places.PlacesServiceStatus.OK || !predictions) {
+            setSuggestions([]);
+            setShowSuggestions(false);
+            console.warn('Autocomplete prediction failed:', status);
+            return;
+          }
+          setSuggestions(predictions);
+          setShowSuggestions(true);
+          setActiveSuggestionIndex(-1);
+        }
+      );
+    } else {
+      // This case might happen if the script hasn't loaded yet or failed
+      // console.warn('Google Autocomplete service not available.');
+    }
+  }, []);
 
   // Function to extract street number from input
   useEffect(() => {
-    // Try to extract street number from the input value
     const streetNumberMatch = inputValue.match(/^\d+/);
     if (streetNumberMatch) {
       setUserEnteredStreetNumber(streetNumberMatch[0]);
@@ -71,11 +106,8 @@ export default function AddressAutocomplete({
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (inputValue.length > 3) {
-        // Save what the user has typed before fetching suggestions
         setUserEnteredAddress(inputValue);
-        
-        fetchSuggestions();
-        // Try to extract postal code from the input
+        fetchSuggestions(inputValue);
         const extractedCode = extractPostalCode(inputValue);
         if (extractedCode) {
           setExtractedPostalCode(extractedCode);
@@ -86,27 +118,69 @@ export default function AddressAutocomplete({
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [inputValue]);
+  }, [inputValue, fetchSuggestions]);
 
-  // Setup JSONP callback
+  // Setup JSONP callback with improved error handling
   useEffect(() => {
-    // Create a global callback function
-    (window as any)[callbackName.current] = (data: any) => {
+    const currentCallbackName = callbackName.current;
+
+    // Clean up any existing callbacks first
+    if (typeof window !== 'undefined' && currentCallbackName) {
+      delete (window as any)[currentCallbackName];
+    }
+    
+    // Create a stable function reference
+    stableCallbackRef.current = (data: any) => {
       console.log("JSONP Suggestions received:", data);
-      setSuggestions(data || []);
-      setShowSuggestions(data && data.length > 0);
-      setLoading(false);
       
-      // Clean up the script tag
-      if (scriptRef.current && scriptRef.current.parentNode) {
-        scriptRef.current.parentNode.removeChild(scriptRef.current);
-        scriptRef.current = null;
+      // Safely handle the data
+      try {
+        setSuggestions(data || []);
+        setShowSuggestions(data && data.length > 0);
+      } catch (err) {
+        console.error("Error processing JSONP data:", err);
+        setSuggestions([]);
+        setShowSuggestions(false);
+      } finally {
+        setLoading(false);
+        
+        // Clean up the script tag
+        try {
+          if (scriptRef.current && scriptRef.current.parentNode) {
+            scriptRef.current.parentNode.removeChild(scriptRef.current);
+            scriptRef.current = null;
+          }
+        } catch (err) {
+          console.error("Error cleaning up script tag:", err);
+        }
+      }
+    };
+    
+    // Assign the callback globally
+    (window as any)[currentCallbackName] = (...args: any[]) => {
+      try {
+        if (stableCallbackRef.current) {
+          stableCallbackRef.current(...args);
+        }
+      } catch (err) {
+        console.error("Error in JSONP callback:", err);
+        setLoading(false);
       }
     };
     
     return () => {
-      // Clean up the callback
-      delete (window as any)[callbackName.current];
+      // Clean up the callback on unmount using the local variable
+      try {
+        delete (window as any)[currentCallbackName];
+        
+        // Clean up any lingering script tags
+        const scripts = document.querySelectorAll('script[src*="json_callback"]');
+        scripts.forEach((script) => {
+          script.parentNode?.removeChild(script);
+        });
+      } catch (e) {
+        console.error('Error cleaning up JSONP resources:', e);
+      }
     };
   }, []);
 
@@ -125,35 +199,90 @@ export default function AddressAutocomplete({
     };
   }, []);
 
-  const fetchSuggestions = () => {
-    if (!inputValue.trim()) return;
-    
-    setLoading(true);
-    setError('');
-    
-    // Remove any existing script tag
-    if (scriptRef.current && scriptRef.current.parentNode) {
-      scriptRef.current.parentNode.removeChild(scriptRef.current);
-    }
-    
-    // Create a new script tag for JSONP
-    const script = document.createElement('script');
-    script.src = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(inputValue)} British Columbia, Canada&countrycodes=ca&limit=5&addressdetails=1&json_callback=${callbackName.current}`;
-    document.body.appendChild(script);
-    scriptRef.current = script;
-    
-    // Set a timeout in case the JSONP request fails
-    setTimeout(() => {
-      if (loading) {
-        setLoading(false);
-        setError('Request timed out. Please try again.');
-        if (scriptRef.current && scriptRef.current.parentNode) {
-          scriptRef.current.parentNode.removeChild(scriptRef.current);
-          scriptRef.current = null;
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (inputValue !== initialValue) { // Avoid fetching on initial mount if value is pre-filled
+        fetchSuggestions(inputValue);
+      }
+    }, 500); // Debounce time
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [inputValue, fetchSuggestions, initialValue]); // Added fetchSuggestions, initialValue
+
+  useEffect(() => {
+    const loadGoogleScript = () => {
+      if (typeof (window as any).google === 'undefined' || typeof (window as any).google.maps === 'undefined') {
+        const currentCallbackName = callbackName.current;
+        (window as any)[currentCallbackName] = () => {
+          setScriptLoaded(true);
+          if ((window as any).google && (window as any).google.maps && (window as any).google.maps.places) {
+            placesServiceRef.current = new (window as any).google.maps.places.PlacesService(document.createElement('div'));
+            autocompleteServiceRef.current = new (window as any).google.maps.places.AutocompleteService();
+          }
+        };
+
+        if (!document.querySelector(`script[src*="maps.googleapis.com/maps/api/js?key=${apiKey}"]`)){
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=${currentCallbackName}`;
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+
+            return () => {
+              // Clean up script and callback
+              try {
+                if (document.head.contains(script)) {
+                  document.head.removeChild(script);
+                }
+                delete (window as any)[currentCallbackName];
+              } catch (e) {
+                console.warn("Error cleaning up Google Maps script:", e);
+              }
+            };
+        }
+      } else {
+        // Script already loaded
+        setScriptLoaded(true);
+        if ((window as any).google && (window as any).google.maps && (window as any).google.maps.places) {
+            placesServiceRef.current = new (window as any).google.maps.places.PlacesService(document.createElement('div'));
+            autocompleteServiceRef.current = new (window as any).google.maps.places.AutocompleteService();
         }
       }
-    }, 5000);
-  };
+    };
+    
+    const cleanup = loadGoogleScript();
+    return cleanup;
+
+  }, [apiKey]); // apiKey is a dependency for loading the script
+
+  // This useEffect depends on scriptLoaded and fetchSuggestions
+  // This replaces the problematic one at line 545 from previous logs
+  useEffect(() => {
+    if (scriptLoaded && typeof (window as any).google !== 'undefined' && (window as any).google.maps && (window as any).google.maps.places) {
+      if (debouncedFetchSuggestions.current) {
+        // Initial fetch if inputValue exists and is not the same as initialValue (to avoid fetch on load with prefill)
+        if (inputValue && inputValue !== initialValue) {
+            debouncedFetchSuggestions.current(inputValue);
+        }
+      } else {
+        // Setup debounced fetch function once script is loaded
+        const DEBOUNCE_DELAY = 300;
+        let timeoutId: NodeJS.Timeout;
+        debouncedFetchSuggestions.current = (input: string) => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                fetchSuggestions(input);
+            }, DEBOUNCE_DELAY);
+        };
+        // Initial fetch if inputValue exists and is not the same as initialValue
+        if (inputValue && inputValue !== initialValue) {
+            debouncedFetchSuggestions.current(inputValue);
+        }
+      }
+    }
+  }, [scriptLoaded, inputValue, fetchSuggestions, initialValue]);
 
   const handleSuggestionClick = (e: any) => {
     console.log("DEBUG - handleSuggestionClick - Suggestion clicked:", e);

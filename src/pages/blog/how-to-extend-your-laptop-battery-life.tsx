@@ -46,7 +46,7 @@ export default function ExtendLaptopBatteryLifePost() {
               <Image 
                 src="https://images.unsplash.com/photo-1588872657578-7efd1f1555ed" 
                 alt="Laptop with battery indicator" 
-                layout="fill"
+                fill
                 className="object-cover"
               />
             </div>

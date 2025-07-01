@@ -6,7 +6,7 @@
   "framework": "nextjs",
   "regions": ["sfo1"],
   "env": {
-    "NEXT_PUBLIC_WEBSITE_URL": "https://travelling-technicians.vercel.app",
+    "NEXT_PUBLIC_WEBSITE_URL": "https://travelling-technicians.ca",
     "SHARP_IGNORE_GLOBAL_LIBVIPS": "1"
   },
   "build": {
@@ -14,7 +14,80 @@
       "SHARP_IGNORE_GLOBAL_LIBVIPS": "1"
     }
   },
+
   "headers": [
+    {
+      "source": "/api/bookings/(.*)",
+      "headers": [
+        {
+          "key": "X-Vercel-Protection",
+          "value": "bypass"
+        }
+      ]
+    },
+    {
+      "source": "/api/send-confirmation",
+      "headers": [
+        {
+          "key": "X-Vercel-Protection",
+          "value": "bypass"
+        }
+      ]
+    },
+    {
+      "source": "/api/send-reschedule-confirmation",
+      "headers": [
+        {
+          "key": "X-Vercel-Protection",
+          "value": "bypass"
+        }
+      ]
+    },
+    {
+      "source": "/api/check-env",
+      "headers": [
+        {
+          "key": "X-Vercel-Protection",
+          "value": "bypass"
+        }
+      ]
+    },
+    {
+      "source": "/api/check-postal-code",
+      "headers": [
+        {
+          "key": "X-Vercel-Protection",
+          "value": "bypass"
+        }
+      ]
+    },
+    {
+      "source": "/api/pricing/(.*)",
+      "headers": [
+        {
+          "key": "X-Vercel-Protection",
+          "value": "bypass"
+        }
+      ]
+    },
+    {
+      "source": "/api/devices/(.*)",
+      "headers": [
+        {
+          "key": "X-Vercel-Protection",
+          "value": "bypass"
+        }
+      ]
+    },
+    {
+      "source": "/api/geocode",
+      "headers": [
+        {
+          "key": "X-Vercel-Protection",
+          "value": "bypass"
+        }
+      ]
+    },
     {
       "source": "/api/(.*)",
       "headers": [
@@ -24,7 +97,7 @@
         },
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "*"
+          "value": "https://travelling-technicians.ca"
         },
         {
           "key": "Access-Control-Allow-Methods",
@@ -33,8 +106,105 @@
         {
           "key": "Access-Control-Allow-Headers",
           "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "src/pages/api/bookings/**/*.ts": {
+      "maxDuration": 30
+    },
+    "src/pages/api/send-*.ts": {
+      "maxDuration": 30
+    },
+    "src/pages/api/check-*.ts": {
+      "maxDuration": 10
+    }
+  },
+
+  "redirects": [
+    {
+      "source": "/service-areas/richmond/",
+      "destination": "/service-areas/richmond",
+      "permanent": true
+    },
+    {
+      "source": "/service-areas/new-westminster/",
+      "destination": "/service-areas/new-westminster",
+      "permanent": true
+    },
+    {
+      "source": "/service-areas/north-vancouver/",
+      "destination": "/service-areas/north-vancouver",
+      "permanent": true
+    },
+    {
+      "source": "/service-areas/vancouver/",
+      "destination": "/service-areas/vancouver",
+      "permanent": true
+    },
+    {
+      "source": "/contact/",
+      "destination": "/contact",
+      "permanent": true
+    },
+    {
+      "source": "/doorstep/",
+      "destination": "/doorstep",
+      "permanent": true
+    },
+    {
+      "source": "/services/mobile/",
+      "destination": "/services/mobile",
+      "permanent": true
+    },
+    {
+      "source": "/privacy-policy/",
+      "destination": "/privacy-policy",
+      "permanent": true
+    },
+    {
+      "source": "/terms-conditions/",
+      "destination": "/terms-conditions",
+      "permanent": true
+    }
+  ],
+  "github": {
+    "silent": true
+  },
+  "cleanUrls": true,
+  "trailingSlash": false
 } 

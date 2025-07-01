@@ -1,97 +1,137 @@
 /**
- * Script to precisely patch router.js files to fix syntax errors
+ * Script to directly patch the router.js file with precise replacements
  */
 const fs = require('fs');
 const path = require('path');
 
-console.log('Applying precise fixes to Next.js router files...');
+console.log('🔧 Applying precise fixes to Next.js router files...');
 
-// Target router.js files
-const routerFiles = [
-  path.join(__dirname, 'node_modules/next/dist/client/router.js'),
+// Target files
+const targets = [
   path.join(__dirname, 'node_modules/next/dist/shared/lib/router/router.js'),
-  path.join(__dirname, 'node_modules/next/dist/esm/client/router.js'),
   path.join(__dirname, 'node_modules/next/dist/esm/shared/lib/router/router.js')
 ];
 
-let patchedCount = 0;
+// Specific targeted replacements to avoid syntax errors
+const replacements = [
+  {
+    search: /const data = await options\.fetchData\(\);/g,
+    replace: 'const data = await options.fetchData(); if (!data) return { dataHref: \'\', json: null, response: null };'
+  },
+  {
+    search: /state\.data/g,
+    replace: '(state && state.data)'
+  },
+  {
+    search: /cache\.data/g, 
+    replace: '(cache && cache.data)'
+  },
+  {
+    search: /routeInfo\.data/g,
+    replace: '(routeInfo && routeInfo.data)'
+  },
+  {
+    search: /data\.data/g,
+    replace: '(data && data.data)'
+  },
+  {
+    search: /props\.data/g,
+    replace: '(props && props.data)'
+  }
+];
 
-for (const file of routerFiles) {
-  if (!fs.existsSync(file)) {
-    console.log(`File not found: ${file}`);
-    continue;
+let success = 0;
+
+for (const target of targets) {
+  if (fs.existsSync(target)) {
+    console.log(`Found file: ${target}`);
+    
+    // Read file content
+    let content = fs.readFileSync(target, 'utf8');
+    
+    // Create backup if it doesn't exist
+    const backupPath = `${target}.backup.original`;
+    if (!fs.existsSync(backupPath)) {
+      fs.writeFileSync(backupPath, content);
+      console.log(`Created original backup: ${backupPath}`);
+    }
+    
+    // Create a working backup
+    fs.writeFileSync(`${target}.backup`, content);
+    
+    // Apply each replacement
+    let patched = false;
+    for (const { search, replace } of replacements) {
+      if (search.test(content)) {
+        content = content.replace(search, replace);
+        patched = true;
+      }
+    }
+    
+    if (patched) {
+      // Add header indicating file was patched
+      content = `// PATCHED FOR ROUTER DATA SAFETY\n${content}`;
+      
+      // Write the patched file
+      fs.writeFileSync(target, content);
+      console.log(`✅ Successfully patched: ${target}`);
+      success++;
+    } else {
+      console.log(`⚠️ No matching patterns found in file: ${target}`);
+    }
+  } else {
+    console.log(`⚠️ File not found: ${target}`);
   }
-  
-  // Create backup
-  const backupFile = `${file}.backup-precise`;
-  if (!fs.existsSync(backupFile)) {
-    fs.copyFileSync(file, backupFile);
-    console.log(`Created backup: ${backupFile}`);
-  }
-  
-  // Read file content
-  let content = fs.readFileSync(file, 'utf8');
-  
-  // Check if already patched with the new approach
-  if (content.includes('// PRECISE PATCHED')) {
-    console.log(`File already precisely patched: ${file}`);
-    continue;
-  }
-  
-  // Add header comment to indicate precise patching
-  content = `// PRECISE PATCHED - Safe access to possibly undefined properties\n${content}`;
-  
-  // Use safer pattern matching that won't break syntax
-  // These replacements are more targeted and won't create syntax errors
-  
-  // Replace `x.data` with `x && x.data`
-  content = content.replace(/(\w+)\.data(?!\s*&&)/g, function(match, varName) {
-    return `${varName} && ${varName}.data`;
-  });
-  
-  // Replace `x.props` with `x && x.props`
-  content = content.replace(/(\w+)\.props(?!\s*&&)/g, function(match, varName) {
-    return `${varName} && ${varName}.props`;
-  });
-  
-  // Replace `x.route` with `x && x.route`
-  content = content.replace(/(\w+)\.route(?!\s*&&)/g, function(match, varName) {
-    return `${varName} && ${varName}.route`;
-  });
-  
-  // Replace `x.query` with `x && x.query`
-  content = content.replace(/(\w+)\.query(?!\s*&&)/g, function(match, varName) {
-    return `${varName} && ${varName}.query`;
-  });
-  
-  // Fix the issues with `const` statements
-  // We need to be careful not to modify const declarations
-  content = content.replace(/const\s+(\w+)\s*&&\s*\1\.data/g, function(match, varName) {
-    return `const ${varName} = await options.fetchData()`;
-  });
-  
-  // Write patched file
-  fs.writeFileSync(file, content);
-  console.log(`Successfully patched: ${file}`);
-  patchedCount++;
 }
 
-// Clean .next directory to ensure fresh compilation
-const nextDir = path.join(__dirname, '.next');
-if (fs.existsSync(nextDir)) {
-  console.log('Cleaning .next directory to ensure fresh compilation...');
-  try {
-    fs.rmSync(nextDir, { recursive: true, force: true });
-    console.log('Successfully cleaned .next directory');
-  } catch (error) {
-    console.error('Error cleaning .next directory:', error);
+// Also apply the safe remove-trailing-slash.js patch which is known to work
+const trailingSlashTargets = [
+  path.join(__dirname, 'node_modules/next/dist/shared/lib/router/utils/remove-trailing-slash.js'),
+  path.join(__dirname, 'node_modules/next/dist/esm/shared/lib/router/utils/remove-trailing-slash.js')
+];
+
+for (const target of trailingSlashTargets) {
+  if (fs.existsSync(target)) {
+    console.log(`Found file: ${target}`);
+    
+    // Read file content
+    let content = fs.readFileSync(target, 'utf8');
+    
+    // Create backup if it doesn't exist
+    const backupPath = `${target}.backup.original`;
+    if (!fs.existsSync(backupPath)) {
+      fs.writeFileSync(backupPath, content);
+      console.log(`Created original backup: ${backupPath}`);
+    }
+    
+    // Replace the entire function with our safe version
+    const safeFunction = `function removeTrailingSlash(route) {
+  // SAFETY PATCHED
+  if (route == null) return '/';
+  return (route === '/' ? route : route.replace(/\\/$/, '')) || '/';
+}`;
+    
+    // Find the function definition
+    const functionRegex = /function\s+removeTrailingSlash\s*\(route\)\s*\{[\s\S]*?\}/;
+    
+    if (functionRegex.test(content)) {
+      // Replace the function with our safe version
+      content = content.replace(functionRegex, safeFunction);
+      
+      // Write the patched file
+      fs.writeFileSync(target, content);
+      console.log(`✅ Successfully patched: ${target}`);
+      success++;
+    } else {
+      console.log(`⚠️ Could not find function in file: ${target}`);
+    }
+  } else {
+    console.log(`⚠️ File not found: ${target}`);
   }
 }
 
-if (patchedCount > 0) {
-  console.log(`\n✅ Successfully patched ${patchedCount} router files.`);
+if (success > 0) {
+  console.log(`\n✅ Successfully patched ${success} files.`);
 } else {
-  console.log('\n⚠️ No files were patched.');
-}
-
-console.log('\nYou can now run "npm run dev" to start the application with the fixed router files.'); 
+  console.log('\n❌ No files were patched.');
+} 

@@ -64,22 +64,22 @@ export function useSafeRouter() {
   // Safely get query parameters
   const getQuery = useMemo(() => {
     return safeRouterAccess(() => safeRouter.query, {});
-  }, [safeRouter.query]);
+  }, [safeRouter]);
   
   // Safely get all query parameters
   const getAllQueryParams = useMemo(() => {
     return safeRouterAccess(() => safeRouter.query, {});
-  }, [safeRouter.query]);
+  }, [safeRouter]);
   
   // Safely get pathname
   const getPathname = useMemo(() => {
     return safeRouterAccess(() => safeRouter.pathname, '/');
-  }, [safeRouter.pathname]);
+  }, [safeRouter]);
   
   // Safely check if page is ready
   const isReadySafe = useMemo(() => {
     return safeRouterAccess(() => safeRouter.isReady, false);
-  }, [safeRouter.isReady]);
+  }, [safeRouter]);
   
   // Safely navigate
   const safePush = useMemo(() => {
@@ -87,7 +87,7 @@ export function useSafeRouter() {
       console.error('Router not available');
       return Promise.reject(new Error('Router not available'));
     });
-  }, [safeRouter.push]);
+  }, [safeRouter]);
   
   // Safely replace current route
   const safeReplace = useMemo(() => {
@@ -95,7 +95,7 @@ export function useSafeRouter() {
       console.error('Router not available');
       return Promise.reject(new Error('Router not available'));
     });
-  }, [safeRouter.replace]);
+  }, [safeRouter]);
   
   // Safely go back
   const safeBack = useMemo(() => {
@@ -103,7 +103,7 @@ export function useSafeRouter() {
       console.error('Router not available');
       return undefined;
     });
-  }, [safeRouter.back]);
+  }, [safeRouter]);
   
   return {
     // Safe accessor methods

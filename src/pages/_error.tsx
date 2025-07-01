@@ -37,13 +37,13 @@ const Error: NextPage<ErrorProps> = ({ statusCode }) => {
               </p>
               <div className="flex flex-col md:flex-row justify-center gap-4 mt-6">
                 <Link 
-                  href="/services/mobile" 
+                  href="/services/mobile-repair" 
                   className="btn-secondary"
                 >
                   Mobile Repair
                 </Link>
                 <Link 
-                  href="/services/laptop" 
+                  href="/services/laptop-repair" 
                   className="btn-secondary"
                 >
                   Laptop Repair

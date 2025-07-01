@@ -15,28 +15,37 @@ export default function AddressAutocomplete({
   error = false,
   className = ''
 }: AddressAutocompleteProps) {
-  // Just pass through to the global implementation
+  const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+  if (!googleMapsApiKey) {
+    // Graceful fallback - render a simple input field when Google Maps API is not available
+    return (
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onAddressSelect(e.target.value, true, '')}
+        placeholder="Enter your service address with postal code"
+        className={`${className} ${error ? 'border-red-500' : 'border-gray-300'} w-full p-3 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+      />
+    );
+  }
+
   return (
     <GlobalAddressAutocomplete
+      apiKey={googleMapsApiKey}
       initialValue={value}
       placeholder="Enter your service address with postal code"
       className={className}
       disabled={false}
       required={false}
       onAddressSelect={(address, postalCode, inServiceArea) => {
-        // For backward compatibility with the booking form
         const isValid = inServiceArea && Boolean(postalCode && postalCode.trim() !== '');
-        
-        // Ensure address and postal code are properly formatted
         const formattedAddress = address ? address.trim() : '';
         const formattedPostalCode = postalCode ? postalCode.trim() : '';
-        
-        // Always call onAddressSelect with the best information we have
         onAddressSelect(formattedAddress, isValid, formattedPostalCode);
       }}
       onError={(errorMsg) => {
         console.log("Address error:", errorMsg);
-        // Error handling is done through the isValid parameter in onAddressSelect
       }}
     />
   );

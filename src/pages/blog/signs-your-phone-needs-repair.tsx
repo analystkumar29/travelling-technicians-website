@@ -10,11 +10,9 @@ export default function SignsYourPhoneNeedsRepairPost() {
       <section className="pt-16 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
         <div className="container-custom">
           <div className="max-w-4xl mx-auto">
-            <Link href="/blog">
-              <a className="inline-flex items-center text-primary-100 hover:text-white transition-colors mb-4">
+            <Link href="/blog" className="inline-flex items-center text-primary-100 hover:text-white transition-colors mb-4">
                 <FaChevronLeft className="mr-2" /> Back to Blog
-              </a>
-            </Link>
+              </Link>
             <h1 className="text-3xl md:text-5xl font-bold mb-6">
               5 Warning Signs Your Phone Needs Repair
             </h1>
@@ -48,7 +46,7 @@ export default function SignsYourPhoneNeedsRepairPost() {
               <Image 
                 src="https://images.unsplash.com/photo-1592899677977-9c10ca588bbd" 
                 alt="Cracked smartphone screen" 
-                layout="fill"
+                fill
                 className="object-cover"
               />
             </div>
@@ -150,11 +148,9 @@ export default function SignsYourPhoneNeedsRepairPost() {
                   <p className="mb-4">
                     Our certified technicians can diagnose and fix these issues at your location across the Lower Mainland.
                   </p>
-                  <Link href="/book-online">
-                    <a className="btn-primary inline-block">
+                  <Link href="/book-online" className="btn-primary inline-block">
                       Book a Repair Now
-                    </a>
-                  </Link>
+                    </Link>
                 </div>
               </article>
               
@@ -184,29 +180,19 @@ export default function SignsYourPhoneNeedsRepairPost() {
                   <h3 className="text-lg font-bold mb-4">Services</h3>
                   <ul className="space-y-2 text-gray-700">
                     <li>
-                      <Link href="/services/mobile/screen-replacement">
-                        <a className="hover:text-primary-600 transition-colors">Screen Replacement</a>
-                      </Link>
+                      <Link href="/services/mobile/screen-replacement" className="hover:text-primary-600 transition-colors">Screen Replacement</Link>
                     </li>
                     <li>
-                      <Link href="/services/mobile/battery-replacement">
-                        <a className="hover:text-primary-600 transition-colors">Battery Replacement</a>
-                      </Link>
+                      <Link href="/services/mobile/battery-replacement" className="hover:text-primary-600 transition-colors">Battery Replacement</Link>
                     </li>
                     <li>
-                      <Link href="/services/mobile/charging-port-repair">
-                        <a className="hover:text-primary-600 transition-colors">Charging Port Repair</a>
-                      </Link>
+                      <Link href="/services/mobile/charging-port-repair" className="hover:text-primary-600 transition-colors">Charging Port Repair</Link>
                     </li>
                     <li>
-                      <Link href="/services/mobile/camera-repair">
-                        <a className="hover:text-primary-600 transition-colors">Camera Repair</a>
-                      </Link>
+                      <Link href="/services/mobile/camera-repair" className="hover:text-primary-600 transition-colors">Camera Repair</Link>
                     </li>
                     <li>
-                      <Link href="/services/mobile/water-damage">
-                        <a className="hover:text-primary-600 transition-colors">Water Damage Repair</a>
-                      </Link>
+                      <Link href="/services/mobile/water-damage" className="hover:text-primary-600 transition-colors">Water Damage Repair</Link>
                     </li>
                   </ul>
                 </div>
@@ -228,11 +214,9 @@ export default function SignsYourPhoneNeedsRepairPost() {
                       </div>
                       <div>
                         <h4 className="font-medium text-sm">
-                          <Link href="/blog/how-to-extend-your-laptop-battery-life">
-                            <a className="hover:text-primary-600">
+                          <Link href="/blog/how-to-extend-your-laptop-battery-life" className="hover:text-primary-600">
                               How to Extend Your Laptop Battery Life
-                            </a>
-                          </Link>
+                            </Link>
                         </h4>
                         <p className="text-xs text-gray-500 mt-1">April 2, 2023</p>
                       </div>
@@ -251,11 +235,9 @@ export default function SignsYourPhoneNeedsRepairPost() {
                       </div>
                       <div>
                         <h4 className="font-medium text-sm">
-                          <Link href="/blog/water-damage-first-aid-for-devices">
-                            <a className="hover:text-primary-600">
+                          <Link href="/blog/water-damage-first-aid-for-devices" className="hover:text-primary-600">
                               Water Damage First Aid for Your Devices
-                            </a>
-                          </Link>
+                            </Link>
                         </h4>
                         <p className="text-xs text-gray-500 mt-1">February 10, 2023</p>
                       </div>
@@ -274,11 +256,9 @@ export default function SignsYourPhoneNeedsRepairPost() {
                       </div>
                       <div>
                         <h4 className="font-medium text-sm">
-                          <Link href="/blog/ultimate-guide-to-screen-protection">
-                            <a className="hover:text-primary-600">
+                          <Link href="/blog/ultimate-guide-to-screen-protection" className="hover:text-primary-600">
                               The Ultimate Guide to Screen Protection
-                            </a>
-                          </Link>
+                            </Link>
                         </h4>
                         <p className="text-xs text-gray-500 mt-1">January 22, 2023</p>
                       </div>
@@ -293,11 +273,9 @@ export default function SignsYourPhoneNeedsRepairPost() {
                     <p className="text-gray-600 text-sm mb-4">
                       Our technicians come directly to your location across the Lower Mainland. Most repairs completed in under an hour.
                     </p>
-                    <Link href="/book-online">
-                      <a className="btn-primary text-center w-full block">
+                    <Link href="/book-online" className="btn-primary text-center w-full block">
                         Book Doorstep Repair
-                      </a>
-                    </Link>
+                      </Link>
                   </div>
                 </div>
               </div>
@@ -322,11 +300,9 @@ export default function SignsYourPhoneNeedsRepairPost() {
               </div>
               <div className="p-5">
                 <h3 className="text-lg font-bold mb-2">
-                  <Link href="/blog/repair-or-replace-making-the-right-decision">
-                    <a className="text-gray-900 hover:text-primary-600 transition-colors">
+                  <Link href="/blog/repair-or-replace-making-the-right-decision" className="text-gray-900 hover:text-primary-600 transition-colors">
                       Repair or Replace? Making the Right Decision
-                    </a>
-                  </Link>
+                    </Link>
                 </h3>
                 <p className="text-gray-600 text-sm mb-3 line-clamp-2">
                   How to determine whether it's more cost-effective to repair your existing device or invest in a new one.
@@ -336,11 +312,9 @@ export default function SignsYourPhoneNeedsRepairPost() {
                     <FaCalendarAlt className="inline-block mr-1" /> 
                     <span>May 5, 2023</span>
                   </div>
-                  <Link href="/blog/repair-or-replace-making-the-right-decision">
-                    <a className="text-primary-600 font-medium hover:text-primary-700 transition-colors">
+                  <Link href="/blog/repair-or-replace-making-the-right-decision" className="text-primary-600 font-medium hover:text-primary-700 transition-colors">
                       Read More
-                    </a>
-                  </Link>
+                    </Link>
                 </div>
               </div>
             </div>
@@ -356,11 +330,9 @@ export default function SignsYourPhoneNeedsRepairPost() {
               </div>
               <div className="p-5">
                 <h3 className="text-lg font-bold mb-2">
-                  <Link href="/blog/water-damage-first-aid-for-devices">
-                    <a className="text-gray-900 hover:text-primary-600 transition-colors">
+                  <Link href="/blog/water-damage-first-aid-for-devices" className="text-gray-900 hover:text-primary-600 transition-colors">
                       Water Damage First Aid for Your Devices
-                    </a>
-                  </Link>
+                    </Link>
                 </h3>
                 <p className="text-gray-600 text-sm mb-3 line-clamp-2">
                   The critical first steps to take when your phone or laptop gets wet that can save your device from permanent damage.
@@ -370,11 +342,9 @@ export default function SignsYourPhoneNeedsRepairPost() {
                     <FaCalendarAlt className="inline-block mr-1" /> 
                     <span>February 10, 2023</span>
                   </div>
-                  <Link href="/blog/water-damage-first-aid-for-devices">
-                    <a className="text-primary-600 font-medium hover:text-primary-700 transition-colors">
+                  <Link href="/blog/water-damage-first-aid-for-devices" className="text-primary-600 font-medium hover:text-primary-700 transition-colors">
                       Read More
-                    </a>
-                  </Link>
+                    </Link>
                 </div>
               </div>
             </div>
@@ -390,11 +360,9 @@ export default function SignsYourPhoneNeedsRepairPost() {
               </div>
               <div className="p-5">
                 <h3 className="text-lg font-bold mb-2">
-                  <Link href="/blog/ultimate-guide-to-screen-protection">
-                    <a className="text-gray-900 hover:text-primary-600 transition-colors">
+                  <Link href="/blog/ultimate-guide-to-screen-protection" className="text-gray-900 hover:text-primary-600 transition-colors">
                       The Ultimate Guide to Screen Protection
-                    </a>
-                  </Link>
+                    </Link>
                 </h3>
                 <p className="text-gray-600 text-sm mb-3 line-clamp-2">
                   Compare different types of screen protectors and learn proper installation techniques for maximum protection.
@@ -404,11 +372,9 @@ export default function SignsYourPhoneNeedsRepairPost() {
                     <FaCalendarAlt className="inline-block mr-1" /> 
                     <span>January 22, 2023</span>
                   </div>
-                  <Link href="/blog/ultimate-guide-to-screen-protection">
-                    <a className="text-primary-600 font-medium hover:text-primary-700 transition-colors">
+                  <Link href="/blog/ultimate-guide-to-screen-protection" className="text-primary-600 font-medium hover:text-primary-700 transition-colors">
                       Read More
-                    </a>
-                  </Link>
+                    </Link>
                 </div>
               </div>
             </div>
@@ -425,16 +391,12 @@ export default function SignsYourPhoneNeedsRepairPost() {
               Don't wait until your device stops working completely. Our technicians can diagnose and repair your phone at your location.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link href="/book-online">
-                <a className="btn-accent text-center">
+              <Link href="/book-online" className="btn-accent text-center">
                   Book a Repair
-                </a>
-              </Link>
-              <Link href="/contact">
-                <a className="btn-outline border-white text-white hover:bg-primary-700 text-center">
+                </Link>
+              <Link href="/contact" className="btn-outline border-white text-white hover:bg-primary-700 text-center">
                   Contact Us
-                </a>
-              </Link>
+                </Link>
             </div>
           </div>
         </div>

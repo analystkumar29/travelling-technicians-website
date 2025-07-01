@@ -18,14 +18,35 @@ export function animateCounters(elementSelector = '.stat-counter') {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         const target = entry.target;
-        const targetValue = parseInt(target.getAttribute('data-target'), 10);
+        const originalValue = target.getAttribute('data-target');
+        
+        // Handle different value types
+        let targetNumber;
+        let suffix = '';
+        let isDecimal = false;
+        
+        if (originalValue.includes('%')) {
+          targetNumber = parseFloat(originalValue.replace('%', ''));
+          suffix = '%';
+          isDecimal = originalValue.includes('.');
+        } else if (originalValue.includes('+')) {
+          targetNumber = parseFloat(originalValue.replace('+', ''));
+          suffix = '+';
+          isDecimal = originalValue.includes('.');
+        } else {
+          targetNumber = parseFloat(originalValue);
+          isDecimal = originalValue.includes('.');
+        }
+        
         let current = 0;
-        const increment = targetValue / 50; // Divide animation into 50 steps
+        const increment = targetNumber / 50; // Divide animation into 50 steps
         const timer = setInterval(() => {
           current += increment;
-          target.textContent = Math.round(current);
-          if (current >= targetValue) {
-            target.textContent = targetValue.toLocaleString();
+          let displayValue = isDecimal ? current.toFixed(1) : Math.round(current);
+          target.textContent = displayValue + suffix;
+          
+          if (current >= targetNumber) {
+            target.textContent = originalValue;
             clearInterval(timer);
           }
         }, 20);
@@ -35,7 +56,7 @@ export function animateCounters(elementSelector = '.stat-counter') {
   }, { threshold: 0.5 });
   
   counters.forEach(counter => {
-    const value = counter.textContent;
+    const value = counter.textContent.trim();
     counter.setAttribute('data-target', value);
     counter.textContent = '0';
     counter.classList.add('animate-count-up');
@@ -231,7 +252,10 @@ export function initUIEnhancements() {
     // Add appropriate class to stats
     document.querySelectorAll('[data-stat]').forEach(el => {
       el.classList.add('stat-item');
-      el.querySelector('.text-4xl, .text-5xl')?.classList.add('stat-counter');
+      const statNumber = el.querySelector('div[class*="text-4xl"], div[class*="text-5xl"]');
+      if (statNumber) {
+        statNumber.classList.add('stat-counter');
+      }
     });
     
     // Add process step classes
@@ -276,8 +300,8 @@ export function initUIEnhancements() {
       el.classList.add('cta-button');
     });
     
-    // Run specific enhancements
-    animateCounters();
+    // Run specific enhancements (temporarily disabled counter animation)
+    // animateCounters();
     createStickyBookButton();
     enhanceTestimonials();
     enhanceProcessSteps();

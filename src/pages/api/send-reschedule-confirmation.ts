@@ -3,7 +3,7 @@ import sgMail from '@sendgrid/mail';
 import { logger } from '@/utils/logger';
 import crypto from 'crypto';
 
-// Set up SendGrid API key if available
+// Initialize SendGrid
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 }
@@ -11,15 +11,24 @@ if (process.env.SENDGRID_API_KEY) {
 // Create a module logger
 const emailLogger = logger.createModuleLogger('send-reschedule-confirmation');
 
-// Environment variables
-const VERIFICATION_SECRET = process.env.BOOKING_VERIFICATION_SECRET || 'default-secret-change-this';
-const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000';
+// Ensure required environment variables are set
+const VERIFICATION_SECRET = process.env.BOOKING_VERIFICATION_SECRET;
+const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || process.env.NEXT_PUBLIC_WEBSITE_URL;
+
+if (!VERIFICATION_SECRET) {
+  throw new Error('BOOKING_VERIFICATION_SECRET environment variable is required');
+}
+
+// Type assertion to help TypeScript understand the variable is defined
+const SECRET: string = VERIFICATION_SECRET;
 
 // Generate verification token for secure links
 function generateVerificationToken(email: string, reference: string): string {
-  const data = `${email.toLowerCase()}:${reference}:${new Date().toISOString().split('T')[0]}`;
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const data = `${email}:${reference}:${timestamp}`;
+  
   return crypto
-    .createHmac('sha256', VERIFICATION_SECRET)
+    .createHmac('sha256', SECRET)
     .update(data)
     .digest('hex');
 }

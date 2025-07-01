@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline | The Travelling Technicians</title>
+  <link rel="icon" href="/favicon.ico">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: #f7f9fc;
+      color: #333;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 600px;
+      margin: 4rem auto;
+      padding: 2rem;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      text-align: center;
+    }
+    h1 {
+      color: #0076be;
+      margin-bottom: 1rem;
+      font-size: 2rem;
+    }
+    .logo {
+      max-width: 150px;
+      margin-bottom: 2rem;
+    }
+    p {
+      margin-bottom: 1.5rem;
+    }
+    .button {
+      display: inline-block;
+      background-color: #0076be;
+      color: white;
+      text-decoration: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 4px;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+    .button:hover {
+      background-color: #0064a2;
+    }
+    .services {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #eee;
+      text-align: left;
+    }
+    .services h2 {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      color: #0076be;
+    }
+    .services ul {
+      padding-left: 1.5rem;
+    }
+    .services li {
+      margin-bottom: 0.5rem;
+    }
+    .contact {
+      margin-top: 2rem;
+      font-size: 0.9rem;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="/images/logo/logo-horizontal.png" alt="The Travelling Technicians Logo" class="logo" onerror="this.onerror=null; this.src='/favicon.ico'; this.style.width='50px';">
+    
+    <h1>You're currently offline</h1>
+    
+    <p>It looks like you're not connected to the internet. Please check your connection and try again.</p>
+    
+    <a href="/" class="button">Retry Connection</a>
+    
+    <div class="services">
+      <h2>While you're waiting to reconnect:</h2>
+      <p>The Travelling Technicians provides doorstep mobile and laptop repair services across the Lower Mainland, including:</p>
+      <ul>
+        <li>Screen replacements for phones and laptops</li>
+        <li>Battery replacements</li>
+        <li>Software troubleshooting</li>
+        <li>Charging port and power jack repairs</li>
+        <li>And many more repair services!</li>
+      </ul>
+    </div>
+    
+    <div class="contact">
+      <p>Contact us: (604) 555-1234 | contact@travellingtechnicians.ca</p>
+      <p>Serving Vancouver, Burnaby, Surrey, Richmond, and the entire Lower Mainland.</p>
+    </div>
+  </div>
+  
+  <script>
+    // Check connection and refresh when back online
+    window.addEventListener('online', () => {
+      window.location.reload();
+    });
+    
+    // Add event listener to retry button
+    document.querySelector('.button').addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.reload();
+    });
+  </script>
+</body>
+</html> 

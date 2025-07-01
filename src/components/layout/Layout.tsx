@@ -58,7 +58,7 @@ export default function Layout({ children, title, metaDescription }: LayoutProps
         <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="192x192" href="/favicons/favicon-192x192.png" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#0d9488" />
+        <meta name="theme-color" content="#075985" />
         
         {/* Social sharing metadata */}
         <meta property="og:title" content={pageTitle} />

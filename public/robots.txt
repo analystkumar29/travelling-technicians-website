@@ -1,0 +1,31 @@
+User-agent: *
+Allow: /
+
+# Important pages for SEO
+Allow: /services/
+Allow: /repair/
+Allow: /service-areas/
+Allow: /blog/
+Allow: /contact
+Allow: /about
+Allow: /book-online
+Allow: /doorstep-repair
+Allow: /pricing
+Allow: /faq
+Allow: /privacy-policy
+Allow: /terms-conditions
+
+# Disallow admin and API endpoints
+Disallow: /api/
+Disallow: /management/
+Disallow: /login
+Disallow: /admin/
+Disallow: /_next/
+Disallow: /debug
+Disallow: /minimal
+
+# Sitemap location
+Sitemap: https://www.travelling-technicians.ca/api/sitemap.xml
+
+# Crawl delay (be nice to servers)
+Crawl-delay: 1 

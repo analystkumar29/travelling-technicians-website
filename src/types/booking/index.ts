@@ -10,6 +10,7 @@ export interface CreateBookingRequest {
   deviceModel: string;
   serviceType: string;
   issueDescription?: string;
+  pricingTier?: 'standard' | 'premium'; // Service tier selection
   appointmentDate: string;
   appointmentTime: string;
   customerName: string;

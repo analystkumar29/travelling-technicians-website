@@ -29,9 +29,9 @@ services:
     image: postgres:14
     restart: always
     environment:
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_DB: travelling_technicians
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_random_password_change_me}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-travelling_technicians}
     ports:
       - "5432:5432"
     volumes:
@@ -48,7 +48,7 @@ services:
       - "8000:8000" # API
       - "9000:9000" # Studio
     environment:
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_random_password_change_me}
       POSTGRES_HOST: db
       STUDIO_API_URL: http://localhost:8000
     volumes:

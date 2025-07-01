@@ -57,6 +57,10 @@ export const bookingService = {
         service_type: bookingData.serviceType,
         issueDescription: bookingData.issueDescription,
         issue_description: bookingData.issueDescription,
+        
+        // Pricing tier
+        pricingTier: bookingData.pricingTier || 'standard',
+        pricing_tier: bookingData.pricingTier || 'standard',
 
         // Appointment Information
         appointmentDate: bookingData.appointmentDate,

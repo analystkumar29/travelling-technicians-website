@@ -11,15 +11,13 @@ import type { ReactNode } from 'react';
 export type DeviceType = 'mobile' | 'laptop' | 'tablet' | 'unknown';
 
 /**
- * Possible booking statuses
+ * Possible booking statuses (must match database constraint)
  */
 export type BookingStatus = 
   | 'pending'     // Booking is waiting for confirmation
   | 'confirmed'   // Booking has been confirmed but not completed
   | 'completed'   // Service has been completed
-  | 'cancelled'   // Booking was cancelled by the customer
-  | 'no_show'     // Customer did not show up
-  | 'rescheduled';  // Booking was rescheduled
+  | 'cancelled';  // Booking was cancelled by the customer
 
 /**
  * Data needed to create a booking
@@ -29,8 +27,11 @@ export interface CreateBookingRequest {
   deviceBrand: string;
   deviceModel: string;
   customBrand?: string; // Custom brand name when "other" is selected
-  serviceType: string;
+  serviceType: string | string[]; // Can be single service or array of services
   issueDescription?: string;
+  
+  // Pricing tier selection
+  pricingTier?: 'standard' | 'premium'; // Service tier selection
   
   appointmentDate: string;  // YYYY-MM-DD format
   appointmentTime: string;  // HH-HH format (e.g., "09-11" for 9 AM to 11 AM)
