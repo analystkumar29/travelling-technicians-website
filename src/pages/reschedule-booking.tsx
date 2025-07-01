@@ -219,14 +219,22 @@ const RescheduleBooking: React.FC = () => {
       });
 
       const result = await response.json();
-      console.log('[RescheduleBooking] Email response:', result);
+      console.log('[RescheduleBooking] Email response status:', response.status);
+      console.log('[RescheduleBooking] Email response ok:', response.ok);
+      console.log('[RescheduleBooking] Email response data:', result);
 
-      if (!response.ok) {
-        console.error('[RescheduleBooking] Email send failed:', result);
+      if (!response.ok || !result.success) {
+        console.error('[RescheduleBooking] Email send failed:', {
+          status: response.status,
+          ok: response.ok,
+          result: result
+        });
         // Don't fail the entire process for email issues
         setMessage('Booking rescheduled successfully! However, confirmation email may be delayed.');
       } else {
         console.log('[RescheduleBooking] Email sent successfully');
+        // Optional: Update message to confirm email was sent
+        // setMessage('Booking rescheduled successfully! Confirmation email sent.');
       }
     } catch (error) {
       console.error('[RescheduleBooking] Error sending confirmation email:', error);
