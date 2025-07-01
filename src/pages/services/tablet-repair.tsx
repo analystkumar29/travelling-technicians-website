@@ -127,7 +127,7 @@ export default function TabletRepairPage() {
             <div className="relative">
               <div className="relative h-[450px] w-full rounded-lg overflow-hidden shadow-custom-lg">
                 <Image
-                  src="/images/services/tabletRepair.png"
+                  src="/images/services/tabletRepair-optimized.webp"
                   alt="Tablet repair technician"
                   fill
                   className="object-cover object-center"

@@ -121,7 +121,7 @@ export default function MobileRepairPage() {
             <div className="relative">
               <div className="relative h-[450px] w-full rounded-lg overflow-hidden shadow-custom-lg">
                 <Image
-                  src="/images/services/mobileRepair.png"
+                  src="/images/services/mobileRepair-optimized.webp"
                   alt="Mobile phone repair technician"
                   fill
                   className="object-cover object-center"
