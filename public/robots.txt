@@ -15,7 +15,10 @@ Allow: /faq
 Allow: /privacy-policy
 Allow: /terms-conditions
 
-# Disallow admin and API endpoints
+# Allow sitemap specifically (must come before API disallow)
+Allow: /api/sitemap.xml
+
+# Disallow admin and API endpoints (except sitemap above)
 Disallow: /api/
 Disallow: /management/
 Disallow: /login
