@@ -189,26 +189,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // If no password hash is set, use default for development
+    // Require proper password hash to be configured
     if (!ADMIN_PASSWORD_HASH) {
-      authLogger.debug('No ADMIN_PASSWORD_HASH set, using default password');
-      if (password !== 'admin123') {
-        recordFailedAttempt(clientIP);
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid credentials'
-        });
-      }
-    } else {
-      // Verify against stored hash
-      if (!verifyPassword(password, ADMIN_PASSWORD_HASH)) {
-        recordFailedAttempt(clientIP);
-        authLogger.debug('Password verification failed');
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid credentials'
-        });
-      }
+      authLogger.error('ADMIN_PASSWORD_HASH environment variable is not configured');
+      return res.status(500).json({
+        success: false,
+        message: 'Server configuration error - contact administrator'
+      });
+    }
+
+    // Verify against stored hash
+    if (!verifyPassword(password, ADMIN_PASSWORD_HASH)) {
+      recordFailedAttempt(clientIP);
+      authLogger.debug('Password verification failed');
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
     }
 
     // Generate authentication token

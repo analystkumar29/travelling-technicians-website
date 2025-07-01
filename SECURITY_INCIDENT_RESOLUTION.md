@@ -13,9 +13,11 @@ GitGuardian detected 3 security incidents where sensitive credentials were accid
 The following files contained hardcoded credentials that have been fixed:
 
 - `update-warranty-system.js` - Replaced hardcoded Supabase keys with environment variables
-- `setup-admin-auth.js` - Replaced hardcoded keys with placeholder values
+- `setup-admin-auth.js` - Replaced hardcoded keys with placeholder values AND fixed hardcoded BOOKING_VERIFICATION_SECRET
 - `run-migration-with-env.js` - Replaced hardcoded service role key with environment variable loading
 - `run-warranty-cli.js` - Replaced hardcoded service role key with environment variable loading
+- `src/pages/api/management/login.ts` - **CRITICAL FIX**: Removed hardcoded "admin123" default password vulnerability
+- `docker-compose.yaml` - Replaced generic "postgres" passwords with environment variables
 - `.cleanup-backup/` - Removed entire backup directory containing exposed credentials
 
 ### 2. Enhanced Environment Variable Loading

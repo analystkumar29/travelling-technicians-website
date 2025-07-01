@@ -15,7 +15,7 @@ const crypto = require('crypto');
 
 // Generate secure secrets
 const ADMIN_JWT_SECRET = crypto.randomBytes(32).toString('hex');
-const BOOKING_VERIFICATION_SECRET = '9ba588bc19893d2bc999c398355809cc582580faf7df4a3e6998200ad4481e8f';
+const BOOKING_VERIFICATION_SECRET = crypto.randomBytes(32).toString('hex');
 
 console.log('🔐 SETTING UP ADMIN AUTHENTICATION');
 console.log('==================================\n');
@@ -48,6 +48,11 @@ NEXT_PUBLIC_API_BASE_URL=${isProduction ? 'https://travelling-technicians.ca' : 
 
 # Google Maps API
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
+
+# Database (for Docker development)
+POSTGRES_PASSWORD=your_secure_postgres_password_here
+POSTGRES_USER=postgres
+POSTGRES_DB=travelling_technicians
 
 # Environment
 NODE_ENV=${isProduction ? 'production' : 'development'}
