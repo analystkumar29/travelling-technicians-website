@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
 import { format, addDays, isBefore } from 'date-fns';
 import { FaCheckCircle, FaTimesCircle, FaSpinner, FaCalendarAlt, FaClock } from 'react-icons/fa';
-import { getServiceSupabase } from '@/utils/supabaseClient';
+import { supabase } from '@/utils/supabaseClient';
 
 // Generate available dates (next 14 days)
 function getAvailableDates() {
@@ -61,7 +61,6 @@ export default function RescheduleBooking() {
     const fetchBooking = async () => {
       try {
         // Fetch booking using the reference number
-        const supabase = getServiceSupabase();
         const { data, error } = await supabase
           .from('bookings')
           .select('*')
@@ -171,7 +170,6 @@ export default function RescheduleBooking() {
       const formattedOriginalDate = format(originalDate, 'EEEE, MMMM d, yyyy');
       
       // Update booking in database
-      const supabase = getServiceSupabase();
       const { error: updateError } = await supabase
         .from('bookings')
         .update({

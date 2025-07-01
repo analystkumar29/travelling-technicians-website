@@ -13,6 +13,9 @@ export default function VerifyBooking() {
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAllBookings, setShowAllBookings] = useState(false);
+  const [allBookings, setAllBookings] = useState<any[]>([]);
+  const [loadingAllBookings, setLoadingAllBookings] = useState(false);
   
   // Try to get booking info when reference is available
   useEffect(() => {
@@ -100,6 +103,39 @@ export default function VerifyBooking() {
       setIsSubmitting(false);
     }
   };
+
+  // Function to fetch all bookings for this email
+  const fetchAllBookings = async () => {
+    if (!email || !token || !reference) return;
+    
+    setLoadingAllBookings(true);
+    
+    try {
+      // Use the original verification token to fetch all bookings
+      const response = await fetch('/api/bookings/by-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email, 
+          verificationToken: token, 
+          verificationReference: reference 
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setAllBookings(result.bookings);
+        setShowAllBookings(true);
+      } else {
+        console.error('Failed to fetch all bookings:', result.message);
+      }
+    } catch (error) {
+      console.error('Error fetching all bookings:', error);
+    } finally {
+      setLoadingAllBookings(false);
+    }
+  };
   
   return (
     <Layout title="Verify Booking | The Travelling Technicians">
@@ -169,9 +205,9 @@ export default function VerifyBooking() {
                   <h2 className="text-2xl font-bold text-gray-800 mb-2">Booking Verified</h2>
                   <p className="text-gray-600 mb-6">{message}</p>
                   
-                  {bookingInfo && (
+                  {!showAllBookings && bookingInfo && (
                     <div className="bg-gray-50 p-4 rounded-lg mb-6 max-w-md w-full">
-                      <h3 className="font-medium text-gray-900 mb-2">Booking Details</h3>
+                      <h3 className="font-medium text-gray-900 mb-2">Verified Booking Details</h3>
                       <div className="grid grid-cols-1 gap-2 text-sm text-left">
                         <div>
                           <span className="text-gray-500">Reference: </span>
@@ -204,12 +240,97 @@ export default function VerifyBooking() {
                       </div>
                     </div>
                   )}
+
+                  {showAllBookings && allBookings.length > 0 && (
+                    <div className="bg-gray-50 p-6 rounded-lg mb-6 max-w-4xl w-full">
+                      <h3 className="font-medium text-gray-900 mb-4">All Your Bookings ({allBookings.length})</h3>
+                      <div className="space-y-4">
+                        {allBookings.map((booking) => (
+                          <div key={booking.id} className="bg-white p-4 rounded-lg border">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <div className="mb-2">
+                                  <span className="text-gray-500">Reference: </span>
+                                  <span className="font-medium">{booking.reference_number}</span>
+                                  {booking.reference_number === bookingInfo?.reference_number && (
+                                    <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">Just Verified</span>
+                                  )}
+                                </div>
+                                <div className="mb-2">
+                                  <span className="text-gray-500">Device: </span>
+                                  <span className="font-medium">{booking.device_type} {booking.device_brand && `- ${booking.device_brand}`} {booking.device_model && booking.device_model}</span>
+                                </div>
+                                <div className="mb-2">
+                                  <span className="text-gray-500">Service: </span>
+                                  <span className="font-medium">{booking.service_type}</span>
+                                </div>
+                              </div>
+                              <div>
+                                <div className="mb-2">
+                                  <span className="text-gray-500">Date: </span>
+                                  <span className="font-medium">{new Date(booking.booking_date).toLocaleDateString('en-US', { 
+                                    weekday: 'long', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                  })}</span>
+                                </div>
+                                <div className="mb-2">
+                                  <span className="text-gray-500">Time: </span>
+                                  <span className="font-medium">{booking.booking_time}</span>
+                                </div>
+                                <div className="mb-2">
+                                  <span className="text-gray-500">Status: </span>
+                                  <span className={`font-medium ${
+                                    booking.status === 'confirmed' ? 'text-green-600' :
+                                    booking.status === 'pending' ? 'text-yellow-600' :
+                                    booking.status === 'completed' ? 'text-blue-600' :
+                                    'text-gray-600'
+                                  }`}>
+                                    {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   
-                  <p className="text-sm text-gray-500 mb-8">
-                    Our technician will arrive at your address during the scheduled time window.
-                    You will receive a call about 30 minutes before arrival.
-                  </p>
-                  <div className="flex space-x-4 mt-2">
+                  {!showAllBookings && (
+                    <p className="text-sm text-gray-500 mb-8">
+                      Our technician will arrive at your address during the scheduled time window.
+                      You will receive a call about 30 minutes before arrival.
+                    </p>
+                  )}
+                  
+                  <div className="flex flex-wrap gap-4 mt-6">
+                    {!showAllBookings && (
+                      <button 
+                        onClick={fetchAllBookings}
+                        disabled={loadingAllBookings}
+                        className="btn-secondary flex items-center"
+                      >
+                        {loadingAllBookings ? (
+                          <>
+                            <FaSpinner className="animate-spin mr-2" />
+                            Loading...
+                          </>
+                        ) : (
+                          'View All My Bookings'
+                        )}
+                      </button>
+                    )}
+                    
+                    {showAllBookings && (
+                      <button 
+                        onClick={() => setShowAllBookings(false)}
+                        className="btn-secondary"
+                      >
+                        Show Just This Booking
+                      </button>
+                    )}
+                    
                     <button 
                       onClick={() => router.push('/')}
                       className="btn-outline"
