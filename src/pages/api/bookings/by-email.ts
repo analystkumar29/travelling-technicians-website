@@ -31,14 +31,7 @@ function verifyBookingToken(token: string, email: string, reference: string): bo
   }
 }
 
-// Function to generate email access token
-export function generateEmailAccessToken(email: string): string {
-  const today = new Date().toISOString().split('T')[0];
-  return crypto
-    .createHmac('sha256', VERIFICATION_SECRET)
-    .update(`${email.toLowerCase()}:email-access:${today}`)
-    .digest('hex');
-}
+// Note: Email access is verified using the original booking verification token
 
 export default async function handler(
   req: NextApiRequest,
