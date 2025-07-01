@@ -199,7 +199,7 @@ export default function MobileScreenRepairPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
               {[
                 'Vancouver', 'Burnaby', 'Richmond', 'North Vancouver',
-                'New Westminster', 'Coquitlam', 'West Vancouver', 'Surrey'
+                'New Westminster', 'Coquitlam', 'West Vancouver', 'Chilliwack'
               ].map((city) => (
                 <div key={city} className="bg-white rounded-lg p-4 shadow-sm">
                   <FaMapMarkerAlt className="text-primary-600 mx-auto mb-2" />

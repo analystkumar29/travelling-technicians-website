@@ -428,7 +428,7 @@ export default function DoorstepRepairPage() {
               </div>
               <div className="bg-gray-50 rounded-lg p-3 text-center">
                 <FaMapMarkerAlt className="inline-block mr-1 text-primary-600" />
-                Surrey
+                Chilliwack
               </div>
               <div className="bg-gray-50 rounded-lg p-3 text-center">
                 <FaMapMarkerAlt className="inline-block mr-1 text-primary-600" />
