@@ -149,17 +149,15 @@ const RescheduleBooking: React.FC = () => {
         reference: selectedBooking.reference_number
       });
 
-      const response = await fetch('/api/bookings/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: selectedBooking.id,
-          booking_date: selectedDate,
-          booking_time: selectedTime,
-          appointment_date: selectedDate,
-          appointment_time: selectedTime
-        })
-      });
+             const response = await fetch('/api/bookings/update', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({
+           id: selectedBooking.id,
+           appointmentDate: selectedDate,
+           appointmentTime: selectedTime
+         })
+       });
 
       const result = await response.json();
       console.log('[RescheduleBooking] Update response:', result);
