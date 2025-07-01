@@ -541,6 +541,24 @@ class MyDocument extends Document {
               })
             }}
           />
+
+          {/* Google Analytics 4 - GA4 Tracking */}
+          <Script
+            src="https://www.googletagmanager.com/gtag/js?id=G-80YKX5JXKG"
+            strategy="afterInteractive"
+          />
+          <Script id="google-analytics" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-80YKX5JXKG', {
+                page_title: document.title,
+                page_location: window.location.href,
+                send_page_view: true
+              });
+            `}
+          </Script>
         </Head>
         <body>
           {/* Add fallback text that will be shown if JS fails to load */}
