@@ -22,9 +22,9 @@ console.log('==================================\n');
 
 // Environment file template
 const envTemplate = (isProduction = false) => `# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=https://lzgrpcgfcevmnrxbvpfw.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6Z3JwY2dmY2V2bW5yeGJ2cGZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMxNzY5MzUsImV4cCI6MjA0ODc1MjkzNX0.fLy-3HxqOgf-DbKsYa6V1PjIJGOULr3Qhf0qCqtSdVY
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6Z3JwY2dmY2V2bW5yeGJ2cGZ3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczMzE3NjkzNSwiZXhwIjoyMDQ4NzUyOTM1fQ.X5-9wGiDZOuSH_8w4V8pCYKPcn0QKQXKQjL3ypXb3Gg
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
 
 # Admin Authentication (SEPARATE from booking verification)
 ADMIN_JWT_SECRET=${ADMIN_JWT_SECRET}

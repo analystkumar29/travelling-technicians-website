@@ -1,8 +1,8 @@
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 
-const supabaseUrl = 'https://lzgrpcgfcevmnrxbvpfw.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6Z3JwY2dmY2V2bW5yeGJ2cGZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU1Nzk0MzAsImV4cCI6MjA1MTE1NTQzMH0.OVcuvt5eNgYJ2rZvXn-F1S7aGlS9nDqGRqaEqZr1K_U';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://lzgrpcgfcevmnrxbvpfw.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 console.log(`
 📋 MANUAL DATABASE UPDATE INSTRUCTIONS
