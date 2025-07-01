@@ -13,6 +13,8 @@ if (!VERIFICATION_SECRET) {
   throw new Error('BOOKING_VERIFICATION_SECRET environment variable is required');
 }
 
+const SECRET: string = VERIFICATION_SECRET;
+
 // Function to verify original booking verification token
 function verifyBookingToken(token: string, email: string, reference: string): boolean {
   try {
@@ -20,7 +22,7 @@ function verifyBookingToken(token: string, email: string, reference: string): bo
     const today = new Date().toISOString().split('T')[0];
     const data = `${email.toLowerCase()}:${reference}:${today}`;
     const expectedToken = crypto
-      .createHmac('sha256', VERIFICATION_SECRET)
+      .createHmac('sha256', SECRET)
       .update(data)
       .digest('hex');
     
