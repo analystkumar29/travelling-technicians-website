@@ -100,8 +100,19 @@ export default async function handler(
       email: email.substring(0, 3) + '***' // Log partial email for privacy
     });
     
+    // Log environment check
+    verifyLogger.info('Environment check', {
+      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      hasVerificationSecret: !!VERIFICATION_SECRET,
+      nodeEnv: process.env.NODE_ENV
+    });
+    
     // Get booking from database
+    verifyLogger.info('Getting Supabase service client');
     const supabase = getServiceSupabase();
+    
+    verifyLogger.info('Executing database query for verification', { reference });
     const { data: booking, error: findError } = await supabase
       .from('bookings')
       .select('*')
@@ -111,7 +122,10 @@ export default async function handler(
     if (findError || !booking) {
       verifyLogger.warn('Booking not found', {
         reference,
-        error: findError?.message
+        error: findError?.message,
+        code: findError?.code,
+        details: findError?.details,
+        hint: findError?.hint
       });
       
       return res.status(400).json({
