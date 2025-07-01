@@ -148,6 +148,7 @@ export default async function handler(
       ],
       templateId: process.env.SENDGRID_RESCHEDULE_TEMPLATE_ID || 'd-c9dbac568573432bb15f79c92c4fd4b5', // Use the same template ID for now
       dynamicTemplateData: {
+        subject: 'Booking Rescheduled - The Travelling Technicians',
         isRescheduled: true,
         name,
         bookingReference,
