@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
 import { formatDate } from '@/utils/formatters';
@@ -38,47 +38,7 @@ const RescheduleBooking: React.FC = () => {
 
   console.log('[RescheduleBooking] Component loaded with params:', { reference, token });
 
-  // Auto-load booking if we have reference and token
-  useEffect(() => {
-    if (reference && token && typeof reference === 'string' && typeof token === 'string') {
-      console.log('[RescheduleBooking] Auto-loading from URL params');
-      loadBookingFromParams(reference, token);
-    }
-  }, [reference, token]);
-
-  const loadBookingFromParams = async (ref: string, tok: string) => {
-    try {
-      setStatus('loading');
-      console.log('[RescheduleBooking] Loading booking:', ref);
-
-      // Fetch the specific booking first
-      const bookingResponse = await fetch(`/api/bookings/${ref}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      const bookingResult = await bookingResponse.json();
-      console.log('[RescheduleBooking] Booking response:', bookingResult);
-
-      if (!bookingResponse.ok || !bookingResult.success) {
-        throw new Error(bookingResult.message || 'Failed to load booking');
-      }
-
-      const booking = bookingResult.booking;
-      setEmail(booking.customer_email);
-      setSelectedBooking(booking);
-      
-      // Now fetch all bookings for this email
-      await fetchAllBookingsForEmail(booking.customer_email, tok, ref);
-      
-    } catch (error) {
-      console.error('[RescheduleBooking] Error loading booking:', error);
-      setStatus('error');
-      setMessage('Unable to load booking. Please check your link or try again.');
-    }
-  };
-
-  const fetchAllBookingsForEmail = async (customerEmail: string, verificationToken: string, verificationReference: string) => {
+  const fetchAllBookingsForEmail = useCallback(async (customerEmail: string, verificationToken: string, verificationReference: string) => {
     try {
       console.log('[RescheduleBooking] Fetching all bookings for email');
       
@@ -108,7 +68,49 @@ const RescheduleBooking: React.FC = () => {
       setStatus('error');
       setMessage('Unable to load your bookings. Please try again.');
     }
-  };
+  }, []);
+
+  const loadBookingFromParams = useCallback(async (ref: string, tok: string) => {
+    try {
+      setStatus('loading');
+      console.log('[RescheduleBooking] Loading booking:', ref);
+
+      // Fetch the specific booking first
+      const bookingResponse = await fetch(`/api/bookings/${ref}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const bookingResult = await bookingResponse.json();
+      console.log('[RescheduleBooking] Booking response:', bookingResult);
+
+      if (!bookingResponse.ok || !bookingResult.success) {
+        throw new Error(bookingResult.message || 'Failed to load booking');
+      }
+
+      const booking = bookingResult.booking;
+      setEmail(booking.customer_email);
+      setSelectedBooking(booking);
+      
+      // Now fetch all bookings for this email
+      await fetchAllBookingsForEmail(booking.customer_email, tok, ref);
+      
+    } catch (error) {
+      console.error('[RescheduleBooking] Error loading booking:', error);
+      setStatus('error');
+      setMessage('Unable to load booking. Please check your link or try again.');
+    }
+  }, [fetchAllBookingsForEmail]);
+
+  // Auto-load booking if we have reference and token
+  useEffect(() => {
+    if (reference && token && typeof reference === 'string' && typeof token === 'string') {
+      console.log('[RescheduleBooking] Auto-loading from URL params');
+      loadBookingFromParams(reference, token);
+    }
+  }, [reference, token, loadBookingFromParams]);
+
+
 
   const handleEmailSubmit = async () => {
     if (!email.trim()) {

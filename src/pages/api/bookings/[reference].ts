@@ -81,10 +81,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       customerName: booking.customer_name
     });
     
-    // Normalize the booking data for the frontend
-    const normalizedBooking = normalizeBookingData(booking);
-    
-    return res.status(200).json(normalizedBooking);
+    // Return raw booking data for consistency with other endpoints
+    return res.status(200).json({
+      success: true,
+      booking: booking
+    });
   } catch (error) {
     apiLogger.error('Unexpected error', {
       error: error instanceof Error ? error.message : 'Unknown error'
