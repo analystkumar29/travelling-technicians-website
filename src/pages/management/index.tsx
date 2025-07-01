@@ -636,7 +636,7 @@ export default withAuth(function AdminManagement() {
               <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
             </div>
             <div className="px-6 py-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <Link
                   href="/management/bookings"
                   className="flex items-center justify-center px-4 py-6 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
@@ -658,11 +658,41 @@ export default withAuth(function AdminManagement() {
                 </Link>
 
                 <Link
+                  href="/management/pricing"
+                  className="flex items-center justify-center px-4 py-6 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors"
+                >
+                  <div className="text-center">
+                    <FaDollarSign className="mx-auto h-8 w-8 text-orange-600 mb-2" />
+                    <p className="text-sm font-medium text-orange-900">Pricing Management</p>
+                  </div>
+                </Link>
+
+                <Link
+                  href="/management/devices"
+                  className="flex items-center justify-center px-4 py-6 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors"
+                >
+                  <div className="text-center">
+                    <FaPhone className="mx-auto h-8 w-8 text-indigo-600 mb-2" />
+                    <p className="text-sm font-medium text-indigo-900">Device Management</p>
+                  </div>
+                </Link>
+
+                <Link
+                  href="/management/technicians"
+                  className="flex items-center justify-center px-4 py-6 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100 transition-colors"
+                >
+                  <div className="text-center">
+                    <FaTools className="mx-auto h-8 w-8 text-teal-600 mb-2" />
+                    <p className="text-sm font-medium text-teal-900">Technicians</p>
+                  </div>
+                </Link>
+
+                <Link
                   href="/book-online"
                   className="flex items-center justify-center px-4 py-6 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
                 >
                   <div className="text-center">
-                    <FaTools className="mx-auto h-8 w-8 text-purple-600 mb-2" />
+                    <FaCheckCircle className="mx-auto h-8 w-8 text-purple-600 mb-2" />
                     <p className="text-sm font-medium text-purple-900">New Booking</p>
                   </div>
                 </Link>
