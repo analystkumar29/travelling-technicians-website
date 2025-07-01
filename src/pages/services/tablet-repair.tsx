@@ -13,8 +13,7 @@ const tabletServices = [
     doorstep: true,
     limited: false,
     price: 'From $149',
-    popular: true,
-    image: '/images/services/tablet-service-1.svg'
+    popular: true
   },
   {
     id: 2,
@@ -24,8 +23,7 @@ const tabletServices = [
     doorstep: true,
     limited: false,
     price: 'From $99',
-    popular: true,
-    image: '/images/services/tablet-service-2.svg'
+    popular: true
   },
   {
     id: 3,
@@ -35,8 +33,7 @@ const tabletServices = [
     doorstep: true,
     limited: false,
     price: 'From $89',
-    popular: false,
-    image: '/images/services/tablet-service-3.svg'
+    popular: false
   },
   {
     id: 4,
@@ -46,8 +43,7 @@ const tabletServices = [
     doorstep: true,
     limited: false,
     price: 'From $109',
-    popular: false,
-    image: '/images/services/tablet-service-4.svg'
+    popular: false
   },
   {
     id: 5,
@@ -57,8 +53,7 @@ const tabletServices = [
     doorstep: true,
     limited: false,
     price: 'From $79',
-    popular: false,
-    image: '/images/services/tablet-service-5.svg'
+    popular: false
   },
   {
     id: 6,
@@ -68,8 +63,7 @@ const tabletServices = [
     doorstep: true,
     limited: false,
     price: 'From $89',
-    popular: false,
-    image: '/images/services/tablet-service-6.svg'
+    popular: false
   },
   {
     id: 7,
@@ -79,8 +73,7 @@ const tabletServices = [
     doorstep: true,
     limited: false,
     price: 'From $69',
-    popular: false,
-    image: '/images/services/tablet-service-7.svg'
+    popular: false
   },
   {
     id: 8,
@@ -90,8 +83,7 @@ const tabletServices = [
     doorstep: true,
     limited: false,
     price: 'From $59',
-    popular: false,
-    image: '/images/services/tablet-service-8.svg'
+    popular: false
   }
 ];
 
@@ -216,28 +208,36 @@ export default function TabletRepairPage() {
           {/* All Services */}
           <div className="mb-16">
             <h3 className="text-2xl font-bold mb-8 text-center">All Tablet Repair Services</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {tabletServices.map((service) => (
-                <div key={service.id} className="card hover:shadow-custom-lg transition-shadow">
-                  <div className="text-center">
-                    <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 mx-auto mb-4">
-                      {service.icon}
+                <div key={service.id} className="card hover:shadow-custom-lg transition-shadow border border-gray-100">
+                  <div className="flex flex-col md:flex-row md:items-center">
+                    <div className="flex-shrink-0 mb-4 md:mb-0 md:mr-6">
+                      <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center text-primary-600">
+                        {service.icon}
+                      </div>
                     </div>
-                    <div className="flex items-center justify-center mb-2">
-                      <h3 className="text-lg font-bold mr-2">{service.name}</h3>
-                      {service.doorstep && !service.limited && (
-                        <FaCheckCircle className="text-green-500 text-sm" />
-                      )}
-                      {service.limited && (
-                        <FaCheckCircle className="text-yellow-500 text-sm" />
-                      )}
-                    </div>
-                    <p className="text-gray-600 mb-4 text-sm">{service.description}</p>
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-primary-600">{service.price}</span>
-                      <Link href="/book-online?deviceType=tablet" className="btn-primary text-sm">
-                          Book
+                    <div>
+                      <div className="flex items-center mb-2">
+                        <h3 className="text-xl font-bold mr-3">{service.name}</h3>
+                        {service.doorstep && !service.limited && (
+                          <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                            Doorstep Service
+                          </span>
+                        )}
+                        {service.limited && (
+                          <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
+                            Limited Doorstep
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-gray-600 mb-3">{service.description}</p>
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-lg text-primary-600">{service.price}</span>
+                        <Link href="/book-online?deviceType=tablet" className="btn-primary text-sm py-2">
+                          Book This Service
                         </Link>
+                      </div>
                     </div>
                   </div>
                 </div>

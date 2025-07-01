@@ -12,8 +12,7 @@ const mobileServices = [
     icon: <FaMobileAlt className="h-10 w-10" />,
     doorstep: true,
     price: 'From $129',
-    popular: true,
-    image: '/images/services/mobile-service-1.svg'
+    popular: true
   },
   {
     id: 2,
@@ -22,8 +21,7 @@ const mobileServices = [
     icon: <FaBatteryFull className="h-10 w-10" />,
     doorstep: true,
     price: 'From $79',
-    popular: true,
-    image: '/images/services/mobile-service-2.svg'
+    popular: true
   },
   {
     id: 3,
@@ -32,8 +30,7 @@ const mobileServices = [
     icon: <FaBolt className="h-10 w-10" />,
     doorstep: true,
     price: 'From $89',
-    popular: false,
-    image: '/images/services/mobile-service-3.svg'
+    popular: false
   },
   {
     id: 4,
@@ -42,8 +39,7 @@ const mobileServices = [
     icon: <FaMicrophone className="h-10 w-10" />,
     doorstep: true,
     price: 'From $79',
-    popular: false,
-    image: '/images/services/mobile-service-4.svg'
+    popular: false
   },
   {
     id: 5,
@@ -52,8 +48,7 @@ const mobileServices = [
     icon: <FaCamera className="h-10 w-10" />,
     doorstep: true,
     price: 'From $89',
-    popular: false,
-    image: '/images/services/mobile-service-5.svg'
+    popular: false
   },
   {
     id: 6,
@@ -63,8 +58,7 @@ const mobileServices = [
     doorstep: true,
     limited: true,
     price: 'From $49',
-    popular: false,
-    image: '/images/services/mobile-service-6.svg'
+    popular: false
   },
   {
     id: 7,
@@ -74,8 +68,7 @@ const mobileServices = [
     doorstep: true,
     limited: true,
     price: 'From $99',
-    popular: false,
-    image: '/images/services/mobile-service-7.svg'
+    popular: false
   },
   {
     id: 8,
@@ -84,8 +77,7 @@ const mobileServices = [
     icon: <FaSdCard className="h-10 w-10" />,
     doorstep: true,
     price: 'From $89',
-    popular: false,
-    image: '/images/services/mobile-service-8.svg'
+    popular: false
   }
 ];
 
@@ -211,39 +203,35 @@ export default function MobileRepairPage() {
 
           {/* All Services */}
           <h3 className="text-2xl font-bold mb-8 text-center">All Mobile Phone Services</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {mobileServices.map((service) => (
-              <div key={service.id} className="card hover:shadow-custom-lg transition-shadow h-full">
-                <div className="relative h-48 w-full mb-4 rounded-md overflow-hidden">
-                  <Image 
-                    src={service.image} 
-                    alt={service.name} 
-                    layout="fill"
-                    className="object-contain"
-                    priority
-                  />
-                </div>
-                <div className="p-4">
-                  <div className="flex items-center mb-2">
-                    <h3 className="text-xl font-bold mr-3">{service.name}</h3>
-                    {service.doorstep && !service.limited && (
-                      <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                        Doorstep
-                      </span>
-                    )}
-                    {service.limited && (
-                      <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
-                        Limited
-                      </span>
-                    )}
+              <div key={service.id} className="card hover:shadow-custom-lg transition-shadow border border-gray-100">
+                <div className="flex flex-col md:flex-row md:items-center">
+                  <div className="flex-shrink-0 mb-4 md:mb-0 md:mr-6">
+                    <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center text-primary-600">
+                      {service.icon}
+                    </div>
                   </div>
-                  <p className="text-gray-600 mb-4">{service.description}</p>
-                  <div className="mt-auto flex justify-between items-center">
-                    <span className="font-bold text-lg text-primary-600">{service.price}</span>
-                    <div className="flex justify-center mt-6">
+                  <div>
+                    <div className="flex items-center mb-2">
+                      <h3 className="text-xl font-bold mr-3">{service.name}</h3>
+                      {service.doorstep && !service.limited && (
+                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                          Doorstep Service
+                        </span>
+                      )}
+                      {service.limited && (
+                        <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
+                          Limited Doorstep
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-gray-600 mb-3">{service.description}</p>
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-lg text-primary-600">{service.price}</span>
                       <Link href="/book-online?deviceType=mobile" className="btn-primary text-sm py-2">
-                          Book Now
-                        </Link>
+                        Book This Service
+                      </Link>
                     </div>
                   </div>
                 </div>

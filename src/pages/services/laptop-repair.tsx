@@ -13,8 +13,7 @@ const laptopServices = [
     doorstep: true,
     limited: false,
     price: 'From $149',
-    popular: true,
-    image: '/images/services/laptop-service-1.svg'
+    popular: true
   },
   {
     id: 2,
@@ -24,8 +23,7 @@ const laptopServices = [
     doorstep: true,
     limited: false,
     price: 'From $99',
-    popular: true,
-    image: '/images/services/laptop-service-2.svg'
+    popular: true
   },
   {
     id: 3,
@@ -35,8 +33,7 @@ const laptopServices = [
     doorstep: true,
     limited: false,
     price: 'From $129',
-    popular: false,
-    image: '/images/services/laptop-service-3.svg'
+    popular: false
   },
   {
     id: 4,
@@ -46,8 +43,7 @@ const laptopServices = [
     doorstep: true,
     limited: false,
     price: 'From $99',
-    popular: false,
-    image: '/images/services/laptop-service-4.svg'
+    popular: false
   },
   {
     id: 5,
@@ -57,8 +53,7 @@ const laptopServices = [
     doorstep: true,
     limited: false,
     price: 'From $79',
-    popular: true,
-    image: '/images/services/laptop-service-5.svg'
+    popular: true
   },
   {
     id: 6,
@@ -68,8 +63,7 @@ const laptopServices = [
     doorstep: true,
     limited: false,
     price: 'From $119',
-    popular: false,
-    image: '/images/services/laptop-service-6.svg'
+    popular: false
   },
   {
     id: 7,
@@ -79,8 +73,7 @@ const laptopServices = [
     doorstep: true,
     limited: false,
     price: 'From $89',
-    popular: false,
-    image: '/images/services/laptop-service-7.svg'
+    popular: false
   },
   {
     id: 8,
@@ -90,8 +83,7 @@ const laptopServices = [
     doorstep: true,
     limited: false,
     price: 'From $99',
-    popular: false,
-    image: '/images/services/laptop-service-8.svg'
+    popular: false
   },
   {
     id: 9,
@@ -101,8 +93,7 @@ const laptopServices = [
     doorstep: true,
     limited: false,
     price: 'From $89',
-    popular: false,
-    image: '/images/services/laptop-service-9.svg'
+    popular: false
   },
   {
     id: 10,
@@ -112,8 +103,7 @@ const laptopServices = [
     doorstep: true,
     limited: false,
     price: 'From $129',
-    popular: false,
-    image: '/images/services/laptop-service-10.svg'
+    popular: false
   }
 ];
 
@@ -239,39 +229,35 @@ export default function LaptopRepairPage() {
 
           {/* All Services */}
           <h3 className="text-2xl font-bold mb-8 text-center">All Laptop Services</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {laptopServices.map((service) => (
-              <div key={service.id} className="card hover:shadow-custom-lg transition-shadow h-full">
-                <div className="relative h-48 w-full mb-4 rounded-md overflow-hidden">
-                  <Image 
-                    src={service.image} 
-                    alt={service.name} 
-                    layout="fill"
-                    className="object-contain"
-                    priority
-                  />
-                </div>
-                <div className="p-4">
-                  <div className="flex items-center mb-2">
-                    <h3 className="text-xl font-bold mr-3">{service.name}</h3>
-                    {service.doorstep && !service.limited && (
-                      <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                        Doorstep
-                      </span>
-                    )}
-                    {service.limited && (
-                      <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
-                        Limited
-                      </span>
-                    )}
+              <div key={service.id} className="card hover:shadow-custom-lg transition-shadow border border-gray-100">
+                <div className="flex flex-col md:flex-row md:items-center">
+                  <div className="flex-shrink-0 mb-4 md:mb-0 md:mr-6">
+                    <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center text-primary-600">
+                      {service.icon}
+                    </div>
                   </div>
-                  <p className="text-gray-600 mb-4">{service.description}</p>
-                  <div className="mt-auto flex justify-between items-center">
-                    <span className="font-bold text-lg text-primary-600">{service.price}</span>
-                    <div className="flex justify-center mt-6">
-                                              <Link href="/book-online?deviceType=laptop" className="btn-primary text-sm py-2">
-                            Book Now
-                          </Link>
+                  <div>
+                    <div className="flex items-center mb-2">
+                      <h3 className="text-xl font-bold mr-3">{service.name}</h3>
+                      {service.doorstep && !service.limited && (
+                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                          Doorstep Service
+                        </span>
+                      )}
+                      {service.limited && (
+                        <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
+                          Limited Doorstep
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-gray-600 mb-3">{service.description}</p>
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-lg text-primary-600">{service.price}</span>
+                      <Link href="/book-online?deviceType=laptop" className="btn-primary text-sm py-2">
+                        Book This Service
+                      </Link>
                     </div>
                   </div>
                 </div>
