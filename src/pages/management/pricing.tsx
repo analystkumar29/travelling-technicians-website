@@ -1433,14 +1433,128 @@ export default function PricingAdmin() {
               </form>
             </div>
 
+            {/* Pricing Filters for Device-Specific Pricing */}
+            <div className="bg-white shadow rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">Filter Pricing</h2>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Device Type</label>
+                  <select
+                    value={pricingFilters.deviceType}
+                    onChange={(e) => handleFilterChange({...pricingFilters, deviceType: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                    <option value="all">All Device Types</option>
+                    <option value="mobile">Mobile</option>
+                    <option value="laptop">Laptop</option>
+                    <option value="tablet">Tablet</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+                  <select
+                    value={pricingFilters.brand}
+                    onChange={(e) => handleFilterChange({...pricingFilters, brand: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                    <option value="all">All Brands</option>
+                    {getUniqueFilterValues().brands.map((brand) => (
+                      <option key={brand} value={brand}>
+                        {brand}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
+                  <select
+                    value={pricingFilters.model}
+                    onChange={(e) => handleFilterChange({...pricingFilters, model: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                    <option value="all">All Models</option>
+                    {getUniqueFilterValues().models.map((model) => (
+                      <option key={model} value={model}>
+                        {model}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
+                  <select
+                    value={pricingFilters.service}
+                    onChange={(e) => handleFilterChange({...pricingFilters, service: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                    <option value="all">All Services</option>
+                    {getUniqueFilterValues().services.map((service) => (
+                      <option key={service} value={service}>
+                        {service}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tier</label>
+                  <select
+                    value={pricingFilters.tier}
+                    onChange={(e) => handleFilterChange({...pricingFilters, tier: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                    <option value="all">All Tiers</option>
+                    {getUniqueFilterValues().tiers.map((tier) => (
+                      <option key={tier} value={tier}>
+                        {tier}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              {/* Clear Filters Button */}
+              <div className="mt-4">
+                <button
+                  onClick={() => handleFilterChange({
+                    deviceType: 'all',
+                    brand: 'all',
+                    model: 'all',
+                    service: 'all',
+                    tier: 'all'
+                  })}
+                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                >
+                  Clear All Filters
+                </button>
+              </div>
+            </div>
+
             {/* Device-Specific Pricing List */}
             <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-xl font-semibold mb-4">Device-Specific Pricing ({dynamicPricing.length} entries)</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">
+                  Device-Specific Pricing ({getFilteredPricing().length} of {dynamicPricing.length} entries)
+                </h2>
+                {getFilteredPricing().length > itemsPerPage && (
+                  <div className="text-sm text-gray-600">
+                    Page {currentPage} of {getTotalPages()} (showing {Math.min(itemsPerPage, getFilteredPricing().length - (currentPage - 1) * itemsPerPage)} entries)
+                  </div>
+                )}
+              </div>
               
-              {dynamicPricing.length === 0 ? (
+              {getFilteredPricing().length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  <p>No device-specific pricing set yet.</p>
-                  <p className="text-sm mt-2">Use the form above to set specific prices for device models like iPhone 16.</p>
+                  {dynamicPricing.length === 0 ? (
+                    <>
+                      <p>No device-specific pricing set yet.</p>
+                      <p className="text-sm mt-2">Use the form above to set specific prices for device models like iPhone 16.</p>
+                    </>
+                  ) : (
+                    <>
+                      <p>No pricing records match the current filters.</p>
+                      <p className="text-sm mt-2">Try adjusting your filters or click "Clear All Filters".</p>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -1458,7 +1572,7 @@ export default function PricingAdmin() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {dynamicPricing.map((pricing) => (
+                      {getPaginatedPricing().map((pricing) => (
                                                  <tr key={pricing.id}>
                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                              <div>
@@ -1510,6 +1624,95 @@ export default function PricingAdmin() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+              
+              {/* Pagination Controls */}
+              {getFilteredPricing().length > itemsPerPage && (
+                <div className="mt-6 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+                  <div className="flex flex-1 justify-between sm:hidden">
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(Math.min(getTotalPages(), currentPage + 1))}
+                      disabled={currentPage === getTotalPages()}
+                      className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                  <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm text-gray-700">
+                        Showing{' '}
+                        <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span>
+                        {' '}to{' '}
+                        <span className="font-medium">
+                          {Math.min(currentPage * itemsPerPage, getFilteredPricing().length)}
+                        </span>
+                        {' '}of{' '}
+                        <span className="font-medium">{getFilteredPricing().length}</span>
+                        {' '}results
+                      </p>
+                    </div>
+                    <div>
+                      <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                        <button
+                          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                          disabled={currentPage === 1}
+                          className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <span className="sr-only">Previous</span>
+                          ←
+                        </button>
+                        
+                        {Array.from({ length: getTotalPages() }, (_, i) => i + 1)
+                          .filter(page => 
+                            page === 1 || 
+                            page === getTotalPages() || 
+                            Math.abs(page - currentPage) <= 2
+                          )
+                          .map((page, index, array) => {
+                            const prevPage = array[index - 1];
+                            const showGap = prevPage && page - prevPage > 1;
+                            
+                            return (
+                              <React.Fragment key={page}>
+                                {showGap && (
+                                  <span className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300">
+                                    ...
+                                  </span>
+                                )}
+                                <button
+                                  onClick={() => setCurrentPage(page)}
+                                  className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                                    currentPage === page
+                                      ? 'z-10 bg-primary-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600'
+                                      : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+                                  }`}
+                                >
+                                  {page}
+                                </button>
+                              </React.Fragment>
+                            );
+                          })}
+                        
+                        <button
+                          onClick={() => setCurrentPage(Math.min(getTotalPages(), currentPage + 1))}
+                          disabled={currentPage === getTotalPages()}
+                          className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <span className="sr-only">Next</span>
+                          →
+                        </button>
+                      </nav>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
