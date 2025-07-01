@@ -121,10 +121,10 @@ export default function MobileRepairPage() {
             <div className="relative">
               <div className="relative h-[400px] w-full rounded-lg overflow-hidden shadow-custom-lg">
                 <Image
-                  src="/images/services/mobile-hero.svg"
+                  src="/images/services/mobileRepair.png"
                   alt="Mobile phone repair technician"
-                  layout="fill"
-                  className="object-contain"
+                  fill
+                  className="object-cover"
                   priority
                 />
               </div>

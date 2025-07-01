@@ -147,10 +147,10 @@ export default function LaptopRepairPage() {
             <div className="relative">
               <div className="relative h-[400px] w-full rounded-lg overflow-hidden shadow-custom-lg">
                 <Image
-                  src="/images/services/laptop-hero.svg"
+                  src="/images/services/laptopRepair.png"
                   alt="Laptop repair technician"
-                  layout="fill"
-                  className="object-contain"
+                  fill
+                  className="object-cover"
                   priority
                 />
               </div>

@@ -127,10 +127,10 @@ export default function TabletRepairPage() {
             <div className="relative">
               <div className="relative h-[400px] w-full rounded-lg overflow-hidden shadow-custom-lg">
                 <Image
-                  src="/images/services/tablet-hero.svg"
+                  src="/images/services/tabletRepair.png"
                   alt="Tablet repair technician"
-                  layout="fill"
-                  className="object-contain"
+                  fill
+                  className="object-cover"
                   priority
                 />
               </div>
