@@ -32,13 +32,13 @@ const blogPosts = [
   {
     id: 'water-damage-rescue',
     slug: 'water-damage-first-aid-for-devices',
-    title: 'Common iPhone Issues and Solutions',
-    excerpt: 'A guide to troubleshooting the most common iPhone problems.',
+    title: 'Water Damage First Aid for Your Devices',
+    excerpt: 'Quick steps to take when your device gets wet - emergency response that can save your phone or laptop.',
     date: '2024-03-05',
     author: 'Michael Tran',
-    category: 'Phone Repair',
+    category: 'Emergency Repair',
     readTime: '6 min read',
-    image: '/images/blog/iphone-repair.jpg',
+    image: '/images/blog/water-damage-repair.jpg',
     featured: false
   },
   {
@@ -56,13 +56,13 @@ const blogPosts = [
   {
     id: 'screen-protection',
     slug: 'ultimate-guide-to-screen-protection',
-    title: 'Laptop Maintenance Guide',
-    excerpt: 'Essential maintenance tips to keep your laptop running smoothly.',
+    title: 'The Ultimate Guide to Screen Protection',
+    excerpt: 'Everything you need to know about protecting your device screens from scratches, cracks, and damage.',
     date: '2024-02-25',
     author: 'Chris Lee',
-    category: 'Laptop Repair',
+    category: 'Mobile Accessories',
     readTime: '6 min read',
-    image: '/images/blog/laptop-maintenance.jpg',
+    image: '/images/blog/screen-protection.jpg',
     featured: false
   },
   {

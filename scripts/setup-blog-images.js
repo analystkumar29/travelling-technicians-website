@@ -34,6 +34,16 @@ const blogImages = [
     filename: 'data-recovery.jpg',
     url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&h=800&fit=crop&crop=center',
     alt: 'Professional data recovery service setup'
+  },
+  {
+    filename: 'screen-protection.jpg',
+    url: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=1200&h=800&fit=crop&crop=center',
+    alt: 'Screen protectors and mobile device protection accessories'
+  },
+  {
+    filename: 'water-damage-repair.jpg',
+    url: 'https://images.unsplash.com/photo-1580910051074-3eb694886505?w=1200&h=800&fit=crop&crop=center',
+    alt: 'Water damaged device emergency repair and rescue'
   }
 ];
 
