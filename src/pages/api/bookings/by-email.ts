@@ -116,6 +116,8 @@ export default async function handler(
       service_type: booking.service_type,
       booking_date: booking.booking_date,
       booking_time: booking.booking_time,
+      customer_name: booking.customer_name,
+      customer_email: booking.customer_email,
       address: booking.address,
       status: booking.status,
       created_at: booking.created_at,
