@@ -126,7 +126,7 @@ export default function MobileRepairNearMePage() {
                 { city: 'New Westminster', distance: '10-25 km', time: '45-60 mins' },
                 { city: 'Coquitlam', distance: '15-30 km', time: '45-75 mins' },
                 { city: 'West Vancouver', distance: '10-25 km', time: '45-60 mins' },
-                { city: 'Surrey', distance: '20-40 km', time: '60-90 mins' }
+                { city: 'Chilliwack', distance: '30-50 km', time: '75-120 mins' }
               ].map((location) => (
                 <div key={location.city} className="bg-gray-50 rounded-lg p-6 text-center hover:shadow-md transition-shadow">
                   <FaMapMarkerAlt className="text-primary-600 text-2xl mx-auto mb-3" />
