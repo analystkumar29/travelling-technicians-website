@@ -77,35 +77,15 @@ export default async function handler(
       notes,
     }: RescheduleEmailData = req.body;
 
-    // Log all received data for debugging
-    emailLogger.info('Reschedule email validation check', {
-      to: to ? `✓ ${to.substring(0,3)}***` : '❌ MISSING',
-      name: name ? `✓ ${name}` : '❌ MISSING',
-      bookingReference: bookingReference ? `✓ ${bookingReference}` : '❌ MISSING',
-      bookingDate: bookingDate ? `✓ ${bookingDate}` : '❌ MISSING',
-      bookingTime: bookingTime ? `✓ ${bookingTime}` : '❌ MISSING',
-      oldDate: oldDate ? `✓ ${oldDate}` : '❌ MISSING',
-      oldTime: oldTime ? `✓ ${oldTime}` : '❌ MISSING'
-    });
-
     // Validate essential data
     if (!to || !name || !bookingReference || !bookingDate || !bookingTime) {
-      const missingFields = [];
-      if (!to) missingFields.push('email');
-      if (!name) missingFields.push('name'); 
-      if (!bookingReference) missingFields.push('reference');
-      if (!bookingDate) missingFields.push('date');
-      if (!bookingTime) missingFields.push('time');
-      
       emailLogger.warn('Missing required data for reschedule confirmation email', {
-        missingFields,
-        receivedData: { to: !!to, name: !!name, bookingReference: !!bookingReference, bookingDate: !!bookingDate, bookingTime: !!bookingTime }
+        missing: !to ? 'email' : !name ? 'name' : !bookingReference ? 'reference' : !bookingDate ? 'date' : 'time'
       });
       
       return res.status(400).json({
         success: false,
-        message: `Missing required booking information: ${missingFields.join(', ')}`,
-        missingFields
+        message: 'Missing required booking information'
       });
     }
 
