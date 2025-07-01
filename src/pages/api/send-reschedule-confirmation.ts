@@ -24,8 +24,9 @@ const SECRET: string = VERIFICATION_SECRET;
 
 // Generate verification token for secure links
 function generateVerificationToken(email: string, reference: string): string {
-  const timestamp = Math.floor(Date.now() / 1000).toString();
-  const data = `${email}:${reference}:${timestamp}`;
+  // Use date-based token to match verification logic
+  const today = new Date().toISOString().split('T')[0];
+  const data = `${email.toLowerCase()}:${reference}:${today}`;
   
   return crypto
     .createHmac('sha256', SECRET)
