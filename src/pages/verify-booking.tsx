@@ -22,7 +22,7 @@ export default function VerifyBooking() {
     const fetchBookingInfo = async () => {
       try {
         // Fetch booking information from the database using the reference
-        const response = await fetch(`/api/bookings/findByReference?reference=${reference}`);
+        const response = await fetch(`/api/bookings/reference/${reference}`);
         const data = await response.json();
         
         if (data.success && data.booking) {

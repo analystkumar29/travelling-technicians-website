@@ -37,8 +37,9 @@ interface EmailData {
 
 // Generate a secure token for email verification
 function generateVerificationToken(email: string, bookingReference: string): string {
-  const timestamp = Math.floor(Date.now() / 1000).toString();
-  const data = `${email.toLowerCase()}:${bookingReference}:${timestamp}`;
+  // Use date-based token to match verification logic
+  const today = new Date().toISOString().split('T')[0];
+  const data = `${email.toLowerCase()}:${bookingReference}:${today}`;
   
   return crypto
     .createHmac('sha256', SECRET)
@@ -143,10 +144,10 @@ export default async function handler(
     // Create verification token
     const verificationToken = generateVerificationToken(to, bookingReference);
     
-    // Construct verification URL
+    // Construct verification URL with both token and reference
     const baseUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || 'http://localhost:3000';
-    const verificationUrl = `${baseUrl}/verify-booking?token=${verificationToken}`;
-    const rescheduleUrl = `${baseUrl}/reschedule-booking?reference=${bookingReference}&token=${verificationToken}`;
+    const verificationUrl = `${baseUrl}/verify-booking?token=${verificationToken}&reference=${bookingReference}`;
+    const rescheduleUrl = `${baseUrl}/reschedule-booking?token=${verificationToken}&reference=${bookingReference}`;
 
     // 🔍 DETAILED SENDGRID CONFIGURATION CHECK
     const sendGridConfigured = !!process.env.SENDGRID_API_KEY;
@@ -224,6 +225,8 @@ export default async function handler(
         name,
         bookingReference,
         deviceType: formattedDeviceInfo,
+        brand,
+        model,
         service,
         bookingDate,
         bookingTime,
