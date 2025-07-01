@@ -195,6 +195,13 @@ const RescheduleBooking: React.FC = () => {
         }
       };
 
+      console.log('[RescheduleBooking] Pre-formatting values:', {
+        selectedDate,
+        selectedTime,
+        originalDate: selectedBooking.booking_date,
+        originalTime: selectedBooking.booking_time
+      });
+
       const emailData = {
         to: selectedBooking.customer_email,
         name: selectedBooking.customer_name,
@@ -211,6 +218,15 @@ const RescheduleBooking: React.FC = () => {
       };
 
       console.log('[RescheduleBooking] Email data being sent:', emailData);
+      console.log('[RescheduleBooking] Detailed email data validation:', {
+        to: emailData.to ? `✓ ${emailData.to.substring(0,3)}***` : '❌ MISSING',
+        name: emailData.name ? `✓ ${emailData.name}` : '❌ MISSING',  
+        bookingReference: emailData.bookingReference ? `✓ ${emailData.bookingReference}` : '❌ MISSING',
+        bookingDate: emailData.bookingDate ? `✓ ${emailData.bookingDate}` : '❌ MISSING',
+        bookingTime: emailData.bookingTime ? `✓ ${emailData.bookingTime}` : '❌ MISSING',
+        oldDate: emailData.oldDate ? `✓ ${emailData.oldDate}` : '❌ MISSING',
+        oldTime: emailData.oldTime ? `✓ ${emailData.oldTime}` : '❌ MISSING'
+      });
 
       const response = await fetch('/api/send-reschedule-confirmation', {
         method: 'POST',
