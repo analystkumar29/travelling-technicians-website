@@ -3,24 +3,35 @@ import { NextApiRequest, NextApiResponse } from 'next';
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Homepage -->
   <url>
     <loc>https://www.travelling-technicians.ca/</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
+  
+  <!-- High-Priority SEO Landing Pages -->
   <url>
-    <loc>https://www.travelling-technicians.ca/about</loc>
+    <loc>https://www.travelling-technicians.ca/mobile-screen-repair</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/contact</loc>
+    <loc>https://www.travelling-technicians.ca/mobile-repair-near-me</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
   </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/laptop-screen-repair</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  
+  <!-- Core Service Pages -->
   <url>
     <loc>https://www.travelling-technicians.ca/book-online</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
@@ -51,6 +62,34 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
+  
+  <!-- Service Area Redirect Pages -->
+  <url>
+    <loc>https://www.travelling-technicians.ca/service-areas/vancouver</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/service-areas/richmond</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/service-areas/new-westminster</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/service-areas/north-vancouver</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  
+  <!-- City Repair Pages -->
   <url>
     <loc>https://www.travelling-technicians.ca/repair/vancouver</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
@@ -99,6 +138,20 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
+  
+  <!-- Business Information Pages -->
+  <url>
+    <loc>https://www.travelling-technicians.ca/about</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/contact</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
   <url>
     <loc>https://www.travelling-technicians.ca/service-areas</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
@@ -117,6 +170,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
+  
+  <!-- Blog Section -->
   <url>
     <loc>https://www.travelling-technicians.ca/blog</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
@@ -147,6 +202,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
+  
+  <!-- Legal Pages -->
   <url>
     <loc>https://www.travelling-technicians.ca/privacy-policy</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
