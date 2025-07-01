@@ -86,8 +86,31 @@ export default async function handler(
     // Get Supabase client
     const supabase = getServiceSupabase();
 
-    // For now, use static calculation since dynamic pricing tables may not exist yet
-    apiLogger.info('Using static price calculation');
+    // Try to get pricing from database first
+    apiLogger.info('Attempting to get dynamic pricing from database');
+    const dynamicCalculation = await getDynamicPriceCalculation(
+      supabase,
+      deviceType as string,
+      brand as string,
+      model as string,
+      service as string,
+      tier as string,
+      postalCode as string
+    );
+
+    if (dynamicCalculation) {
+      apiLogger.info('Using dynamic pricing from database', { 
+        basePrice: dynamicCalculation.pricing.base_price,
+        finalPrice: dynamicCalculation.pricing.final_price 
+      });
+      return res.status(200).json({
+        success: true,
+        calculation: dynamicCalculation
+      });
+    }
+
+    // Fallback to static calculation if no database entry found
+    apiLogger.info('No dynamic pricing found, using static calculation fallback');
     const staticCalculation = getStaticPriceCalculation(
       deviceType as string,
       brand as string,
@@ -102,9 +125,6 @@ export default async function handler(
       calculation: staticCalculation
     });
 
-    // TODO: Enable database pricing once tables are created
-    // For now, all pricing uses static calculation
-
   } catch (error) {
     apiLogger.error('Unexpected error in pricing calculation API', { error });
     
@@ -113,6 +133,196 @@ export default async function handler(
       error: 'Internal server error',
       message: 'Failed to calculate pricing'
     });
+  }
+}
+
+// Get dynamic pricing from database
+async function getDynamicPriceCalculation(
+  supabase: any,
+  deviceType: string,
+  brand: string,
+  model: string,
+  service: string,
+  tier: string,
+  postalCode?: string
+): Promise<PriceCalculation | null> {
+  try {
+    apiLogger.info('Querying dynamic pricing database', { deviceType, brand, model, service, tier });
+
+    // Map form service IDs to backend service names
+    const serviceNameMapping: Record<string, string> = {
+      // Mobile services
+      'screen-replacement': 'screen_replacement',
+      'battery-replacement': 'battery_replacement', 
+      'charging-port': 'charging_port_repair',
+      'speaker-mic': 'speaker_microphone_repair',
+      'camera-repair': 'camera_repair',
+      'water-damage': 'water_damage_diagnostics',
+      'other-mobile': 'other_repair',
+      
+      // Laptop services
+      'keyboard-repair': 'keyboard_repair',
+      'trackpad-repair': 'trackpad_repair',
+      'ram-upgrade': 'ram_upgrade',
+      'storage-upgrade': 'storage_upgrade',
+      'software-trouble': 'software_troubleshooting',
+      'virus-removal': 'virus_removal',
+      'cooling-repair': 'cooling_repair',
+      'power-jack': 'power_jack_repair',
+      'other-laptop': 'other_repair',
+      
+      // Tablet services
+      'speaker-repair': 'speaker_repair',
+      'button-repair': 'button_repair',
+      'software-issue': 'software_troubleshooting',
+      'other-tablet': 'other_repair'
+    };
+
+    // Map service IDs to display names
+    const serviceDisplayNames: Record<string, string> = {
+      'screen-replacement': 'Screen Replacement',
+      'battery-replacement': 'Battery Replacement',
+      'charging-port': 'Charging Port Repair',
+      'speaker-mic': 'Speaker/Microphone Repair',
+      'camera-repair': 'Camera Repair',
+      'water-damage': 'Water Damage Diagnostics',
+      'keyboard-repair': 'Keyboard Repair/Replacement',
+      'trackpad-repair': 'Trackpad Repair',
+      'ram-upgrade': 'RAM Upgrade',
+      'storage-upgrade': 'Storage (HDD/SSD) Upgrade',
+      'software-trouble': 'Software Troubleshooting',
+      'virus-removal': 'Virus Removal',
+      'cooling-repair': 'Cooling System Repair',
+      'power-jack': 'Power Jack Repair',
+      'speaker-repair': 'Speaker Repair',
+      'button-repair': 'Button Repair',
+      'software-issue': 'Software Issue',
+      'other-mobile': 'Other Mobile Repair',
+      'other-laptop': 'Other Laptop Repair',
+      'other-tablet': 'Other Tablet Repair'
+    };
+
+    const backendServiceName = serviceNameMapping[service] || service;
+    const serviceDisplayName = serviceDisplayNames[service] || service;
+
+    // Query dynamic pricing with joins to get exact admin-set prices
+    const { data: pricingData, error } = await supabase
+      .from('dynamic_pricing')
+      .select(`
+        id,
+        base_price,
+        discounted_price,
+        cost_price,
+        is_active,
+        services!inner(
+          id,
+          name,
+          display_name,
+          estimated_duration_minutes,
+          warranty_period_days,
+          is_doorstep_eligible
+        ),
+        device_models!inner(
+          id,
+          name,
+          display_name,
+          brands!inner(
+            id,
+            name,
+            display_name,
+            device_types!inner(
+              id,
+              name,
+              display_name
+            )
+          )
+        ),
+        pricing_tiers!inner(
+          id,
+          name,
+          display_name,
+          price_multiplier,
+          estimated_delivery_hours,
+          includes_features
+        )
+      `)
+      .eq('is_active', true)
+      .eq('services.name', backendServiceName)
+      .eq('pricing_tiers.name', tier)
+      .ilike('device_models.name', `%${model}%`)
+      .ilike('device_models.brands.name', `%${brand}%`)
+      .eq('device_models.brands.device_types.name', deviceType)
+      .single();
+
+    if (error) {
+      apiLogger.warn('No dynamic pricing found in database', { error: error.message, deviceType, brand, model, service, tier });
+      return null;
+    }
+
+    if (!pricingData) {
+      apiLogger.warn('No pricing data returned from database query');
+      return null;
+    }
+
+    apiLogger.info('Found dynamic pricing in database', { 
+      id: pricingData.id,
+      basePrice: pricingData.base_price,
+      discountedPrice: pricingData.discounted_price
+    });
+
+    // Use admin-set pricing (discounted price takes precedence over base price)
+    const adminSetPrice = pricingData.discounted_price || pricingData.base_price;
+    let finalPrice = adminSetPrice;
+
+    // Apply location adjustments on top of admin-set prices
+    const locationResult = await getLocationAdjustment(supabase, postalCode || '');
+    if (locationResult.adjustment > 0) {
+      const locationAdjustmentAmount = adminSetPrice * (locationResult.adjustment / 100);
+      finalPrice = Math.round((adminSetPrice + locationAdjustmentAmount) * 100) / 100;
+    }
+
+    // Calculate savings if there's a discounted price
+    const savings = pricingData.discounted_price 
+      ? pricingData.base_price - pricingData.discounted_price 
+      : undefined;
+
+    // Build the price calculation response using admin data
+    const calculation: PriceCalculation = {
+      service: {
+        id: pricingData.services.id,
+        name: pricingData.services.name,
+        display_name: pricingData.services.display_name || serviceDisplayName,
+        estimated_duration_minutes: pricingData.services.estimated_duration_minutes || 45,
+        warranty_period_days: pricingData.services.warranty_period_days || (tier === 'premium' ? 180 : 90),
+        is_doorstep_eligible: pricingData.services.is_doorstep_eligible ?? true
+      },
+      device: {
+        type: deviceType,
+        brand: pricingData.device_models.brands.display_name || brand,
+        model: pricingData.device_models.display_name || model
+      },
+      pricing: {
+        base_price: pricingData.base_price,
+        discounted_price: pricingData.discounted_price || undefined,
+        final_price: finalPrice,
+        tier_multiplier: 1.0, // Already applied in admin pricing
+        location_adjustment: locationResult.adjustment,
+        savings: savings
+      },
+      tier: {
+        name: pricingData.pricing_tiers.name,
+        display_name: pricingData.pricing_tiers.display_name,
+        estimated_delivery_hours: pricingData.pricing_tiers.estimated_delivery_hours,
+        includes_features: pricingData.pricing_tiers.includes_features || []
+      },
+      location: locationResult.info || undefined
+    };
+
+    return calculation;
+
+  } catch (error) {
+    apiLogger.error('Error querying dynamic pricing database', { error, deviceType, brand, model, service, tier });
+    return null;
   }
 }
 
