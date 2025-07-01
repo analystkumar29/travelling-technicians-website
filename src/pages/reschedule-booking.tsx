@@ -184,6 +184,8 @@ const RescheduleBooking: React.FC = () => {
     if (!selectedBooking) return;
 
     try {
+      console.log('[RescheduleBooking] Sending reschedule confirmation email...');
+      
       const formatTimeDisplay = (timeSlot: string) => {
         switch (timeSlot) {
           case 'morning': return 'Morning (9AM - 12PM)';
@@ -193,30 +195,43 @@ const RescheduleBooking: React.FC = () => {
         }
       };
 
+      const emailData = {
+        to: selectedBooking.customer_email,
+        name: selectedBooking.customer_name,
+        bookingReference: selectedBooking.reference_number,
+        deviceType: selectedBooking.device_type,
+        brand: selectedBooking.device_brand || selectedBooking.brand,
+        model: selectedBooking.device_model || selectedBooking.model,
+        service: selectedBooking.service_type,
+        oldDate: formatDate(selectedBooking.booking_date),
+        oldTime: formatTimeDisplay(selectedBooking.booking_time),
+        bookingDate: formatDate(selectedDate),
+        bookingTime: formatTimeDisplay(selectedTime),
+        address: selectedBooking.address
+      };
+
+      console.log('[RescheduleBooking] Email data being sent:', emailData);
+
       const response = await fetch('/api/send-reschedule-confirmation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: selectedBooking.customer_email,
-          name: selectedBooking.customer_name,
-          bookingReference: selectedBooking.reference_number,
-          deviceType: selectedBooking.device_type,
-          brand: selectedBooking.device_brand,
-          model: selectedBooking.device_model,
-          service: selectedBooking.service_type,
-          oldDate: formatDate(selectedBooking.booking_date),
-          oldTime: formatTimeDisplay(selectedBooking.booking_time),
-          bookingDate: formatDate(selectedDate),
-          bookingTime: formatTimeDisplay(selectedTime),
-          address: selectedBooking.address
-        })
+        body: JSON.stringify(emailData)
       });
 
+      const result = await response.json();
+      console.log('[RescheduleBooking] Email response:', result);
+
       if (!response.ok) {
-        console.warn('[RescheduleBooking] Email confirmation failed, but booking was updated');
+        console.error('[RescheduleBooking] Email send failed:', result);
+        // Don't fail the entire process for email issues
+        setMessage('Booking rescheduled successfully! However, confirmation email may be delayed.');
+      } else {
+        console.log('[RescheduleBooking] Email sent successfully');
       }
     } catch (error) {
       console.error('[RescheduleBooking] Error sending confirmation email:', error);
+      // Don't fail the entire process for email issues  
+      setMessage('Booking rescheduled successfully! However, confirmation email may be delayed.');
     }
   };
 
@@ -304,14 +319,19 @@ const RescheduleBooking: React.FC = () => {
             {bookings.map((booking) => {
               const statusInfo = formatBookingStatus(booking.status);
               const isOriginalBooking = booking.reference_number === reference;
+              const canReschedule = booking.status === 'pending' || booking.status === 'confirmed';
               
               return (
                 <div
                   key={booking.id}
-                  className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                    isOriginalBooking ? 'border-primary-300 bg-primary-50' : 'border-gray-200 hover:border-primary-300'
+                  className={`border rounded-lg p-4 transition-all ${
+                    !canReschedule 
+                      ? 'border-gray-200 bg-gray-50 opacity-75 cursor-not-allowed' 
+                      : isOriginalBooking 
+                        ? 'border-primary-300 bg-primary-50 cursor-pointer hover:border-primary-400' 
+                        : 'border-gray-200 hover:border-primary-300 cursor-pointer'
                   }`}
-                  onClick={() => handleBookingSelect(booking)}
+                  onClick={() => canReschedule && handleBookingSelect(booking)}
                 >
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex items-center space-x-3">
@@ -321,6 +341,11 @@ const RescheduleBooking: React.FC = () => {
                       {isOriginalBooking && (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           From Email Link
+                        </span>
+                      )}
+                      {!canReschedule && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                          Cannot Reschedule
                         </span>
                       )}
                     </div>
@@ -352,6 +377,14 @@ const RescheduleBooking: React.FC = () => {
                     <span className="text-gray-500">Address:</span>
                     <span className="ml-2">{booking.address}</span>
                   </div>
+                  
+                  {!canReschedule && (
+                    <div className="mt-3 text-sm text-gray-500 italic">
+                      Only pending and confirmed bookings can be rescheduled.
+                      {booking.status === 'cancelled' && ' This booking has been cancelled.'}
+                      {booking.status === 'completed' && ' This booking has been completed.'}
+                    </div>
+                  )}
                 </div>
               );
             })}
