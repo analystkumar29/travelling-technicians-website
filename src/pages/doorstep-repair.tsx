@@ -134,9 +134,9 @@ export default function DoorstepRepairPage() {
             <div className="relative">
               <div className="relative h-[400px] w-full rounded-lg overflow-hidden shadow-custom-lg">
                 <Image
-                  src="https://images.unsplash.com/photo-1589939705384-5185137a7f0f"
+                  src="/images/services/doorstep-repair-tech.jpg"
                   alt="Technician repairing a device at customer location"
-                  layout="fill"
+                  fill
                   className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
