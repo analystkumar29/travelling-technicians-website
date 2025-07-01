@@ -15,7 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { reference } = req.query;
 
-    apiLogger.info('Finding booking by reference', { reference });
+    apiLogger.info('Finding booking by reference', { reference, userAgent: req.headers['user-agent'] });
 
     if (!reference || Array.isArray(reference)) {
       apiLogger.warn('Invalid reference format', { reference });
@@ -26,9 +26,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Get Supabase client with service role
+    apiLogger.info('Getting Supabase service client');
     const supabase = getServiceSupabase();
     
+    // Log environment check
+    apiLogger.info('Environment check', {
+      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      nodeEnv: process.env.NODE_ENV
+    });
+    
     // Fetch booking by reference number
+    apiLogger.info('Executing database query', { reference });
     const { data: booking, error } = await supabase
       .from('bookings')
       .select('*')
@@ -39,7 +48,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       apiLogger.error('Error finding booking', {
         reference,
         error: error.message,
-        code: error.code
+        code: error.code,
+        details: error.details,
+        hint: error.hint
       });
       
       if (error.code === 'PGRST116') {

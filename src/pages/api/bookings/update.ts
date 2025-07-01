@@ -12,7 +12,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    apiLogger.info('Update booking request received', { body: req.body });
+    apiLogger.info('Update booking request received', { 
+      body: req.body,
+      userAgent: req.headers['user-agent']
+    });
+    
+    // Log environment check
+    apiLogger.info('Environment check', {
+      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      nodeEnv: process.env.NODE_ENV
+    });
     
     const { id, reference, status, notes, appointmentDate, appointmentTime, ...otherUpdates } = req.body;
 
@@ -54,11 +64,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Get Supabase client with service role
+    apiLogger.info('Getting Supabase service client');
     const supabase = getServiceSupabase();
 
     apiLogger.info('Attempting to update booking', { whereClause, updateData });
 
     // Update the booking in the database
+    apiLogger.info('Executing database update query');
     const { data, error } = await supabase
       .from('bookings')
       .update(updateData)
@@ -69,6 +81,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       apiLogger.error('Error updating booking', {
         error: error.message,
         code: error.code,
+        details: error.details,
+        hint: error.hint,
         whereClause,
         updateData
       });

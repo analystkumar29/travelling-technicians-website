@@ -58,29 +58,51 @@ export default function RescheduleBooking() {
     if (!reference) return;
     
     const fetchBooking = async () => {
+      console.log('[RescheduleBooking] Starting to fetch booking:', { reference, token });
+      
       try {
         // Fetch booking using the API endpoint
+        console.log('[RescheduleBooking] Making API call to:', `/api/bookings/${reference}`);
         const response = await fetch(`/api/bookings/${reference}`);
         
+        console.log('[RescheduleBooking] API response status:', response.status);
+        
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[RescheduleBooking] API error response:', {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText
+          });
           setStatus('error');
           setMessage('Booking not found. Please check your link or contact support.');
           return;
         }
         
         const bookingData = await response.json();
+        console.log('[RescheduleBooking] Successfully fetched booking:', {
+          reference: bookingData.reference_number,
+          customerName: bookingData.customer_name,
+          hasData: !!bookingData
+        });
+        
         setBooking(bookingData);
         
         // If we have token, status changes to ready
         if (token) {
+          console.log('[RescheduleBooking] Token found, setting status to ready');
           setStatus('ready');
           setMessage('Please enter your email to verify and reschedule your booking.');
         } else {
+          console.log('[RescheduleBooking] No token found, setting error status');
           setStatus('error');
           setMessage('Invalid verification link. Please check your email for the correct link.');
         }
       } catch (error) {
-        console.error('Error fetching booking:', error);
+        console.error('[RescheduleBooking] Error fetching booking:', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined
+        });
         setStatus('error');
         setMessage('Error retrieving booking information. Please try again later.');
       }
@@ -93,13 +115,17 @@ export default function RescheduleBooking() {
   const handleVerifySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('[RescheduleBooking] Starting email verification:', { email, token, reference });
+    
     // Validate email
     if (!email) {
+      console.log('[RescheduleBooking] Email validation failed: empty email');
       setEmailError('Email is required for verification');
       return;
     }
     
     if (!token || !reference) {
+      console.error('[RescheduleBooking] Missing verification data:', { token: !!token, reference });
       setStatus('error');
       setMessage('Missing verification data. Please check your link.');
       return;
@@ -108,6 +134,7 @@ export default function RescheduleBooking() {
     setIsSubmitting(true);
     
     try {
+      console.log('[RescheduleBooking] Making verification API call');
       // Call verification API
       const response = await fetch('/api/verify-booking', {
         method: 'POST',
@@ -115,16 +142,28 @@ export default function RescheduleBooking() {
         body: JSON.stringify({ token, reference, email }),
       });
       
+      console.log('[RescheduleBooking] Verification API response status:', response.status);
+      
       const result = await response.json();
+      console.log('[RescheduleBooking] Verification API result:', {
+        success: result.success,
+        message: result.message,
+        hasBooking: !!result.booking
+      });
       
       if (response.ok && result.success) {
+        console.log('[RescheduleBooking] Verification successful');
         setStatus('ready');
         setMessage('Your identity is confirmed. Select a new date and time for your booking.');
       } else {
+        console.log('[RescheduleBooking] Verification failed:', result.message);
         setEmailError(result.message || 'Verification failed. Please check your email and try again.');
       }
     } catch (error) {
-      console.error('Error during verification:', error);
+      console.error('[RescheduleBooking] Error during verification:', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       setEmailError('An error occurred during verification. Please try again later.');
     } finally {
       setIsSubmitting(false);
@@ -135,15 +174,24 @@ export default function RescheduleBooking() {
   const handleRescheduleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('[RescheduleBooking] Starting reschedule submission:', {
+      selectedDate,
+      selectedTime,
+      reference,
+      bookingId: booking?.id
+    });
+    
     // Validate selections
     let hasError = false;
     
     if (!selectedDate) {
+      console.log('[RescheduleBooking] Date validation failed: no date selected');
       setDateError('Please select a date');
       hasError = true;
     }
     
     if (!selectedTime) {
+      console.log('[RescheduleBooking] Time validation failed: no time selected');
       setTimeError('Please select a time');
       hasError = true;
     }
@@ -165,6 +213,14 @@ export default function RescheduleBooking() {
       const originalDate = new Date(booking.booking_date);
       const formattedOriginalDate = format(originalDate, 'EEEE, MMMM d, yyyy');
       
+      console.log('[RescheduleBooking] Making update API call with data:', {
+        reference,
+        appointmentDate: selectedDate,
+        appointmentTime: selectedTime,
+        formattedNewDate,
+        formattedNewTime
+      });
+      
       // Update booking using API endpoint
       const updateResponse = await fetch('/api/bookings/update', {
         method: 'POST',
@@ -177,10 +233,18 @@ export default function RescheduleBooking() {
         }),
       });
       
+      console.log('[RescheduleBooking] Update API response status:', updateResponse.status);
+      
       if (!updateResponse.ok) {
         const errorData = await updateResponse.json();
+        console.error('[RescheduleBooking] Update API error:', {
+          status: updateResponse.status,
+          errorData
+        });
         throw new Error(errorData.message || 'Failed to update booking');
       }
+      
+      console.log('[RescheduleBooking] Booking update successful');
       
       // Send reschedule confirmation email
       const emailResponse = await fetch('/api/send-reschedule-confirmation', {
