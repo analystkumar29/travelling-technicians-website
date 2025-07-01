@@ -221,6 +221,7 @@ export default async function handler(
       ],
       templateId: process.env.SENDGRID_TEMPLATE_ID || 'd-c9dbac568573432bb15f79c92c4fd4b5',
       dynamicTemplateData: {
+        subject: 'Booking Confirmation - The Travelling Technicians',
         isRescheduled: false,
         name,
         bookingReference,
