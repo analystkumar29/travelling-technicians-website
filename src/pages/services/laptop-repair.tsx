@@ -145,12 +145,12 @@ export default function LaptopRepairPage() {
               </div>
             </div>
             <div className="relative">
-              <div className="relative h-[400px] w-full rounded-lg overflow-hidden shadow-custom-lg">
+              <div className="relative h-[450px] w-full rounded-lg overflow-hidden shadow-custom-lg">
                 <Image
                   src="/images/services/laptopRepair.png"
                   alt="Laptop repair technician"
                   fill
-                  className="object-contain"
+                  className="object-cover object-center"
                   priority
                 />
               </div>
