@@ -11,56 +11,58 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // Create a module logger
 const verifyLogger = logger.createModuleLogger('verify-booking');
 
-// Environment variables
-const VERIFICATION_SECRET = process.env.BOOKING_VERIFICATION_SECRET || 'default-secret-change-this';
+// Ensure required environment variables are set
+const VERIFICATION_SECRET = process.env.BOOKING_VERIFICATION_SECRET;
+
+if (!VERIFICATION_SECRET) {
+  throw new Error('BOOKING_VERIFICATION_SECRET environment variable is required');
+}
+
+// Type assertion to help TypeScript understand the variable is defined
+const SECRET: string = VERIFICATION_SECRET;
 
 /**
  * Verify a token against a generated hash using booking reference and email
  * 
  * @param token The token to verify
- * @param email The email associated with the booking
- * @param reference The booking reference number
+ * @param email The customer email
+ * @param reference The booking reference
  * @returns boolean indicating if token is valid
  */
 function verifyToken(token: string, email: string, reference: string): boolean {
   try {
-    // Get today's date in ISO format (YYYY-MM-DD)
-    const today = new Date().toISOString().split('T')[0];
-    
     // We allow verification for tokens generated on the same day
-    const expectedData = `${email.toLowerCase()}:${reference}:${today}`;
+    const today = new Date().toISOString().split('T')[0];
     const expectedToken = crypto
-      .createHmac('sha256', VERIFICATION_SECRET)
-      .update(expectedData)
+      .createHmac('sha256', SECRET)
+      .update(`${email.toLowerCase()}:${reference}:${today}`)
       .digest('hex');
-    
+
     // Direct comparison for same-day token
     if (token === expectedToken) {
       return true;
     }
-    
+
     // Check for tokens generated within the last 7 days (for older tokens)
-    // This is useful for emails that might be opened a few days later
     for (let i = 1; i <= 7; i++) {
       const pastDate = new Date();
       pastDate.setDate(pastDate.getDate() - i);
       const pastDateStr = pastDate.toISOString().split('T')[0];
       
-      const pastData = `${email.toLowerCase()}:${reference}:${pastDateStr}`;
       const pastToken = crypto
-        .createHmac('sha256', VERIFICATION_SECRET)
-        .update(pastData)
+        .createHmac('sha256', SECRET)
+        .update(`${email.toLowerCase()}:${reference}:${pastDateStr}`)
         .digest('hex');
-      
+
       if (token === pastToken) {
         return true;
       }
     }
-    
+
     // No valid token found
     return false;
   } catch (error) {
-    verifyLogger.error('Token verification error:', { 
+    verifyLogger.error('Token verification error:', {
       error: error instanceof Error ? error.message : 'Unknown error',
       reference
     });

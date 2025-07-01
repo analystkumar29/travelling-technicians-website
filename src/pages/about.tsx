@@ -1,7 +1,7 @@
 import Layout from '@/components/layout/Layout';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FaTools, FaUserCheck, FaAward, FaMapMarkerAlt, FaHandshake, FaLeaf } from 'react-icons/fa';
+import { FaTools, FaUserCheck, FaAward, FaMapMarkerAlt, FaHandshake, FaLeaf, FaCheckCircle, FaShieldAlt } from 'react-icons/fa';
 
 // Team members data
 const teamMembers = [
@@ -49,7 +49,7 @@ const milestones = [
   {
     year: '2017',
     title: 'Service Area Expansion',
-    description: 'Expanded services to cover the entire Lower Mainland, including Burnaby, Surrey, and Richmond.'
+    description: 'Expanded services to cover the entire Lower Mainland, including Burnaby, Richmond, and New Westminster.'
   },
   {
     year: '2019',
@@ -83,25 +83,21 @@ export default function AboutPage() {
                 We're a team of certified repair specialists bringing professional mobile and laptop repair services directly to your doorstep across the Lower Mainland.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/services/mobile">
-                  <a className="btn-accent text-center">
-                    Our Services
-                  </a>
+                <Link href="/services/mobile-repair" className="btn-accent text-center">
+                  View Mobile Services
                 </Link>
-                <Link href="/contact">
-                  <a className="btn-outline border-white text-white hover:bg-primary-600 text-center">
+                <Link href="/contact" className="btn-outline border-white text-white hover:bg-primary-600 text-center">
                     Contact Us
-                  </a>
-                </Link>
+                  </Link>
               </div>
             </div>
             <div className="relative">
               <div className="relative h-[400px] w-full rounded-lg overflow-hidden shadow-custom-lg">
                 <Image
-                  src="/images/about/team-meeting.svg"
-                  alt="The Travelling Technicians team"
-                  layout="fill"
-                  className="object-contain"
+                  src="/images/services/doorstep-repair-tech.jpg"
+                  alt="Technician repairing a device at customer's doorstep"
+                  fill
+                  className="object-cover"
                   priority
                 />
               </div>
@@ -120,26 +116,28 @@ export default function AboutPage() {
                 The Travelling Technicians was born out of a simple observation: traditional repair shops require customers to disconnect from their devices, travel to a store, and leave their precious technology with strangers - often for days at a time.
               </p>
               <p className="text-gray-600 mb-4">
-                Our founder, Manoj Kumar, with over a decade of experience in device repair, envisioned a better way. What if skilled technicians could bring their expertise and tools directly to the customer? This would eliminate travel time, reduce device downtime, and provide complete transparency throughout the repair process.
+                We envisioned a better way. What if skilled technicians could bring their expertise and tools directly to the customer? This would eliminate travel time, reduce device downtime, and provide complete transparency throughout the repair process.
               </p>
               <p className="text-gray-600">
-                Since our launch in 2016, we've grown from a small operation in Vancouver to a team of certified technicians serving the entire Lower Mainland. Our commitment to convenience, quality, and transparency has made us the preferred mobile repair service for thousands of satisfied customers.
+                Our commitment to convenience, quality, and transparency makes us the preferred mobile repair service for customers across Vancouver, Burnaby, Richmond, and surrounding areas.
               </p>
             </div>
             <div className="order-1 lg:order-2 relative">
               <div className="relative h-[450px] w-full rounded-lg overflow-hidden shadow-custom">
-                <Image
-                  src="/images/about/repair-process.svg"
-                  alt="Our team working together"
-                  layout="fill"
-                  className="object-contain"
-                  priority
-                />
+                <div className="bg-gradient-to-br from-primary-100 to-primary-200 h-full flex items-center justify-center">
+                  <div className="text-center p-8">
+                    <div className="text-primary-600 mb-4">
+                      <FaTools className="h-16 w-16 mx-auto" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-primary-800 mb-2">Professional Repair</h3>
+                    <p className="text-primary-700">At Your Doorstep</p>
+                  </div>
+                </div>
               </div>
               <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-lg shadow-custom-lg hidden md:block">
                 <div className="text-center">
-                  <p className="font-bold text-2xl text-primary-600">7+ Years</p>
-                  <p className="text-sm text-gray-600">Serving the Lower Mainland</p>
+                  <p className="font-bold text-2xl text-primary-600">150+</p>
+                  <p className="text-sm text-gray-600">Satisfied Customers</p>
                 </div>
               </div>
             </div>
@@ -176,7 +174,7 @@ export default function AboutPage() {
               </div>
               <h3 className="text-xl font-bold mb-3">Technical Excellence</h3>
               <p className="text-gray-600">
-                Our technicians undergo rigorous training and certification to ensure the highest quality repairs for all devices.
+                Our technicians have years of experience and use only high-quality parts to ensure reliable repairs.
               </p>
             </div>
 
@@ -198,7 +196,7 @@ export default function AboutPage() {
               </div>
               <h3 className="text-xl font-bold mb-3">Quality Guaranteed</h3>
               <p className="text-gray-600">
-                We use only premium parts and back every repair with our service warranty for your peace of mind.
+                We use only premium parts and back every repair with our 90-day warranty for your peace of mind.
               </p>
             </div>
 
@@ -207,9 +205,9 @@ export default function AboutPage() {
               <div className="rounded-full bg-primary-100 w-16 h-16 flex items-center justify-center mx-auto mb-6">
                 <FaMapMarkerAlt className="h-8 w-8 text-primary-600" />
               </div>
-              <h3 className="text-xl font-bold mb-3">Community Focus</h3>
+              <h3 className="text-xl font-bold mb-3">Local Focus</h3>
               <p className="text-gray-600">
-                As a local business, we're committed to serving and supporting our Lower Mainland community.
+                We focus on serving our local Lower Mainland community with personalized, reliable service.
               </p>
             </div>
 
@@ -227,132 +225,79 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Our Team Section */}
+      {/* Why Choose Us */}
       <section className="py-16 bg-white">
         <div className="container-custom">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">Meet Our Expert Team</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">Why Choose The Travelling Technicians?</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Our certified technicians bring years of experience and a passion for technology repair right to your doorstep.
+              Discover what makes our doorstep repair service the smart choice for busy people.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {teamMembers.map((member) => (
-              <div key={member.id} className="card hover:shadow-custom-lg transition-shadow">
-                <div className="relative h-64 w-full mb-4 rounded-md overflow-hidden">
-                  <Image 
-                    src={member.image} 
-                    alt={member.name} 
-                    width={300}
-                    height={300}
-                    className="object-contain w-full h-full"
-                    priority
-                  />
-                </div>
-                <h3 className="text-xl font-bold mb-1">{member.name}</h3>
-                <p className="text-primary-600 font-medium mb-2">{member.role}</p>
-                <p className="text-sm text-gray-500 mb-3">{member.specialization}</p>
-                <p className="text-gray-600 text-sm">{member.bio}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Company Timeline */}
-      <section className="py-16 bg-gray-50">
-        <div className="container-custom">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">Our Journey</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              From our humble beginnings to becoming the Lower Mainland's premier doorstep repair service.
-            </p>
-          </div>
-
-          <div className="max-w-4xl mx-auto">
-            <div className="space-y-12">
-              {milestones.map((milestone, index) => (
-                <div key={index} className="flex">
-                  <div className="flex-shrink-0 w-24 text-center">
-                    <div className="bg-primary-600 text-white rounded-full px-3 py-1 font-bold mb-2">
-                      {milestone.year}
-                    </div>
-                    <div className="h-full w-0.5 bg-primary-100 mx-auto"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="space-y-6">
+                <div className="flex items-start">
+                  <div className="rounded-full bg-green-100 p-2 mr-4 mt-1">
+                    <FaCheckCircle className="h-5 w-5 text-green-600" />
                   </div>
-                  <div className="flex-grow pb-8">
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                      <h3 className="text-xl font-bold mb-2">{milestone.title}</h3>
-                      <p className="text-gray-600">{milestone.description}</p>
-                    </div>
+                  <div>
+                    <h3 className="font-bold text-lg mb-2">No Travel Required</h3>
+                    <p className="text-gray-600">Save time and gas - we come to your home, office, or preferred location.</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Certifications & Credentials */}
-      <section className="py-16 bg-white">
-        <div className="container-custom">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">Our Credentials</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Our technicians are fully certified and trained to provide professional repairs.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="card hover:shadow-custom-lg transition-shadow text-center">
-              <div className="mb-4">
-                <Image 
-                  src="/images/certifications/apple.svg" 
-                  alt="Apple Certified Repair Provider" 
-                  width={120}
-                  height={120}
-                  className="mx-auto"
-                  priority
-                />
+                
+                <div className="flex items-start">
+                  <div className="rounded-full bg-green-100 p-2 mr-4 mt-1">
+                    <FaCheckCircle className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg mb-2">Same-Day Service</h3>
+                    <p className="text-gray-600">Most repairs completed on the same day, often within 1-2 hours.</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start">
+                  <div className="rounded-full bg-green-100 p-2 mr-4 mt-1">
+                    <FaCheckCircle className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg mb-2">90-Day Warranty</h3>
+                    <p className="text-gray-600">All repairs backed by our comprehensive warranty for peace of mind.</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start">
+                  <div className="rounded-full bg-green-100 p-2 mr-4 mt-1">
+                    <FaCheckCircle className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg mb-2">Transparent Pricing</h3>
+                    <p className="text-gray-600">Clear quotes with no hidden fees - you pay what we quote.</p>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-xl font-bold mb-2">Apple Certified Repair</h3>
-              <p className="text-gray-600">
-                Our technicians have completed Apple's rigorous certification program for iPhone and MacBook repairs.
-              </p>
-            </div>
-            
-            <div className="card hover:shadow-custom-lg transition-shadow text-center">
-              <div className="mb-4">
-                <Image 
-                  src="/images/certifications/samsung.svg" 
-                  alt="Samsung Authorized Service" 
-                  width={120}
-                  height={120}
-                  className="mx-auto"
-                  priority
-                />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Samsung Authorized Service</h3>
-              <p className="text-gray-600">
-                Certified to repair Samsung Galaxy devices with manufacturer-approved parts and techniques.
-              </p>
             </div>
             
-            <div className="card hover:shadow-custom-lg transition-shadow text-center">
-              <div className="mb-4">
-                <Image 
-                  src="/images/certifications/comptia.svg" 
-                  alt="Computer Hardware Certification" 
-                  width={120}
-                  height={120}
-                  className="mx-auto"
-                  priority
-                />
+            <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-2xl p-8 text-center">
+              <div className="text-primary-600 mb-6">
+                <FaShieldAlt className="h-20 w-20 mx-auto" />
               </div>
-              <h3 className="text-xl font-bold mb-2">CompTIA A+ Certified</h3>
-              <p className="text-gray-600">
-                Our computer technicians hold CompTIA A+ certification, the industry standard for computer hardware troubleshooting.
+              <h3 className="text-2xl font-bold text-primary-800 mb-4">Professional & Reliable</h3>
+              <p className="text-primary-700 mb-6">
+                Our experienced technicians bring professional equipment and high-quality parts directly to you.
               </p>
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div>
+                  <div className="text-2xl font-bold text-primary-600">150+</div>
+                  <div className="text-sm text-primary-700">Repairs Completed</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-primary-600">4.8★</div>
+                  <div className="text-sm text-primary-700">Customer Rating</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -362,21 +307,17 @@ export default function AboutPage() {
       <section className="py-16 bg-primary-600 text-white">
         <div className="container-custom">
           <div className="text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">Experience Our Doorstep Repair Service</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Experience Doorstep Repair?</h2>
             <p className="text-xl mb-8 max-w-3xl mx-auto">
-              Join thousands of satisfied customers who've discovered the convenience of professional device repair that comes to you.
+              Join our satisfied customers across Vancouver, Burnaby, Richmond, and surrounding areas.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link href="/book-online">
-                <a className="btn-accent text-center">
+              <Link href="/book-online" className="btn-accent text-center">
                   Book a Repair
-                </a>
-              </Link>
-              <Link href="/contact">
-                <a className="btn-outline border-white text-white hover:bg-primary-700 text-center">
-                  Contact Our Team
-                </a>
-              </Link>
+                </Link>
+              <Link href="/contact" className="btn-outline border-white text-white hover:bg-primary-700 text-center">
+                  Contact Us
+                </Link>
             </div>
           </div>
         </div>

@@ -46,40 +46,25 @@ export default function Custom404() {
                 We offer convenient doorstep repair services for mobile phones and laptops across the Lower Mainland.
               </p>
               <div className="flex flex-col md:flex-row justify-center gap-4 mt-6">
-                <Link 
-                  href="/services/mobile" 
-                  className="btn-secondary"
-                >
+                <Link href="/services/mobile-repair" className="btn-secondary">
                   Mobile Repair
                 </Link>
-                <Link 
-                  href="/services/laptop" 
-                  className="btn-secondary"
-                >
+                <Link href="/services/laptop-repair" className="btn-secondary">
                   Laptop Repair
                 </Link>
-                <Link 
-                  href="/book-online" 
-                  className="btn-accent"
-                >
-                  Book Now
-                </Link>
+                <Link href="/book-online" className="btn-accent">
+                    Book Now
+                  </Link>
               </div>
             </div>
             
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link 
-                href="/" 
-                className="flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
-              >
-                <FaHome /> Back to Home
-              </Link>
-              <Link 
-                href="/contact" 
-                className="flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
-              >
-                <FaArrowLeft /> Contact Support
-              </Link>
+              <Link href="/" className="flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-md font-medium transition-colors">
+                  <FaHome /> Back to Home
+                </Link>
+              <Link href="/contact" className="flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-md font-medium transition-colors">
+                  <FaArrowLeft /> Contact Support
+                </Link>
             </div>
           </div>
         </div>

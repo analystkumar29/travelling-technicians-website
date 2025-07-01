@@ -581,7 +581,7 @@ export function useBookingForm() {
       });
       return false;
     }
-  }, [validateCurrentStep, state]);
+  }, [validateCurrentStep]);
   
   /**
    * Get the complete form data

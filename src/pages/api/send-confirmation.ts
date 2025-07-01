@@ -3,13 +3,23 @@ import sgMail from '@sendgrid/mail';
 import crypto from 'crypto';
 import { logger } from '@/utils/logger';
 
-// Set up SendGrid API key if available
+// Initialize SendGrid
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 }
 
 // Create a module logger
 const emailLogger = logger.createModuleLogger('send-confirmation');
+
+// Ensure required environment variables are set
+const VERIFICATION_SECRET = process.env.BOOKING_VERIFICATION_SECRET;
+
+if (!VERIFICATION_SECRET) {
+  throw new Error('BOOKING_VERIFICATION_SECRET environment variable is required for secure token generation');
+}
+
+// Type assertion to help TypeScript understand the variable is defined
+const SECRET: string = VERIFICATION_SECRET;
 
 // Email data interface
 interface EmailData {
@@ -27,12 +37,12 @@ interface EmailData {
 
 // Generate a secure token for email verification
 function generateVerificationToken(email: string, bookingReference: string): string {
-  // In production, you would use a database to store these tokens
-  // For simplicity, we're creating a hash based on email + reference + secret
-  const secretKey = process.env.SENDGRID_API_KEY?.substring(0, 8) || 'defaultSecret';
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const data = `${email.toLowerCase()}:${bookingReference}:${timestamp}`;
+  
   return crypto
-    .createHmac('sha256', secretKey)
-    .update(`${email}-${bookingReference}-${Date.now()}`)
+    .createHmac('sha256', SECRET)
+    .update(data)
     .digest('hex');
 }
 
@@ -70,6 +80,22 @@ export default async function handler(
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
+  // 🔍 COMPREHENSIVE ENVIRONMENT LOGGING
+  emailLogger.info('🌍 EMAIL API - Environment Variables Check', {
+    nodeEnv: process.env.NODE_ENV,
+    hasSendGridKey: !!process.env.SENDGRID_API_KEY,
+    sendGridKeyPrefix: process.env.SENDGRID_API_KEY ? process.env.SENDGRID_API_KEY.substring(0, 3) + '...' : 'MISSING',
+    hasSupabaseUrl: !!process.env.SUPABASE_URL,
+    supabaseUrlPrefix: process.env.SUPABASE_URL ? process.env.SUPABASE_URL.substring(0, 20) + '...' : 'MISSING',
+    hasSupabaseKey: !!process.env.SUPABASE_ANON_KEY,
+    hasAdminSecret: !!process.env.ADMIN_JWT_SECRET,
+    hasBookingSecret: !!process.env.BOOKING_VERIFICATION_SECRET,
+    sendGridFromEmail: process.env.SENDGRID_FROM_EMAIL || 'NOT_SET',
+    sendGridTemplateId: process.env.SENDGRID_TEMPLATE_ID || 'NOT_SET',
+    totalEnvVars: Object.keys(process.env).length,
+    timestamp: new Date().toISOString()
+  });
+
   try {
     // Extract data from request
     const {
@@ -84,6 +110,18 @@ export default async function handler(
       address,
       bookingReference = `TTR-${Date.now().toString().substring(6)}`,
     }: EmailData = req.body;
+
+    emailLogger.info('📧 EMAIL API - Request Data Received', {
+      hasTo: !!to,
+      hasName: !!name,
+      hasBookingDate: !!bookingDate,
+      hasBookingTime: !!bookingTime,
+      deviceType,
+      service,
+      reference: bookingReference,
+      requestMethod: req.method,
+      userAgent: req.headers['user-agent']?.substring(0, 50) || 'unknown'
+    });
 
     // Validate essential data
     if (!to || !name || !bookingDate || !bookingTime) {
@@ -110,16 +148,32 @@ export default async function handler(
     const verificationUrl = `${baseUrl}/verify-booking?token=${verificationToken}`;
     const rescheduleUrl = `${baseUrl}/reschedule-booking?reference=${bookingReference}&token=${verificationToken}`;
 
-    // Check if SendGrid is configured
-    if (!process.env.SENDGRID_API_KEY) {
-      emailLogger.warn('SendGrid API key not configured - simulating email send');
+    // 🔍 DETAILED SENDGRID CONFIGURATION CHECK
+    const sendGridConfigured = !!process.env.SENDGRID_API_KEY;
+    emailLogger.info('🔧 EMAIL API - SendGrid Configuration Check', {
+      configured: sendGridConfigured,
+      apiKeyLength: process.env.SENDGRID_API_KEY?.length || 0,
+      apiKeyStart: process.env.SENDGRID_API_KEY?.substring(0, 6) || 'MISSING',
+      fromEmail: process.env.SENDGRID_FROM_EMAIL || 'DEFAULT',
+      templateId: process.env.SENDGRID_TEMPLATE_ID || 'DEFAULT',
+      verificationUrl,
+      rescheduleUrl
+    });
+
+    if (!sendGridConfigured) {
+      emailLogger.warn('❌ EMAIL API - SendGrid NOT configured - simulating email send', {
+        reason: 'SENDGRID_API_KEY missing',
+        wouldSendTo: to.substring(0, 3) + '***',
+        reference: bookingReference
+      });
       
       // Log what would be sent
-      emailLogger.debug('Email simulation data', {
+      emailLogger.debug('📧 EMAIL API - Simulation Details', {
         verificationUrl,
         rescheduleUrl,
-        to: to.substring(0, 3) + '***', // Log partial email for privacy
+        to: to.substring(0, 3) + '***',
         subject: 'Your Booking Confirmation - The Travelling Technicians',
+        formattedDevice: formatDeviceInfo(deviceType, brand, model)
       });
       
       // Simulate API delay
@@ -132,8 +186,20 @@ export default async function handler(
         sentTo: to,
         verificationToken,
         verificationUrl,
+        debug: {
+          reason: 'SENDGRID_API_KEY_MISSING',
+          envVarsCount: Object.keys(process.env).length,
+          timestamp: new Date().toISOString()
+        }
       });
     }
+
+    // 🚀 SENDGRID IS CONFIGURED - PROCEEDING WITH REAL EMAIL
+    emailLogger.info('✅ EMAIL API - SendGrid CONFIGURED - sending real email', {
+      apiKeyPrefix: process.env.SENDGRID_API_KEY!.substring(0, 6) + '...',
+      to: to.substring(0, 3) + '***',
+      reference: bookingReference
+    });
 
     // Format device information
     const formattedDeviceInfo = formatDeviceInfo(deviceType, brand, model);

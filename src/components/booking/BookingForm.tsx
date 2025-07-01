@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
 import DeviceModelSelector from './DeviceModelSelector';
+import FloatingProgress from './FloatingProgress';
+import Image from 'next/image';
 // Comment out the non-existent imports for now
 // import { DeviceTypeStep } from './steps/DeviceTypeStep';
 // import { ServiceDetailsStep } from './steps/ServiceDetailsStep';
@@ -15,8 +17,10 @@ import {
   isValidPostalCodeFormat,
   ServiceAreaType
 } from '@/utils/locationUtils';
-import { formatDate } from '@/utils/formatters';
+import { formatDate, formatTimeSlot } from '@/utils/formatters';
 import AddressAutocomplete from './AddressAutocomplete';
+import PriceDisplay from './PriceDisplay';
+import TierPriceComparison from './TierPriceComparison';
 
 interface BookingFormProps {
   onSubmit: (data: CreateBookingRequest) => void;
@@ -40,6 +44,31 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   const [detectingLocation, setDetectingLocation] = useState(false);
   // Move needsPostalCodeAttention to component level
   const [needsPostalCodeAttention, setNeedsPostalCodeAttention] = useState(false);
+  // Add state for progressive form reveal - initialize with brandSelection visible since we have a default device type
+  const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set(['deviceType', 'brandSelection']));
+  // Add state for mobile swipe indicator
+  const [showSwipeIndicator, setShowSwipeIndicator] = useState(false);
+  // Add state for brand selection warning
+  const [showBrandWarning, setShowBrandWarning] = useState(false);
+  
+  // Function to reveal sections progressively
+  const revealSection = useCallback((sectionName: string) => {
+    setVisibleSections(prev => new Set([...Array.from(prev), sectionName]));
+  }, []);
+  
+  // Smart scroll function
+  const smartScroll = useCallback(() => {
+    // Scroll to the step content, but not all the way to the top
+    const stepContent = document.querySelector('.step-content');
+    if (stepContent) {
+      const rect = stepContent.getBoundingClientRect();
+      const offset = window.innerHeight * 0.2; // 20% from top
+      window.scrollTo({
+        top: window.scrollY + rect.top - offset,
+        behavior: 'smooth'
+      });
+    }
+  }, []);
 
   // Create a properly typed defaultValues object
   const defaultValues: Partial<CreateBookingRequest> = {
@@ -71,11 +100,34 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     defaultValues.province = 'BC';
   }
 
+  // Add default pricing tier to the form
+  if (!defaultValues.pricingTier) {
+    defaultValues.pricingTier = 'standard';
+  }
+
   const methods = useForm<CreateBookingRequest>({
     defaultValues,
     mode: 'onChange', // Enable validation on change
     reValidateMode: 'onSubmit' // Only revalidate when submitted (i.e., when Next is clicked)
   });
+
+  // Function to handle model selection attempt without brand
+  const handleModelSelectionAttempt = useCallback(() => {
+    const deviceBrand = methods.watch('deviceBrand');
+    if (!deviceBrand) {
+      setShowBrandWarning(true);
+      // Scroll to brand selection
+      const brandSection = document.querySelector('[data-section="brand-selection"]');
+      if (brandSection) {
+        brandSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      // Clear warning after 3 seconds
+      setTimeout(() => setShowBrandWarning(false), 3000);
+      return false;
+    }
+    setShowBrandWarning(false);
+    return true;
+  }, [methods]);
 
   // Watch for deviceBrand changes to apply conditional validation for customBrand
   const deviceBrand = methods.watch('deviceBrand');
@@ -93,7 +145,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       // Unregister to remove validation when not needed
       unregister('customBrand');
     }
-  }, [deviceBrand, methods]);
+  }, [deviceBrand]); // Remove methods from dependency array to prevent infinite loop
 
   // Check localStorage for saved address data when component mounts
   useEffect(() => {
@@ -127,12 +179,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     } catch (error) {
       console.error('Error parsing saved location data:', error);
     }
-  }, [methods]);
+  }, []); // Empty dependency array - only run on mount
 
   // Placeholder step titles
   const steps = [
     'Device Type',
-    'Service Details',
+    'Service & Pricing', // Merged step for service details + tier selection
     'Contact Info',
     'Location',
     'Appointment',
@@ -167,8 +219,18 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         }
         return true;
         
-      case 1: // Service Details
+      case 1: // Service & Pricing (merged step)
         // Validate service type (issue description is optional)
+        const serviceType = methods.watch('serviceType');
+        if (!serviceType || (Array.isArray(serviceType) && serviceType.length === 0)) {
+          methods.setError('serviceType', { type: 'required', message: 'Please select at least one service' });
+          return false;
+        }
+        // Validate pricing tier selection
+        if (!data.pricingTier) {
+          methods.setError('pricingTier', { type: 'required', message: 'Please select a service tier' });
+          return false;
+        }
         return await methods.trigger(['serviceType']);
         
       case 2: // Contact Info
@@ -222,8 +284,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         }
         break;
         
-      case 1: // Service Details
+      case 1: // Service & Pricing (merged step)
         isValid = await methods.trigger(['serviceType']);
+        if (!data.pricingTier) {
+          methods.setError('pricingTier', { type: 'required', message: 'Please select a service tier' });
+          isValid = false;
+        }
         break;
         
       case 2: // Contact Info
@@ -243,11 +309,10 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       // Increment the step
     setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
       
-      // Scroll to the top of the form container
-      const formContainer = document.querySelector('.bg-white.rounded-lg.shadow-lg');
-      if (formContainer) {
-        formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      // Add a small delay for the step transition animation, then scroll
+      setTimeout(() => {
+        smartScroll();
+      }, 200);
     } else {
       // Scroll to the first error
       const firstError = document.querySelector('.text-red-600');
@@ -275,6 +340,19 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     onSubmit(data);
   };
   
+  // Helper function to get brand logo
+  const getBrandLogo = (brandValue: string) => {
+    const logos: { [key: string]: string } = {
+      'apple': '/images/brands/apple.svg',
+      'samsung': '/images/brands/samsung.svg',
+      'google': '/images/brands/google.svg',
+      'oneplus': '/images/brands/oneplus.svg',
+      'xiaomi': '/images/brands/xiaomi.svg',
+      'huawei': '/images/brands/huawei.svg'
+    };
+    return logos[brandValue] || null;
+  };
+
   // Render the Device Type step
   const renderDeviceTypeStep = () => {
     const deviceType = methods.watch('deviceType');
@@ -299,191 +377,225 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             </label>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <label className={`relative overflow-hidden rounded-lg border-2 transition-all duration-300 ${
+              <label className={`device-card relative overflow-hidden rounded-lg border-2 transition-all duration-300 ${
                 deviceType === 'mobile' 
-                  ? 'border-primary-500 bg-primary-50' 
+                  ? 'border-primary-500 bg-primary-50 selected' 
                   : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}>
-                <Controller
-                  name="deviceType"
-                  control={methods.control}
+              <Controller
+                name="deviceType"
+                control={methods.control}
                   rules={{ required: "Please select a device type" }}
-                  render={({ field }) => (
-                    <input
-                      type="radio"
-                      className="sr-only"
-                      value="mobile"
-                      checked={field.value === 'mobile'}
+                render={({ field }) => (
+                  <input
+                    type="radio"
+                    className="sr-only"
+                    value="mobile"
+                    checked={field.value === 'mobile'}
                       onChange={() => {
                         field.onChange('mobile');
                         methods.setValue('deviceBrand', '');
                         methods.setValue('deviceModel', '');
+                        revealSection('brandSelection');
                         console.log('Changed to mobile');
                       }}
-                    />
-                  )}
-                />
+                  />
+                )}
+              />
                 <div className="flex items-center p-4 cursor-pointer">
                   <div className={`bg-primary-100 rounded-full p-3 mr-3 transition-all duration-300 ${
                     deviceType === 'mobile' ? 'bg-primary-200' : ''
                   }`}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-900">Mobile Phone</span>
+                  <span className="font-medium text-gray-900">Mobile Phone</span>
                     {deviceType === 'mobile' && (
                       <div className="h-1 w-full bg-primary-500 absolute bottom-0 left-0 rounded-b-lg"></div>
                     )}
                   </div>
-                </div>
-              </label>
-              
-              <label className={`relative overflow-hidden rounded-lg border-2 transition-all duration-300 ${
+              </div>
+            </label>
+            
+              <label className={`device-card relative overflow-hidden rounded-lg border-2 transition-all duration-300 ${
                 deviceType === 'laptop' 
-                  ? 'border-primary-500 bg-primary-50' 
+                  ? 'border-primary-500 bg-primary-50 selected' 
                   : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}>
-                <Controller
-                  name="deviceType"
-                  control={methods.control}
+              <Controller
+                name="deviceType"
+                control={methods.control}
                   rules={{ required: "Please select a device type" }}
-                  render={({ field }) => (
-                    <input
-                      type="radio"
-                      className="sr-only"
-                      value="laptop"
-                      checked={field.value === 'laptop'}
+                render={({ field }) => (
+                  <input
+                    type="radio"
+                    className="sr-only"
+                    value="laptop"
+                    checked={field.value === 'laptop'}
                       onChange={() => {
                         field.onChange('laptop');
                         methods.setValue('deviceBrand', '');
                         methods.setValue('deviceModel', '');
+                        revealSection('brandSelection');
                         console.log('Changed to laptop');
                       }}
-                    />
-                  )}
-                />
+                  />
+                )}
+              />
                 <div className="flex items-center p-4 cursor-pointer">
                   <div className={`bg-primary-100 rounded-full p-3 mr-3 transition-all duration-300 ${
                     deviceType === 'laptop' ? 'bg-primary-200' : ''
                   }`}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-900">Laptop</span>
+                  <span className="font-medium text-gray-900">Laptop</span>
                     {deviceType === 'laptop' && (
                       <div className="h-1 w-full bg-primary-500 absolute bottom-0 left-0 rounded-b-lg"></div>
                     )}
                   </div>
-                </div>
-              </label>
-              
-              <label className={`relative overflow-hidden rounded-lg border-2 transition-all duration-300 ${
+              </div>
+            </label>
+            
+              <label className={`device-card relative overflow-hidden rounded-lg border-2 transition-all duration-300 ${
                 deviceType === 'tablet' 
-                  ? 'border-primary-500 bg-primary-50' 
+                  ? 'border-primary-500 bg-primary-50 selected' 
                   : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}>
-                <Controller
-                  name="deviceType"
-                  control={methods.control}
+              <Controller
+                name="deviceType"
+                control={methods.control}
                   rules={{ required: "Please select a device type" }}
-                  render={({ field }) => (
-                    <input
-                      type="radio"
-                      className="sr-only"
-                      value="tablet"
-                      checked={field.value === 'tablet'}
+                render={({ field }) => (
+                  <input
+                    type="radio"
+                    className="sr-only"
+                    value="tablet"
+                    checked={field.value === 'tablet'}
                       onChange={() => {
                         field.onChange('tablet');
                         methods.setValue('deviceBrand', '');
                         methods.setValue('deviceModel', '');
+                        revealSection('brandSelection');
                         console.log('Changed to tablet');
                       }}
-                    />
-                  )}
-                />
+                  />
+                )}
+              />
                 <div className="flex items-center p-4 cursor-pointer">
                   <div className={`bg-primary-100 rounded-full p-3 mr-3 transition-all duration-300 ${
                     deviceType === 'tablet' ? 'bg-primary-200' : ''
                   }`}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
                   </div>
                   <div>
-                    <span className="font-medium text-gray-900">Tablet</span>
+                  <span className="font-medium text-gray-900">Tablet</span>
                     {deviceType === 'tablet' && (
                       <div className="h-1 w-full bg-primary-500 absolute bottom-0 left-0 rounded-b-lg"></div>
                     )}
                   </div>
-                </div>
-              </label>
-            </div>
+              </div>
+            </label>
+          </div>
             {methods.formState.errors.deviceType && showValidationErrors && (
               <p className="mt-1 text-sm text-red-600">{methods.formState.errors.deviceType.message}</p>
             )}
-          </div>
-          
+        </div>
+        
           {deviceType && (
-            <div className="mb-4" key={deviceKey}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Brand <span className="text-red-500">*</span>
-              </label>
+            <div 
+              className={`mb-4 form-section-reveal ${visibleSections.has('brandSelection') ? 'visible' : ''} ${showBrandWarning ? 'animate-pulse border-2 border-orange-300 bg-orange-50 rounded-lg p-4' : ''}`} 
+              key={deviceKey}
+              data-section="brand-selection"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Brand <span className="text-red-500">*</span>
+                </label>
+                {showBrandWarning && (
+                  <div className="flex items-center text-orange-600 text-sm font-medium">
+                    <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    Please select a brand first!
+                  </div>
+                )}
+              </div>
               
               {/* Mobile device brands */}
               {deviceType === 'mobile' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4">
                   {[
-                    { value: 'apple', label: 'Apple', icon: '🍎' },
-                    { value: 'samsung', label: 'Samsung', icon: '📱' },
-                    { value: 'google', label: 'Google', icon: 'G' },
-                    { value: 'oneplus', label: 'OnePlus', icon: '1+' },
-                    { value: 'xiaomi', label: 'Xiaomi', icon: 'Mi' },
-                    { value: 'other', label: 'Other', icon: '...' }
-                  ].map((brand) => (
-                    <label 
-                      key={brand.value}
-                      className={`relative rounded-md border overflow-hidden transition-all duration-200 ${
-                        methods.watch('deviceBrand') === brand.value
-                          ? 'border-primary-500 bg-primary-50 shadow-sm'
-                          : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                      }`}
-                    >
-                      <Controller
-                        name="deviceBrand"
-                        control={methods.control}
-                        rules={{ required: "Please select a brand" }}
-                        render={({ field }) => (
-                          <input
-                            type="radio"
-                            className="sr-only"
-                            value={brand.value}
-                            checked={field.value === brand.value}
-                            onChange={() => {
-                              field.onChange(brand.value);
-                              methods.setValue('deviceModel', '');
-                            }}
-                          />
-                        )}
-                      />
-                      <div className="flex items-center p-3 cursor-pointer">
-                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center mr-3 text-lg font-medium rounded-full bg-gray-100 text-gray-700">
-                          {brand.icon}
-                        </div>
-                        <span className="font-medium text-gray-900">{brand.label}</span>
-                        {methods.watch('deviceBrand') === brand.value && (
-                          <div className="ml-auto">
-                            <svg className="h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
+                    { value: 'apple', label: 'Apple' },
+                    { value: 'samsung', label: 'Samsung' },
+                    { value: 'google', label: 'Google' },
+                    { value: 'oneplus', label: 'OnePlus' },
+                    { value: 'xiaomi', label: 'Xiaomi' },
+                    { value: 'other', label: 'Other' }
+                  ].map((brand) => {
+                    const logo = getBrandLogo(brand.value);
+                    return (
+                      <label 
+                        key={brand.value}
+                        className={`device-card relative rounded-md border overflow-hidden transition-all duration-200 ${
+                          methods.watch('deviceBrand') === brand.value
+                            ? 'border-primary-500 bg-primary-50 shadow-sm selected'
+                            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Controller
+                          name="deviceBrand"
+                          control={methods.control}
+                          rules={{ required: "Please select a brand" }}
+                          render={({ field }) => (
+                            <input
+                              type="radio"
+                              className="sr-only"
+                              value={brand.value}
+                              checked={field.value === brand.value}
+                              onChange={() => {
+                                field.onChange(brand.value);
+                                methods.setValue('deviceModel', '');
+                                revealSection('modelSelection');
+                                setShowBrandWarning(false);
+                              }}
+                            />
+                          )}
+                        />
+                        <div className="flex items-center p-3 cursor-pointer">
+                          <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center mr-3">
+                            {logo ? (
+                              <Image
+                                src={logo}
+                                alt={`${brand.label} logo`}
+                                width={32}
+                                height={32}
+                                className="w-8 h-8 object-contain"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 flex items-center justify-center text-lg font-medium rounded-full bg-gray-100 text-gray-700">
+                                ...
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </label>
-                  ))}
+                          <span className="font-medium text-gray-900">{brand.label}</span>
+                          {methods.watch('deviceBrand') === brand.value && (
+                            <div className="ml-auto">
+                              <svg className="h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
                 </div>
               )}
               
@@ -491,53 +603,70 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               {deviceType === 'laptop' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4">
                   {[
-                    { value: 'apple', label: 'Apple', icon: '🍎' },
-                    { value: 'dell', label: 'Dell', icon: 'D' },
-                    { value: 'hp', label: 'HP', icon: 'HP' },
-                    { value: 'lenovo', label: 'Lenovo', icon: 'L' },
-                    { value: 'asus', label: 'ASUS', icon: 'A' },
-                    { value: 'other', label: 'Other', icon: '...' }
-                  ].map((brand) => (
-                    <label 
-                      key={brand.value}
-                      className={`relative rounded-md border overflow-hidden transition-all duration-200 ${
-                        methods.watch('deviceBrand') === brand.value
-                          ? 'border-primary-500 bg-primary-50 shadow-sm'
-                          : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                      }`}
-                    >
-                      <Controller
-                        name="deviceBrand"
-                        control={methods.control}
-                        rules={{ required: "Please select a brand" }}
-                        render={({ field }) => (
-                          <input
-                            type="radio"
-                            className="sr-only"
-                            value={brand.value}
-                            checked={field.value === brand.value}
-                            onChange={() => {
-                              field.onChange(brand.value);
-                              methods.setValue('deviceModel', '');
-                            }}
-                          />
-                        )}
-                      />
-                      <div className="flex items-center p-3 cursor-pointer">
-                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center mr-3 text-lg font-medium rounded-full bg-gray-100 text-gray-700">
-                          {brand.icon}
-                        </div>
-                        <span className="font-medium text-gray-900">{brand.label}</span>
-                        {methods.watch('deviceBrand') === brand.value && (
-                          <div className="ml-auto">
-                            <svg className="h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
+                    { value: 'apple', label: 'Apple' },
+                    { value: 'dell', label: 'Dell' },
+                    { value: 'hp', label: 'HP' },
+                    { value: 'lenovo', label: 'Lenovo' },
+                    { value: 'asus', label: 'ASUS' },
+                    { value: 'other', label: 'Other' }
+                  ].map((brand) => {
+                    const logo = getBrandLogo(brand.value);
+                    return (
+                      <label 
+                        key={brand.value}
+                        className={`device-card relative rounded-md border overflow-hidden transition-all duration-200 ${
+                          methods.watch('deviceBrand') === brand.value
+                            ? 'border-primary-500 bg-primary-50 shadow-sm selected'
+                            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Controller
+                          name="deviceBrand"
+                          control={methods.control}
+                          rules={{ required: "Please select a brand" }}
+                          render={({ field }) => (
+                            <input
+                              type="radio"
+                              className="sr-only"
+                              value={brand.value}
+                              checked={field.value === brand.value}
+                              onChange={() => {
+                                field.onChange(brand.value);
+                                methods.setValue('deviceModel', '');
+                                revealSection('modelSelection');
+                                setShowBrandWarning(false);
+                              }}
+                            />
+                          )}
+                        />
+                        <div className="flex items-center p-3 cursor-pointer">
+                          <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center mr-3">
+                            {logo ? (
+                              <Image
+                                src={logo}
+                                alt={`${brand.label} logo`}
+                                width={32}
+                                height={32}
+                                className="w-8 h-8 object-contain"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 flex items-center justify-center text-lg font-medium rounded-full bg-gray-100 text-gray-700">
+                                {brand.label.charAt(0)}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </label>
-                  ))}
+                          <span className="font-medium text-gray-900">{brand.label}</span>
+                          {methods.watch('deviceBrand') === brand.value && (
+                            <div className="ml-auto">
+                              <svg className="h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
                 </div>
               )}
               
@@ -545,52 +674,69 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               {deviceType === 'tablet' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4">
                   {[
-                    { value: 'apple', label: 'Apple', icon: '🍎' },
-                    { value: 'samsung', label: 'Samsung', icon: '📱' },
-                    { value: 'microsoft', label: 'Microsoft', icon: 'MS' },
-                    { value: 'lenovo', label: 'Lenovo', icon: 'L' },
-                    { value: 'other', label: 'Other', icon: '...' }
-                  ].map((brand) => (
-                    <label 
-                      key={brand.value}
-                      className={`relative rounded-md border overflow-hidden transition-all duration-200 ${
-                        methods.watch('deviceBrand') === brand.value
-                          ? 'border-primary-500 bg-primary-50 shadow-sm'
-                          : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                      }`}
-                    >
-                      <Controller
-                        name="deviceBrand"
-                        control={methods.control}
-                        rules={{ required: "Please select a brand" }}
-                        render={({ field }) => (
-                          <input
-                            type="radio"
-                            className="sr-only"
-                            value={brand.value}
-                            checked={field.value === brand.value}
-                            onChange={() => {
-                              field.onChange(brand.value);
-                              methods.setValue('deviceModel', '');
-                            }}
-                          />
-                        )}
-                      />
-                      <div className="flex items-center p-3 cursor-pointer">
-                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center mr-3 text-lg font-medium rounded-full bg-gray-100 text-gray-700">
-                          {brand.icon}
-                        </div>
-                        <span className="font-medium text-gray-900">{brand.label}</span>
-                        {methods.watch('deviceBrand') === brand.value && (
-                          <div className="ml-auto">
-                            <svg className="h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
+                    { value: 'apple', label: 'Apple' },
+                    { value: 'samsung', label: 'Samsung' },
+                    { value: 'microsoft', label: 'Microsoft' },
+                    { value: 'lenovo', label: 'Lenovo' },
+                    { value: 'other', label: 'Other' }
+                  ].map((brand) => {
+                    const logo = getBrandLogo(brand.value);
+                    return (
+                      <label 
+                        key={brand.value}
+                        className={`device-card relative rounded-md border overflow-hidden transition-all duration-200 ${
+                          methods.watch('deviceBrand') === brand.value
+                            ? 'border-primary-500 bg-primary-50 shadow-sm selected'
+                            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Controller
+                          name="deviceBrand"
+                          control={methods.control}
+                          rules={{ required: "Please select a brand" }}
+                          render={({ field }) => (
+                            <input
+                              type="radio"
+                              className="sr-only"
+                              value={brand.value}
+                              checked={field.value === brand.value}
+                              onChange={() => {
+                                field.onChange(brand.value);
+                                methods.setValue('deviceModel', '');
+                                revealSection('modelSelection');
+                                setShowBrandWarning(false);
+                              }}
+                            />
+                          )}
+                        />
+                        <div className="flex items-center p-3 cursor-pointer">
+                          <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center mr-3">
+                            {logo ? (
+                              <Image
+                                src={logo}
+                                alt={`${brand.label} logo`}
+                                width={32}
+                                height={32}
+                                className="w-8 h-8 object-contain"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 flex items-center justify-center text-lg font-medium rounded-full bg-gray-100 text-gray-700">
+                                {brand.label.charAt(0)}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </label>
-                  ))}
+                          <span className="font-medium text-gray-900">{brand.label}</span>
+                          {methods.watch('deviceBrand') === brand.value && (
+                            <div className="ml-auto">
+                              <svg className="h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
                 </div>
               )}
               
@@ -608,21 +754,21 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   <Controller
                     name="customBrand"
                     control={methods.control}
-                    render={({ field, fieldState }) => (
-                      <>
-                        <input
-                          type="text"
+            render={({ field, fieldState }) => (
+              <>
+              <input
+                type="text"
                           className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200"
                           placeholder="Enter brand name..."
-                          {...field}
-                        />
+                  {...field}
+                />
                         {fieldState.error && showValidationErrors && (
-                          <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                        )}
-                      </>
-                    )}
-                  />
-                </div>
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
+              </>
+            )}
+              />
+            </div>
               )}
             </div>
           )}
@@ -633,10 +779,10 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 Model <span className="text-red-500">*</span>
               </label>
               
-              <Controller
-                name="deviceModel"
-                control={methods.control}
-                rules={{ required: "Model is required" }}
+          <Controller
+            name="deviceModel"
+            control={methods.control}
+            rules={{ required: "Model is required" }}
                 render={({ field, fieldState }) => {
                   // Debug output for device selection
                   console.log('DeviceModelSelector props from BookingForm:', {
@@ -648,20 +794,24 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   return (
                     <>
                       <div className="rounded-md border border-gray-300 overflow-hidden focus-within:border-primary-500 focus-within:ring-1 focus-within:ring-primary-500 transition-all duration-300">
-                        <DeviceModelSelector
-                          deviceType={methods.watch('deviceType')}
-                          brand={methods.watch('deviceBrand')}
-                          value={field.value}
-                          onChange={field.onChange}
-                        />
+                    <DeviceModelSelector
+                      deviceType={methods.watch('deviceType')}
+                      brand={methods.watch('deviceBrand')}
+                      value={field.value}
+                      onChange={(model) => {
+                        if (handleModelSelectionAttempt()) {
+                          field.onChange(model);
+                        }
+                      }}
+                    />
                       </div>
-                      {fieldState.error && showValidationErrors && (
-                        <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                      )}
-                    </>
+                    {fieldState.error && showValidationErrors && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
+          </>
                   );
                 }}
-              />
+          />
             </div>
           )}
         </div>
@@ -876,7 +1026,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           id: 'other-laptop', 
           label: 'Other Issue', 
           doorstep: false,
-          icon: 'M10.975 8.75a1.25 1.25 0 112.5 0 1.25 1.25 0 01-2.5 0zm0 7a1.25 1.25 0 112.5 0 1.25 1.25 0 01-2.5 0zM12 4a8 8 0 100 16 8 8 0 000-16zm-6.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z',
+          icon: 'M10.975 8.75a1.25 1.25 0 112.5 0 1.25 1.25 0 01-2.5 0zM12 4a8 8 0 100 16 8 8 0 000-16zm-6.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z',
           time: 'Varies',
           price: 'Custom quote',
           group: 'special'
@@ -991,93 +1141,122 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             <div key={group} className="space-y-3">
               <h3 className="text-base font-medium text-gray-900 border-b border-gray-200 pb-2">
                 {groupLabels[group]}
+                {group === 'common' && (
+                  <span className="ml-2 text-sm text-gray-500 font-normal">(Multiple selections allowed)</span>
+                )}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {services.map(service => (
-                  <div 
-                    key={service.id} 
-                    className={`relative rounded-lg border-2 transition overflow-hidden ${
-                      methods.watch('serviceType') === service.id 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    <label className="flex p-4 cursor-pointer">
-                      <div className="flex items-center h-5 mt-0.5">
-                        <Controller
-                          name="serviceType"
-                          control={methods.control}
-                          rules={{ required: "Please select a service" }}
-                          render={({ field }) => (
-                            <input
-                              type="radio"
-                              className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
-                              value={service.id}
-                              checked={field.value === service.id}
-                              onChange={() => field.onChange(service.id)}
-                            />
-                          )}
-                        />
-                      </div>
-                      <div className="ml-3 flex-1">
-                        <div className="flex items-center mb-1">
-                          <svg className="h-5 w-5 text-primary-600 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                            <path d={service.icon} />
-                          </svg>
-                          <span className="font-medium text-gray-900">{service.label}</span>
+                {services.map(service => {
+                  const isCommonRepair = group === 'common';
+                  const currentServices = methods.watch('serviceType');
+                  const isSelected = isCommonRepair 
+                    ? Array.isArray(currentServices) && currentServices.includes(service.id)
+                    : currentServices === service.id;
+                  
+                  return (
+                    <div 
+                      key={service.id} 
+                      className={`relative rounded-lg border-2 transition overflow-hidden ${
+                        isSelected
+                          ? 'border-primary-500 bg-primary-50' 
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <label className="flex p-4 cursor-pointer">
+                        <div className="flex items-center h-5 mt-0.5">
+                          <Controller
+                            name="serviceType"
+                            control={methods.control}
+                            rules={{ required: "Please select at least one service" }}
+                            render={({ field }) => (
+                              <input
+                                type={isCommonRepair ? "checkbox" : "radio"}
+                                className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+                                value={service.id}
+                                checked={isSelected}
+                                onChange={() => {
+                                  if (isCommonRepair) {
+                                    // Handle multiple selection for common repairs
+                                    const currentArray = Array.isArray(field.value) ? field.value : [];
+                                    if (currentArray.includes(service.id)) {
+                                      // Remove service
+                                      field.onChange(currentArray.filter(id => id !== service.id));
+                                    } else {
+                                      // Add service
+                                      field.onChange([...currentArray, service.id]);
+                                    }
+                                  } else {
+                                    // Handle single selection for other groups
+                                    field.onChange(service.id);
+                                  }
+                                }}
+                              />
+                            )}
+                          />
                         </div>
-                        
-                        <div className="flex items-center justify-between mt-2 text-xs">
-                          <div className="flex items-center">
-                            <svg className="h-4 w-4 text-gray-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                        <div className="ml-3 flex-1">
+                          <div className="flex items-center mb-1">
+                            <svg className="h-5 w-5 text-primary-600 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                              <path d={service.icon} />
                             </svg>
-                            <span className="text-gray-600">{service.time}</span>
+                            <span className="font-medium text-gray-900">{service.label}</span>
                           </div>
                           
-                          <div className="flex items-center ml-4">
-                            <svg className="h-4 w-4 text-gray-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                              <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
-                            </svg>
-                            <span className="text-gray-600">{service.price}</span>
+                          <div className="flex items-center justify-between mt-2 text-xs">
+                            <div className="flex items-center">
+                              <svg className="h-4 w-4 text-gray-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-600">{service.time}</span>
+                            </div>
+                            
+                            <div className="flex items-center ml-4">
+                              <svg className="h-4 w-4 text-gray-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-600">{service.price}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </label>
-                    
-                    {service.doorstep ? (
-                      <div className="absolute top-0 right-0 mt-2 mr-2">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 border border-green-200">
-                          <svg className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                          Doorstep
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="absolute top-0 right-0 mt-2 mr-2">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
-                          In-Shop Only
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      </label>
+                      
+                      {/* Only show doorstep badge for non-common repairs or when service is not doorstep eligible */}
+                      {!isCommonRepair && (
+                        service.doorstep ? (
+                          <div className="absolute top-0 right-0 mt-2 mr-2">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                              <svg className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              Doorstep
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="absolute top-0 right-0 mt-2 mr-2">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                              In-Shop Only
+                            </span>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );
         })}
         
-        {methods.formState.errors.serviceType && showValidationErrors && (
-          <p className="mt-1 text-sm text-red-600">{methods.formState.errors.serviceType.message}</p>
-        )}
+          {methods.formState.errors.serviceType && showValidationErrors && (
+            <p className="mt-1 text-sm text-red-600">{methods.formState.errors.serviceType.message}</p>
+          )}
         
         <div className="space-y-2 mt-8">
           <div className="flex justify-between items-center">
-            <label htmlFor="issueDescription" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="issueDescription" className="block text-sm font-medium text-gray-700">
               Describe Your Issue
-            </label>
+          </label>
             <span className="text-sm text-gray-500">Recommended</span>
           </div>
           
@@ -1087,9 +1266,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             rules={{}} 
             render={({ field, fieldState }) => (
               <>
-                <textarea
-                  id="issueDescription"
-                  rows={4}
+          <textarea
+            id="issueDescription"
+            rows={4}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-sm"
                   placeholder={`Please describe your ${deviceType} issue in as much detail as possible. For example: "My screen is cracked and has black spots" or "Battery drains very quickly, only lasts 2 hours"`}
                   {...field}
@@ -1114,6 +1293,489 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               </div>
             </div>
           </div>
+
+          {/* Real-time Pricing Display */}
+          <PriceDisplay
+            deviceType={methods.watch('deviceType')}
+            brand={methods.watch('deviceBrand')}
+            model={methods.watch('deviceModel')}
+            services={methods.watch('serviceType')}
+            tier={methods.watch('pricingTier') || 'standard'}
+            postalCode={methods.watch('postalCode')}
+            enabled={!!(methods.watch('deviceType') && methods.watch('deviceBrand') && methods.watch('deviceModel') && methods.watch('serviceType'))}
+            className="mt-6"
+          />
+        </div>
+      </div>
+    );
+  };
+
+  // Render the merged Service Details and Tier step
+  const renderServiceDetailsAndTierStep = () => {
+    // Only show validation errors if this step has been validated
+    const showValidationErrors = validatedSteps.includes(1);
+    
+    return (
+      <div className="space-y-8">
+        {/* Header Section */}
+        <div className="bg-gradient-to-r from-blue-50 to-primary-50 p-4 rounded-lg mb-6">
+          <h3 className="text-lg font-semibold text-primary-900 mb-2">Service Details & Pricing</h3>
+          <p className="text-sm text-gray-700">
+            Select the services you need and choose your preferred service tier.
+          </p>
+        </div>
+
+        {/* Service Selection Section */}
+        <div className="space-y-6">
+          <h4 className="text-xl font-semibold text-gray-900">What needs repair?</h4>
+          
+          <div className="space-y-4">
+            {/* Service selection logic from renderServiceDetailsStep */}
+            {(() => {
+              const deviceType = methods.watch('deviceType');
+              
+              // Enhanced services with icons, time estimates, and price ranges (using existing service definitions)
+              const services = {
+                mobile: [
+                  { 
+                    id: 'screen-replacement', 
+                    label: 'Screen Replacement', 
+                    doorstep: true,
+                    icon: 'M12 18h-1.5v-2H18v2H12zM6 11v-1h12v1H6zm0 6H4.5v-2H6v2zm10.5-6a.75.75 0 100-1.5.75.75 0 000 1.5zM12 6V4h6v2h-6zM6 6V4h4.5v2H6z',
+                    time: '30-60 min',
+                    price: '$89-199',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'battery-replacement', 
+                    label: 'Battery Replacement', 
+                    doorstep: true,
+                    icon: 'M20 10V8h-3V4H7v4H4v2h3v8a2 2 0 002 2h6a2 2 0 002-2v-8h3zM13 8V6h1v2h-1zm-3 0V6h1v2h-1z',
+                    time: '20-40 min',
+                    price: '$69-129',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'charging-port', 
+                    label: 'Charging Port Repair', 
+                    doorstep: true,
+                    icon: 'M9 4v4h6V4h2v4h1a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8a2 2 0 012-2h1V4h2zm1 16h4v-4h-4v4z',
+                    time: '30-45 min',
+                    price: '$79-119',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'speaker-mic', 
+                    label: 'Speaker/Microphone Repair', 
+                    doorstep: true,
+                    icon: 'M10 7a5 5 0 015 5 5 5 0 01-5 5 5 5 0 01-5-5 5 5 0 015-5zm0 2a3 3 0 00-3 3 3 3 0 003 3 3 3 0 003-3 3 3 0 00-3-3zm7-5v14a2 2 0 01-2 2H5a2 2 0 01-2-2V4a2 2 0 012-2h10a2 2 0 012 2z',
+                    time: '25-45 min',
+                    price: '$69-119',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'camera-repair', 
+                    label: 'Camera Repair', 
+                    doorstep: true,
+                    icon: 'M12 9a3 3 0 100 6 3 3 0 000-6zm0 1.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM20 5H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2zm-8 11a5 5 0 110-10 5 5 0 010 10z',
+                    time: '30-60 min',
+                    price: '$89-149',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'water-damage', 
+                    label: 'Water Damage Diagnostics', 
+                    doorstep: false,
+                    icon: 'M12 3.25a.75.75 0 01.75.75v6.701a4.25 4.25 0 11-1.5 0V4a.75.75 0 01.75-.75zM7.266 7.5a7 7 0 1113.468 2.5 7 7 0 01-13.468-2.5z',
+                    time: '45-90 min',
+                    price: '$99-249',
+                    group: 'special'
+                  }
+                ],
+                laptop: [
+                  { 
+                    id: 'screen-replacement', 
+                    label: 'Screen Replacement', 
+                    doorstep: true,
+                    icon: 'M20 4H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 11.5H4V6h16v9.5zM4 20h16v-2H4v2z',
+                    time: '45-75 min',
+                    price: '$149-349',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'battery-replacement', 
+                    label: 'Battery Replacement', 
+                    doorstep: true,
+                    icon: 'M20 10V8h-3V4H7v4H4v2h3v8a2 2 0 002 2h6a2 2 0 002-2v-8h3z',
+                    time: '30-45 min',
+                    price: '$99-199',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'keyboard-repair', 
+                    label: 'Keyboard Repair/Replacement', 
+                    doorstep: true,
+                    icon: 'M20 5H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2zm0 11.5H4V7h16v9.5zM6 10h2v2H6v-2zm3 0h2v2H9v-2zm3 0h2v2h-2v-2zm3 0h2v2h-2v-2z',
+                    time: '45-75 min',
+                    price: '$99-189',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'trackpad-repair', 
+                    label: 'Trackpad Repair', 
+                    doorstep: true,
+                    icon: 'M19 4H5a3 3 0 00-3 3v10a3 3 0 003 3h14a3 3 0 003-3V7a3 3 0 00-3-3zm1 13a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h14a1 1 0 011 1v10zm-8-7a2 2 0 100 4 2 2 0 000-4z',
+                    time: '45-90 min',
+                    price: '$99-179',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'ram-upgrade', 
+                    label: 'RAM Upgrade', 
+                    doorstep: true,
+                    icon: 'M4 4h16a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1zm0 8h16a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4a1 1 0 011-1zm3-6h2v2H7V6zm0 8h2v2H7v-2z',
+                    time: '20-40 min',
+                    price: '$69-249',
+                    group: 'upgrades'
+                  },
+                  { 
+                    id: 'storage-upgrade', 
+                    label: 'HDD/SSD Replacement/Upgrade', 
+                    doorstep: true,
+                    icon: 'M15 15a2 2 0 100-4 2 2 0 000 4zm4-11h-1V3a1 1 0 00-1-1H7a1 1 0 00-1 1v1H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm-4 10a4 4 0 110-8 4 4 0 010 8zm-6-8.5a.5.5 0 100-1 .5.5 0 000 1z',
+                    time: '30-60 min',
+                    price: '$89-349',
+                    group: 'upgrades'
+                  },
+                  { 
+                    id: 'software-trouble', 
+                    label: 'Software Troubleshooting', 
+                    doorstep: true,
+                    icon: 'M13 13.5a1 1 0 11-2 0 1 1 0 012 0zm-.25-5v2.992l.25.26a1 1 0 11-2 0l.25-.26V8.5a1 1 0 112 0zM12 4a8 8 0 100 16 8 8 0 000-16zm-6.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z',
+                    time: '45-90 min',
+                    price: '$79-149',
+                    group: 'software'
+                  },
+                  { 
+                    id: 'virus-removal', 
+                    label: 'Virus Removal', 
+                    doorstep: true,
+                    icon: 'M11 16.75a.75.75 0 001.5 0v-1.061l.344-.282a4.5 4.5 0 10-2.196.003l.352.279v1.06zm1.956-8.909a1 1 0 00-1.912 0L9.96 9.575A3 3 0 008.633 11H7a1 1 0 100 2h1.633A3.001 3.001 0 0012 15a3.001 3.001 0 003.367-2H17a1 1 0 100-2h-1.633a3 3 0 00-1.327-1.425l-1.084-1.734z',
+                    time: '60-120 min',
+                    price: '$99-199',
+                    group: 'software'
+                  },
+                  { 
+                    id: 'cooling-repair', 
+                    label: 'Cooling System Repair', 
+                    doorstep: true,
+                    icon: 'M10 8a1 1 0 11-2 0 1 1 0 012 0zm5 0a1 1 0 11-2 0 1 1 0 012 0zM8.5 12.5L7 11l-3 3 3 3 1.5-1.5L7 14l1.5-1.5zm7 0L14 14l1.5 1.5L17 14l-3-3-3 3 1.5 1.5 1.5-1.5zM12 2a10 10 0 100 20 10 10 0 000-20zm-8 10a8 8 0 1116 0 8 8 0 01-16 0z',
+                    time: '45-90 min',
+                    price: '$89-179',
+                    group: 'hardware'
+                  },
+                  { 
+                    id: 'power-jack', 
+                    label: 'Power Jack Repair', 
+                    doorstep: true,
+                    icon: 'M12 7V5M8 9l-2-2M16 9l2-2M7 13H5M19 13h-2M12 17a2 2 0 100-4 2 2 0 000 4z',
+                    time: '60-90 min',
+                    price: '$99-179',
+                    group: 'hardware'
+                  }
+                ],
+                tablet: [
+                  { 
+                    id: 'screen-replacement', 
+                    label: 'Screen Replacement', 
+                    doorstep: true,
+                    icon: 'M18 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2zm0 17H6V5h12v14zm-7-3h2v-2h-2v2z',
+                    time: '45-75 min',
+                    price: '$129-299',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'battery-replacement', 
+                    label: 'Battery Replacement', 
+                    doorstep: true,
+                    icon: 'M20 10V8h-3V4H7v4H4v2h3v8a2 2 0 002 2h6a2 2 0 002-2v-8h3z',
+                    time: '30-60 min',
+                    price: '$89-169',
+                    group: 'common'
+                  },
+                  { 
+                    id: 'charging-port', 
+                    label: 'Charging Port Repair', 
+                    doorstep: true,
+                    icon: 'M9 4v4h6V4h2v4h1a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8a2 2 0 012-2h1V4h2zm1 16h4v-4h-4v4z',
+                    time: '30-60 min',
+                    price: '$79-149',
+                    group: 'common'
+                  }
+                ]
+              };
+
+              const deviceServices = services[deviceType as keyof typeof services] || [];
+              const selectedServices = methods.watch('serviceType') || [];
+
+              return (
+                <Controller
+                  name="serviceType"
+                  control={methods.control}
+                  rules={{ required: "Please select at least one service" }}
+                  render={({ field, fieldState }) => (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {deviceServices.map((service) => {
+                          const isSelected = Array.isArray(field.value) 
+                            ? field.value.includes(service.id)
+                            : field.value === service.id;
+
+                          return (
+                            <div
+                              key={service.id}
+                              className={`relative border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                                isSelected
+                                  ? 'border-primary-500 bg-primary-50'
+                                  : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                              onClick={() => {
+                                // Toggle service selection
+                                let newValue;
+                                if (Array.isArray(field.value)) {
+                                  newValue = isSelected
+                                    ? field.value.filter(id => id !== service.id)
+                                    : [...field.value, service.id];
+                                } else {
+                                  newValue = isSelected ? [] : [service.id];
+                                }
+                                field.onChange(newValue);
+                                methods.trigger('serviceType');
+                              }}
+                            >
+                              <div className="flex items-start space-x-3">
+                                <div className="flex-shrink-0 mt-1">
+                                  <svg className="h-6 w-6 text-primary-600" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d={service.icon} />
+                                  </svg>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-lg font-medium text-gray-900">{service.label}</h4>
+                                    {service.doorstep && (
+                                      <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                        Doorstep
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center justify-between text-sm text-gray-600">
+                                    <span>{service.time}</span>
+                                    <span className="font-medium text-primary-600">{service.price}</span>
+                                  </div>
+                                </div>
+                                {isSelected && (
+                                  <div className="flex-shrink-0">
+                                    <svg className="h-5 w-5 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      {fieldState.error && showValidationErrors && (
+                        <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                      )}
+                    </div>
+                  )}
+                />
+              );
+            })()}
+          </div>
+
+          <div className="space-y-4">
+            <div className="relative">
+              <label htmlFor="issueDescription" className="block text-sm font-medium text-gray-700 mb-2">
+                Additional Details (Optional)
+              </label>
+              <Controller
+                name="issueDescription"
+                control={methods.control}
+                render={({ field }) => (
+                  <textarea
+                    id="issueDescription"
+                    rows={3}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    placeholder="Please describe any additional details about the issue..."
+                    {...field}
+                  />
+                )}
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Help our technicians understand the problem better (optional).
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Service Tier Selection Section */}
+        <div className="space-y-6 border-t pt-8">
+          <h4 className="text-xl font-semibold text-gray-900">Choose Your Service Tier</h4>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4">
+              {/* Standard Tier */}
+              <Controller
+                name="pricingTier"
+                control={methods.control}
+                rules={{ required: "Please select a service tier" }}
+                render={({ field, fieldState }) => (
+                  <>
+                    <div
+                      className={`relative rounded-lg border-2 transition cursor-pointer ${
+                        field.value === 'standard'
+                          ? 'border-primary-500 bg-primary-50'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <label className="flex p-6 cursor-pointer">
+                        <div className="flex items-center h-5 mt-0.5">
+                          <input
+                            type="radio"
+                            className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+                            value="standard"
+                            checked={field.value === 'standard'}
+                            onChange={() => field.onChange('standard')}
+                          />
+                        </div>
+                        <div className="ml-4 flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <h5 className="text-lg font-medium text-gray-900">Standard Repair</h5>
+                            <div className="flex items-center space-x-2">
+                              <div className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                Most Popular
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-4">
+                            Quality repair with standard timeframe and 3-month warranty
+                          </p>
+                          
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="flex items-center">
+                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-700">3-Month Warranty</span>
+                            </div>
+                            <div className="flex items-center">
+                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-700">24-48 Hours</span>
+                            </div>
+                            <div className="flex items-center">
+                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-700">Quality Parts</span>
+                            </div>
+                            <div className="flex items-center">
+                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-700">Free Diagnostics</span>
+                            </div>
+                          </div>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Premium Tier */}
+                    <div
+                      className={`relative rounded-lg border-2 transition cursor-pointer ${
+                        field.value === 'premium'
+                          ? 'border-primary-500 bg-primary-50'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <label className="flex p-6 cursor-pointer">
+                        <div className="flex items-center h-5 mt-0.5">
+                          <input
+                            type="radio"
+                            className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+                            value="premium"
+                            checked={field.value === 'premium'}
+                            onChange={() => field.onChange('premium')}
+                          />
+                        </div>
+                        <div className="ml-4 flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <h5 className="text-lg font-medium text-gray-900">Premium Service</h5>
+                            <div className="flex items-center space-x-2">
+                              <div className="text-sm bg-orange-100 text-orange-800 px-2 py-1 rounded">
+                                Express Service
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-4">
+                            Priority service with premium parts and 6-month warranty
+                          </p>
+                          
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="flex items-center">
+                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-700">6-Month Warranty</span>
+                            </div>
+                            <div className="flex items-center">
+                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-700">12-24 Hours</span>
+                            </div>
+                            <div className="flex items-center">
+                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-700">Premium Parts</span>
+                            </div>
+                            <div className="flex items-center">
+                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-700">Express Handling</span>
+                            </div>
+                          </div>
+                        </div>
+                      </label>
+                    </div>
+
+                    {fieldState.error && showValidationErrors && (
+                      <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                    )}
+                  </>
+                )}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Real-time Pricing Display */}
+        <div className="mt-8">
+          <TierPriceComparison
+            deviceType={methods.watch('deviceType')}
+            brand={methods.watch('deviceBrand')}
+            model={methods.watch('deviceModel')}
+            services={methods.watch('serviceType')}
+            postalCode={methods.watch('postalCode')}
+            enabled={!!(methods.watch('deviceType') && methods.watch('deviceBrand') && methods.watch('deviceModel') && methods.watch('serviceType'))}
+            className="mt-6"
+          />
         </div>
       </div>
     );
@@ -1137,39 +1799,45 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           <div className="relative">
             <label htmlFor="customerName" className="block text-sm font-medium text-gray-700 mb-1">
               Full Name <span className="text-red-500">*</span>
-            </label>
+          </label>
             <div className="relative rounded-md shadow-sm">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                 </svg>
               </div>
-              <Controller
-                name="customerName"
-                control={methods.control}
-                rules={{ required: "Name is required" }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <input
-                      id="customerName"
-                      type="text"
-                      className={`block w-full pl-10 pr-3 py-2 border ${fieldState.error ? 'border-red-300' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200`}
+          <Controller
+            name="customerName"
+            control={methods.control}
+            rules={{ required: "Name is required" }}
+            render={({ field, fieldState }) => (
+              <>
+                <input
+                  id="customerName"
+                  type="text"
+                  className={`input-field enhanced-focus-ring block w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200 ${
+                    fieldState.error 
+                      ? 'border-red-300 invalid' 
+                      : field.value && !fieldState.error 
+                        ? 'border-green-300 valid' 
+                        : 'border-gray-300'
+                  }`}
                       placeholder="John Smith"
-                      {...field}
-                    />
-                    {fieldState.error && showValidationErrors && (
-                      <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                    )}
-                  </>
+                  {...field}
+                />
+                {fieldState.error && showValidationErrors && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
                 )}
-              />
+              </>
+            )}
+            />
             </div>
           </div>
-            
+          
           <div className="relative">
             <label htmlFor="customerEmail" className="block text-sm font-medium text-gray-700 mb-1">
               Email Address <span className="text-red-500">*</span>
-            </label>
+          </label>
             <div className="relative rounded-md shadow-sm">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
@@ -1177,78 +1845,90 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                 </svg>
               </div>
-              <Controller
-                name="customerEmail"
-                control={methods.control}
-                rules={{ 
-                  required: "Email is required",
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: "Invalid email address"
-                  }
-                }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <input
-                      id="customerEmail"
-                      type="email"
-                      className={`block w-full pl-10 pr-3 py-2 border ${fieldState.error ? 'border-red-300' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200`}
-                      placeholder="you@example.com"
-                      {...field}
-                    />
-                    {fieldState.error && showValidationErrors && (
-                      <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                    )}
-                  </>
+          <Controller
+            name="customerEmail"
+            control={methods.control}
+            rules={{ 
+              required: "Email is required",
+              pattern: {
+                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                message: "Invalid email address"
+              }
+            }}
+            render={({ field, fieldState }) => (
+              <>
+                <input
+                  id="customerEmail"
+                  type="email"
+                  className={`input-field enhanced-focus-ring block w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200 ${
+                    fieldState.error 
+                      ? 'border-red-300 invalid' 
+                      : field.value && !fieldState.error 
+                        ? 'border-green-300 valid' 
+                        : 'border-gray-300'
+                  }`}
+                  placeholder="you@example.com"
+                  {...field}
+                />
+                {fieldState.error && showValidationErrors && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
                 )}
-              />
+              </>
+            )}
+          />
             </div>
             <p className="mt-1 text-xs text-gray-500">
               We'll send booking confirmation and updates to this email. We won't share it with third parties.
-            </p>
-          </div>
-          
+          </p>
+        </div>
+        
           <div className="relative">
             <label htmlFor="customerPhone" className="block text-sm font-medium text-gray-700 mb-1">
               Phone Number <span className="text-red-500">*</span>
-            </label>
+          </label>
             <div className="relative rounded-md shadow-sm">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                 </svg>
               </div>
-              <Controller
-                name="customerPhone"
-                control={methods.control}
-                rules={{ 
-                  required: "Phone number is required",
-                  pattern: {
-                    value: process.env.NODE_ENV === 'production' 
-                      ? /^(\+?1-?)?(\([2-9]([0-9]{2})\)|[2-9]([0-9]{2}))-?[2-9]([0-9]{2})-?([0-9]{4})$/
-                      : /^.{2,}$/,
-                    message: "Please enter a valid phone number"
-                  }
-                }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <input
-                      id="customerPhone"
-                      type="tel"
-                      className={`block w-full pl-10 pr-3 py-2 border ${fieldState.error ? 'border-red-300' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200`}
-                      placeholder="(555) 123-4567"
-                      {...field}
-                    />
-                    {fieldState.error && showValidationErrors && (
-                      <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                    )}
-                  </>
+          <Controller
+            name="customerPhone"
+            control={methods.control}
+            rules={{ 
+              required: "Phone number is required",
+              pattern: {
+                value: process.env.NODE_ENV === 'production' 
+                  ? /^(\+?1-?)?(\([2-9]([0-9]{2})\)|[2-9]([0-9]{2}))-?[2-9]([0-9]{2})-?([0-9]{4})$/
+                  : /^.{2,}$/,
+                message: "Please enter a valid phone number"
+              }
+            }}
+            render={({ field, fieldState }) => (
+              <>
+                <input
+                  id="customerPhone"
+                  type="tel"
+                  className={`input-field enhanced-focus-ring block w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200 ${
+                    fieldState.error 
+                      ? 'border-red-300 invalid' 
+                      : field.value && !fieldState.error 
+                        ? 'border-green-300 valid' 
+                        : 'border-gray-300'
+                  }`}
+                  placeholder="(555) 123-4567"
+                  {...field}
+                />
+                {fieldState.error && showValidationErrors && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
                 )}
-              />
+              </>
+            )}
+          />
             </div>
             <p className="mt-1 text-xs text-gray-500">
-              Our technician will call you before arriving for the repair.
-            </p>
+            Our technician will call you before arriving for the repair.
+          </p>
           </div>
         </div>
 
@@ -1425,23 +2105,26 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             </div>
             <div className="ml-3">
               <p className="text-sm text-blue-700">
-                We service the entire Lower Mainland area including Vancouver, Burnaby, Surrey, Richmond, Coquitlam, and more.
+                We service the entire Lower Mainland area including Vancouver, Burnaby, Richmond, New Westminster, North Vancouver, West Vancouver, Coquitlam, and Chilliwack.
               </p>
           </div>
           </div>
         </div>
         
         {locationWasPreFilled && (
-          <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
+          <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4 location-success-message">
             <div className="flex">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                <svg className="h-5 w-5 text-green-400 success-checkmark" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
               </div>
               <div className="ml-3">
-                <p className="text-sm text-green-700">
-                  Your location information has been pre-filled based on your location. You can edit these details if needed.
+                <p className="text-sm text-green-700 font-medium">
+                  🎉 Great news! You're in our service area!
+                </p>
+                <p className="text-xs text-green-600 mt-1">
+                  Your location information has been pre-filled. You can edit these details if needed.
                 </p>
               </div>
             </div>
@@ -1530,7 +2213,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     id="city"
                     className={`$1`}
                     {...field}
+                    value={field.value || ''}
                   >
+                    <option value="" disabled>Select a city</option>
                     <option value="Vancouver">Vancouver</option>
                     <option value="Burnaby">Burnaby</option>
                     <option value="Surrey">Surrey</option>
@@ -1660,18 +2345,18 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             Choose your preferred date and time for the repair. Our technician will arrive during your selected timeframe.
           </p>
         </div>
-          
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Preferred Date <span className="text-red-500">*</span>
-            </label>
-            <Controller
-              name="appointmentDate"
-              control={methods.control}
+          </label>
+          <Controller
+            name="appointmentDate"
+            control={methods.control}
               rules={{ required: "Date is required" }}
-              render={({ field, fieldState }) => (
-                <>
+            render={({ field, fieldState }) => (
+              <>
                   <div className="relative rounded-md shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
@@ -1683,55 +2368,56 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       className={`block w-full pl-10 pr-10 py-2 border ${fieldState.error ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm`}
                       min={getTomorrowDate()}
                       max={getMaxDate()}
-                      {...field}
+                  {...field}
                     />
                   </div>
-                  {fieldState.error && showValidationErrors && (
-                    <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                  )}
-                </>
-              )}
-            />
+                {fieldState.error && showValidationErrors && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
+              </>
+            )}
+          />
             <p className="mt-1 text-xs text-gray-500">We accept bookings up to 60 days in advance.</p>
-          </div>
-            
+        </div>
+        
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Preferred Time <span className="text-red-500">*</span>
-            </label>
-            <Controller
-              name="appointmentTime"
-              control={methods.control}
+          </label>
+          <Controller
+            name="appointmentTime"
+            control={methods.control}
               rules={{ required: "Time slot is required" }}
-              render={({ field, fieldState }) => (
-                <>
+            render={({ field, fieldState }) => (
+              <>
                   <div className="relative rounded-md shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                       </svg>
                     </div>
-                    <select
+                <select
                       className={`block w-full pl-10 pr-10 py-2 border ${fieldState.error ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm appearance-none`}
-                      {...field}
-                    >
+                  {...field}
+                  value={field.value || ''}
+                >
                       <option value="">Select a time slot...</option>
                       <option value="morning">Morning (9AM - 12PM)</option>
                       <option value="afternoon">Afternoon (12PM - 4PM)</option>
                       <option value="evening">Evening (4PM - 7PM)</option>
-                    </select>
+                </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                       </svg>
                     </div>
                   </div>
-                  {fieldState.error && showValidationErrors && (
-                    <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                  )}
-                </>
-              )}
-            />
+                {fieldState.error && showValidationErrors && (
+                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                )}
+              </>
+            )}
+          />
             <p className="mt-1 text-xs text-gray-500">Our technicians work 7 days a week.</p>
           </div>
         </div>
@@ -1845,12 +2531,11 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       'other': 'Other Repair'
     };
     
-    // Format time for display
+    // Format time for display - use the utility function that handles time slots properly
     const formatTime = (timeString: string) => {
       if (!timeString) return 'Not selected';
-      const [hours, minutes] = timeString.split(':');
-      const hour = parseInt(hours);
-      return `${hour > 12 ? hour - 12 : hour}:${minutes} ${hour >= 12 ? 'PM' : 'AM'}`;
+      // Use the formatTimeSlot utility function which properly handles "HH-HH" format
+      return formatTimeSlot(timeString);
     };
     
     return (
@@ -1887,8 +2572,42 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 <dd className="mt-1 text-sm text-gray-900">{formData.deviceModel}</dd>
               </div>
               <div className="sm:col-span-2">
-                <dt className="text-sm font-medium text-gray-500">Service</dt>
-                <dd className="mt-1 text-sm text-gray-900">{serviceTypeMap[formData.serviceType] || formData.serviceType}</dd>
+                <dt className="text-sm font-medium text-gray-500">Service{Array.isArray(formData.serviceType) && formData.serviceType.length > 1 ? 's' : ''}</dt>
+                <dd className="mt-1 text-sm text-gray-900">
+                  {Array.isArray(formData.serviceType) 
+                    ? formData.serviceType.map(service => serviceTypeMap[service] || service).join(', ')
+                    : serviceTypeMap[formData.serviceType as string] || formData.serviceType
+                  }
+                </dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-sm font-medium text-gray-500">Service Tier & Pricing</dt>
+                <dd className="mt-1">
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-900">
+                        {formData.pricingTier === 'premium' ? 'Premium Service' : 'Standard Repair'}
+                      </span>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        formData.pricingTier === 'premium' 
+                          ? 'bg-orange-100 text-orange-800' 
+                          : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {formData.pricingTier === 'premium' ? 'Express Service' : 'Most Popular'}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600">Warranty:</span>
+                        <span className="ml-2 font-medium">{formData.pricingTier === 'premium' ? '6 Months' : '3 Months'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Turnaround:</span>
+                        <span className="ml-2 font-medium">{formData.pricingTier === 'premium' ? '12-24 Hours' : '24-48 Hours'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </dd>
               </div>
               {formData.issueDescription && (
               <div className="sm:col-span-2">
@@ -1949,6 +2668,18 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             </dl>
           </div>
         </div>
+
+        {/* Final Pricing Summary */}
+        <PriceDisplay
+          deviceType={formData.deviceType}
+          brand={formData.deviceBrand}
+          model={formData.deviceModel}
+          services={formData.serviceType}
+          tier={formData.pricingTier || 'standard'}
+          postalCode={formData.postalCode}
+          enabled={true}
+          className="mt-6"
+        />
         
         <div className="mt-6">
           <div className="relative flex items-start">
@@ -1996,17 +2727,21 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         if (errors.serviceType) errorFields.push('Service Type');
         // Remove issueDescription from the error fields since it's optional
         break;
-      case 2: // Contact Info
+      case 2: // Service Tier
+        if (errors.pricingTier) errorFields.push('Service Tier');
+        // Remove name, email, and phone from the error fields since they're optional
+        break;
+      case 3: // Contact Info
         if (errors.customerName) errorFields.push('Full Name');
         if (errors.customerEmail) errorFields.push('Email Address');
         if (errors.customerPhone) errorFields.push('Phone Number');
         break;
-      case 3: // Location
+      case 4: // Location
         if (errors.address) errorFields.push('Address');
         if (errors.city) errorFields.push('City');
         if (errors.postalCode) errorFields.push('Postal Code');
         break;
-      case 4: // Appointment
+      case 5: // Appointment
         if (errors.appointmentDate) errorFields.push('Appointment Date');
         if (errors.appointmentTime) errorFields.push('Appointment Time');
         break;
@@ -2053,11 +2788,11 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <ul className="list-disc pl-5 space-y-1">
                 {errorFields.map((fieldName, index) => (
                   <li key={index}>{fieldErrorMessages[fieldName] || `${fieldName} is required`}</li>
-                ))}
-              </ul>
+              ))}
+            </ul>
             </div>
-          </div>
         </div>
+          </div>
       </div>
     );
   };
@@ -2072,7 +2807,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       case 0:
         return renderDeviceTypeStep();
       case 1:
-        return renderServiceDetailsStep();
+        return renderServiceDetailsAndTierStep();
       case 2:
         return renderCustomerInfoStep();
       case 3:
@@ -2114,64 +2849,24 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     handleSubmit(processedData);
   };
 
+
+
   return (
-    <div className="bg-white rounded-xl shadow-xl p-8 max-w-3xl mx-auto border border-gray-100">
-      <h2 className="text-2xl font-bold mb-8 text-center text-primary-600 relative">
+    <>
+      {/* Floating Progress Indicator */}
+      <FloatingProgress 
+        currentStep={currentStep} 
+        totalSteps={steps.length} 
+        stepNames={steps} 
+      />
+      
+      <div className="bg-white rounded-xl shadow-xl p-4 sm:p-6 md:p-8 max-w-3xl mx-auto border border-gray-100">
+      <h2 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8 text-center text-primary-600 relative">
         <span className="relative inline-block">
           Book Your Doorstep Repair
           <span className="absolute bottom-0 left-0 w-full h-1 bg-primary-300 opacity-40"></span>
         </span>
       </h2>
-      
-      {/* Step progress indicators */}
-      <div className="mb-12">
-        <div className="flex justify-between items-center">
-          {steps.map((step, index) => (
-            <div key={index} className="flex flex-col items-center relative">
-              <div 
-                className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${
-                  index < currentStep 
-                    ? 'bg-primary-600 text-white scale-110 shadow-md' 
-                    : index === currentStep 
-                      ? 'bg-primary-100 text-primary-800 border-2 border-primary-500 scale-125 shadow-md' 
-                      : 'bg-gray-100 text-gray-500 border border-gray-300'
-                }`}
-              >
-                {index < currentStep ? (
-                  <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                ) : (
-                  index + 1
-                )}
-              </div>
-              <span className={`text-xs mt-2 font-medium max-w-[80px] text-center ${
-                index === currentStep ? 'text-primary-700 font-semibold' : index < currentStep ? 'text-primary-600' : 'text-gray-600'
-              } ${index === currentStep ? 'scale-110' : ''} transition-all duration-300`}>
-                {step}
-              </span>
-              
-              {index === currentStep && (
-                <div className="h-1 w-10 bg-primary-500 mt-1 rounded-full"></div>
-              )}
-              
-              {/* Connection lines between step indicators */}
-              {index < steps.length - 1 && (
-                <div className="hidden md:block absolute top-5 left-[calc(100%+0.5rem)] w-[calc(100%-2rem)] h-[2px] -translate-y-1/2" style={{ left: '100%', width: 'calc(100% - 1rem)' }}>
-                  <div className={`h-full ${index < currentStep ? 'bg-primary-500' : 'bg-gray-300'}`}></div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-        <div className="relative mt-5">
-          <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-full h-2 bg-gray-200 rounded-full"></div>
-          <div 
-            className="absolute left-0 top-1/2 transform -translate-y-1/2 h-2 bg-primary-600 rounded-full transition-all duration-700 ease-in-out" 
-            style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
-          ></div>
-        </div>
-      </div>
       
       <FormProvider {...methods}>
         <form onSubmit={async (e) => {
@@ -2183,17 +2878,19 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           }
         }}>
           {/* Step content with improved styling */}
-          <div className="mb-8 bg-gray-50 p-6 rounded-lg border border-gray-100 shadow-sm">
-            {renderStepContent()}
+          <div className="mb-6 sm:mb-8 bg-gray-50 p-4 sm:p-6 rounded-lg border border-gray-100 shadow-sm">
+            <div className="step-content">
+              {renderStepContent()}
+            </div>
           </div>
           
           {/* Navigation buttons with improved styling */}
-          <div className="flex justify-between mt-8">
+          <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 mt-6 sm:mt-8">
             {currentStep > 0 ? (
               <button
                 type="button"
                 onClick={prevStep}
-                className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-all duration-300 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 shadow-sm flex items-center"
+                className="w-full sm:w-auto px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-all duration-300 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 shadow-sm flex items-center justify-center"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -2204,7 +2901,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <button
                 type="button"
                 onClick={onCancel}
-                className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-all duration-300 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 shadow-sm"
+                className="w-full sm:w-auto px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-all duration-300 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 shadow-sm"
               >
                 Cancel
               </button>
@@ -2214,18 +2911,21 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <button
                 type="button"
                 onClick={() => nextStep()}
-                className="px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-all duration-300 shadow-md hover:shadow-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transform hover:-translate-y-0.5 active:translate-y-0 flex items-center"
+                className="enhanced-button w-full sm:w-auto px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-all duration-300 shadow-md hover:shadow-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center"
               >
-                Next
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                </svg>
+                <span className="button-gradient"></span>
+                <span className="relative z-10 flex items-center">
+                  Next
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2 button-icon" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                </span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={handleFinalSubmit}
-                className="px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-all duration-300 shadow-md hover:shadow-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center"
+                className="w-full sm:w-auto px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-all duration-300 shadow-md hover:shadow-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center"
                 disabled={methods.formState.isSubmitting}
               >
                 {methods.formState.isSubmitting ? (
@@ -2247,8 +2947,16 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               </button>
             )}
           </div>
-        </form>
+      </form>
       </FormProvider>
     </div>
+    
+    {/* Mobile Swipe Indicator */}
+    {showSwipeIndicator && (
+      <div className={`swipe-indicator ${showSwipeIndicator ? 'visible' : ''}`}>
+        Swipe or tap Next to continue
+      </div>
+    )}
+    </>
   );
 }

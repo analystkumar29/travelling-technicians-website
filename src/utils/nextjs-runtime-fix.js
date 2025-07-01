@@ -3,7 +3,7 @@
  * This file provides runtime patches for common Next.js router issues without modifying node_modules
  */
 
-// Only apply in browser environment
+// Only apply in browser environment and skip some fixes in development for Fast Refresh
 if (typeof window !== 'undefined') {
   console.log('[NextFix] Applying Next.js runtime fixes');
   
@@ -84,7 +84,7 @@ if (typeof window !== 'undefined') {
     configurable: true
   });
   
-  // 6. Add global error handler to catch and handle router errors
+  // 6. Add global error handler to catch and handle router errors (less aggressive in development)
   const originalOnError = window.onerror;
   window.onerror = function(message, source, line, column, error) {
     // Handle router errors
@@ -110,15 +110,18 @@ if (typeof window !== 'undefined') {
         console.error('[NextFix] Error fixing history state:', e);
       }
       
-      // Prevent the white screen issue by checking document body
-      if (document.body && document.body.children.length === 0) {
-        console.log('[NextFix] Detected white screen, checking state...');
-        setTimeout(() => {
-          if (document.body.children.length === 0) {
-            console.log('[NextFix] Still white screen, refreshing page...');
-            window.location.reload();
-          }
-        }, 1000);
+      // In development, be less aggressive about reloading to avoid disrupting Fast Refresh
+      if (process.env.NODE_ENV !== 'development') {
+        // Prevent the white screen issue by checking document body
+        if (document.body && document.body.children.length === 0) {
+          console.log('[NextFix] Detected white screen, checking state...');
+          setTimeout(() => {
+            if (document.body.children.length === 0) {
+              console.log('[NextFix] Still white screen, refreshing page...');
+              window.location.reload();
+            }
+          }, 1000);
+        }
       }
       
       return true; // Prevent default error handling
@@ -132,21 +135,23 @@ if (typeof window !== 'undefined') {
     return false;
   };
   
-  // 7. Add DOMContentLoaded handler to check for white screen
-  document.addEventListener('DOMContentLoaded', () => {
-    // Set a timeout to check if content has loaded properly
-    setTimeout(() => {
-      const visibleElements = Array.from(document.body.children).filter(el => {
-        const style = window.getComputedStyle(el);
-        return el.tagName !== 'SCRIPT' && style.display !== 'none' && style.visibility !== 'hidden';
-      });
-      
-      if (visibleElements.length === 0) {
-        console.log('[NextFix] No visible elements detected after load, refreshing...');
-        window.location.reload();
-      }
-    }, 2000);
-  });
+  // 7. Add DOMContentLoaded handler to check for white screen (production only)
+  if (process.env.NODE_ENV !== 'development') {
+    document.addEventListener('DOMContentLoaded', () => {
+      // Set a timeout to check if content has loaded properly
+      setTimeout(() => {
+        const visibleElements = Array.from(document.body.children).filter(el => {
+          const style = window.getComputedStyle(el);
+          return el.tagName !== 'SCRIPT' && style.display !== 'none' && style.visibility !== 'hidden';
+        });
+        
+        if (visibleElements.length === 0) {
+          console.log('[NextFix] No visible elements detected after load, refreshing...');
+          window.location.reload();
+        }
+      }, 2000);
+    });
+  }
   
   console.log('[NextFix] All runtime fixes applied');
 }

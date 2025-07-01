@@ -1,6 +1,7 @@
 -- Simplified direct SQL statements to add missing columns
 ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS city TEXT;
 ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS province TEXT;
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS pricing_tier TEXT DEFAULT 'standard';
 
 -- First drop the brand column if it exists (since it might be a generated column)
 DO $$

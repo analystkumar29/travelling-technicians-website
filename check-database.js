@@ -2,91 +2,152 @@
 require('dotenv').config({ path: '.env.local' });
 const { createClient } = require('@supabase/supabase-js');
 
-// Create a Supabase client with environment variables
+// Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Missing Supabase credentials in environment variables.');
+  console.error('Error: Missing Supabase credentials in .env.local');
+  console.error('Make sure NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set');
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+console.log('Connecting to Supabase at:', supabaseUrl);
+console.log('Using service role key:', supabaseServiceKey ? 'Key provided (hidden)' : 'Missing key');
 
-// Function to check bookings in the database
-async function checkBookings() {
-  console.log('=== CHECKING DATABASE BOOKINGS ===');
+const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+});
+
+async function checkDatabase() {
+  console.log('Checking database for warranty system tables...\n');
   
-  try {
-    // Get all bookings
-    console.log('Fetching all bookings...');
-    const { data: allBookings, error: allError } = await supabase
-      .from('bookings')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (allError) {
-      console.error('Error fetching all bookings:', allError);
-      return;
+  // Define expected tables from warranty system
+  const warrantyTables = [
+    'technicians',
+    'user_profiles',
+    'repair_completions',
+    'warranties',
+    'warranty_claims',
+    'technician_schedules'
+  ];
+  
+  // Check each table individually
+  console.log('Warranty System Implementation Status:');
+  console.log('=====================================');
+  
+  const results = {};
+  
+  for (const table of warrantyTables) {
+    try {
+      // Check if table exists by attempting to query it
+      const { error } = await supabase
+        .from(table)
+        .select('count')
+        .limit(1);
+      
+      // Determine if table exists based on error type
+      const exists = !error || !error.message.includes('does not exist');
+      results[table] = exists;
+      
+      console.log(`- ${table}: ${exists ? '✅ Implemented' : '❌ Missing'}`);
+    } catch (err) {
+      console.log(`- ${table}: ❌ Error checking (${err.message})`);
+      results[table] = false;
     }
+  }
+  
+  // Check for bookings table - needed for the warranty system relationships
+  try {
+    const { error: bookingsError } = await supabase
+      .from('bookings')
+      .select('count')
+      .limit(1);
     
-    console.log(`Found ${allBookings.length} bookings total`);
-    
-    if (allBookings.length > 0) {
-      console.log('\nMost recent bookings:');
-      allBookings.slice(0, 5).forEach(booking => {
-        console.log(`- ${booking.reference_number} (${booking.created_at}): ${booking.customer_name} - ${booking.device_type} - ${booking.service_type}`);
-      });
+    const bookingsExist = !bookingsError || !bookingsError.message.includes('does not exist');
+    console.log(`- bookings: ${bookingsExist ? '✅ Exists' : '❌ Missing (required for warranty relationships)'}`);
+  } catch (err) {
+    console.log(`- bookings: ❌ Error checking (${err.message})`);
+  }
+  
+  // Check for sample data
+  console.log('\nChecking for sample data:');
+  
+  if (results['technicians']) {
+    try {
+      const { data: technicians, error } = await supabase
+        .from('technicians')
+        .select('*');
       
-      // Try to fetch the most recent booking by reference
-      const mostRecent = allBookings[0];
-      console.log(`\nFetching most recent booking (${mostRecent.reference_number}) directly...`);
-      
-      const { data: singleBooking, error: singleError } = await supabase
-        .from('bookings')
-        .select('*')
-        .eq('reference_number', mostRecent.reference_number)
-        .single();
-      
-      if (singleError) {
-        console.error('Error fetching single booking:', singleError);
+      if (error) {
+        console.log('- Sample technician: ❌ Error checking');
       } else {
-        console.log('Found booking directly:', singleBooking ? 'Yes' : 'No');
-        if (singleBooking) {
-          console.log({
-            reference: singleBooking.reference_number,
-            customer: singleBooking.customer_name,
-            created: singleBooking.created_at
-          });
-        }
+        console.log(`- Technicians: ${technicians.length > 0 ? `✅ ${technicians.length} found` : '❌ None found'}`);
+      }
+    } catch (err) {
+      console.log('- Sample technician: ❌ Error checking');
+    }
+  }
+  
+  if (results['warranties']) {
+    try {
+      const { data: warranties, error } = await supabase
+        .from('warranties')
+        .select('*');
+      
+      if (error) {
+        console.log('- Sample warranties: ❌ Error checking');
+      } else {
+        console.log(`- Warranties: ${warranties.length > 0 ? `✅ ${warranties.length} found` : '❌ None found'}`);
+      }
+    } catch (err) {
+      console.log('- Sample warranties: ❌ Error checking');
+    }
+  }
+  
+  // Check for a booking with warranty
+  try {
+    if (results['warranties']) {
+      const { data, error } = await supabase
+        .from('warranties')
+        .select('id, warranty_code, booking_id, status')
+        .limit(1);
+      
+      if (!error && data && data.length > 0) {
+        console.log('- Booking with warranty: ✅ Found (warranty code:', data[0].warranty_code, ')');
+      } else {
+        console.log('- Booking with warranty: ❌ None found');
       }
     }
-    
-    // Check if test references exist
-    const testPrefix = 'TEST-';
-    const { data: testBookings, error: testError } = await supabase
-      .from('bookings')
-      .select('*')
-      .ilike('reference_number', `${testPrefix}%`)
-      .order('created_at', { ascending: false });
-    
-    if (testError) {
-      console.error('Error fetching test bookings:', testError);
-      return;
-    }
-    
-    console.log(`\nFound ${testBookings.length} test bookings`);
-    
-    if (testBookings.length > 0) {
-      console.log('\nRecent test bookings:');
-      testBookings.slice(0, 5).forEach(booking => {
-        console.log(`- ${booking.reference_number} (${booking.created_at}): ${booking.customer_name} - ${booking.device_type} - ${booking.service_type}`);
-      });
-    }
   } catch (err) {
-    console.error('Exception during database check:', err);
+    console.log('- Booking with warranty: ❌ Error checking');
+  }
+  
+  // Print next steps
+  console.log('\nNext Steps:');
+  const missingTables = warrantyTables.filter(table => !results[table]);
+  
+  if (missingTables.length === warrantyTables.length) {
+    console.log('It appears none of the warranty system tables have been created yet.');
+    console.log('1. Create the tables using the SQL scripts in sql/004-technician-warranty-system.sql');
+    console.log('2. Set up triggers with sql/005-warranty-triggers.sql');
+    console.log('3. Insert sample data for testing');
+  } else if (missingTables.length > 0) {
+    console.log(`Several warranty tables are missing: ${missingTables.join(', ')}`);
+    console.log('1. Complete table creation for missing tables');
+    console.log('2. Ensure triggers are set up for automated warranty creation');
+  } else {
+    console.log('✅ All tables appear to be created!');
+    console.log('1. Test the warranty creation flow with a completed repair');
+    console.log('2. Ensure warranty UI components are implemented');
   }
 }
 
-// Run the check
-checkBookings(); 
+// Run the database check
+checkDatabase().catch(err => {
+  console.error('Error:', err.message);
+  process.exit(1);
+}); 
