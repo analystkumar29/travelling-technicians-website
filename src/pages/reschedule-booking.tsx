@@ -1,608 +1,491 @@
-import { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
-import { format, addDays, isBefore } from 'date-fns';
-import { FaCheckCircle, FaTimesCircle, FaSpinner, FaCalendarAlt, FaClock } from 'react-icons/fa';
+import { formatDate } from '@/utils/formatters';
+import { format } from 'date-fns';
 
-// Generate available dates (next 14 days)
-function getAvailableDates() {
-  const dates = [];
-  const today = new Date();
-  
-  // Start from tomorrow
-  const tomorrow = addDays(today, 1);
-  
-  // Generate dates for the next 14 days
-  for (let i = 0; i < 14; i++) {
-    const date = addDays(tomorrow, i);
-    dates.push({
-      date: format(date, 'yyyy-MM-dd'),
-      display: format(date, 'EEEE, MMMM d, yyyy'),
-      day: format(date, 'EEEE')
-    });
-  }
-  
-  return dates;
+interface Booking {
+  id: string;
+  reference_number: string;
+  device_type: string;
+  device_brand: string;
+  device_model: string;
+  service_type: string;
+  booking_date: string;
+  booking_time: string;
+  customer_name: string;
+  customer_email: string;
+  address: string;
+  status: string;
+  created_at: string;
+  issue_description?: string;
 }
 
-// Available time slots
-const availableTimeSlots = [
-  { id: '09:00-11:00', display: '9:00 AM - 11:00 AM' },
-  { id: '11:00-13:00', display: '11:00 AM - 1:00 PM' },
-  { id: '13:00-15:00', display: '1:00 PM - 3:00 PM' },
-  { id: '15:00-17:00', display: '3:00 PM - 5:00 PM' },
-  { id: '17:00-19:00', display: '5:00 PM - 7:00 PM' },
-];
-
-export default function RescheduleBooking() {
+const RescheduleBooking: React.FC = () => {
   const router = useRouter();
-  const { token, reference } = router.query;
+  const { reference, token } = router.query;
   
-  const [status, setStatus] = useState<'loading' | 'error' | 'ready' | 'success'>('loading');
-  const [message, setMessage] = useState('Verifying your booking information...');
-  
-  const [booking, setBooking] = useState<any>(null);
+  // States
+  const [step, setStep] = useState<'email' | 'select-booking' | 'reschedule'>('email');
   const [email, setEmail] = useState('');
-  const [emailError, setEmailError] = useState('');
-  const [isEmailVerified, setIsEmailVerified] = useState(false);
-  
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
-  const [dateError, setDateError] = useState('');
-  const [timeError, setTimeError] = useState('');
-  
-  const [availableDates] = useState(getAvailableDates());
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Load booking when reference is available
+  const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'success' | 'error'>('idle');
+  const [message, setMessage] = useState('');
+
+  console.log('[RescheduleBooking] Component loaded with params:', { reference, token });
+
+  // Auto-load booking if we have reference and token
   useEffect(() => {
-    if (!reference) return;
-    
-    const fetchBooking = async () => {
-      console.log('[RescheduleBooking] Starting to fetch booking:', { reference, token });
-      
-      try {
-        // Fetch booking using the API endpoint
-        console.log('[RescheduleBooking] Making API call to:', `/api/bookings/${reference}`);
-        const response = await fetch(`/api/bookings/${reference}`);
-        
-        console.log('[RescheduleBooking] API response status:', response.status);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('[RescheduleBooking] API error response:', {
-            status: response.status,
-            statusText: response.statusText,
-            body: errorText
-          });
-          setStatus('error');
-          setMessage('Booking not found. Please check your link or contact support.');
-          return;
-        }
-        
-        const bookingData = await response.json();
-        console.log('[RescheduleBooking] Successfully fetched booking:', {
-          reference: bookingData.reference_number,
-          customerName: bookingData.customer_name,
-          hasData: !!bookingData
-        });
-        
-        setBooking(bookingData);
-        
-        // If we have token, status changes to ready
-        if (token) {
-          console.log('[RescheduleBooking] Token found, setting status to ready');
-          setStatus('ready');
-          setMessage('Please enter your email to verify and reschedule your booking.');
-        } else {
-          console.log('[RescheduleBooking] No token found, setting error status');
-          setStatus('error');
-          setMessage('Invalid verification link. Please check your email for the correct link.');
-        }
-      } catch (error) {
-        console.error('[RescheduleBooking] Error fetching booking:', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-          stack: error instanceof Error ? error.stack : undefined
-        });
-        setStatus('error');
-        setMessage('Error retrieving booking information. Please try again later.');
-      }
-    };
-    
-    fetchBooking();
+    if (reference && token && typeof reference === 'string' && typeof token === 'string') {
+      console.log('[RescheduleBooking] Auto-loading from URL params');
+      loadBookingFromParams(reference, token);
+    }
   }, [reference, token]);
-  
-  // Handle email verification
-  const handleVerifySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    console.log('[RescheduleBooking] Starting email verification:', { email, token, reference });
-    
-    // Validate email
-    if (!email) {
-      console.log('[RescheduleBooking] Email validation failed: empty email');
-      setEmailError('Email is required for verification');
-      return;
-    }
-    
-    if (!token || !reference) {
-      console.error('[RescheduleBooking] Missing verification data:', { token: !!token, reference });
-      setStatus('error');
-      setMessage('Missing verification data. Please check your link.');
-      return;
-    }
-    
-    setIsSubmitting(true);
-    
+
+  const loadBookingFromParams = async (ref: string, tok: string) => {
     try {
-      console.log('[RescheduleBooking] Making verification API call');
-      // Call verification API
-      const response = await fetch('/api/verify-booking', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, reference, email }),
+      setStatus('loading');
+      console.log('[RescheduleBooking] Loading booking:', ref);
+
+      // Fetch the specific booking first
+      const bookingResponse = await fetch(`/api/bookings/${ref}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
       });
-      
-      console.log('[RescheduleBooking] Verification API response status:', response.status);
-      
-      const result = await response.json();
-      console.log('[RescheduleBooking] Verification API result:', {
-        success: result.success,
-        message: result.message,
-        hasBooking: !!result.booking
-      });
-      
-      if (response.ok && result.success) {
-        console.log('[RescheduleBooking] Verification successful');
-        setIsEmailVerified(true);
-        setStatus('ready');
-        setMessage('Your identity is confirmed. Select a new date and time for your booking.');
-        setEmailError(''); // Clear any previous email errors
-      } else {
-        console.log('[RescheduleBooking] Verification failed:', result.message);
-        setEmailError(result.message || 'Verification failed. Please check your email and try again.');
-        setIsEmailVerified(false);
+
+      const bookingResult = await bookingResponse.json();
+      console.log('[RescheduleBooking] Booking response:', bookingResult);
+
+      if (!bookingResponse.ok || !bookingResult.success) {
+        throw new Error(bookingResult.message || 'Failed to load booking');
       }
+
+      const booking = bookingResult.booking;
+      setEmail(booking.customer_email);
+      setSelectedBooking(booking);
+      
+      // Now fetch all bookings for this email
+      await fetchAllBookingsForEmail(booking.customer_email, tok, ref);
+      
     } catch (error) {
-      console.error('[RescheduleBooking] Error during verification:', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
-      });
-      setEmailError('An error occurred during verification. Please try again later.');
-    } finally {
-      setIsSubmitting(false);
+      console.error('[RescheduleBooking] Error loading booking:', error);
+      setStatus('error');
+      setMessage('Unable to load booking. Please check your link or try again.');
     }
   };
-  
-  // Handle reschedule form submission
-  const handleRescheduleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    console.log('[RescheduleBooking] Starting reschedule submission:', {
-      selectedDate,
-      selectedTime,
-      reference,
-      bookingId: booking?.id,
-      originalBookingDate: booking?.booking_date,
-      selectedDateType: typeof selectedDate,
-      selectedTimeType: typeof selectedTime
-    });
-    
-    // Validate selections
-    let hasError = false;
-    
-    if (!selectedDate) {
-      console.log('[RescheduleBooking] Date validation failed: no date selected');
-      setDateError('Please select a date');
-      hasError = true;
-    }
-    
-    if (!selectedTime) {
-      console.log('[RescheduleBooking] Time validation failed: no time selected');
-      setTimeError('Please select a time');
-      hasError = true;
-    }
-    
-    if (hasError) return;
-    
-    setIsSubmitting(true);
-    
+
+  const fetchAllBookingsForEmail = async (customerEmail: string, verificationToken: string, verificationReference: string) => {
     try {
-      // Validate and format the selected date for display
-      const selectedDateObj = new Date(selectedDate);
-      if (isNaN(selectedDateObj.getTime())) {
-        throw new Error('Invalid selected date');
-      }
-      const formattedNewDate = format(selectedDateObj, 'EEEE, MMMM d, yyyy');
+      console.log('[RescheduleBooking] Fetching all bookings for email');
       
-      // Find the time slot display
-      const timeSlot = availableTimeSlots.find(ts => ts.id === selectedTime);
-      const formattedNewTime = timeSlot ? timeSlot.display : selectedTime;
-      
-      // Validate and format the original booking date for display
-      const originalDate = new Date(booking.booking_date);
-      let formattedOriginalDate;
-      if (isNaN(originalDate.getTime())) {
-        console.warn('[RescheduleBooking] Invalid original booking date:', booking.booking_date);
-        // Use a fallback for display
-        formattedOriginalDate = 'Unknown date';
-      } else {
-        formattedOriginalDate = format(originalDate, 'EEEE, MMMM d, yyyy');
-      }
-      
-      console.log('[RescheduleBooking] Making update API call with data:', {
-        reference,
-        appointmentDate: selectedDate,
-        appointmentTime: selectedTime,
-        formattedNewDate,
-        formattedNewTime
-      });
-      
-      // Update booking using API endpoint
-      const updateResponse = await fetch('/api/bookings/update', {
+      const response = await fetch('/api/bookings/by-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          reference: reference,
-          appointmentDate: selectedDate,
-          appointmentTime: selectedTime,
-          status: 'pending' // Reset to pending so it needs verification again
-        }),
+          email: customerEmail,
+          verificationToken: verificationToken,
+          verificationReference: verificationReference
+        })
       });
-      
-      console.log('[RescheduleBooking] Update API response status:', updateResponse.status);
-      
-      if (!updateResponse.ok) {
-        const errorData = await updateResponse.json();
-        console.error('[RescheduleBooking] Update API error:', {
-          status: updateResponse.status,
-          errorData
-        });
-        throw new Error(errorData.message || 'Failed to update booking');
+
+      const result = await response.json();
+      console.log('[RescheduleBooking] All bookings response:', result);
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to fetch your bookings');
       }
-      
-      console.log('[RescheduleBooking] Booking update successful');
-      
-      // Send reschedule confirmation email
-      console.log('[RescheduleBooking] Sending reschedule confirmation email with data:', {
-        formattedNewDate,
-        formattedNewTime,
-        formattedOriginalDate,
-        originalTime: booking.booking_time
+
+      setBookings(result.bookings || []);
+      setStep('select-booking');
+      setStatus('ready');
+
+    } catch (error) {
+      console.error('[RescheduleBooking] Error fetching bookings:', error);
+      setStatus('error');
+      setMessage('Unable to load your bookings. Please try again.');
+    }
+  };
+
+  const handleEmailSubmit = async () => {
+    if (!email.trim()) {
+      setMessage('Please enter your email address');
+      return;
+    }
+
+    // If we have URL params, use them for verification
+    if (reference && token && typeof reference === 'string' && typeof token === 'string') {
+      await fetchAllBookingsForEmail(email.trim().toLowerCase(), token, reference);
+    } else {
+      setMessage('Please use the reschedule link from your booking confirmation email');
+    }
+  };
+
+  const handleBookingSelect = (booking: Booking) => {
+    console.log('[RescheduleBooking] Selected booking:', booking);
+    setSelectedBooking(booking);
+    setStep('reschedule');
+  };
+
+  const handleRescheduleSubmit = async () => {
+    if (!selectedDate || !selectedTime || !selectedBooking) {
+      setMessage('Please select both date and time');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setMessage('');
+
+      console.log('[RescheduleBooking] Submitting reschedule:', {
+        bookingId: selectedBooking.id,
+        newDate: selectedDate,
+        newTime: selectedTime,
+        reference: selectedBooking.reference_number
       });
-      
-      const emailResponse = await fetch('/api/send-reschedule-confirmation', {
+
+      const response = await fetch('/api/bookings/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          to: booking.customer_email,
-          name: booking.customer_name,
-          bookingReference: booking.reference_number,
-          deviceType: booking.device_type,
-          brand: booking.device_brand,
-          model: booking.device_model,
-          service: booking.service_type,
-          oldDate: formattedOriginalDate,
-          oldTime: booking.booking_time,
-          bookingDate: formattedNewDate,
-          bookingTime: formattedNewTime,
-          address: booking.address
-        }),
+          id: selectedBooking.id,
+          booking_date: selectedDate,
+          booking_time: selectedTime,
+          appointment_date: selectedDate,
+          appointment_time: selectedTime
+        })
       });
-      
-      if (!emailResponse.ok) {
-        console.warn('Failed to send reschedule email, but booking was updated');
+
+      const result = await response.json();
+      console.log('[RescheduleBooking] Update response:', result);
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to reschedule booking');
       }
+
+      // Send confirmation email
+      await sendRescheduleConfirmation();
       
-      // Update status to success
       setStatus('success');
       setMessage('Your booking has been successfully rescheduled!');
-      setBooking({
-        ...booking,
-        booking_date: selectedDate,
-        booking_time: selectedTime
-      });
-      
+
     } catch (error) {
-      console.error('[RescheduleBooking] Error rescheduling booking:', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        selectedDate,
-        selectedTime,
-        bookingDate: booking?.booking_date
-      });
-      setStatus('error');
-      setMessage('An error occurred while rescheduling your booking. Please try again later or contact support.');
+      console.error('[RescheduleBooking] Error rescheduling:', error);
+      setMessage(error instanceof Error ? error.message : 'Failed to reschedule booking');
     } finally {
       setIsSubmitting(false);
     }
   };
-  
-  return (
-    <Layout title="Reschedule Booking | The Travelling Technicians">
-      <div className="max-w-4xl mx-auto px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-        <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-          <div className="px-4 py-5 sm:p-6">
-            {/* Loading State */}
-            {status === 'loading' && (
-              <div className="flex flex-col items-center text-center">
-                <div className="animate-pulse">
-                  <div className="h-16 w-16 rounded-full bg-primary-200 flex items-center justify-center mb-4">
-                    <div className="h-8 w-8 rounded-full bg-primary-500"></div>
-                  </div>
-                  <h2 className="text-2xl font-bold text-gray-800 mb-2">Loading</h2>
-                  <p className="text-gray-600">{message}</p>
-                </div>
-              </div>
-            )}
-            
-            {/* Error State */}
-            {status === 'error' && (
-              <div className="flex flex-col items-center text-center">
-                <FaTimesCircle className="h-16 w-16 text-red-500 mb-4" />
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">Error</h2>
-                <p className="text-gray-600 mb-6">{message}</p>
-                <div className="flex space-x-4 mt-2">
-                  <button 
-                    onClick={() => router.push('/contact')}
-                    className="btn-primary"
-                  >
-                    Contact Support
-                  </button>
-                </div>
-              </div>
-            )}
-            
-            {/* Email Verification Step */}
-            {status === 'ready' && booking && !isEmailVerified && (
-              <div className="flex flex-col items-center text-center">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">Reschedule Your Booking</h2>
-                <p className="text-gray-600 mb-4">Please enter your email to verify and reschedule your booking.</p>
-                
-                <div className="w-full max-w-md">
-                  <div className="bg-gray-50 p-4 rounded-lg mb-6 text-left">
-                    <h3 className="font-medium text-gray-900 mb-2">Booking Reference: {booking.reference_number}</h3>
-                    <p className="text-sm text-gray-600">Enter the email address used for this booking to continue.</p>
-                  </div>
-                
-                  <form onSubmit={handleVerifySubmit} className="space-y-4">
-                    <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 text-left mb-1">
-                        Email Address
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        value={email}
-                        onChange={(e) => {
-                          setEmail(e.target.value);
-                          setEmailError('');
-                        }}
-                        className="block w-full rounded-md border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                        placeholder="Enter the email used for booking"
-                        required
-                      />
-                      {emailError && (
-                        <p className="mt-1 text-sm text-red-600 text-left">{emailError}</p>
+
+  const sendRescheduleConfirmation = async () => {
+    if (!selectedBooking) return;
+
+    try {
+      const formatTimeDisplay = (timeSlot: string) => {
+        switch (timeSlot) {
+          case 'morning': return 'Morning (9AM - 12PM)';
+          case 'afternoon': return 'Afternoon (12PM - 4PM)';
+          case 'evening': return 'Evening (4PM - 7PM)';
+          default: return timeSlot;
+        }
+      };
+
+      const response = await fetch('/api/send-reschedule-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: selectedBooking.customer_email,
+          name: selectedBooking.customer_name,
+          bookingReference: selectedBooking.reference_number,
+          deviceType: selectedBooking.device_type,
+          brand: selectedBooking.device_brand,
+          model: selectedBooking.device_model,
+          service: selectedBooking.service_type,
+          oldDate: formatDate(selectedBooking.booking_date),
+          oldTime: formatTimeDisplay(selectedBooking.booking_time),
+          bookingDate: formatDate(selectedDate),
+          bookingTime: formatTimeDisplay(selectedTime),
+          address: selectedBooking.address
+        })
+      });
+
+      if (!response.ok) {
+        console.warn('[RescheduleBooking] Email confirmation failed, but booking was updated');
+      }
+    } catch (error) {
+      console.error('[RescheduleBooking] Error sending confirmation email:', error);
+    }
+  };
+
+  const getTomorrowDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  };
+
+  const getMaxDate = () => {
+    const maxDate = new Date();
+    maxDate.setDate(maxDate.getDate() + 60);
+    return maxDate.toISOString().split('T')[0];
+  };
+
+  const formatBookingStatus = (status: string) => {
+    switch (status) {
+      case 'confirmed': return { label: 'Confirmed', class: 'bg-green-100 text-green-800' };
+      case 'pending': return { label: 'Pending', class: 'bg-yellow-100 text-yellow-800' };
+      case 'completed': return { label: 'Completed', class: 'bg-blue-100 text-blue-800' };
+      case 'cancelled': return { label: 'Cancelled', class: 'bg-red-100 text-red-800' };
+      default: return { label: status, class: 'bg-gray-100 text-gray-800' };
+    }
+  };
+
+  const formatTimeDisplay = (timeSlot: string) => {
+    switch (timeSlot) {
+      case 'morning': return 'Morning (9AM - 12PM)';
+      case 'afternoon': return 'Afternoon (12PM - 4PM)';
+      case 'evening': return 'Evening (4PM - 7PM)';
+      default: return timeSlot;
+    }
+  };
+
+  const renderEmailStep = () => (
+    <div className="max-w-md mx-auto">
+      <div className="bg-white shadow-lg rounded-lg p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Enter Your Email</h2>
+        <p className="text-gray-600 mb-6">
+          Enter the email address associated with your booking to view and reschedule your appointments.
+        </p>
+        
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Email Address <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            placeholder="your.email@example.com"
+            disabled={status === 'loading'}
+          />
+        </div>
+
+        {message && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-sm text-red-700">{message}</p>
+          </div>
+        )}
+
+        <button
+          onClick={handleEmailSubmit}
+          disabled={status === 'loading' || !email.trim()}
+          className="w-full bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {status === 'loading' ? 'Loading...' : 'Continue'}
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderBookingSelection = () => (
+    <div className="max-w-4xl mx-auto">
+      <div className="bg-white shadow-lg rounded-lg p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-6">Select Booking to Reschedule</h2>
+        
+        {bookings.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-600">No bookings found for this email address.</p>
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            {bookings.map((booking) => {
+              const statusInfo = formatBookingStatus(booking.status);
+              const isOriginalBooking = booking.reference_number === reference;
+              
+              return (
+                <div
+                  key={booking.id}
+                  className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                    isOriginalBooking ? 'border-primary-300 bg-primary-50' : 'border-gray-200 hover:border-primary-300'
+                  }`}
+                  onClick={() => handleBookingSelect(booking)}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center space-x-3">
+                      <h3 className="font-medium text-gray-900">
+                        {booking.reference_number}
+                      </h3>
+                      {isOriginalBooking && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          From Email Link
+                        </span>
                       )}
                     </div>
-                    
-                    <div className="pt-2">
-                      <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="w-full btn-primary flex items-center justify-center"
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <FaSpinner className="animate-spin mr-2" />
-                            Verifying...
-                          </>
-                        ) : (
-                          'Verify & Continue'
-                        )}
-                      </button>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.class}`}>
+                      {statusInfo.label}
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">Device:</span>
+                      <span className="ml-2 font-medium">{booking.device_brand} {booking.device_model}</span>
                     </div>
-                  </form>
-                </div>
-              </div>
-            )}
-            
-            {/* Date and Time Selection Step */}
-            {status === 'ready' && booking && isEmailVerified && (
-              <div className="flex flex-col items-center text-center">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">Reschedule Your Booking</h2>
-                <p className="text-gray-600 mb-4">{message}</p>
-                
-                <div className="w-full max-w-md">
-                  <div className="bg-gray-50 p-4 rounded-lg mb-6 text-left">
-                    <h3 className="font-medium text-gray-900 mb-2">Current Booking Details</h3>
-                    <div className="grid grid-cols-1 gap-2 text-sm">
-                      <div>
-                        <span className="text-gray-500">Reference: </span>
-                        <span className="font-medium">{booking.reference_number}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Device: </span>
-                        <span className="font-medium">{booking.device_type} {booking.device_brand && `- ${booking.device_brand}`} {booking.device_model && booking.device_model}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Service: </span>
-                        <span className="font-medium">{booking.service_type}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Current Date: </span>
-                        <span className="font-medium">{new Date(booking.booking_date).toLocaleDateString('en-US', { 
-                          weekday: 'long', 
-                          month: 'long', 
-                          day: 'numeric' 
-                        })}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Current Time: </span>
-                        <span className="font-medium">{booking.booking_time}</span>
-                      </div>
+                    <div>
+                      <span className="text-gray-500">Service:</span>
+                      <span className="ml-2 font-medium">{booking.service_type}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Date:</span>
+                      <span className="ml-2 font-medium">{formatDate(booking.booking_date)}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Time:</span>
+                      <span className="ml-2 font-medium">{formatTimeDisplay(booking.booking_time)}</span>
                     </div>
                   </div>
                   
-                  <form onSubmit={handleRescheduleSubmit} className="space-y-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                        <FaCalendarAlt className="mr-2 text-primary-500" />
-                        Select New Date
-                      </label>
-                      <div className="grid grid-cols-1 gap-2">
-                        {availableDates.map((dateOption) => (
-                          <div key={dateOption.date}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedDate(dateOption.date);
-                                setDateError('');
-                              }}
-                              className={`w-full px-4 py-2 border rounded-md text-left ${
-                                selectedDate === dateOption.date
-                                  ? 'bg-primary-50 border-primary-500 text-primary-700'
-                                  : 'border-gray-300 hover:bg-gray-50'
-                              }`}
-                            >
-                              {dateOption.display}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                      {dateError && (
-                        <p className="mt-1 text-sm text-red-600">{dateError}</p>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                        <FaClock className="mr-2 text-primary-500" />
-                        Select New Time
-                      </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {availableTimeSlots.map((timeSlot) => (
-                          <div key={timeSlot.id}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedTime(timeSlot.id);
-                                setTimeError('');
-                              }}
-                              className={`w-full px-4 py-2 border rounded-md text-center ${
-                                selectedTime === timeSlot.id
-                                  ? 'bg-primary-50 border-primary-500 text-primary-700'
-                                  : 'border-gray-300 hover:bg-gray-50'
-                              }`}
-                            >
-                              {timeSlot.display}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                      {timeError && (
-                        <p className="mt-1 text-sm text-red-600">{timeError}</p>
-                      )}
-                    </div>
-                    
-                    <div className="pt-4">
-                      <button
-                        type="submit"
-                        disabled={isSubmitting || !selectedDate || !selectedTime}
-                        className="w-full btn-primary flex items-center justify-center"
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <FaSpinner className="animate-spin mr-2" />
-                            Rescheduling...
-                          </>
-                        ) : (
-                          'Confirm Reschedule'
-                        )}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            )}
-            
-            {/* Success State */}
-            {status === 'success' && (
-              <div className="flex flex-col items-center text-center">
-                <FaCheckCircle className="h-16 w-16 text-green-500 mb-4" />
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">Booking Rescheduled</h2>
-                <p className="text-gray-600 mb-6">{message}</p>
-                
-                {booking && (
-                  <div className="bg-gray-50 p-4 rounded-lg mb-6 max-w-md w-full">
-                    <h3 className="font-medium text-gray-900 mb-2">New Booking Details</h3>
-                    <div className="grid grid-cols-1 gap-2 text-sm text-left">
-                      <div>
-                        <span className="text-gray-500">Reference: </span>
-                        <span className="font-medium">{booking.reference_number}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Device: </span>
-                        <span className="font-medium">
-                          {booking.device_type} 
-                          {booking.device_brand && ` - ${booking.device_brand}`} 
-                          {booking.device_model && ` ${booking.device_model}`}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Service: </span>
-                        <span className="font-medium">{booking.service_type}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">New Date: </span>
-                        <span className="font-medium">{new Date(booking.booking_date).toLocaleDateString('en-US', { 
-                          weekday: 'long', 
-                          month: 'long', 
-                          day: 'numeric' 
-                        })}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">New Time: </span>
-                        <span className="font-medium">
-                          {(() => {
-                            const timeSlot = availableTimeSlots.find(ts => ts.id === booking.booking_time);
-                            return timeSlot ? timeSlot.display : booking.booking_time;
-                          })()}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Status: </span>
-                        <span className="font-medium">Pending</span>
-                      </div>
-                    </div>
+                  <div className="mt-3 text-sm">
+                    <span className="text-gray-500">Address:</span>
+                    <span className="ml-2">{booking.address}</span>
                   </div>
-                )}
-                
-                <p className="text-sm text-gray-500 mb-8">
-                  A confirmation email has been sent with your new booking details.
-                  Please check your email and verify your booking again.
-                </p>
-                
-                <div className="flex space-x-4 mt-2">
-                  <button 
-                    onClick={() => router.push('/')}
-                    className="btn-outline"
-                  >
-                    Return Home
-                  </button>
-                  <button 
-                    onClick={() => router.push('/contact')}
-                    className="btn-primary"
-                  >
-                    Contact Us
-                  </button>
                 </div>
-              </div>
-            )}
+              );
+            })}
           </div>
+        )}
+
+        <div className="mt-6">
+          <button
+            onClick={() => setStep('email')}
+            className="text-primary-600 hover:text-primary-700"
+          >
+            ← Back to Email Entry
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderRescheduleStep = () => {
+    if (!selectedBooking) return null;
+
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white shadow-lg rounded-lg p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Reschedule Booking</h2>
+          
+          {/* Current booking info */}
+          <div className="bg-gray-50 rounded-lg p-4 mb-6">
+            <h3 className="font-medium text-gray-900 mb-2">Current Booking</h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-gray-500">Reference:</span>
+                <span className="ml-2 font-medium">{selectedBooking.reference_number}</span>
+              </div>
+              <div>
+                <span className="text-gray-500">Device:</span>
+                <span className="ml-2 font-medium">{selectedBooking.device_brand} {selectedBooking.device_model}</span>
+              </div>
+              <div>
+                <span className="text-gray-500">Current Date:</span>
+                <span className="ml-2 font-medium">{formatDate(selectedBooking.booking_date)}</span>
+              </div>
+              <div>
+                <span className="text-gray-500">Current Time:</span>
+                <span className="ml-2 font-medium">{formatTimeDisplay(selectedBooking.booking_time)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* New date/time selection */}
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                New Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                min={getTomorrowDate()}
+                max={getMaxDate()}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+              <p className="mt-1 text-xs text-gray-500">We accept bookings up to 60 days in advance.</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                New Time <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={selectedTime}
+                onChange={(e) => setSelectedTime(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="">Select a time slot...</option>
+                <option value="morning">Morning (9AM - 12PM)</option>
+                <option value="afternoon">Afternoon (12PM - 4PM)</option>
+                <option value="evening">Evening (4PM - 7PM)</option>
+              </select>
+              <p className="mt-1 text-xs text-gray-500">Our technicians work 7 days a week.</p>
+            </div>
+          </div>
+
+          {message && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-700">{message}</p>
+            </div>
+          )}
+
+          {status === 'success' && (
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+              <p className="text-sm text-green-700">{message}</p>
+            </div>
+          )}
+
+          <div className="mt-6 flex space-x-4">
+            <button
+              onClick={() => setStep('select-booking')}
+              className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-200"
+            >
+              ← Back to Bookings
+            </button>
+            <button
+              onClick={handleRescheduleSubmit}
+              disabled={isSubmitting || !selectedDate || !selectedTime}
+              className="flex-1 bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Rescheduling...' : 'Reschedule Booking'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <Layout title="Reschedule Booking | The Travelling Technicians">
+      <div className="py-16 bg-gradient-to-b from-gray-50 to-white min-h-screen">
+        <div className="container-custom">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">Reschedule Your Appointment</h1>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Need to change your appointment time? No problem! Select a new date and time that works better for you.
+            </p>
+          </div>
+
+          {step === 'email' && renderEmailStep()}
+          {step === 'select-booking' && renderBookingSelection()}
+          {step === 'reschedule' && renderRescheduleStep()}
         </div>
       </div>
     </Layout>
   );
-} 
+};
+
+export default RescheduleBooking; 
