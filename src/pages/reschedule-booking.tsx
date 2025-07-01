@@ -182,7 +182,10 @@ export default function RescheduleBooking() {
       selectedDate,
       selectedTime,
       reference,
-      bookingId: booking?.id
+      bookingId: booking?.id,
+      originalBookingDate: booking?.booking_date,
+      selectedDateType: typeof selectedDate,
+      selectedTimeType: typeof selectedTime
     });
     
     // Validate selections
@@ -205,17 +208,27 @@ export default function RescheduleBooking() {
     setIsSubmitting(true);
     
     try {
-      // Format the selected date for display
+      // Validate and format the selected date for display
       const selectedDateObj = new Date(selectedDate);
+      if (isNaN(selectedDateObj.getTime())) {
+        throw new Error('Invalid selected date');
+      }
       const formattedNewDate = format(selectedDateObj, 'EEEE, MMMM d, yyyy');
       
       // Find the time slot display
       const timeSlot = availableTimeSlots.find(ts => ts.id === selectedTime);
       const formattedNewTime = timeSlot ? timeSlot.display : selectedTime;
       
-      // Format the original booking date for display
+      // Validate and format the original booking date for display
       const originalDate = new Date(booking.booking_date);
-      const formattedOriginalDate = format(originalDate, 'EEEE, MMMM d, yyyy');
+      let formattedOriginalDate;
+      if (isNaN(originalDate.getTime())) {
+        console.warn('[RescheduleBooking] Invalid original booking date:', booking.booking_date);
+        // Use a fallback for display
+        formattedOriginalDate = 'Unknown date';
+      } else {
+        formattedOriginalDate = format(originalDate, 'EEEE, MMMM d, yyyy');
+      }
       
       console.log('[RescheduleBooking] Making update API call with data:', {
         reference,
@@ -251,6 +264,13 @@ export default function RescheduleBooking() {
       console.log('[RescheduleBooking] Booking update successful');
       
       // Send reschedule confirmation email
+      console.log('[RescheduleBooking] Sending reschedule confirmation email with data:', {
+        formattedNewDate,
+        formattedNewTime,
+        formattedOriginalDate,
+        originalTime: booking.booking_time
+      });
+      
       const emailResponse = await fetch('/api/send-reschedule-confirmation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -284,7 +304,13 @@ export default function RescheduleBooking() {
       });
       
     } catch (error) {
-      console.error('Error rescheduling booking:', error);
+      console.error('[RescheduleBooking] Error rescheduling booking:', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        selectedDate,
+        selectedTime,
+        bookingDate: booking?.booking_date
+      });
       setStatus('error');
       setMessage('An error occurred while rescheduling your booking. Please try again later or contact support.');
     } finally {
