@@ -44,6 +44,7 @@ export default function RescheduleBooking() {
   const [booking, setBooking] = useState<any>(null);
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
   
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -153,11 +154,14 @@ export default function RescheduleBooking() {
       
       if (response.ok && result.success) {
         console.log('[RescheduleBooking] Verification successful');
+        setIsEmailVerified(true);
         setStatus('ready');
         setMessage('Your identity is confirmed. Select a new date and time for your booking.');
+        setEmailError(''); // Clear any previous email errors
       } else {
         console.log('[RescheduleBooking] Verification failed:', result.message);
         setEmailError(result.message || 'Verification failed. Please check your email and try again.');
+        setIsEmailVerified(false);
       }
     } catch (error) {
       console.error('[RescheduleBooking] Error during verification:', {
@@ -323,14 +327,19 @@ export default function RescheduleBooking() {
               </div>
             )}
             
-            {/* Email Verification */}
-            {status === 'ready' && !selectedDate && booking && (
+            {/* Email Verification Step */}
+            {status === 'ready' && booking && !isEmailVerified && (
               <div className="flex flex-col items-center text-center">
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">Reschedule Your Booking</h2>
-                <p className="text-gray-600 mb-4">{message}</p>
+                <p className="text-gray-600 mb-4">Please enter your email to verify and reschedule your booking.</p>
                 
-                {!email && (
-                  <form onSubmit={handleVerifySubmit} className="w-full max-w-md space-y-4">
+                <div className="w-full max-w-md">
+                  <div className="bg-gray-50 p-4 rounded-lg mb-6 text-left">
+                    <h3 className="font-medium text-gray-900 mb-2">Booking Reference: {booking.reference_number}</h3>
+                    <p className="text-sm text-gray-600">Enter the email address used for this booking to continue.</p>
+                  </div>
+                
+                  <form onSubmit={handleVerifySubmit} className="space-y-4">
                     <div>
                       <label htmlFor="email" className="block text-sm font-medium text-gray-700 text-left mb-1">
                         Email Address
@@ -345,6 +354,7 @@ export default function RescheduleBooking() {
                         }}
                         className="block w-full rounded-md border-gray-300 shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                         placeholder="Enter the email used for booking"
+                        required
                       />
                       {emailError && (
                         <p className="mt-1 text-sm text-red-600 text-left">{emailError}</p>
@@ -368,120 +378,126 @@ export default function RescheduleBooking() {
                       </button>
                     </div>
                   </form>
-                )}
+                </div>
+              </div>
+            )}
+            
+            {/* Date and Time Selection Step */}
+            {status === 'ready' && booking && isEmailVerified && (
+              <div className="flex flex-col items-center text-center">
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">Reschedule Your Booking</h2>
+                <p className="text-gray-600 mb-4">{message}</p>
                 
-                {email && (
-                  <div className="w-full max-w-md">
-                    <div className="bg-gray-50 p-4 rounded-lg mb-6 text-left">
-                      <h3 className="font-medium text-gray-900 mb-2">Current Booking Details</h3>
-                      <div className="grid grid-cols-1 gap-2 text-sm">
-                        <div>
-                          <span className="text-gray-500">Reference: </span>
-                          <span className="font-medium">{booking.reference_number}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Device: </span>
-                          <span className="font-medium">{booking.device_type} {booking.device_brand && `- ${booking.device_brand}`} {booking.device_model && booking.device_model}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Service: </span>
-                          <span className="font-medium">{booking.service_type}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Current Date: </span>
-                          <span className="font-medium">{new Date(booking.booking_date).toLocaleDateString('en-US', { 
-                            weekday: 'long', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          })}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Current Time: </span>
-                          <span className="font-medium">{booking.booking_time}</span>
-                        </div>
+                <div className="w-full max-w-md">
+                  <div className="bg-gray-50 p-4 rounded-lg mb-6 text-left">
+                    <h3 className="font-medium text-gray-900 mb-2">Current Booking Details</h3>
+                    <div className="grid grid-cols-1 gap-2 text-sm">
+                      <div>
+                        <span className="text-gray-500">Reference: </span>
+                        <span className="font-medium">{booking.reference_number}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Device: </span>
+                        <span className="font-medium">{booking.device_type} {booking.device_brand && `- ${booking.device_brand}`} {booking.device_model && booking.device_model}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Service: </span>
+                        <span className="font-medium">{booking.service_type}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Current Date: </span>
+                        <span className="font-medium">{new Date(booking.booking_date).toLocaleDateString('en-US', { 
+                          weekday: 'long', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Current Time: </span>
+                        <span className="font-medium">{booking.booking_time}</span>
                       </div>
                     </div>
-                    
-                    <form onSubmit={handleRescheduleSubmit} className="space-y-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                          <FaCalendarAlt className="mr-2 text-primary-500" />
-                          Select New Date
-                        </label>
-                        <div className="grid grid-cols-1 gap-2">
-                          {availableDates.map((dateOption) => (
-                            <div key={dateOption.date}>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedDate(dateOption.date);
-                                  setDateError('');
-                                }}
-                                className={`w-full px-4 py-2 border rounded-md text-left ${
-                                  selectedDate === dateOption.date
-                                    ? 'bg-primary-50 border-primary-500 text-primary-700'
-                                    : 'border-gray-300 hover:bg-gray-50'
-                                }`}
-                              >
-                                {dateOption.display}
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                        {dateError && (
-                          <p className="mt-1 text-sm text-red-600">{dateError}</p>
-                        )}
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                          <FaClock className="mr-2 text-primary-500" />
-                          Select New Time
-                        </label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {availableTimeSlots.map((timeSlot) => (
-                            <div key={timeSlot.id}>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedTime(timeSlot.id);
-                                  setTimeError('');
-                                }}
-                                className={`w-full px-4 py-2 border rounded-md text-center ${
-                                  selectedTime === timeSlot.id
-                                    ? 'bg-primary-50 border-primary-500 text-primary-700'
-                                    : 'border-gray-300 hover:bg-gray-50'
-                                }`}
-                              >
-                                {timeSlot.display}
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                        {timeError && (
-                          <p className="mt-1 text-sm text-red-600">{timeError}</p>
-                        )}
-                      </div>
-                      
-                      <div className="pt-4">
-                        <button
-                          type="submit"
-                          disabled={isSubmitting || !selectedDate || !selectedTime}
-                          className="w-full btn-primary flex items-center justify-center"
-                        >
-                          {isSubmitting ? (
-                            <>
-                              <FaSpinner className="animate-spin mr-2" />
-                              Rescheduling...
-                            </>
-                          ) : (
-                            'Confirm Reschedule'
-                          )}
-                        </button>
-                      </div>
-                    </form>
                   </div>
-                )}
+                  
+                  <form onSubmit={handleRescheduleSubmit} className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <FaCalendarAlt className="mr-2 text-primary-500" />
+                        Select New Date
+                      </label>
+                      <div className="grid grid-cols-1 gap-2">
+                        {availableDates.map((dateOption) => (
+                          <div key={dateOption.date}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedDate(dateOption.date);
+                                setDateError('');
+                              }}
+                              className={`w-full px-4 py-2 border rounded-md text-left ${
+                                selectedDate === dateOption.date
+                                  ? 'bg-primary-50 border-primary-500 text-primary-700'
+                                  : 'border-gray-300 hover:bg-gray-50'
+                              }`}
+                            >
+                              {dateOption.display}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      {dateError && (
+                        <p className="mt-1 text-sm text-red-600">{dateError}</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <FaClock className="mr-2 text-primary-500" />
+                        Select New Time
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {availableTimeSlots.map((timeSlot) => (
+                          <div key={timeSlot.id}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedTime(timeSlot.id);
+                                setTimeError('');
+                              }}
+                              className={`w-full px-4 py-2 border rounded-md text-center ${
+                                selectedTime === timeSlot.id
+                                  ? 'bg-primary-50 border-primary-500 text-primary-700'
+                                  : 'border-gray-300 hover:bg-gray-50'
+                              }`}
+                            >
+                              {timeSlot.display}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      {timeError && (
+                        <p className="mt-1 text-sm text-red-600">{timeError}</p>
+                      )}
+                    </div>
+                    
+                    <div className="pt-4">
+                      <button
+                        type="submit"
+                        disabled={isSubmitting || !selectedDate || !selectedTime}
+                        className="w-full btn-primary flex items-center justify-center"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <FaSpinner className="animate-spin mr-2" />
+                            Rescheduling...
+                          </>
+                        ) : (
+                          'Confirm Reschedule'
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
             )}
             
