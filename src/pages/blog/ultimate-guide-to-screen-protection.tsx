@@ -1,7 +1,7 @@
 import Layout from '@/components/layout/Layout';
 import Link from 'next/link';
 import Image from 'next/image';
-import { FaCalendarAlt, FaUser, FaTag, FaClock, FaChevronLeft, FaShare, FaFacebook, FaTwitter, FaLinkedin, FaShield, FaMobile, FaCheckCircle, FaTimesCircle, FaStar } from 'react-icons/fa';
+import { FaCalendarAlt, FaUser, FaTag, FaClock, FaChevronLeft, FaShare, FaFacebook, FaTwitter, FaLinkedin, FaLock, FaMobile, FaCheckCircle, FaTimesCircle, FaStar } from 'react-icons/fa';
 
 export default function ScreenProtectionGuidePost() {
   return (
@@ -62,7 +62,7 @@ export default function ScreenProtectionGuidePost() {
               <article className="prose prose-lg max-w-none blog-post-content">
                 <div className="bg-blue-50 border-l-4 border-blue-500 p-6 mb-8">
                   <div className="flex items-center mb-2">
-                    <FaShield className="text-blue-500 mr-2" />
+                    <FaLock className="text-blue-500 mr-2" />
                     <h3 className="text-blue-800 font-bold text-lg mb-0">PROTECTION FACT</h3>
                   </div>
                   <p className="text-blue-700 mb-0">
