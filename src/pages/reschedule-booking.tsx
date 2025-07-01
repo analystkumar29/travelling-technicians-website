@@ -3,7 +3,6 @@ import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
 import { format, addDays, isBefore } from 'date-fns';
 import { FaCheckCircle, FaTimesCircle, FaSpinner, FaCalendarAlt, FaClock } from 'react-icons/fa';
-import { supabase } from '@/utils/supabaseClient';
 
 // Generate available dates (next 14 days)
 function getAvailableDates() {
@@ -60,20 +59,17 @@ export default function RescheduleBooking() {
     
     const fetchBooking = async () => {
       try {
-        // Fetch booking using the reference number
-        const { data, error } = await supabase
-          .from('bookings')
-          .select('*')
-          .eq('reference_number', reference)
-          .single();
-          
-        if (error || !data) {
+        // Fetch booking using the API endpoint
+        const response = await fetch(`/api/bookings/${reference}`);
+        
+        if (!response.ok) {
           setStatus('error');
           setMessage('Booking not found. Please check your link or contact support.');
           return;
         }
         
-        setBooking(data);
+        const bookingData = await response.json();
+        setBooking(bookingData);
         
         // If we have token, status changes to ready
         if (token) {
@@ -169,19 +165,21 @@ export default function RescheduleBooking() {
       const originalDate = new Date(booking.booking_date);
       const formattedOriginalDate = format(originalDate, 'EEEE, MMMM d, yyyy');
       
-      // Update booking in database
-      const { error: updateError } = await supabase
-        .from('bookings')
-        .update({
-          booking_date: selectedDate,
-          booking_time: selectedTime,
-          status: 'pending', // Reset to pending so it needs verification again
-          updated_at: new Date().toISOString()
-        })
-        .eq('reference_number', reference);
+      // Update booking using API endpoint
+      const updateResponse = await fetch('/api/bookings/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reference: reference,
+          appointmentDate: selectedDate,
+          appointmentTime: selectedTime,
+          status: 'pending' // Reset to pending so it needs verification again
+        }),
+      });
       
-      if (updateError) {
-        throw new Error(updateError.message);
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json();
+        throw new Error(errorData.message || 'Failed to update booking');
       }
       
       // Send reschedule confirmation email
