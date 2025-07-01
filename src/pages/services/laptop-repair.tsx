@@ -150,7 +150,7 @@ export default function LaptopRepairPage() {
                   src="/images/services/laptopRepair.png"
                   alt="Laptop repair technician"
                   fill
-                  className="object-cover"
+                  className="object-contain"
                   priority
                 />
               </div>

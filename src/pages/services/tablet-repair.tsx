@@ -130,7 +130,7 @@ export default function TabletRepairPage() {
                   src="/images/services/tabletRepair.png"
                   alt="Tablet repair technician"
                   fill
-                  className="object-cover"
+                  className="object-contain"
                   priority
                 />
               </div>

@@ -124,7 +124,7 @@ export default function MobileRepairPage() {
                   src="/images/services/mobileRepair.png"
                   alt="Mobile phone repair technician"
                   fill
-                  className="object-cover"
+                  className="object-contain"
                   priority
                 />
               </div>
