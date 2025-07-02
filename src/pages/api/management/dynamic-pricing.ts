@@ -66,36 +66,10 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse<ApiResponse>,
 
     const { model_id, service_id, tier_id } = req.query;
 
+    // Use simple query pattern - fetch all pricing entries
     let query = supabase
       .from('dynamic_pricing')
-      .select(`
-        *,
-        services!inner(
-          id,
-          name,
-          display_name
-        ),
-        device_models!inner(
-          id,
-          name,
-          display_name,
-          brands!inner(
-            id,
-            name,
-            display_name,
-            device_types!inner(
-              id,
-              name,
-              display_name
-            )
-          )
-        ),
-        pricing_tiers!inner(
-          id,
-          name,
-          display_name
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
     // Apply filters if provided
@@ -120,24 +94,46 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse<ApiResponse>,
       });
     }
 
+    // Fetch related data in separate simple queries
+    const { data: services } = await supabase.from('services').select('id, name, display_name');
+    const { data: deviceModels } = await supabase.from('device_models').select('id, name, display_name, brand_id');
+    const { data: brands } = await supabase.from('brands').select('id, name, display_name, device_type_id');
+    const { data: deviceTypes } = await supabase.from('device_types').select('id, name, display_name');
+    const { data: pricingTiers } = await supabase.from('pricing_tiers').select('id, name, display_name');
+
+    // Create lookup maps for efficient data joining
+    const servicesMap = new Map(services?.map(s => [s.id, s]) || []);
+    const modelsMap = new Map(deviceModels?.map(m => [m.id, m]) || []);
+    const brandsMap = new Map(brands?.map(b => [b.id, b]) || []);
+    const deviceTypesMap = new Map(deviceTypes?.map(dt => [dt.id, dt]) || []);
+    const tiersMap = new Map(pricingTiers?.map(t => [t.id, t]) || []);
+
     // Transform the data to include related information
-    const transformedPricing = (pricing || []).map((entry: any) => ({
-      id: entry.id,
-      service_id: entry.service_id,
-      model_id: entry.model_id,
-      pricing_tier_id: entry.pricing_tier_id,
-      base_price: entry.base_price,
-      discounted_price: entry.discounted_price,
-      cost_price: entry.cost_price,
-      is_active: entry.is_active,
-      service_name: entry.services?.display_name || entry.services?.name,
-      model_name: entry.device_models?.display_name || entry.device_models?.name,
-      brand_name: entry.device_models?.brands?.display_name || entry.device_models?.brands?.name,
-      tier_name: entry.pricing_tiers?.display_name || entry.pricing_tiers?.name,
-      device_type: entry.device_models?.brands?.device_types?.name,
-      created_at: entry.created_at,
-      updated_at: entry.updated_at
-    }));
+    const transformedPricing = (pricing || []).map((entry: any) => {
+      const service = servicesMap.get(entry.service_id);
+      const model = modelsMap.get(entry.model_id);
+      const brand = model ? brandsMap.get(model.brand_id) : null;
+      const deviceType = brand ? deviceTypesMap.get(brand.device_type_id) : null;
+      const tier = tiersMap.get(entry.pricing_tier_id);
+
+      return {
+        id: entry.id,
+        service_id: entry.service_id,
+        model_id: entry.model_id,
+        pricing_tier_id: entry.pricing_tier_id,
+        base_price: entry.base_price,
+        discounted_price: entry.discounted_price,
+        cost_price: entry.cost_price,
+        is_active: entry.is_active,
+        service_name: service?.display_name || service?.name,
+        model_name: model?.display_name || model?.name,
+        brand_name: brand?.display_name || brand?.name,
+        tier_name: tier?.display_name || tier?.name,
+        device_type: deviceType?.name,
+        created_at: entry.created_at,
+        updated_at: entry.updated_at
+      };
+    });
 
     apiLogger.info('Successfully fetched dynamic pricing', { count: transformedPricing.length });
 
