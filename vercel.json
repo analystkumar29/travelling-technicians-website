@@ -6,7 +6,7 @@
   "framework": "nextjs",
   "regions": ["sfo1"],
   "env": {
-    "NEXT_PUBLIC_WEBSITE_URL": "https://travelling-technicians.ca",
+    "NEXT_PUBLIC_WEBSITE_URL": "https://www.travelling-technicians.ca",
     "SHARP_IGNORE_GLOBAL_LIBVIPS": "1"
   },
   "build": {
@@ -156,6 +156,17 @@
   },
 
   "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "travelling-technicians.ca"
+        }
+      ],
+      "destination": "https://www.travelling-technicians.ca/$1",
+      "permanent": true
+    },
     {
       "source": "/contact/",
       "destination": "/contact",
