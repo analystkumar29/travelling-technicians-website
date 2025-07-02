@@ -1,11 +1,61 @@
 import Layout from '@/components/layout/Layout';
 import Link from 'next/link';
 import Image from 'next/image';
+import Head from 'next/head';
 import { FaCalendarAlt, FaUser, FaTag, FaClock, FaChevronLeft, FaShare, FaFacebook, FaTwitter, FaLinkedin, FaLock, FaMobile, FaCheckCircle, FaTimesCircle, FaStar } from 'react-icons/fa';
 
 export default function ScreenProtectionGuidePost() {
   return (
-    <Layout>
+    <>
+      <Head>
+        <title>Ultimate Guide to Screen Protection | Mobile & Laptop | The Travelling Technicians</title>
+        <meta name="description" content="Complete guide to screen protectors for phones and laptops. Learn about tempered glass vs plastic film, 9H hardness, and how to choose the best protection for your device." />
+        <meta name="keywords" content="screen protector guide, tempered glass protector, phone screen protection, laptop screen protector, mobile accessories, device protection" />
+        <link rel="canonical" href="https://travelling-technicians.ca/blog/ultimate-guide-to-screen-protection" />
+        <meta property="og:title" content="Ultimate Guide to Screen Protection | Mobile & Laptop" />
+        <meta property="og:description" content="Everything you need to know about protecting your device screens. Expert advice on choosing the right screen protector." />
+        <meta property="og:url" content="https://travelling-technicians.ca/blog/ultimate-guide-to-screen-protection" />
+        <meta property="og:type" content="article" />
+        <meta property="og:image" content="https://travelling-technicians.ca/images/blog/screen-protection.jpg" />
+        <meta property="article:published_time" content="2024-02-25T00:00:00Z" />
+        <meta property="article:author" content="Chris Lee" />
+        <meta property="article:section" content="Mobile Accessories" />
+        <meta property="article:tag" content="screen protector" />
+        <meta property="article:tag" content="mobile accessories" />
+        <meta property="article:tag" content="device protection" />
+        
+        {/* Article Schema Markup */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Article",
+            "headline": "The Ultimate Guide to Screen Protection",
+            "description": "Complete guide to screen protectors for phones and laptops. Learn about tempered glass vs plastic film, 9H hardness, and how to choose the best protection.",
+            "image": "https://travelling-technicians.ca/images/blog/screen-protection.jpg",
+            "author": {
+              "@type": "Person",
+              "name": "Chris Lee"
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "The Travelling Technicians",
+              "logo": {
+                "@type": "ImageObject",
+                "url": "https://travelling-technicians.ca/images/logo/logo-orange.png"
+              }
+            },
+            "datePublished": "2024-02-25",
+            "dateModified": "2024-02-25",
+            "mainEntityOfPage": {
+              "@type": "WebPage",
+              "@id": "https://travelling-technicians.ca/blog/ultimate-guide-to-screen-protection"
+            },
+            "articleSection": "Mobile Accessories",
+            "keywords": ["screen protector", "tempered glass", "mobile accessories", "device protection"]
+          })
+        }} />
+      </Head>
+      <Layout>
       {/* Hero Section */}
       <section className="pt-16 pb-12 bg-gradient-to-r from-blue-700 to-blue-900 text-white">
         <div className="container-custom">
@@ -423,6 +473,7 @@ export default function ScreenProtectionGuidePost() {
           </div>
         </div>
       </section>
-    </Layout>
+      </Layout>
+    </>
   );
 } 

@@ -215,6 +215,16 @@
       "source": "/terms-conditions/",
       "destination": "/terms-conditions",
       "permanent": true
+    },
+    {
+      "source": "/doorstep",
+      "destination": "/doorstep-repair",
+      "permanent": true
+    },
+    {
+      "source": "/services/mobile",
+      "destination": "/services/mobile-repair",
+      "permanent": true
     }
   ],
   "github": {
