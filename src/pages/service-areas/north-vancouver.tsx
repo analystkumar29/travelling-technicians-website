@@ -20,10 +20,10 @@ export default function NorthVancouverServiceArea() {
         <title>Mobile & Laptop Repair in North Vancouver, BC | The Travelling Technicians</title>
         <meta name="description" content="Professional mobile phone and laptop repair services in North Vancouver, BC. Same-day doorstep repair with 90-day warranty. Book online or call now!" />
         <meta name="keywords" content="mobile repair North Vancouver BC, laptop repair North Vancouver, iPhone repair North Vancouver, doorstep repair North Vancouver" />
-        <link rel="canonical" href="https://travelling-technicians.ca/repair/north-vancouver" />
+        <link rel="canonical" href="https://www.travelling-technicians.ca/repair/north-vancouver" />
         <meta property="og:title" content="Mobile & Laptop Repair in North Vancouver, BC | The Travelling Technicians" />
         <meta property="og:description" content="Professional mobile phone and laptop repair services in North Vancouver, BC. Same-day doorstep repair with 90-day warranty." />
-        <meta property="og:url" content="https://travelling-technicians.ca/repair/north-vancouver" />
+        <meta property="og:url" content="https://www.travelling-technicians.ca/repair/north-vancouver" />
       </Head>
       
       <div className="min-h-screen flex items-center justify-center bg-gray-50">

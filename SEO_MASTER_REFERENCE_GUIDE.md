@@ -19,15 +19,15 @@ This comprehensive guide documents all SEO issues encountered, fixes implemented
 ## Site Overview
 
 ### Core Information
-- **Primary Domain:** `https://travelling-technicians.ca` (canonical)
-- **Secondary Domain:** `https://www.travelling-technicians.ca` (redirects to primary)
+- **Primary Domain:** `https://www.travelling-technicians.ca` (canonical)
+- **Secondary Domain:** `https://travelling-technicians.ca` (redirects to primary)
 - **Technology Stack:** Next.js, Vercel hosting, Supabase database
 - **SEO Strategy:** Local SEO focus on Lower Mainland, BC
 
 ### Canonical URL Strategy
-- **Decision:** Use non-www domain as canonical
-- **Reasoning:** Shorter URLs, consistent with business name
-- **Implementation:** All pages use `https://travelling-technicians.ca` in canonical tags
+- **Decision:** Use www domain as canonical (Updated July 2, 2025)
+- **Reasoning:** Resolved redirect loop conflicts, maintains site accessibility
+- **Implementation:** All pages use `https://www.travelling-technicians.ca` in canonical tags
 
 ---
 
@@ -275,7 +275,7 @@ Implemented critical redirect hierarchy:
 The current redirect system follows this priority order:
 
 1. **Domain Normalization** (Highest Priority)
-   - `www.travelling-technicians.ca/*` → `travelling-technicians.ca/*`
+   - `travelling-technicians.ca/*` → `www.travelling-technicians.ca/*`
 
 2. **URL Normalization** (Medium Priority)
    - `/path/` → `/path` (trailing slash removal)
@@ -287,7 +287,7 @@ The current redirect system follows this priority order:
 ### Canonical URL Strategy
 ```html
 <!-- Standard canonical tag format used across all pages -->
-<link rel="canonical" href="https://travelling-technicians.ca/[page-path]" />
+<link rel="canonical" href="https://www.travelling-technicians.ca/[page-path]" />
 ```
 
 ### Schema Markup Standards
