@@ -59,7 +59,7 @@ export default async function handler(
       supabase.from('device_models').select('*'),
       supabase.from('services').select('*'),
       supabase.from('pricing_tiers').select('*'),
-      supabase.from('dynamic_pricing').select('*')
+      supabase.from('dynamic_pricing').select('*').order('id', { ascending: true }).limit(2000)
     ]);
 
     if (!deviceTypes || !brands || !deviceModels || !services || !pricingTiers || !existingPricing) {
@@ -85,6 +85,20 @@ export default async function handler(
       if (service && model && brand && deviceType && tier) {
         const key = `${(deviceType as any).name}-${(brand as any).name}-${(model as any).name}-${(service as any).name}-${(tier as any).name}`.toLowerCase();
         existingCombinations.set(key, pricing);
+        
+        // Debug logging for the specific combination we're tracking
+        if (pricing.service_id === 1 && pricing.model_id === 3 && pricing.pricing_tier_id === 1) {
+          apiLogger.info('Found existing pricing entry for iPhone 15 Plus screen replacement economy', {
+            pricingId: pricing.id,
+            key,
+            deviceType: (deviceType as any).name,
+            brand: (brand as any).name,
+            model: (model as any).name,
+            service: (service as any).name,
+            tier: (tier as any).name,
+            basePrice: pricing.base_price
+          });
+        }
       }
     });
 
@@ -118,6 +132,24 @@ export default async function handler(
               const combinationKey = `${(deviceType as any).name}-${(brand as any).name}-${(model as any).name}-${(service as any).name}-${(tier as any).name}`.toLowerCase();
               const existingEntry = existingCombinations.get(combinationKey);
               const isMissing = !existingEntry;
+
+              // Debug logging for the specific combination we're tracking
+              if (service.id === 1 && model.id === 3 && tier.id === 1) {
+                apiLogger.info('Checking iPhone 15 Plus screen replacement economy combination', {
+                  combinationKey,
+                  existingEntry: !!existingEntry,
+                  isMissing,
+                  deviceType: (deviceType as any).name,
+                  brand: (brand as any).name,
+                  model: (model as any).name,
+                  service: (service as any).name,
+                  tier: (tier as any).name,
+                  serviceId: service.id,
+                  modelId: model.id,
+                  tierId: tier.id,
+                  existingCombinationsSize: existingCombinations.size
+                });
+              }
 
               coverage.push({
                 device_type: (deviceType as any).name,
