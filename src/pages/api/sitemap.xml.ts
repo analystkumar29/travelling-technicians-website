@@ -5,7 +5,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!-- Homepage -->
   <url>
-    <loc>https://www.travelling-technicians.ca/</loc>
+    <loc>https://travelling-technicians.ca/</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
@@ -13,19 +13,19 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   
   <!-- High-Priority SEO Landing Pages -->
   <url>
-    <loc>https://www.travelling-technicians.ca/mobile-screen-repair</loc>
+    <loc>https://travelling-technicians.ca/mobile-screen-repair</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/mobile-repair-near-me</loc>
+    <loc>https://travelling-technicians.ca/mobile-repair-near-me</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/laptop-screen-repair</loc>
+    <loc>https://travelling-technicians.ca/laptop-screen-repair</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
@@ -33,31 +33,31 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   
   <!-- Core Service Pages -->
   <url>
-    <loc>https://www.travelling-technicians.ca/book-online</loc>
+    <loc>https://travelling-technicians.ca/book-online</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/doorstep-repair</loc>
+    <loc>https://travelling-technicians.ca/doorstep-repair</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/services/mobile-repair</loc>
+    <loc>https://travelling-technicians.ca/services/mobile-repair</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/services/laptop-repair</loc>
+    <loc>https://travelling-technicians.ca/services/laptop-repair</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/services/tablet-repair</loc>
+    <loc>https://travelling-technicians.ca/services/tablet-repair</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -65,25 +65,25 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   
   <!-- Service Area Redirect Pages -->
   <url>
-    <loc>https://www.travelling-technicians.ca/service-areas/vancouver</loc>
+    <loc>https://travelling-technicians.ca/service-areas/vancouver</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/service-areas/richmond</loc>
+    <loc>https://travelling-technicians.ca/service-areas/richmond</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/service-areas/new-westminster</loc>
+    <loc>https://travelling-technicians.ca/service-areas/new-westminster</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/service-areas/north-vancouver</loc>
+    <loc>https://travelling-technicians.ca/service-areas/north-vancouver</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
@@ -91,49 +91,49 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   
   <!-- City Repair Pages -->
   <url>
-    <loc>https://www.travelling-technicians.ca/repair/vancouver</loc>
+    <loc>https://travelling-technicians.ca/repair/vancouver</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/repair/burnaby</loc>
+    <loc>https://travelling-technicians.ca/repair/burnaby</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/repair/richmond</loc>
+    <loc>https://travelling-technicians.ca/repair/richmond</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/repair/north-vancouver</loc>
+    <loc>https://travelling-technicians.ca/repair/north-vancouver</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/repair/new-westminster</loc>
+    <loc>https://travelling-technicians.ca/repair/new-westminster</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/repair/west-vancouver</loc>
+    <loc>https://travelling-technicians.ca/repair/west-vancouver</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/repair/coquitlam</loc>
+    <loc>https://travelling-technicians.ca/repair/coquitlam</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/repair/chilliwack</loc>
+    <loc>https://travelling-technicians.ca/repair/chilliwack</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -141,31 +141,31 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   
   <!-- Business Information Pages -->
   <url>
-    <loc>https://www.travelling-technicians.ca/about</loc>
+    <loc>https://travelling-technicians.ca/about</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/contact</loc>
+    <loc>https://travelling-technicians.ca/contact</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/service-areas</loc>
+    <loc>https://travelling-technicians.ca/service-areas</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/pricing</loc>
+    <loc>https://travelling-technicians.ca/pricing</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/faq</loc>
+    <loc>https://travelling-technicians.ca/faq</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -173,31 +173,31 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   
   <!-- Blog Section -->
   <url>
-    <loc>https://www.travelling-technicians.ca/blog</loc>
+    <loc>https://travelling-technicians.ca/blog</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/blog/signs-your-phone-needs-repair</loc>
+    <loc>https://travelling-technicians.ca/blog/signs-your-phone-needs-repair</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/blog/how-to-extend-your-laptop-battery-life</loc>
+    <loc>https://travelling-technicians.ca/blog/how-to-extend-your-laptop-battery-life</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/blog/ultimate-guide-to-screen-protection</loc>
+    <loc>https://travelling-technicians.ca/blog/ultimate-guide-to-screen-protection</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/blog/water-damage-first-aid-for-devices</loc>
+    <loc>https://travelling-technicians.ca/blog/water-damage-first-aid-for-devices</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -205,20 +205,19 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   
   <!-- Legal Pages -->
   <url>
-    <loc>https://www.travelling-technicians.ca/privacy-policy</loc>
+    <loc>https://travelling-technicians.ca/privacy-policy</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://www.travelling-technicians.ca/terms-conditions</loc>
+    <loc>https://travelling-technicians.ca/terms-conditions</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
 </urlset>`;
 
   res.setHeader('Content-Type', 'text/xml');
-  res.write(sitemap);
-  res.end();
+  res.status(200).end(sitemap);
 } 

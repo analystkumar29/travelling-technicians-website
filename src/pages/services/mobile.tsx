@@ -19,7 +19,7 @@ export default function MobileServiceRedirect() {
       <Head>
         <title>Mobile Phone Repair Services | The Travelling Technicians</title>
         <meta name="description" content="Professional mobile phone repair services in Vancouver, Burnaby, Richmond, and surrounding areas. Same-day doorstep repair with 90-day warranty. iPhone, Samsung, and all major brands." />
-        <meta name="keywords" content="mobile phone repair, iPhone repair, Samsung repair, screen replacement, battery replacement, doorstep repair" />
+        <meta name="robots" content="noindex, nofollow" />
         <link rel="canonical" href="https://travelling-technicians.ca/services/mobile-repair" />
         <meta property="og:title" content="Mobile Phone Repair Services | The Travelling Technicians" />
         <meta property="og:description" content="Professional mobile phone repair services with same-day doorstep service. Expert technicians for all major brands." />

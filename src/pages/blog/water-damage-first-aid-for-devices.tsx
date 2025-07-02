@@ -1,11 +1,61 @@
 import Layout from '@/components/layout/Layout';
 import Link from 'next/link';
 import Image from 'next/image';
+import Head from 'next/head';
 import { FaCalendarAlt, FaUser, FaTag, FaClock, FaChevronLeft, FaShare, FaFacebook, FaTwitter, FaLinkedin, FaExclamationTriangle, FaPhone, FaLaptop } from 'react-icons/fa';
 
 export default function WaterDamageFirstAidPost() {
   return (
-    <Layout>
+    <>
+      <Head>
+        <title>Water Damage First Aid for Devices | Emergency Repair Guide | The Travelling Technicians</title>
+        <meta name="description" content="Emergency steps to save water-damaged phones and laptops. Learn immediate response protocols, what to do and avoid, and when to call professionals for device recovery." />
+        <meta name="keywords" content="water damage repair, phone water damage, laptop water damage, emergency device repair, water damage first aid, spilled liquid on phone" />
+        <link rel="canonical" href="https://travelling-technicians.ca/blog/water-damage-first-aid-for-devices" />
+        <meta property="og:title" content="Water Damage First Aid for Your Devices | Emergency Guide" />
+        <meta property="og:description" content="Critical steps to take in the first minutes after water damage. Emergency protocols that could save your device and data." />
+        <meta property="og:url" content="https://travelling-technicians.ca/blog/water-damage-first-aid-for-devices" />
+        <meta property="og:type" content="article" />
+        <meta property="og:image" content="https://travelling-technicians.ca/images/blog/water-damage-repair.jpg" />
+        <meta property="article:published_time" content="2024-03-05T00:00:00Z" />
+        <meta property="article:author" content="Michael Tran" />
+        <meta property="article:section" content="Emergency Repair" />
+        <meta property="article:tag" content="water damage" />
+        <meta property="article:tag" content="emergency repair" />
+        <meta property="article:tag" content="device recovery" />
+        
+        {/* Article Schema Markup */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Article",
+            "headline": "Water Damage First Aid for Your Devices",
+            "description": "Emergency steps to save water-damaged phones and laptops. Learn immediate response protocols, what to do and avoid, and when to call professionals.",
+            "image": "https://travelling-technicians.ca/images/blog/water-damage-repair.jpg",
+            "author": {
+              "@type": "Person",
+              "name": "Michael Tran"
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "The Travelling Technicians",
+              "logo": {
+                "@type": "ImageObject",
+                "url": "https://travelling-technicians.ca/images/logo/logo-orange.png"
+              }
+            },
+            "datePublished": "2024-03-05",
+            "dateModified": "2024-03-05",
+            "mainEntityOfPage": {
+              "@type": "WebPage",
+              "@id": "https://travelling-technicians.ca/blog/water-damage-first-aid-for-devices"
+            },
+            "articleSection": "Emergency Repair",
+            "keywords": ["water damage", "emergency repair", "device recovery", "phone rescue"]
+          })
+        }} />
+      </Head>
+      <Layout>
       {/* Hero Section */}
       <section className="pt-16 pb-12 bg-gradient-to-r from-red-700 to-red-900 text-white">
         <div className="container-custom">
@@ -326,6 +376,7 @@ export default function WaterDamageFirstAidPost() {
           </div>
         </div>
       </section>
-    </Layout>
+      </Layout>
+    </>
   );
 } 

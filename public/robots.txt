@@ -28,8 +28,8 @@ Disallow: /debug
 Disallow: /minimal
 
 # Sitemap location (accessible at root level)
-Sitemap: https://www.travelling-technicians.ca/sitemap.xml
-Sitemap: https://www.travelling-technicians.ca/api/sitemap.xml
+Sitemap: https://travelling-technicians.ca/sitemap.xml
+Sitemap: https://travelling-technicians.ca/api/sitemap.xml
 
 # Crawl delay (be nice to servers)
 Crawl-delay: 1 
