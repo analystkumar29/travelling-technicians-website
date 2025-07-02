@@ -1,11 +1,61 @@
 import Layout from '@/components/layout/Layout';
 import Link from 'next/link';
 import Image from 'next/image';
+import Head from 'next/head';
 import { FaCalendarAlt, FaUser, FaTag, FaClock, FaChevronLeft, FaShare, FaFacebook, FaTwitter, FaLinkedin } from 'react-icons/fa';
 
 export default function ExtendLaptopBatteryLifePost() {
   return (
-    <Layout>
+    <>
+      <Head>
+        <title>How to Extend Your Laptop Battery Life | Expert Tips & Guide | The Travelling Technicians</title>
+        <meta name="description" content="Learn proven techniques to extend your laptop battery life and maximize performance. Expert tips on charging habits, power settings, and battery maintenance for longer laptop usage." />
+        <meta name="keywords" content="laptop battery life, extend laptop battery, laptop battery tips, battery maintenance, laptop power settings, battery health, laptop battery replacement" />
+        <link rel="canonical" href="https://travelling-technicians.ca/blog/how-to-extend-your-laptop-battery-life" />
+        <meta property="og:title" content="How to Extend Your Laptop Battery Life | Expert Tips & Guide" />
+        <meta property="og:description" content="Proven techniques to maximize your laptop battery life and performance. Learn proper charging habits, power optimization, and when to replace your battery." />
+        <meta property="og:url" content="https://travelling-technicians.ca/blog/how-to-extend-your-laptop-battery-life" />
+        <meta property="og:type" content="article" />
+        <meta property="og:image" content="https://images.unsplash.com/photo-1588872657578-7efd1f1555ed" />
+        <meta property="article:published_time" content="2023-04-02T00:00:00Z" />
+        <meta property="article:author" content="Sarah Johnson" />
+        <meta property="article:section" content="Laptop Maintenance" />
+        <meta property="article:tag" content="laptop battery" />
+        <meta property="article:tag" content="battery maintenance" />
+        <meta property="article:tag" content="laptop tips" />
+        
+        {/* Article Schema Markup */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Article",
+            "headline": "How to Extend Your Laptop Battery Life",
+            "description": "Learn proven techniques to extend your laptop battery life and maximize performance. Expert tips on charging habits, power settings, and battery maintenance.",
+            "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed",
+            "author": {
+              "@type": "Person",
+              "name": "Sarah Johnson"
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "The Travelling Technicians",
+              "logo": {
+                "@type": "ImageObject",
+                "url": "https://travelling-technicians.ca/images/logo/logo-orange.png"
+              }
+            },
+            "datePublished": "2023-04-02",
+            "dateModified": "2023-04-02",
+            "mainEntityOfPage": {
+              "@type": "WebPage",
+              "@id": "https://travelling-technicians.ca/blog/how-to-extend-your-laptop-battery-life"
+            },
+            "articleSection": "Laptop Maintenance",
+            "keywords": ["laptop battery", "battery maintenance", "power management", "laptop tips"]
+          })
+        }} />
+      </Head>
+      <Layout>
       {/* Hero Section */}
       <section className="pt-16 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
         <div className="container-custom">
@@ -498,6 +548,7 @@ export default function ExtendLaptopBatteryLifePost() {
           </div>
         </div>
       </section>
-    </Layout>
+      </Layout>
+    </>
   );
 } 
