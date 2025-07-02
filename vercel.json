@@ -157,17 +157,6 @@
 
   "redirects": [
     {
-      "source": "/(.*)",
-      "has": [
-        {
-          "type": "host",
-          "value": "www.travelling-technicians.ca"
-        }
-      ],
-      "destination": "https://travelling-technicians.ca/$1",
-      "permanent": true
-    },
-    {
       "source": "/contact/",
       "destination": "/contact",
       "permanent": true
