@@ -8,7 +8,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Search, AlertTriangle, CheckCircle, Plus, Filter, X, Edit, Save, CheckSquare, Square, Check } from 'lucide-react';
 
 interface PricingCoverage {
-  id?: number;
   device_type: string;
   brand_name: string;
   model_name: string;
@@ -17,575 +16,691 @@ interface PricingCoverage {
   is_missing: boolean;
   existing_price?: number;
   fallback_price?: number;
+  // Database IDs for proper updates
+  service_id: number;
+  model_id: number;
+  pricing_tier_id: number;
+  existing_id?: number;
 }
 
-interface CoverageSummary {
+interface Summary {
   total_combinations: number;
   existing_entries: number;
   missing_entries: number;
   coverage_percentage: number;
 }
 
-interface ApiResponse {
-  success: boolean;
-  coverage?: PricingCoverage[];
-  summary?: CoverageSummary;
-  error?: string;
+interface EditingState {
+  [key: string]: {
+    isEditing: boolean;
+    newPrice: number;
+  };
+}
+
+interface RecentlyUpdated {
+  [key: string]: boolean;
 }
 
 export default function PricingCoverageAudit() {
   const [coverage, setCoverage] = useState<PricingCoverage[]>([]);
-  const [summary, setSummary] = useState<CoverageSummary | null>(null);
+  const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [deviceTypeFilter, setDeviceTypeFilter] = useState('all');
-  const [brandFilter, setBrandFilter] = useState('all');
-  const [serviceFilter, setServiceFilter] = useState('all');
-  const [tierFilter, setTierFilter] = useState('all');
-  const [showOnlyMissing, setShowOnlyMissing] = useState(true);
-  const [selectedRows, setSelectedRows] = useState<number[]>([]);
-  const [bulkPrice, setBulkPrice] = useState('');
+  const [success, setSuccess] = useState<string | null>(null);
+  
+  // Filtering and pagination
+  const [filters, setFilters] = useState({
+    deviceType: '',
+    brand: '',
+    service: '',
+    tier: '',
+    status: '', // 'missing' | 'existing' | ''
+    search: ''
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(50);
+
+  // Bulk operations
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [bulkPrice, setBulkPrice] = useState<number>(0);
   const [bulkLoading, setBulkLoading] = useState(false);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [editingPrice, setEditingPrice] = useState('');
-  const [editLoading, setEditLoading] = useState(false);
-  const [addLoadingIndex, setAddLoadingIndex] = useState<number | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [recentlyUpdated, setRecentlyUpdated] = useState<Set<number>>(new Set());
 
-  useEffect(() => {
-    fetchCoverageData();
-  }, []);
+  // Inline editing
+  const [editingStates, setEditingStates] = useState<EditingState>({});
+  const [recentlyUpdated, setRecentlyUpdated] = useState<RecentlyUpdated>({});
 
-  // Clear success message after 3 seconds
+  // Auto-dismiss success messages
   useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => setSuccessMessage(null), 3000);
+    if (success) {
+      const timer = setTimeout(() => setSuccess(null), 3000);
       return () => clearTimeout(timer);
     }
-  }, [successMessage]);
+  }, [success]);
 
-  // Clear recently updated highlighting after 5 seconds
+  // Auto-remove recently updated highlighting
   useEffect(() => {
-    if (recentlyUpdated.size > 0) {
-      const timer = setTimeout(() => setRecentlyUpdated(new Set()), 5000);
-      return () => clearTimeout(timer);
-    }
+    Object.keys(recentlyUpdated).forEach(key => {
+      if (recentlyUpdated[key]) {
+        setTimeout(() => {
+          setRecentlyUpdated(prev => ({ ...prev, [key]: false }));
+        }, 5000);
+      }
+    });
   }, [recentlyUpdated]);
 
-  const fetchCoverageData = async () => {
+  const fetchCoverage = async () => {
     try {
       setLoading(true);
       setError(null);
-      
       const response = await fetch('/api/management/pricing-coverage');
-      const data: ApiResponse = await response.json();
+      const data = await response.json();
       
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to fetch coverage data');
+      if (data.success) {
+        setCoverage(data.coverage);
+        setSummary(data.summary);
+      } else {
+        setError(data.error || 'Failed to fetch coverage data');
       }
-      
-      setCoverage(data.coverage || []);
-      setSummary(data.summary || null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError('Network error occurred');
     } finally {
       setLoading(false);
     }
   };
 
-  const getFilteredCoverage = () => {
-    return coverage.filter(item => {
-      const matchesSearch = !searchTerm || 
-        item.device_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.brand_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.model_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.service_name.toLowerCase().includes(searchTerm.toLowerCase());
+  useEffect(() => {
+    fetchCoverage();
+  }, []);
+
+  // Filter the coverage data
+  const filteredCoverage = coverage.filter(item => {
+    const matchesDeviceType = !filters.deviceType || item.device_type.toLowerCase().includes(filters.deviceType.toLowerCase());
+    const matchesBrand = !filters.brand || item.brand_name.toLowerCase().includes(filters.brand.toLowerCase());
+    const matchesService = !filters.service || item.service_name.toLowerCase().includes(filters.service.toLowerCase());
+    const matchesTier = !filters.tier || item.tier_name.toLowerCase().includes(filters.tier.toLowerCase());
+    const matchesStatus = !filters.status || 
+      (filters.status === 'missing' && item.is_missing) ||
+      (filters.status === 'existing' && !item.is_missing);
+    const matchesSearch = !filters.search || 
+      item.device_type.toLowerCase().includes(filters.search.toLowerCase()) ||
+      item.brand_name.toLowerCase().includes(filters.search.toLowerCase()) ||
+      item.model_name.toLowerCase().includes(filters.search.toLowerCase()) ||
+      item.service_name.toLowerCase().includes(filters.search.toLowerCase());
+
+    return matchesDeviceType && matchesBrand && matchesService && matchesTier && matchesStatus && matchesSearch;
+  });
+
+  // Pagination
+  const totalPages = Math.ceil(filteredCoverage.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedCoverage = filteredCoverage.slice(startIndex, startIndex + itemsPerPage);
+
+  // Generate unique key for each row
+  const getRowKey = (item: PricingCoverage) => 
+    `${item.device_type}-${item.brand_name}-${item.model_name}-${item.service_name}-${item.tier_name}`;
+
+  // Handle adding missing price
+  const handleAddPrice = async (item: PricingCoverage) => {
+    try {
+      setLoading(true);
       
-      const matchesDeviceType = deviceTypeFilter === 'all' || item.device_type === deviceTypeFilter;
-      const matchesBrand = brandFilter === 'all' || item.brand_name === brandFilter;
-      const matchesService = serviceFilter === 'all' || item.service_name === serviceFilter;
-      const matchesTier = tierFilter === 'all' || item.tier_name === tierFilter;
-      const matchesMissingFilter = !showOnlyMissing || item.is_missing;
+      const pricingData = {
+        service_id: item.service_id,
+        model_id: item.model_id,
+        pricing_tier_id: item.pricing_tier_id,
+        base_price: item.fallback_price || 99,
+        discounted_price: null,
+        cost_price: null
+      };
+
+      const response = await fetch('/api/management/dynamic-pricing-bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entries: [pricingData] })
+      });
+
+      const result = await response.json();
       
-      return matchesSearch && matchesDeviceType && matchesBrand && matchesService && matchesTier && matchesMissingFilter;
+      if (result.success) {
+        const rowKey = getRowKey(item);
+        setSuccess(`✅ Added pricing for ${item.brand_name} ${item.model_name} - ${item.service_name} (${item.tier_name})`);
+        setRecentlyUpdated(prev => ({ ...prev, [rowKey]: true }));
+        await fetchCoverage(); // Refresh the data
+      } else {
+        setError(result.error || 'Failed to add pricing');
+      }
+    } catch (err) {
+      setError('Network error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle inline editing
+  const startEditing = (item: PricingCoverage) => {
+    const rowKey = getRowKey(item);
+    setEditingStates(prev => ({
+      ...prev,
+      [rowKey]: {
+        isEditing: true,
+        newPrice: item.existing_price || 0
+      }
+    }));
+  };
+
+  const cancelEditing = (item: PricingCoverage) => {
+    const rowKey = getRowKey(item);
+    setEditingStates(prev => {
+      const newState = { ...prev };
+      delete newState[rowKey];
+      return newState;
     });
   };
 
-  const getUniqueValues = (field: keyof PricingCoverage) => {
-    return Array.from(new Set(coverage.map(item => item[field]))).sort();
-  };
+  const savePrice = async (item: PricingCoverage) => {
+    const rowKey = getRowKey(item);
+    const editState = editingStates[rowKey];
+    
+    if (!editState || editState.newPrice <= 0) {
+      setError('Please enter a valid price greater than 0');
+      return;
+    }
 
-  const getCoverageStatusColor = (percentage: number) => {
-    if (percentage >= 80) return 'text-green-600';
-    if (percentage >= 60) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
-  const getCoverageStatusIcon = (percentage: number) => {
-    if (percentage >= 80) return <CheckCircle className="w-5 h-5 text-green-600" />;
-    if (percentage >= 60) return <AlertTriangle className="w-5 h-5 text-yellow-600" />;
-    return <AlertTriangle className="w-5 h-5 text-red-600" />;
-  };
-
-  const handleAddMissingPricing = async (item: PricingCoverage, idx: number) => {
-    setAddLoadingIndex(idx);
     try {
-      const res = await fetch('/api/management/dynamic-pricing-bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entries: [{
-          device_type: item.device_type,
-          brand_name: item.brand_name,
-          model_name: item.model_name,
-          service_name: item.service_name,
-          tier_name: item.tier_name,
-          base_price: item.fallback_price || 99
-        }] })
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Failed to add pricing');
+      setLoading(true);
       
-      setSuccessMessage(`✅ Added pricing for ${item.brand_name} ${item.model_name} - ${item.service_name}`);
-      setRecentlyUpdated(new Set([idx]));
-      await fetchCoverageData();
+      const pricingData = {
+        service_id: item.service_id,
+        model_id: item.model_id,
+        pricing_tier_id: item.pricing_tier_id,
+        base_price: editState.newPrice,
+        existing_id: item.existing_id
+      };
+
+      const response = await fetch('/api/management/dynamic-pricing-bulk', {
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entries: [pricingData] })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setSuccess(`✅ Updated pricing for ${item.brand_name} ${item.model_name} - ${item.service_name} (${item.tier_name})`);
+        setRecentlyUpdated(prev => ({ ...prev, [rowKey]: true }));
+        
+        // Clear editing state
+        setEditingStates(prev => {
+          const newState = { ...prev };
+          delete newState[rowKey];
+          return newState;
+        });
+        
+        await fetchCoverage(); // Refresh the data
+      } else {
+        setError(result.error || 'Failed to update pricing');
+      }
     } catch (err) {
-      setError('Error adding price: ' + (err instanceof Error ? err.message : err));
+      setError('Network error occurred');
     } finally {
-      setAddLoadingIndex(null);
+      setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="w-8 h-8 animate-spin" />
-        <span className="ml-2">Analyzing pricing coverage...</span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertDescription>
-          Error loading coverage data: {error}
-          <Button variant="outline" size="sm" className="ml-2" onClick={fetchCoverageData}>
-            Retry
-          </Button>
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  const filteredCoverage = getFilteredCoverage();
-  const uniqueDeviceTypes = getUniqueValues('device_type');
-  const uniqueBrands = getUniqueValues('brand_name');
-  const uniqueServices = getUniqueValues('service_name');
-  const uniqueTiers = getUniqueValues('tier_name');
-
-  // Bulk selection helpers
-  const allSelected = selectedRows.length > 0 && selectedRows.length === filteredCoverage.length;
-  const toggleSelectAll = () => {
-    if (allSelected) setSelectedRows([]);
-    else setSelectedRows(filteredCoverage.map((_, i) => i));
-  };
-  const toggleSelectRow = (idx: number) => {
-    setSelectedRows((prev) => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
-  };
-  // Inline edit helpers
-  const startEdit = (idx: number, price: number) => {
-    setEditingIndex(idx);
-    setEditingPrice(price.toString());
-  };
-  const cancelEdit = () => {
-    setEditingIndex(null);
-    setEditingPrice('');
-  };
-  const saveEdit = async (item: PricingCoverage, idx: number) => {
-    setEditLoading(true);
-    try {
-      if (!item.id) {
-        throw new Error('Cannot edit missing pricing entry - use Add instead');
-      }
-      
-      const newPrice = parseFloat(editingPrice);
-      if (isNaN(newPrice) || newPrice <= 0) {
-        throw new Error('Please enter a valid price greater than 0');
-      }
-      
-      const res = await fetch('/api/management/dynamic-pricing', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: item.id, base_price: newPrice })
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Failed to update');
-      
-      setSuccessMessage(`✅ Updated ${item.brand_name} ${item.model_name} - ${item.service_name} to $${newPrice}`);
-      setRecentlyUpdated(new Set([idx]));
-      await fetchCoverageData();
-      setEditingIndex(null);
-      setEditingPrice('');
-    } catch (err) {
-      setError('Error updating price: ' + (err instanceof Error ? err.message : err));
-    } finally {
-      setEditLoading(false);
-    }
-  };
-  // Bulk update handler
+  // Handle bulk operations
   const handleBulkUpdate = async () => {
-    setBulkLoading(true);
-    try {
-      const bulkPriceNum = parseFloat(bulkPrice);
-      if (isNaN(bulkPriceNum) || bulkPriceNum <= 0) {
-        throw new Error('Please enter a valid price greater than 0');
-      }
+    if (selectedItems.size === 0 || bulkPrice <= 0) {
+      setError('Please select items and enter a valid price');
+      return;
+    }
 
-      const entries = selectedRows.map(idx => {
-        const item = filteredCoverage[idx];
-        return {
-          device_type: item.device_type,
-          brand_name: item.brand_name,
-          model_name: item.model_name,
-          service_name: item.service_name,
-          tier_name: item.tier_name,
-          base_price: bulkPriceNum
-        };
-      });
+    try {
+      setBulkLoading(true);
       
-      const res = await fetch('/api/management/dynamic-pricing-bulk', {
+      const entries = Array.from(selectedItems).map(rowKey => {
+        const item = coverage.find(c => getRowKey(c) === rowKey);
+        if (!item) return null;
+        
+        return {
+          service_id: item.service_id,
+          model_id: item.model_id,
+          pricing_tier_id: item.pricing_tier_id,
+          base_price: bulkPrice,
+          existing_id: item.existing_id
+        };
+      }).filter(Boolean);
+
+      const response = await fetch('/api/management/dynamic-pricing-bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ entries })
       });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Bulk update failed');
+
+      const result = await response.json();
       
-      setSuccessMessage(`✅ Successfully updated ${selectedRows.length} pricing entries to $${bulkPriceNum}`);
-      setRecentlyUpdated(new Set(selectedRows));
-      await fetchCoverageData();
-      setSelectedRows([]);
-      setBulkPrice('');
+      if (result.success) {
+        setSuccess(`✅ Bulk update complete: ${result.results?.succeeded || 0} items updated`);
+        
+        // Mark all updated items as recently updated
+        const updatedItems: RecentlyUpdated = {};
+        selectedItems.forEach(key => {
+          updatedItems[key] = true;
+        });
+        setRecentlyUpdated(prev => ({ ...prev, ...updatedItems }));
+        
+        setSelectedItems(new Set());
+        setBulkPrice(0);
+        await fetchCoverage(); // Refresh the data
+      } else {
+        setError(result.error || 'Bulk update failed');
+      }
     } catch (err) {
-      setError('Bulk update error: ' + (err instanceof Error ? err.message : err));
+      setError('Network error occurred');
     } finally {
       setBulkLoading(false);
     }
   };
 
+  // Handle row selection
+  const toggleRowSelection = (item: PricingCoverage) => {
+    const rowKey = getRowKey(item);
+    setSelectedItems(prev => {
+      const newSelection = new Set(prev);
+      if (newSelection.has(rowKey)) {
+        newSelection.delete(rowKey);
+      } else {
+        newSelection.add(rowKey);
+      }
+      return newSelection;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedItems.size === paginatedCoverage.length) {
+      setSelectedItems(new Set());
+    } else {
+      const allKeys = paginatedCoverage.map(getRowKey);
+      setSelectedItems(new Set(allKeys));
+    }
+  };
+
+  // Handle keyboard shortcuts for inline editing
+  const handleKeyPress = (e: React.KeyboardEvent, item: PricingCoverage) => {
+    if (e.key === 'Enter') {
+      savePrice(item);
+    } else if (e.key === 'Escape') {
+      cancelEditing(item);
+    }
+  };
+
+  if (loading && coverage.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center p-8">
+          <Loader2 className="h-8 w-8 animate-spin mr-2" />
+          <span>Loading pricing coverage data...</span>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Pricing Coverage Audit</h2>
-          <p className="text-gray-600">Identify and manage missing pricing combinations</p>
-        </div>
-        <Button onClick={fetchCoverageData} variant="outline">
-          <Loader2 className="w-4 h-4 mr-2" />
-          Refresh
-        </Button>
-      </div>
-
-      {/* Success Message */}
-      {successMessage && (
+      {/* Success Alert */}
+      {success && (
         <Alert className="border-green-200 bg-green-50">
-          <Check className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800">
-            {successMessage}
-          </AlertDescription>
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">{success}</AlertDescription>
         </Alert>
       )}
 
-      {/* Error Message */}
+      {/* Error Alert */}
       {error && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            {error}
-            <Button variant="outline" size="sm" className="ml-2" onClick={() => setError(null)}>
-              Dismiss
-            </Button>
-          </AlertDescription>
+        <Alert className="border-red-200 bg-red-50">
+          <AlertTriangle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">{error}</AlertDescription>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setError(null)}
+            className="ml-2"
+          >
+            <X className="h-3 w-3" />
+          </Button>
         </Alert>
       )}
 
-      {/* Summary Cards */}
+      {/* Summary Card */}
       {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Total Combinations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{summary.total_combinations.toLocaleString()}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-green-600">Existing Entries</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{summary.existing_entries.toLocaleString()}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-red-600">Missing Entries</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{summary.missing_entries.toLocaleString()}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Coverage</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center">
-                {getCoverageStatusIcon(summary.coverage_percentage)}
-                <span className={`text-2xl font-bold ml-2 ${getCoverageStatusColor(summary.coverage_percentage)}`}>
-                  {summary.coverage_percentage}%
-                </span>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="h-5 w-5" />
+              Pricing Coverage Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">{summary.total_combinations.toLocaleString()}</div>
+                <div className="text-sm text-gray-600">Total Combinations</div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Bulk Actions Bar */}
-      {selectedRows.length > 0 && (
-        <div className="flex items-center bg-blue-50 border border-blue-200 rounded-lg p-4 mb-2">
-          <span className="mr-4 font-medium">Bulk Update ({selectedRows.length} selected):</span>
-          <Input
-            type="number"
-            min="0"
-            step="0.01"
-            value={bulkPrice}
-            onChange={e => setBulkPrice(e.target.value)}
-            placeholder="Enter new price"
-            className="w-32 mr-2"
-          />
-          <Button size="sm" onClick={handleBulkUpdate} disabled={bulkLoading || !bulkPrice}>
-            {bulkLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Save className="w-4 h-4 mr-1" />}
-            Apply
-          </Button>
-          <Button size="sm" variant="outline" className="ml-2" onClick={() => setSelectedRows([])}>
-            <X className="w-4 h-4 mr-1" />Cancel
-          </Button>
-        </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{summary.existing_entries.toLocaleString()}</div>
+                <div className="text-sm text-gray-600">Existing Prices</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600">{summary.missing_entries.toLocaleString()}</div>
+                <div className="text-sm text-gray-600">Missing Prices</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">{summary.coverage_percentage}%</div>
+                <div className="text-sm text-gray-600">Coverage</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <Filter className="w-5 h-5 mr-2" />
-            Filters
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filters & Search
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <Select value={deviceTypeFilter} onChange={(e) => setDeviceTypeFilter(e.target.value)}>
-              <option value="all">All Device Types</option>
-              {uniqueDeviceTypes.map(type => (
-                <option key={String(type)} value={String(type)}>{String(type)}</option>
-              ))}
-            </Select>
-            
-            <Select value={brandFilter} onChange={(e) => setBrandFilter(e.target.value)}>
-              <option value="all">All Brands</option>
-              {uniqueBrands.map(brand => (
-                <option key={String(brand)} value={String(brand)}>{String(brand)}</option>
-              ))}
-            </Select>
-            
-            <Select value={serviceFilter} onChange={(e) => setServiceFilter(e.target.value)}>
-              <option value="all">All Services</option>
-              {uniqueServices.map(service => (
-                <option key={String(service)} value={String(service)}>{String(service)}</option>
-              ))}
-            </Select>
-            
-            <Select value={tierFilter} onChange={(e) => setTierFilter(e.target.value)}>
-              <option value="all">All Tiers</option>
-              {uniqueTiers.map(tier => (
-                <option key={String(tier)} value={String(tier)}>{String(tier)}</option>
-              ))}
-            </Select>
-            
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="showOnlyMissing"
-                checked={showOnlyMissing}
-                onChange={(e) => setShowOnlyMissing(e.target.checked)}
-                className="rounded"
-              />
-              <label htmlFor="showOnlyMissing" className="text-sm">Show only missing</label>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <Input
+              placeholder="Search..."
+              value={filters.search}
+              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+              className="w-full"
+            />
+            <select
+              value={filters.deviceType}
+              onChange={(e) => setFilters(prev => ({ ...prev, deviceType: e.target.value }))}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Device Types</option>
+              <option value="mobile">Mobile</option>
+              <option value="laptop">Laptop</option>
+              <option value="tablet">Tablet</option>
+            </select>
+            <Input
+              placeholder="Brand..."
+              value={filters.brand}
+              onChange={(e) => setFilters(prev => ({ ...prev, brand: e.target.value }))}
+            />
+            <Input
+              placeholder="Service..."
+              value={filters.service}
+              onChange={(e) => setFilters(prev => ({ ...prev, service: e.target.value }))}
+            />
+            <select
+              value={filters.tier}
+              onChange={(e) => setFilters(prev => ({ ...prev, tier: e.target.value }))}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Tiers</option>
+              <option value="economy">Economy</option>
+              <option value="standard">Standard</option>
+              <option value="premium">Premium</option>
+              <option value="express">Express</option>
+            </select>
+            <select
+              value={filters.status}
+              onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Status</option>
+              <option value="existing">Has Price</option>
+              <option value="missing">Missing Price</option>
+            </select>
+          </div>
+          <div className="mt-4 text-sm text-gray-600">
+            Showing {paginatedCoverage.length} of {filteredCoverage.length} entries
           </div>
         </CardContent>
       </Card>
 
-      {/* Results */}
+      {/* Bulk Actions */}
+      {selectedItems.size > 0 && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <span className="font-medium">{selectedItems.size} items selected</span>
+                <Input
+                  type="number"
+                  placeholder="Bulk price..."
+                  value={bulkPrice || ''}
+                  onChange={(e) => setBulkPrice(Number(e.target.value))}
+                  className="w-32"
+                  min="0"
+                  step="0.01"
+                />
+                <Button 
+                  onClick={handleBulkUpdate}
+                  disabled={bulkLoading || bulkPrice <= 0}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {bulkLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Update Selected
+                </Button>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => setSelectedItems(new Set())}
+                size="sm"
+              >
+                Clear Selection
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Data Table */}
       <Card>
         <CardHeader>
-          <CardTitle>
-            Results ({filteredCoverage.length.toLocaleString()} entries)
+          <CardTitle className="flex items-center justify-between">
+            <span>Pricing Coverage Details</span>
+            <Button
+              variant="outline"
+              onClick={fetchCoverage}
+              disabled={loading}
+              size="sm"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Refresh
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {filteredCoverage.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No entries found matching the current filters.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="p-2">
-                      <input
-                        type="checkbox"
-                        checked={allSelected}
-                        onChange={toggleSelectAll}
-                        className="rounded"
-                        aria-label="Select all"
-                      />
-                    </th>
-                    <th className="text-left p-2">Device Type</th>
-                    <th className="text-left p-2">Brand</th>
-                    <th className="text-left p-2">Model</th>
-                    <th className="text-left p-2">Service</th>
-                    <th className="text-left p-2">Tier</th>
-                    <th className="text-left p-2">Status</th>
-                    <th className="text-left p-2">Price</th>
-                    <th className="text-left p-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredCoverage.slice(0, 100).map((item, idx) => (
-                    <tr 
-                      key={idx} 
-                      className={`border-b hover:bg-gray-50 ${
-                        recentlyUpdated.has(idx) ? 'bg-green-50 border-green-200' : ''
-                      }`}
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b bg-gray-50">
+                  <th className="text-left p-3">
+                    <button
+                      onClick={toggleSelectAll}
+                      className="flex items-center gap-2"
                     >
-                      <td className="p-2">
-                        <input
-                          type="checkbox"
-                          checked={selectedRows.includes(idx)}
-                          onChange={() => toggleSelectRow(idx)}
-                          className="rounded"
-                          aria-label={`Select row ${idx + 1}`}
-                        />
+                      {selectedItems.size === paginatedCoverage.length && paginatedCoverage.length > 0 ? 
+                        <CheckSquare className="h-4 w-4" /> : 
+                        <Square className="h-4 w-4" />
+                      }
+                      Select
+                    </button>
+                  </th>
+                  <th className="text-left p-3">Device</th>
+                  <th className="text-left p-3">Brand</th>
+                  <th className="text-left p-3">Model</th>
+                  <th className="text-left p-3">Service</th>
+                  <th className="text-left p-3">Tier</th>
+                  <th className="text-left p-3">Status</th>
+                  <th className="text-left p-3">Price</th>
+                  <th className="text-left p-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedCoverage.map((item) => {
+                  const rowKey = getRowKey(item);
+                  const isSelected = selectedItems.has(rowKey);
+                  const isEditing = editingStates[rowKey]?.isEditing;
+                  const isRecentlyUpdated = recentlyUpdated[rowKey];
+                  
+                  return (
+                    <tr 
+                      key={rowKey} 
+                      className={`border-b hover:bg-gray-50 ${isRecentlyUpdated ? 'bg-green-100 border-green-300' : ''} ${isSelected ? 'bg-blue-50' : ''}`}
+                    >
+                      <td className="p-3">
+                        <button
+                          onClick={() => toggleRowSelection(item)}
+                          className="flex items-center"
+                        >
+                          {isSelected ? 
+                            <CheckSquare className="h-4 w-4 text-blue-600" /> : 
+                            <Square className="h-4 w-4" />
+                          }
+                        </button>
                       </td>
-                      <td className="p-2">{item.device_type}</td>
-                      <td className="p-2">{item.brand_name}</td>
-                      <td className="p-2">{item.model_name}</td>
-                      <td className="p-2">{item.service_name}</td>
-                      <td className="p-2">{item.tier_name}</td>
-                      <td className="p-2">
+                      <td className="p-3">
+                        <Badge variant="outline" className="capitalize">
+                          {item.device_type}
+                        </Badge>
+                      </td>
+                      <td className="p-3 font-medium">{item.brand_name}</td>
+                      <td className="p-3">{item.model_name}</td>
+                      <td className="p-3">{item.service_name}</td>
+                      <td className="p-3">
+                        <Badge 
+                          variant="secondary"
+                          className={`capitalize ${
+                            item.tier_name === 'premium' ? 'bg-purple-100 text-purple-800' :
+                            item.tier_name === 'standard' ? 'bg-blue-100 text-blue-800' :
+                            item.tier_name === 'economy' ? 'bg-green-100 text-green-800' :
+                            'bg-orange-100 text-orange-800'
+                          }`}
+                        >
+                          {item.tier_name}
+                        </Badge>
+                      </td>
+                      <td className="p-3">
                         {item.is_missing ? (
                           <Badge variant="destructive">Missing</Badge>
                         ) : (
-                          <Badge variant="default" className={recentlyUpdated.has(idx) ? 'bg-green-600' : ''}>
-                            {recentlyUpdated.has(idx) ? 'Updated!' : 'Exists'}
-                          </Badge>
-                        )}
-                      </td>
-                      <td className="p-2">
-                        {editingIndex === idx ? (
-                          <div className="flex items-center">
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={editingPrice}
-                              onChange={e => setEditingPrice(e.target.value)}
-                              className="w-24 mr-2"
-                              autoFocus
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  saveEdit(item, idx);
-                                } else if (e.key === 'Escape') {
-                                  cancelEdit();
-                                }
-                              }}
-                            />
-                            <Button size="sm" onClick={() => saveEdit(item, idx)} disabled={editLoading || !editingPrice}>
-                              {editLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                            </Button>
-                            <Button size="sm" variant="outline" className="ml-1" onClick={cancelEdit}>
-                              <X className="w-4 h-4" />
-                            </Button>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="default" className="bg-green-600">Has Price</Badge>
+                            {isRecentlyUpdated && <Badge variant="secondary" className="bg-green-100 text-green-800">Updated!</Badge>}
                           </div>
-                        ) : item.is_missing ? (
-                          <span className="text-gray-500">
-                            Fallback: ${item.fallback_price}
-                          </span>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        {isEditing ? (
+                          <Input
+                            type="number"
+                            value={editingStates[rowKey]?.newPrice || 0}
+                            onChange={(e) => setEditingStates(prev => ({
+                              ...prev,
+                              [rowKey]: {
+                                ...prev[rowKey],
+                                newPrice: Number(e.target.value)
+                              }
+                            }))}
+                            onKeyDown={(e) => handleKeyPress(e, item)}
+                            className="w-24"
+                            min="0"
+                            step="0.01"
+                            autoFocus
+                          />
                         ) : (
-                          <span className={`font-medium ${recentlyUpdated.has(idx) ? 'text-green-600' : 'text-blue-600'}`}>
-                            ${item.existing_price}
-                            {recentlyUpdated.has(idx) && (
-                              <span className="ml-1 text-green-600">✓</span>
-                            )}
+                          <span className="font-mono">
+                            ${item.existing_price ? item.existing_price.toFixed(2) : 
+                              (item.fallback_price ? `${item.fallback_price.toFixed(2)} (est)` : 'N/A')}
                           </span>
                         )}
                       </td>
-                      <td className="p-2">
-                        {item.is_missing ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleAddMissingPricing(item, idx)}
-                            disabled={addLoadingIndex === idx}
-                          >
-                            {addLoadingIndex === idx ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Plus className="w-4 h-4 mr-1" />
-                            )}
-                            Add
-                          </Button>
-                        ) : editingIndex === idx ? null : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => startEdit(idx, item.existing_price!)}
-                          >
-                            <Edit className="w-4 h-4 mr-1" />
-                            Edit
-                          </Button>
-                        )}
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          {item.is_missing ? (
+                            <Button
+                              size="sm"
+                              onClick={() => handleAddPrice(item)}
+                              disabled={loading}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <Plus className="h-3 w-3 mr-1" />
+                              Add
+                            </Button>
+                          ) : (
+                            <>
+                              {isEditing ? (
+                                <div className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => savePrice(item)}
+                                    disabled={loading}
+                                    className="bg-green-600 hover:bg-green-700"
+                                  >
+                                    <Save className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => cancelEditing(item)}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => startEditing(item)}
+                                >
+                                  <Edit className="h-3 w-3 mr-1" />
+                                  Edit
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              
-              {filteredCoverage.length > 100 && (
-                <div className="text-center py-4 text-gray-500">
-                  Showing first 100 results. Use filters to narrow down the list.
-                </div>
-              )}
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-sm text-gray-600">
+                Page {currentPage} of {totalPages}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
