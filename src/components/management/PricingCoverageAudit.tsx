@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Search, AlertTriangle, CheckCircle, Plus, Filter, X, Edit, Save, CheckSquare, Square } from 'lucide-react';
+import { Loader2, Search, AlertTriangle, CheckCircle, Plus, Filter, X, Edit, Save, CheckSquare, Square, Check } from 'lucide-react';
 
 interface PricingCoverage {
   id?: number;
@@ -51,10 +51,28 @@ export default function PricingCoverageAudit() {
   const [editingPrice, setEditingPrice] = useState('');
   const [editLoading, setEditLoading] = useState(false);
   const [addLoadingIndex, setAddLoadingIndex] = useState<number | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [recentlyUpdated, setRecentlyUpdated] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     fetchCoverageData();
   }, []);
+
+  // Clear success message after 3 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  // Clear recently updated highlighting after 5 seconds
+  useEffect(() => {
+    if (recentlyUpdated.size > 0) {
+      const timer = setTimeout(() => setRecentlyUpdated(new Set()), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [recentlyUpdated]);
 
   const fetchCoverageData = async () => {
     try {
@@ -123,14 +141,17 @@ export default function PricingCoverageAudit() {
           model_name: item.model_name,
           service_name: item.service_name,
           tier_name: item.tier_name,
-          base_price: item.fallback_price || 99 // fallback to 99 if not present
+          base_price: item.fallback_price || 99
         }] })
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Failed to add pricing');
+      
+      setSuccessMessage(`✅ Added pricing for ${item.brand_name} ${item.model_name} - ${item.service_name}`);
+      setRecentlyUpdated(new Set([idx]));
       await fetchCoverageData();
     } catch (err) {
-      alert('Error adding price: ' + (err instanceof Error ? err.message : err));
+      setError('Error adding price: ' + (err instanceof Error ? err.message : err));
     } finally {
       setAddLoadingIndex(null);
     }
@@ -190,18 +211,26 @@ export default function PricingCoverageAudit() {
         throw new Error('Cannot edit missing pricing entry - use Add instead');
       }
       
+      const newPrice = parseFloat(editingPrice);
+      if (isNaN(newPrice) || newPrice <= 0) {
+        throw new Error('Please enter a valid price greater than 0');
+      }
+      
       const res = await fetch('/api/management/dynamic-pricing', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: item.id, base_price: parseFloat(editingPrice) })
+        body: JSON.stringify({ id: item.id, base_price: newPrice })
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Failed to update');
+      
+      setSuccessMessage(`✅ Updated ${item.brand_name} ${item.model_name} - ${item.service_name} to $${newPrice}`);
+      setRecentlyUpdated(new Set([idx]));
       await fetchCoverageData();
       setEditingIndex(null);
       setEditingPrice('');
     } catch (err) {
-      alert('Error updating price: ' + (err instanceof Error ? err.message : err));
+      setError('Error updating price: ' + (err instanceof Error ? err.message : err));
     } finally {
       setEditLoading(false);
     }
@@ -210,6 +239,11 @@ export default function PricingCoverageAudit() {
   const handleBulkUpdate = async () => {
     setBulkLoading(true);
     try {
+      const bulkPriceNum = parseFloat(bulkPrice);
+      if (isNaN(bulkPriceNum) || bulkPriceNum <= 0) {
+        throw new Error('Please enter a valid price greater than 0');
+      }
+
       const entries = selectedRows.map(idx => {
         const item = filteredCoverage[idx];
         return {
@@ -218,9 +252,10 @@ export default function PricingCoverageAudit() {
           model_name: item.model_name,
           service_name: item.service_name,
           tier_name: item.tier_name,
-          base_price: parseFloat(bulkPrice)
+          base_price: bulkPriceNum
         };
       });
+      
       const res = await fetch('/api/management/dynamic-pricing-bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -228,11 +263,14 @@ export default function PricingCoverageAudit() {
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error || 'Bulk update failed');
+      
+      setSuccessMessage(`✅ Successfully updated ${selectedRows.length} pricing entries to $${bulkPriceNum}`);
+      setRecentlyUpdated(new Set(selectedRows));
       await fetchCoverageData();
       setSelectedRows([]);
       setBulkPrice('');
     } catch (err) {
-      alert('Bulk update error: ' + (err instanceof Error ? err.message : err));
+      setError('Bulk update error: ' + (err instanceof Error ? err.message : err));
     } finally {
       setBulkLoading(false);
     }
@@ -251,6 +289,29 @@ export default function PricingCoverageAudit() {
           Refresh
         </Button>
       </div>
+
+      {/* Success Message */}
+      {successMessage && (
+        <Alert className="border-green-200 bg-green-50">
+          <Check className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">
+            {successMessage}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            {error}
+            <Button variant="outline" size="sm" className="ml-2" onClick={() => setError(null)}>
+              Dismiss
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Summary Cards */}
       {summary && (
@@ -421,7 +482,12 @@ export default function PricingCoverageAudit() {
                 </thead>
                 <tbody>
                   {filteredCoverage.slice(0, 100).map((item, idx) => (
-                    <tr key={idx} className="border-b hover:bg-gray-50">
+                    <tr 
+                      key={idx} 
+                      className={`border-b hover:bg-gray-50 ${
+                        recentlyUpdated.has(idx) ? 'bg-green-50 border-green-200' : ''
+                      }`}
+                    >
                       <td className="p-2">
                         <input
                           type="checkbox"
@@ -440,7 +506,9 @@ export default function PricingCoverageAudit() {
                         {item.is_missing ? (
                           <Badge variant="destructive">Missing</Badge>
                         ) : (
-                          <Badge variant="default">Exists</Badge>
+                          <Badge variant="default" className={recentlyUpdated.has(idx) ? 'bg-green-600' : ''}>
+                            {recentlyUpdated.has(idx) ? 'Updated!' : 'Exists'}
+                          </Badge>
                         )}
                       </td>
                       <td className="p-2">
@@ -454,6 +522,13 @@ export default function PricingCoverageAudit() {
                               onChange={e => setEditingPrice(e.target.value)}
                               className="w-24 mr-2"
                               autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  saveEdit(item, idx);
+                                } else if (e.key === 'Escape') {
+                                  cancelEdit();
+                                }
+                              }}
                             />
                             <Button size="sm" onClick={() => saveEdit(item, idx)} disabled={editLoading || !editingPrice}>
                               {editLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -467,8 +542,11 @@ export default function PricingCoverageAudit() {
                             Fallback: ${item.fallback_price}
                           </span>
                         ) : (
-                          <span className="text-green-600">
+                          <span className={`font-medium ${recentlyUpdated.has(idx) ? 'text-green-600' : 'text-blue-600'}`}>
                             ${item.existing_price}
+                            {recentlyUpdated.has(idx) && (
+                              <span className="ml-1 text-green-600">✓</span>
+                            )}
                           </span>
                         )}
                       </td>
@@ -478,6 +556,7 @@ export default function PricingCoverageAudit() {
                             size="sm"
                             variant="outline"
                             onClick={() => handleAddMissingPricing(item, idx)}
+                            disabled={addLoadingIndex === idx}
                           >
                             {addLoadingIndex === idx ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
