@@ -13,6 +13,10 @@ interface PricingCoverage {
   is_missing: boolean;
   existing_price?: number;
   fallback_price?: number;
+  service_id: number;
+  model_id: number;
+  pricing_tier_id: number;
+  existing_id?: number;
 }
 
 interface ApiResponse {
@@ -70,7 +74,7 @@ export default async function handler(
     const tiersMap = new Map(pricingTiers?.map((t: any) => [t.id, t]) || []);
 
     // Step 3: Create a set of existing pricing combinations for fast lookup
-    const existingCombinations = new Set();
+    const existingCombinations = new Map();
     existingPricing.forEach((pricing: any) => {
       const service = servicesMap.get(pricing.service_id);
       const model = modelsMap.get(pricing.model_id);
@@ -80,7 +84,7 @@ export default async function handler(
 
       if (service && model && brand && deviceType && tier) {
         const key = `${(deviceType as any).name}-${(brand as any).name}-${(model as any).name}-${(service as any).name}-${(tier as any).name}`.toLowerCase();
-        existingCombinations.add(key);
+        existingCombinations.set(key, pricing);
       }
     });
 
@@ -112,15 +116,8 @@ export default async function handler(
               totalCombinations++;
 
               const combinationKey = `${(deviceType as any).name}-${(brand as any).name}-${(model as any).name}-${(service as any).name}-${(tier as any).name}`.toLowerCase();
-              const isMissing = !existingCombinations.has(combinationKey);
-
-              // Find existing pricing entry if it exists
-              const existingEntry = existingPricing.find((pricing: any) => {
-                const serviceMatch = pricing.service_id === service.id;
-                const modelMatch = pricing.model_id === model.id;
-                const tierMatch = pricing.pricing_tier_id === tier.id;
-                return serviceMatch && modelMatch && tierMatch;
-              });
+              const existingEntry = existingCombinations.get(combinationKey);
+              const isMissing = !existingEntry;
 
               coverage.push({
                 device_type: (deviceType as any).name,
@@ -130,7 +127,11 @@ export default async function handler(
                 tier_name: (tier as any).name,
                 is_missing: isMissing,
                 existing_price: existingEntry ? existingEntry.base_price : undefined,
-                fallback_price: isMissing ? calculateFallbackPrice((deviceType as any).name, (service as any).name, (tier as any).name) : undefined
+                fallback_price: isMissing ? calculateFallbackPrice((deviceType as any).name, (service as any).name, (tier as any).name) : undefined,
+                service_id: service.id,
+                model_id: model.id,
+                pricing_tier_id: tier.id,
+                existing_id: existingEntry ? existingEntry.id : undefined
               });
             });
           }
@@ -173,47 +174,72 @@ function calculateFallbackPrice(deviceType: string, serviceName: string, tierNam
   const basePricing: { [key: string]: { [key: string]: number } } = {
     mobile: {
       'Screen Replacement': 149,
+      'screen_replacement': 149,
       'Battery Replacement': 89,
+      'battery_replacement': 89,
       'Charging Port Repair': 109,
+      'charging_port_repair': 109,
       'Speaker/Microphone Repair': 99,
+      'speaker_repair': 99,
       'Camera Repair': 119,
+      'camera_repair': 119,
       'Water Damage Diagnostics': 129,
+      'water_damage_repair': 129,
       'Other Repairs': 99
     },
     laptop: {
       'Screen Replacement': 249,
+      'screen_replacement': 249,
       'Battery Replacement': 139,
+      'battery_replacement': 139,
       'Keyboard Repair/Replacement': 159,
+      'keyboard_repair': 159,
       'Trackpad Repair': 139,
+      'trackpad_repair': 139,
       'RAM Upgrade': 119,
+      'ram_upgrade': 119,
       'Storage (HDD/SSD) Upgrade': 179,
+      'storage_upgrade': 179,
       'Software Troubleshooting': 99,
+      'software_troubleshooting': 99,
       'Virus Removal': 129,
+      'virus_removal': 129,
       'Cooling System Repair': 159,
+      'cooling_system_repair': 159,
       'Power Jack Repair': 149,
+      'power_jack_repair': 149,
       'Other Repairs': 129
     },
     tablet: {
       'Screen Replacement': 189,
+      'screen_replacement': 189,
       'Battery Replacement': 119,
+      'battery_replacement': 119,
       'Charging Port Repair': 109,
+      'charging_port_repair': 109,
       'Speaker Repair': 99,
+      'speaker_repair': 99,
       'Button Repair': 89,
+      'button_repair': 89,
       'Software Issue': 99,
+      'software_troubleshooting': 99,
       'Other Repairs': 109
     }
   };
 
-  // Tier multipliers
+  // Get base price
+  const devicePricing = basePricing[deviceType.toLowerCase()] || basePricing.mobile;
+  const basePrice = devicePricing[serviceName] || devicePricing['Other Repairs'] || 99;
+
+  // Apply tier multipliers
   const tierMultipliers: { [key: string]: number } = {
-    'economy': 0.8,
+    'economy': 0.85,
     'standard': 1.0,
     'premium': 1.25,
+    'same_day': 1.4,
     'express': 1.5
   };
 
-  const basePrice = basePricing[deviceType.toLowerCase()]?.[serviceName] || 99;
-  const tierMultiplier = tierMultipliers[tierName.toLowerCase()] || 1.0;
-
-  return Math.round(basePrice * tierMultiplier * 100) / 100;
+  const multiplier = tierMultipliers[tierName.toLowerCase()] || 1.0;
+  return Math.round(basePrice * multiplier);
 } 
