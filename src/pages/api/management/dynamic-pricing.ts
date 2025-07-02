@@ -44,6 +44,8 @@ export default async function handler(
         return await handlePut(req, res, supabase);
       case 'DELETE':
         return await handleDelete(req, res, supabase);
+      case 'PATCH':
+        return await handlePatch(req, res, supabase);
       default:
         return res.status(405).json({ 
           success: false, 
@@ -102,18 +104,18 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse<ApiResponse>,
     const { data: pricingTiers } = await supabase.from('pricing_tiers').select('id, name, display_name');
 
     // Create lookup maps for efficient data joining
-    const servicesMap = new Map(services?.map(s => [s.id, s]) || []);
-    const modelsMap = new Map(deviceModels?.map(m => [m.id, m]) || []);
-    const brandsMap = new Map(brands?.map(b => [b.id, b]) || []);
-    const deviceTypesMap = new Map(deviceTypes?.map(dt => [dt.id, dt]) || []);
-    const tiersMap = new Map(pricingTiers?.map(t => [t.id, t]) || []);
+    const servicesMap = new Map(services?.map((s: any) => [s.id, s]) || []);
+    const modelsMap = new Map(deviceModels?.map((m: any) => [m.id, m]) || []);
+    const brandsMap = new Map(brands?.map((b: any) => [b.id, b]) || []);
+    const deviceTypesMap = new Map(deviceTypes?.map((dt: any) => [dt.id, dt]) || []);
+    const tiersMap = new Map(pricingTiers?.map((t: any) => [t.id, t]) || []);
 
     // Transform the data to include related information
     const transformedPricing = (pricing || []).map((entry: any) => {
       const service = servicesMap.get(entry.service_id);
       const model = modelsMap.get(entry.model_id);
-      const brand = model ? brandsMap.get(model.brand_id) : null;
-      const deviceType = brand ? deviceTypesMap.get(brand.device_type_id) : null;
+      const brand = model ? brandsMap.get((model as any).brand_id) : null;
+      const deviceType = brand ? deviceTypesMap.get((brand as any).device_type_id) : null;
       const tier = tiersMap.get(entry.pricing_tier_id);
 
       return {
@@ -125,11 +127,11 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse<ApiResponse>,
         discounted_price: entry.discounted_price,
         cost_price: entry.cost_price,
         is_active: entry.is_active,
-        service_name: service?.display_name || service?.name,
-        model_name: model?.display_name || model?.name,
-        brand_name: brand?.display_name || brand?.name,
-        tier_name: tier?.display_name || tier?.name,
-        device_type: deviceType?.name,
+        service_name: (service as any)?.display_name || (service as any)?.name,
+        model_name: (model as any)?.display_name || (model as any)?.name,
+        brand_name: (brand as any)?.display_name || (brand as any)?.name,
+        tier_name: (tier as any)?.display_name || (tier as any)?.name,
+        device_type: (deviceType as any)?.name,
         created_at: entry.created_at,
         updated_at: entry.updated_at
       };
@@ -296,6 +298,31 @@ async function handleDelete(req: NextApiRequest, res: NextApiResponse<ApiRespons
     return res.status(500).json({
       success: false,
       message: 'Failed to delete dynamic pricing entry'
+    });
+  }
+}
+
+async function handlePatch(req: NextApiRequest, res: NextApiResponse<ApiResponse>, supabase: any) {
+  try {
+    const { id, base_price } = req.body;
+    if (!id || typeof base_price !== 'number') {
+      return res.status(400).json({ success: false, error: 'Missing id or base_price' });
+    }
+    apiLogger.info('Updating price', { id, base_price });
+    const { error } = await supabase
+      .from('dynamic_pricing')
+      .update({ base_price })
+      .eq('id', id);
+    if (error) {
+      apiLogger.error('Failed to update price', error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+    return res.status(200).json({ success: true, message: 'Price updated' });
+  } catch (error) {
+    apiLogger.error('Error in handlePatch', { error });
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update price'
     });
   }
 } 

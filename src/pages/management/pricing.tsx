@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
+import PricingCoverageAudit from '@/components/management/PricingCoverageAudit';
 
 interface PricingTier {
   id: number;
@@ -45,7 +46,7 @@ interface DynamicPricing {
   updated_at?: string;
 }
 
-type TabType = 'tiers' | 'services' | 'pricing' | 'device-pricing';
+type TabType = 'tiers' | 'services' | 'pricing' | 'device-pricing' | 'coverage';
 
 export default function PricingAdmin() {
   const router = useRouter();
@@ -595,7 +596,8 @@ export default function PricingAdmin() {
               { key: 'tiers', label: 'Pricing Tiers', count: pricingTiers.length },
               { key: 'services', label: 'Services', count: services.length },
               { key: 'pricing', label: 'Dynamic Pricing', count: dynamicPricing.length },
-              { key: 'device-pricing', label: 'Device-Specific Pricing', count: dynamicPricing.length }
+              { key: 'device-pricing', label: 'Device-Specific Pricing', count: dynamicPricing.length },
+              { key: 'coverage', label: 'Coverage Audit', count: 0 }
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -1739,6 +1741,13 @@ export default function PricingAdmin() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Coverage Audit Tab */}
+        {activeTab === 'coverage' && (
+          <div className="space-y-6">
+            <PricingCoverageAudit />
           </div>
         )}
       </div>
