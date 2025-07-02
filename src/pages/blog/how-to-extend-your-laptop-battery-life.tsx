@@ -11,7 +11,7 @@ export default function ExtendLaptopBatteryLifePost() {
         <title>How to Extend Your Laptop Battery Life | Expert Tips & Guide | The Travelling Technicians</title>
         <meta name="description" content="Learn proven techniques to extend your laptop battery life and maximize performance. Expert tips on charging habits, power settings, and battery maintenance for longer laptop usage." />
         <meta name="keywords" content="laptop battery life, extend laptop battery, laptop battery tips, battery maintenance, laptop power settings, battery health, laptop battery replacement" />
-        <link rel="canonical" href="https://travelling-technicians.ca/blog/how-to-extend-your-laptop-battery-life" />
+        <link rel="canonical" href="https://www.travelling-technicians.ca/blog/how-to-extend-your-laptop-battery-life" />
         <meta property="og:title" content="How to Extend Your Laptop Battery Life | Expert Tips & Guide" />
         <meta property="og:description" content="Proven techniques to maximize your laptop battery life and performance. Learn proper charging habits, power optimization, and when to replace your battery." />
         <meta property="og:url" content="https://travelling-technicians.ca/blog/how-to-extend-your-laptop-battery-life" />

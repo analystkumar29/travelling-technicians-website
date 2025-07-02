@@ -11,7 +11,7 @@ export default function MobileRepairNearMePage() {
         <title>Mobile Repair Near Me | Doorstep Service Vancouver BC | The Travelling Technicians</title>
         <meta name="description" content="Looking for mobile repair near me? We come to you! Same-day doorstep mobile phone repair service across Vancouver, Burnaby, Richmond, and Lower Mainland BC." />
         <meta name="keywords" content="mobile repair near me, phone repair near me, mobile phone repair near me, cell phone repair near me, doorstep mobile repair, local mobile repair" />
-        <link rel="canonical" href="https://travelling-technicians.ca/mobile-repair-near-me" />
+        <link rel="canonical" href="https://www.travelling-technicians.ca/mobile-repair-near-me" />
         <meta property="og:title" content="Mobile Repair Near Me | Doorstep Service Vancouver BC" />
         <meta property="og:description" content="We come to you! Same-day doorstep mobile phone repair service across Vancouver and Lower Mainland. Professional technicians at your location." />
         <meta property="og:url" content="https://travelling-technicians.ca/mobile-repair-near-me" />

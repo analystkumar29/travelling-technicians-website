@@ -205,10 +205,10 @@ class MyDocument extends Document {
               __html: JSON.stringify({
                 "@context": "https://schema.org",
                 "@type": "LocalBusiness",
-                "@id": "https://travelling-technicians.ca/#business",
+                "@id": "https://www.travelling-technicians.ca/#business",
                 "name": "The Travelling Technicians",
                 "description": "Professional mobile phone and laptop repair services with same-day doorstep service across Vancouver, Burnaby, Richmond, and surrounding Lower Mainland areas.",
-                "url": "https://travelling-technicians.ca",
+                "url": "https://www.travelling-technicians.ca",
                 "telephone": "+1-778-389-9251",
                 "email": "info@travelling-technicians.ca",
                 "priceRange": "$79-$249",
