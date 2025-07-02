@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface PriceCalculation {
   service: {
@@ -68,7 +68,7 @@ export function usePriceCalculation({
 
   const servicesList = Array.isArray(services) ? services : services ? [services] : [];
 
-  const fetchPricing = async () => {
+  const fetchPricing = useCallback(async () => {
     if (!enabled || !deviceType || !brand || !model || servicesList.length === 0) {
       setCalculations([]);
       setTotalPrice(0);
@@ -119,7 +119,7 @@ export function usePriceCalculation({
     } finally {
       setLoading(false);
     }
-  };
+  }, [deviceType, brand, model, servicesList, tier, postalCode, enabled]);
 
   const refetch = () => {
     fetchPricing();
@@ -127,7 +127,7 @@ export function usePriceCalculation({
 
   useEffect(() => {
     fetchPricing();
-  }, [deviceType, brand, model, JSON.stringify(servicesList), tier, postalCode, enabled]);
+  }, [deviceType, brand, model, servicesList, tier, postalCode, enabled, fetchPricing]);
 
   return {
     calculations,

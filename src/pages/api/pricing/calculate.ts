@@ -237,7 +237,12 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
 
 function calculateFallbackPricing(deviceType: string, brand: string, service: string, tier: string) {
   const serviceKey = SERVICE_ID_MAPPING[service] || service;
-  const basePrice = FALLBACK_PRICING[deviceType as keyof typeof FALLBACK_PRICING]?.[serviceKey as keyof any] || 149;
+  
+  // Type-safe fallback pricing lookup
+  const devicePricing = FALLBACK_PRICING[deviceType as keyof typeof FALLBACK_PRICING];
+  const basePrice = devicePricing && typeof devicePricing === 'object' && serviceKey in devicePricing 
+    ? (devicePricing as any)[serviceKey] 
+    : 149;
   
   // Brand multipliers
   const brandMultipliers: Record<string, number> = {
