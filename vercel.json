@@ -157,6 +157,21 @@
 
   "redirects": [
     {
+      "source": "http://travelling-technicians.ca/(.*)",
+      "destination": "https://travelling-technicians.ca/$1",
+      "permanent": true
+    },
+    {
+      "source": "http://www.travelling-technicians.ca/(.*)",
+      "destination": "https://travelling-technicians.ca/$1",
+      "permanent": true
+    },
+    {
+      "source": "https://www.travelling-technicians.ca/(.*)",
+      "destination": "https://travelling-technicians.ca/$1",
+      "permanent": true
+    },
+    {
       "source": "/service-areas/richmond/",
       "destination": "/service-areas/richmond",
       "permanent": true

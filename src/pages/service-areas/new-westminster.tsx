@@ -20,10 +20,10 @@ export default function NewWestminsterServiceArea() {
         <title>Mobile & Laptop Repair in New Westminster, BC | The Travelling Technicians</title>
         <meta name="description" content="Professional mobile phone and laptop repair services in New Westminster, BC. Same-day doorstep repair with 90-day warranty. Book online or call now!" />
         <meta name="keywords" content="mobile repair New Westminster BC, laptop repair New Westminster, iPhone repair New Westminster, doorstep repair New Westminster" />
-        <link rel="canonical" href="https://www.travelling-technicians.ca/repair/new-westminster" />
+        <link rel="canonical" href="https://travelling-technicians.ca/repair/new-westminster" />
         <meta property="og:title" content="Mobile & Laptop Repair in New Westminster, BC | The Travelling Technicians" />
         <meta property="og:description" content="Professional mobile phone and laptop repair services in New Westminster, BC. Same-day doorstep repair with 90-day warranty." />
-        <meta property="og:url" content="https://www.travelling-technicians.ca/repair/new-westminster" />
+        <meta property="og:url" content="https://travelling-technicians.ca/repair/new-westminster" />
       </Head>
       
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
