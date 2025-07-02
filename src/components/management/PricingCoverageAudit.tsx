@@ -141,6 +141,23 @@ export default function PricingCoverageAudit() {
 
   // Handle adding missing price
   const handleAddPrice = async (item: PricingCoverage) => {
+    const requestId = `add-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    console.log(`[${requestId}] Starting price addition`, {
+      item,
+      itemKeys: Object.keys(item),
+      hasServiceId: !!item.service_id,
+      hasModelId: !!item.model_id,
+      hasPricingTierId: !!item.pricing_tier_id,
+      serviceIdValue: item.service_id,
+      modelIdValue: item.model_id,
+      pricingTierIdValue: item.pricing_tier_id,
+      serviceIdType: typeof item.service_id,
+      modelIdType: typeof item.model_id,
+      pricingTierIdType: typeof item.pricing_tier_id,
+      fallbackPrice: item.fallback_price
+    });
+
     try {
       setLoading(true);
       
@@ -153,23 +170,51 @@ export default function PricingCoverageAudit() {
         cost_price: null
       };
 
+      console.log(`[${requestId}] Prepared pricing data`, {
+        pricingData,
+        pricingDataKeys: Object.keys(pricingData),
+        requestPayload: { entries: [pricingData] }
+      });
+
       const response = await fetch('/api/management/dynamic-pricing-bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ entries: [pricingData] })
       });
 
+      console.log(`[${requestId}] Response received`, {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
       const result = await response.json();
+      console.log(`[${requestId}] Response data`, result);
       
       if (result.success) {
         const rowKey = getRowKey(item);
+        console.log(`[${requestId}] Price added successfully`, {
+          rowKey,
+          resultSummary: result.results,
+          successMessage: `Added pricing for ${item.brand_name} ${item.model_name} - ${item.service_name} (${item.tier_name})`
+        });
         setSuccess(`✅ Added pricing for ${item.brand_name} ${item.model_name} - ${item.service_name} (${item.tier_name})`);
         setRecentlyUpdated(prev => ({ ...prev, [rowKey]: true }));
         await fetchCoverage(); // Refresh the data
       } else {
+        console.error(`[${requestId}] Failed to add price`, {
+          result,
+          errorMessage: result.error,
+          resultErrors: result.results?.errors
+        });
         setError(result.error || 'Failed to add pricing');
       }
     } catch (err) {
+      console.error(`[${requestId}] Network error occurred`, {
+        error: err instanceof Error ? err.message : err,
+        stack: err instanceof Error ? err.stack : undefined
+      });
       setError('Network error occurred');
     } finally {
       setLoading(false);
