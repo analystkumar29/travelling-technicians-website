@@ -205,10 +205,10 @@ class MyDocument extends Document {
               __html: JSON.stringify({
                 "@context": "https://schema.org",
                 "@type": "LocalBusiness",
-                "@id": "https://www.travelling-technicians.ca/#business",
+                "@id": "https://travelling-technicians.ca/#business",
                 "name": "The Travelling Technicians",
                 "description": "Professional mobile phone and laptop repair services with same-day doorstep service across Vancouver, Burnaby, Richmond, and surrounding Lower Mainland areas.",
-                "url": "https://www.travelling-technicians.ca",
+                "url": "https://travelling-technicians.ca",
                 "telephone": "+1-778-389-9251",
                 "email": "info@travelling-technicians.ca",
                 "priceRange": "$79-$249",
@@ -493,51 +493,6 @@ class MyDocument extends Document {
                     }
                   ]
                 }
-              })
-            }}
-          />
-
-          {/* FAQ Schema for Better SERP Features */}
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
-                "@context": "https://schema.org",
-                "@type": "FAQPage",
-                "mainEntity": [
-                  {
-                    "@type": "Question",
-                    "name": "How much does mobile screen repair cost?",
-                    "acceptedAnswer": {
-                      "@type": "Answer",
-                      "text": "Mobile screen repair costs range from $79-$189 depending on the device model. iPhone screen repairs typically cost $129-$189, while Android screen repairs range from $79-$149."
-                    }
-                  },
-                  {
-                    "@type": "Question", 
-                    "name": "Do you offer same-day mobile repair service?",
-                    "acceptedAnswer": {
-                      "@type": "Answer",
-                      "text": "Yes, we offer same-day mobile repair service across Vancouver, Burnaby, Richmond, and surrounding areas. Most repairs are completed within 30-90 minutes at your location."
-                    }
-                  },
-                  {
-                    "@type": "Question",
-                    "name": "What areas do you serve for mobile repair?",
-                    "acceptedAnswer": {
-                      "@type": "Answer", 
-                      "text": "We provide mobile repair services across Vancouver, Burnaby, Richmond, North Vancouver, New Westminster, Coquitlam, West Vancouver, and surrounding Lower Mainland areas."
-                    }
-                  },
-                  {
-                    "@type": "Question",
-                    "name": "What warranty do you offer on mobile repairs?",
-                    "acceptedAnswer": {
-                      "@type": "Answer",
-                      "text": "We offer a 90-day warranty on all mobile phone repairs, covering both parts and labor. This ensures your peace of mind with our professional repair services."
-                    }
-                  }
-                ]
               })
             }}
           />

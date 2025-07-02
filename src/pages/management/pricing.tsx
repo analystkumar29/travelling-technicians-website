@@ -1546,8 +1546,8 @@ export default function PricingAdmin() {
                 <div className="text-center py-8 text-gray-500">
                   {dynamicPricing.length === 0 ? (
                     <>
-                      <p>No device-specific pricing set yet.</p>
-                      <p className="text-sm mt-2">Use the form above to set specific prices for device models like iPhone 16.</p>
+                  <p>No device-specific pricing set yet.</p>
+                  <p className="text-sm mt-2">Use the form above to set specific prices for device models like iPhone 16.</p>
                     </>
                   ) : (
                     <>

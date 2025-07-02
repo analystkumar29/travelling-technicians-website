@@ -147,8 +147,6 @@ async function getDynamicPriceCalculation(
   postalCode?: string
 ): Promise<PriceCalculation | null> {
   try {
-    apiLogger.info('Querying dynamic pricing database', { deviceType, brand, model, service, tier });
-
     // Map form service IDs to backend service names
     const serviceNameMapping: Record<string, string> = {
       // Mobile services
@@ -205,7 +203,23 @@ async function getDynamicPriceCalculation(
     const backendServiceName = serviceNameMapping[service] || service;
     const serviceDisplayName = serviceDisplayNames[service] || service;
 
-    // Query dynamic pricing with joins to get exact admin-set prices
+    // Map frontend tier names to database tier names (as shown in management API)
+    const tierNameMapping: Record<string, string> = {
+      'economy': 'Economy Repair',
+      'standard': 'Standard Repair', 
+      'premium': 'Premium Service',
+      'express': 'Same Day Service'
+    };
+
+    const backendTierName = tierNameMapping[tier] || tier;
+
+    apiLogger.info('Querying dynamic pricing database', { 
+      deviceType, brand, model, service, tier,
+      mappedService: serviceDisplayName,
+      mappedTier: backendTierName
+    });
+
+    // Use simpler query approach like the working management API
     const { data: pricingData, error } = await supabase
       .from('dynamic_pricing')
       .select(`
@@ -247,31 +261,70 @@ async function getDynamicPriceCalculation(
         )
       `)
       .eq('is_active', true)
-      .eq('services.name', backendServiceName)
-      .eq('pricing_tiers.name', tier)
-      .ilike('device_models.name', `%${model}%`)
-      .ilike('device_models.brands.name', `%${brand}%`)
-      .eq('device_models.brands.device_types.name', deviceType)
-      .single();
+      .order('created_at', { ascending: false });
+
+    // Filter results in JavaScript (like the working management API)
+    const filteredData = pricingData?.filter((entry: any) => {
+      const serviceMatch = entry.services?.display_name === serviceDisplayName;
+      const tierMatch = entry.pricing_tiers?.display_name === backendTierName;
+      const modelMatch = entry.device_models?.name === model;
+      const brandMatch = entry.device_models?.brands?.name === brand;
+      const deviceTypeMatch = entry.device_models?.brands?.device_types?.name === deviceType;
+      
+      // Debug logging
+      if (entry.device_models?.name === 'iPhone 16' || entry.device_models?.name === 'iPhone 15 Plus') {
+        apiLogger.info('Debug filtering', {
+          model: entry.device_models?.name,
+          service: entry.services?.display_name,
+          tier: entry.pricing_tiers?.display_name,
+          brand: entry.device_models?.brands?.name,
+          deviceType: entry.device_models?.brands?.device_types?.name,
+          matches: { serviceMatch, tierMatch, modelMatch, brandMatch, deviceTypeMatch },
+          target: { serviceDisplayName, backendTierName, model, brand, deviceType }
+        });
+      }
+      
+      return serviceMatch && tierMatch && modelMatch && brandMatch && deviceTypeMatch;
+    }) || [];
+
+    // Sort by discounted price (lowest first) and take the first one
+    const sortedData = filteredData.sort((a: any, b: any) => {
+      const priceA = a.discounted_price || a.base_price;
+      const priceB = b.discounted_price || b.base_price;
+      return priceA - priceB;
+    });
+
+    const finalData = sortedData.length > 0 ? [sortedData[0]] : null;
 
     if (error) {
-      apiLogger.warn('No dynamic pricing found in database', { error: error.message, deviceType, brand, model, service, tier });
+      apiLogger.warn('Database query error', { error: error.message, deviceType, brand, model, service, tier });
       return null;
     }
 
-    if (!pricingData) {
-      apiLogger.warn('No pricing data returned from database query');
+    if (!finalData || finalData.length === 0) {
+      apiLogger.warn('No matching dynamic pricing found after filtering', { 
+        totalEntries: pricingData?.length || 0,
+        filteredEntries: filteredData.length,
+        deviceType, brand, model, service, tier,
+        mappedService: serviceDisplayName,
+        mappedTier: backendTierName
+      });
       return null;
     }
+
+    // Get the best (lowest price) result
+    const pricing = finalData[0];
 
     apiLogger.info('Found dynamic pricing in database', { 
-      id: pricingData.id,
-      basePrice: pricingData.base_price,
-      discountedPrice: pricingData.discounted_price
+      id: pricing.id,
+      basePrice: pricing.base_price,
+      discountedPrice: pricing.discounted_price,
+      totalMatches: filteredData.length,
+      selectedEntry: `${pricing.device_models?.name} + ${pricing.services?.display_name} + ${pricing.pricing_tiers?.name}`
     });
 
     // Use admin-set pricing (discounted price takes precedence over base price)
-    const adminSetPrice = pricingData.discounted_price || pricingData.base_price;
+    const adminSetPrice = pricing.discounted_price || pricing.base_price;
     let finalPrice = adminSetPrice;
 
     // Apply location adjustments on top of admin-set prices
@@ -282,38 +335,38 @@ async function getDynamicPriceCalculation(
     }
 
     // Calculate savings if there's a discounted price
-    const savings = pricingData.discounted_price 
-      ? pricingData.base_price - pricingData.discounted_price 
+    const savings = pricing.discounted_price 
+      ? pricing.base_price - pricing.discounted_price 
       : undefined;
 
     // Build the price calculation response using admin data
     const calculation: PriceCalculation = {
       service: {
-        id: pricingData.services.id,
-        name: pricingData.services.name,
-        display_name: pricingData.services.display_name || serviceDisplayName,
-        estimated_duration_minutes: pricingData.services.estimated_duration_minutes || 45,
-        warranty_period_days: pricingData.services.warranty_period_days || (tier === 'premium' ? 180 : 90),
-        is_doorstep_eligible: pricingData.services.is_doorstep_eligible ?? true
+        id: pricing.services.id,
+        name: pricing.services.name,
+        display_name: pricing.services.display_name || serviceDisplayName,
+        estimated_duration_minutes: pricing.services.estimated_duration_minutes || 45,
+        warranty_period_days: pricing.services.warranty_period_days || (tier === 'premium' ? 180 : 90),
+        is_doorstep_eligible: pricing.services.is_doorstep_eligible ?? true
       },
       device: {
         type: deviceType,
-        brand: pricingData.device_models.brands.display_name || brand,
-        model: pricingData.device_models.display_name || model
+        brand: pricing.device_models.brands.display_name || brand,
+        model: pricing.device_models.display_name || model
       },
       pricing: {
-        base_price: pricingData.base_price,
-        discounted_price: pricingData.discounted_price || undefined,
+        base_price: pricing.base_price,
+        discounted_price: pricing.discounted_price || undefined,
         final_price: finalPrice,
         tier_multiplier: 1.0, // Already applied in admin pricing
         location_adjustment: locationResult.adjustment,
         savings: savings
       },
       tier: {
-        name: pricingData.pricing_tiers.name,
-        display_name: pricingData.pricing_tiers.display_name,
-        estimated_delivery_hours: pricingData.pricing_tiers.estimated_delivery_hours,
-        includes_features: pricingData.pricing_tiers.includes_features || []
+        name: pricing.pricing_tiers.name,
+        display_name: pricing.pricing_tiers.display_name,
+        estimated_delivery_hours: pricing.pricing_tiers.estimated_delivery_hours,
+        includes_features: pricing.pricing_tiers.includes_features || []
       },
       location: locationResult.info || undefined
     };

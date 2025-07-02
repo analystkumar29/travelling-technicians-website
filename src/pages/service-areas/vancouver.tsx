@@ -20,10 +20,10 @@ export default function VancouverServiceArea() {
         <title>Mobile & Laptop Repair in Vancouver, BC | The Travelling Technicians</title>
         <meta name="description" content="Professional mobile phone and laptop repair services in Vancouver, BC. Same-day doorstep repair with 90-day warranty. Book online or call now!" />
         <meta name="keywords" content="mobile repair Vancouver BC, laptop repair Vancouver, iPhone repair Vancouver, doorstep repair Vancouver" />
-        <link rel="canonical" href="https://www.travelling-technicians.ca/repair/vancouver" />
+        <link rel="canonical" href="https://travelling-technicians.ca/repair/vancouver" />
         <meta property="og:title" content="Mobile & Laptop Repair in Vancouver, BC | The Travelling Technicians" />
         <meta property="og:description" content="Professional mobile phone and laptop repair services in Vancouver, BC. Same-day doorstep repair with 90-day warranty." />
-        <meta property="og:url" content="https://www.travelling-technicians.ca/repair/vancouver" />
+        <meta property="og:url" content="https://travelling-technicians.ca/repair/vancouver" />
       </Head>
       
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
