@@ -168,6 +168,41 @@
       "permanent": true
     },
     {
+      "source": "/contact/",
+      "destination": "/contact",
+      "permanent": true
+    },
+    {
+      "source": "/service-areas/richmond/",
+      "destination": "/service-areas/richmond",
+      "permanent": true
+    },
+    {
+      "source": "/service-areas/new-westminster/",
+      "destination": "/service-areas/new-westminster",
+      "permanent": true
+    },
+    {
+      "source": "/service-areas/north-vancouver/",
+      "destination": "/service-areas/north-vancouver",
+      "permanent": true
+    },
+    {
+      "source": "/service-areas/vancouver/",
+      "destination": "/service-areas/vancouver",
+      "permanent": true
+    },
+    {
+      "source": "/privacy-policy/",
+      "destination": "/privacy-policy",
+      "permanent": true
+    },
+    {
+      "source": "/terms-conditions/",
+      "destination": "/terms-conditions",
+      "permanent": true
+    },
+    {
       "source": "/doorstep",
       "destination": "/doorstep-repair",
       "permanent": true
