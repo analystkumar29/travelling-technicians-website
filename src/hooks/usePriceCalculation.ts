@@ -101,7 +101,37 @@ export function usePriceCalculation({
           throw new Error(data.message || 'Failed to calculate price');
         }
 
-        return data.calculation;
+        // Transform the new API response format to match the expected interface
+        const apiData = data.data;
+        return {
+          service: {
+            id: 0, // Not provided in new API
+            name: apiData.service_info.name,
+            display_name: apiData.service_info.display_name,
+            estimated_duration_minutes: undefined, // Not provided in new API
+            warranty_period_days: apiData.warranty_months * 30, // Convert months to days
+            is_doorstep_eligible: apiData.service_info.doorstep_available
+          },
+          device: {
+            type: apiData.device_info.type,
+            brand: apiData.device_info.brand,
+            model: apiData.device_info.model
+          },
+          pricing: {
+            base_price: apiData.base_price,
+            discounted_price: apiData.promotional_price,
+            final_price: apiData.final_price,
+            tier_multiplier: apiData.pricing_breakdown.tier_multiplier,
+            location_adjustment: apiData.pricing_breakdown.location_adjustment || 0,
+            savings: apiData.promotional_price ? apiData.base_price - apiData.promotional_price : undefined
+          },
+          tier: {
+            name: apiData.tier,
+            display_name: apiData.tier.charAt(0).toUpperCase() + apiData.tier.slice(1),
+            estimated_delivery_hours: apiData.turnaround_hours,
+            includes_features: [] // Not provided in new API
+          }
+        };
       });
 
       const results = await Promise.all(pricePromises);
