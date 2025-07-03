@@ -60,3 +60,6 @@ logs
 
 # Backup files
 *.bak
+
+# MobileActive extraction data
+tmp/

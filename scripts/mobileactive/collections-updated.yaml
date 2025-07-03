@@ -1,0 +1,1151 @@
+collections:
+  - handle: all-iphone-screens
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 214
+  - handle: galaxy-note-10
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 31
+  - handle: galaxy-note-10-lite
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 3
+  - handle: galaxy-note-10-plus
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 44
+  - handle: galaxy-note-2
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 12
+  - handle: galaxy-note-20-ultra-1
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 29
+  - handle: galaxy-note-20-ultra
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 40
+  - handle: galaxy-note-3
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 16
+  - handle: galaxy-note-4
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 19
+  - handle: galaxy-note-7
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 33
+  - handle: galaxy-note-8
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 28
+  - handle: galaxy-note-9
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 40
+  - handle: galaxy-s10
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 39
+  - handle: s10-5g
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 10
+  - handle: galaxy-s10-lite
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 7
+  - handle: galaxy-s10-plus
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 37
+  - handle: galaxy-s10e
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 41
+  - handle: galaxy-s20
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 48
+  - handle: galaxy-s20-fe
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 58
+  - handle: galaxy-s20-plus
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 45
+  - handle: galaxy-s20-ultra
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 39
+  - handle: galaxy-s21
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 30
+  - handle: galaxy-s21-fe
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 39
+  - handle: galaxy-s21-plus
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 45
+  - handle: galaxy-s21-ultra
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 44
+  - handle: galaxy-s22
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 32
+  - handle: galaxy-s22-plus
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 44
+  - handle: galaxy-s22-ultra
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 53
+  - handle: galaxy-s23-5g
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 25
+  - handle: galaxy-s23-fe-5g
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 14
+  - handle: galaxy-s23-plus-5g
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 27
+  - handle: galaxy-s23-ultra-5g
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 52
+  - handle: galaxy-s24
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 24
+  - handle: galaxy-s24-fe-5g
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 6
+  - handle: galaxy-s24-plus-5g
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 18
+  - handle: galaxy-s24-ultra-5g
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 36
+  - handle: galaxy-s25-5g
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 7
+  - handle: galaxy-s25-plus-5g
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 7
+  - handle: galaxy-s24-ultra-5g-1
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 12
+  - handle: galaxy-s3
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 14
+  - handle: galaxy-s4
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 18
+  - handle: galaxy-s5
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 22
+  - handle: galaxy-s5-active
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 5
+  - handle: galaxy-s5-neo
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 11
+  - handle: galaxy-s6
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 30
+  - handle: galaxy-s6-active
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 6
+  - handle: galaxy-s6-edge
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 23
+  - handle: galaxy-s6-edge-plus
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 15
+  - handle: galaxy-s7
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 40
+  - handle: galaxy-s7-active
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 1
+  - handle: galaxy-s7-edge
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 43
+  - handle: galaxy-s8
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 43
+  - handle: galaxy-s8-plus
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 45
+  - handle: galaxy-s9
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 41
+  - handle: galaxy-s9-plus
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 40
+  - handle: huawei
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 286
+  - handle: iphone
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 1073
+  - handle: iphone-11
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 61
+  - handle: iphone-11-pro
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 52
+  - handle: iphone-11-pro-max
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 51
+  - handle: iphone-12
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 67
+  - handle: iphone-12-mini
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 52
+  - handle: iphone-12-pro
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 51
+  - handle: iphone-12-pro-max
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 53
+  - handle: 120hz-iphone-screens
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 11
+  - handle: iphone-13
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 55
+  - handle: iphone-13-mini
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 39
+  - handle: iphone-13-pro
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 57
+  - handle: iphone-13-pro-max
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 50
+  - handle: iphone-14
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 39
+  - handle: iphone-14-plus
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 40
+  - handle: iphone-14-pro
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 42
+  - handle: iphone-14-pro-max
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 51
+  - handle: iphone-15
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 38
+  - handle: iphone-15-plus
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 43
+  - handle: iphone-15-pro
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 13
+  - handle: iphone-15-pro-max
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 55
+  - handle: iphone-16
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 22
+  - handle: iphone-16-plus
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 27
+  - handle: iphone-16-pro
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 24
+  - handle: iphone-16-pro-max
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 29
+  - handle: iphone-16-series-tempered-glasses
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 36
+  - handle: iphone-16e
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 5
+  - handle: iphone-4
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 7
+  - handle: iphone-4s
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 7
+  - handle: iphone-5
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 22
+  - handle: iphone-5c
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 20
+  - handle: iphone-5s
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 24
+  - handle: iphone-6
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 37
+  - handle: iphone-6-plus
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 31
+  - handle: iphone-6s
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: -47
+  - handle: iphone-6s-plus
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 29
+  - handle: iphone-7
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 43
+  - handle: iphone-7-plus
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 44
+  - handle: iphone-8
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 47
+  - handle: iphone-8-plus
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 58
+  - handle: iphone-screens
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 178
+  - handle: iphone-se
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 20
+  - handle: iphone-se-2nd-gen
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 30
+  - handle: iphone-se-2022
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 18
+  - handle: iphone-1
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 42
+  - handle: iphone-xr
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 60
+  - handle: iphone-xs
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 37
+  - handle: iphone-xs-max
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 41
+  - handle: oneplus
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 0
+  - handle: oneplus-10-pro
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 3
+  - handle: oneplus-2
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 10
+  - handle: oneplus-3
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 19
+  - handle: oneplus-3t
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 17
+  - handle: oneplus-5
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 19
+  - handle: oneplus-5t
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 10
+  - handle: oneplus-6
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 13
+  - handle: oneplus-6t
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 13
+  - handle: oneplus-7
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 15
+  - handle: oneplus-7-pro
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 8
+  - handle: oneplus-7t
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 11
+  - handle: oneplus-7t-pro
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 9
+  - handle: oneplus-8
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 4
+  - handle: oneplus-8-pro
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 4
+  - handle: oneplus-8t
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 3
+  - handle: oneplus-9
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 6
+  - handle: oneplus-9-pro
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 6
+  - handle: oneplus-one
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 13
+  - handle: oneplus-series
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 181
+  - handle: oneplus-x
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 7
+  - handle: pixel-1
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 13
+  - handle: pixel-2
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 18
+  - handle: pixel-2-xl
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 17
+  - handle: pixel-3
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 18
+  - handle: pixel-3-xl
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 15
+  - handle: pixel-3a
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 12
+  - handle: pixel-3a-xl
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 12
+  - handle: pixel-4
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 15
+  - handle: pixel-4a
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 15
+  - handle: pixel-4a-5g
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 13
+  - handle: pixel-4xl
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 13
+  - handle: pixel-5
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 13
+  - handle: pixel-5a-5g
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 4
+  - handle: pixel-6
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 16
+  - handle: pixel-6a
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 18
+  - handle: pixel-6a-1
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 7
+  - handle: pixel-7
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 17
+  - handle: pixel-7-pro
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 21
+  - handle: pixel-7a
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 7
+  - handle: pixel-8
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 9
+  - handle: pixel-8-pro
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 17
+  - handle: pixel-8a
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 3
+  - handle: pixel-9
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 9
+  - handle: pixel-9-pro
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 6
+  - handle: pixel-9-pro-xl
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 5
+  - handle: pixel
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 338
+  - handle: pixel-xl
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 25
+  - handle: samsung
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 2534
+  - handle: samsung-galaxy-a-series
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 866
+  - handle: samsung-j-series
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 69
+  - handle: samsung-galaxy-note-series
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 214
+  - handle: samsung-galaxy-s-series
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 783
+  - handle: samsung-other
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 2
+  - handle: samsung-s8-s8-plus-s9-s9-plus-incell-screens
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 4
+  - handle: samsung-tablet-digitizer
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 44
+  - handle: samsung-tablet-lcd
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 6
+  - handle: samsung-tablet-screens
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 47
+  - handle: samsung-tablets
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 170
+  - handle: samsung-z-flip-4-5g
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 14
+  - handle: samsung-z-flip-5-5g
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 3
+  - handle: samsung-z-flip-6-5g
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 2
+  - handle: xiaomi-mi-parts
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 6
+  - handle: xiaomi-parts
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 7
+  - handle: xiaomi-redmi
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 2
+  - handle: xiaomi-redmi-note-parts
+    brand: apple
+    device_type: mobile
+    category: screen_replacement
+    products_count: 1
+  - handle: asus
+    brand: apple
+    device_type: laptop
+    category: screen_replacement
+    products_count: 70
+  - handle: macbook-air
+    brand: apple
+    device_type: laptop
+    category: screen_replacement
+    products_count: 20
+  - handle: coming-soon
+    brand: apple
+    device_type: laptop
+    category: screen_replacement
+    products_count: 60
+  - handle: macbook-pro
+    brand: apple
+    device_type: laptop
+    category: screen_replacement
+    products_count: 38
+  - handle: surface-laptop-3
+    brand: apple
+    device_type: laptop
+    category: screen_replacement
+    products_count: 2
+  - handle: surface-laptop-4
+    brand: apple
+    device_type: laptop
+    category: screen_replacement
+    products_count: 2
+  - handle: surface-laptop-5
+    brand: apple
+    device_type: laptop
+    category: screen_replacement
+    products_count: 2
+  - handle: ipad-10-2022
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 12
+  - handle: ipad-2-2011
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 11
+  - handle: ipad-3-2012
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 15
+  - handle: ipad-4-2012
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 13
+  - handle: ipad-5-2017
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 30
+  - handle: ipad-6-2018
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 27
+  - handle: ipad-7-2019
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 27
+  - handle: ipad-8-2020
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 26
+  - handle: ipad-9-2021
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 22
+  - handle: ipad-air-2013
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 34
+  - handle: ipad-air-11-2024
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 1
+  - handle: ipad-air-13-2024
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 1
+  - handle: ipad-air-2-2018
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 15
+  - handle: ipad-air-3-2019
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 14
+  - handle: ipad-air-5-2022
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 14
+  - handle: ipad-air-5-2023
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 12
+  - handle: ipad-assembly-screens
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 41
+  - handle: ipad-digitizers
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 52
+  - handle: ipad-lcd-displays
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 15
+  - handle: ipad-mini
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 14
+  - handle: ipad-mini-2
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 15
+  - handle: ipad-mini-3
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 16
+  - handle: ipad-mini-4
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 16
+  - handle: ipad-mini-5
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 16
+  - handle: ipad-mini-6
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 7
+  - handle: ipad-mini-7
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 1
+  - handle: ipad-parts
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 256
+  - handle: ipad-pro-10-5
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 13
+  - handle: ipad-pro-11-1st-gen
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 9
+  - handle: ipad-pro-11-2nd-gen
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 7
+  - handle: ipad-pro-11-3rd-gen
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 7
+  - handle: ipad-pro-11-4th-gen-2022
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 4
+  - handle: ipad-pro-11-5th-gen-2024
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 1
+  - handle: ipad-pro-12-9-1st-gen-all-parts
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 13
+  - handle: ipad-pro-12-9-2nd-gen-all-parts
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 12
+  - handle: parts-compatible-with-ipad-pro-12-9-3rd-gen
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 7
+  - handle: ipad-pro-12-9-4th-gen-all-parts
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 7
+  - handle: ipad-pro-12-9-5th-gen
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 6
+  - handle: ipad-pro-12-9-6th-gen
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 4
+  - handle: ipad-pro-13-7th-gen-2024
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 1
+  - handle: ipad-pro-9-7
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 15
+  - handle: samsung-tablet-digitizer
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 44
+  - handle: samsung-tablet-lcd
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 6
+  - handle: samsung-tablet-screens
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 47
+  - handle: samsung-tablets
+    brand: apple
+    device_type: tablet
+    category: screen_replacement
+    products_count: 170
+services:
+  - name: screen_replacement
+    keywords:
+      - screen
+      - lcd
+      - display
+      - glass
+      - assembly
+  - name: battery_replacement
+    keywords:
+      - battery
+      - batteries
+  - name: charging_port_repair
+    keywords:
+      - charging port
+      - charging
+      - port
+      - connector
+  - name: speaker_repair
+    keywords:
+      - speaker
+      - speakers
+      - audio
+  - name: camera_repair
+    keywords:
+      - camera
+      - cameras
+      - lens
+  - name: microphone_repair
+    keywords:
+      - microphone
+      - mic
+      - microphones
+pricing:
+  labour_markup: 50
+  tier_multipliers:
+    economy: 0.9
+    standard: 1
+    premium: 1.25
+    express: 1.5

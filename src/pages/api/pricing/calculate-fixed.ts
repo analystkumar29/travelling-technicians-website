@@ -1,10 +1,9 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { createClient } from '@supabase/supabase-js';
+import { getServiceSupabase } from '@/utils/supabaseClient';
+import { logger } from '@/utils/logger';
+import { pricingCache } from '@/utils/cache';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const apiLogger = logger.createModuleLogger('api/pricing/calculate-fixed');
 
 interface PricingCalculation {
   success: boolean;
@@ -12,7 +11,7 @@ interface PricingCalculation {
     base_price: number;
     final_price: number;
     promotional_price?: number;
-    is_promotional: boolean;
+    is_promotional?: boolean;
     tier: string;
     warranty_months: number;
     turnaround_hours: number;
@@ -29,103 +28,83 @@ interface PricingCalculation {
     pricing_breakdown: {
       base_price: number;
       tier_multiplier: number;
-      location_adjustment?: number;
       final_calculation: string;
     };
   };
-  error?: string;
   fallback_used?: boolean;
   debug_info?: any;
+  error?: string;
+  cache_info?: {
+    hit: boolean;
+    ttl?: number;
+    generated_at?: string;
+  };
 }
 
-// Service ID mapping (form kebab-case → database snake_case)
+// Service name mappings
 const SERVICE_ID_MAPPING: Record<string, string> = {
-  'screen-replacement': 'screen_replacement',
-  'battery-replacement': 'battery_replacement',
-  'charging-port-repair': 'charging_port_repair',
-  'speaker-repair': 'speaker_repair',
-  'camera-repair': 'camera_repair',
-  'water-damage': 'water_damage_diagnostics',
-  'keyboard-repair': 'keyboard_repair',
-  'trackpad-repair': 'trackpad_repair',
-  'ram-upgrade': 'ram_upgrade',
-  'storage-upgrade': 'storage_upgrade',
-  'software-troubleshooting': 'software_troubleshooting',
-  'virus-removal': 'virus_removal',
-  'cooling-repair': 'cooling_system_repair',
-  'power-jack-repair': 'power_jack_repair',
-  'button-repair': 'button_repair',
-  'software-issue': 'software_issue',
-  'other-repair': 'other_repair'
+  'screen_replacement': 'screen_replacement',
+  'battery_replacement': 'battery_replacement',
+  'charging_port_repair': 'charging_port_repair',
+  'speaker_repair': 'speaker_repair',
+  'camera_repair': 'camera_repair',
+  'water_damage': 'water_damage_diagnostics',
+  'keyboard_repair': 'keyboard_repair',
+  'trackpad_repair': 'trackpad_repair',
+  'ram_upgrade': 'ram_upgrade',
+  'storage_upgrade': 'storage_upgrade',
+  'software_troubleshooting': 'software_troubleshooting',
+  'virus_removal': 'virus_removal',
+  'cooling_repair': 'cooling_system_repair',
+  'power_jack_repair': 'power_jack_repair'
 };
 
-// Service display names for user-friendly presentation
+// Service display names
 const SERVICE_DISPLAY_NAMES: Record<string, string> = {
   'screen_replacement': 'Screen Replacement',
-  'battery_replacement': 'Battery Replacement', 
+  'battery_replacement': 'Battery Replacement',
   'charging_port_repair': 'Charging Port Repair',
-  'speaker_repair': 'Speaker/Microphone Repair',
+  'speaker_repair': 'Speaker/Mic Repair',
   'camera_repair': 'Camera Repair',
   'water_damage_diagnostics': 'Water Damage Diagnostics',
   'keyboard_repair': 'Keyboard Repair/Replacement',
   'trackpad_repair': 'Trackpad Repair',
   'ram_upgrade': 'RAM Upgrade',
-  'storage_upgrade': 'Storage (HDD/SSD) Upgrade',
+  'storage_upgrade': 'HDD/SSD Replacement/Upgrade',
   'software_troubleshooting': 'Software Troubleshooting',
   'virus_removal': 'Virus Removal',
   'cooling_system_repair': 'Cooling System Repair',
-  'power_jack_repair': 'Power Jack Repair',
-  'button_repair': 'Button Repair',
-  'software_issue': 'Software Issue',
-  'other_repair': 'Other Repair'
+  'power_jack_repair': 'Power Jack Repair'
 };
 
 // Tier configuration
 const TIER_CONFIG = {
-  economy: { multiplier: 0.85, warranty: 1, turnaround: 72 },
-  standard: { multiplier: 1.0, warranty: 3, turnaround: 48 },
-  premium: { multiplier: 1.25, warranty: 6, turnaround: 24 },
+  economy: { multiplier: 0.8, warranty: 3, turnaround: 72 },
+  standard: { multiplier: 1.0, warranty: 6, turnaround: 48 },
+  premium: { multiplier: 1.25, warranty: 12, turnaround: 24 },
   express: { multiplier: 1.5, warranty: 6, turnaround: 12 }
 };
 
-// Fallback pricing structure
-const FALLBACK_PRICING = {
-  mobile: {
-    screen_replacement: 149,
-    battery_replacement: 89,
-    charging_port_repair: 109,
-    speaker_repair: 99,
-    camera_repair: 119,
-    water_damage_diagnostics: 129,
-    other_repair: 99
-  },
-  laptop: {
-    screen_replacement: 249,
-    battery_replacement: 139,
-    keyboard_repair: 159,
-    trackpad_repair: 139,
-    ram_upgrade: 119,
-    storage_upgrade: 179,
-    software_troubleshooting: 99,
-    virus_removal: 129,
-    cooling_system_repair: 159,
-    power_jack_repair: 149,
-    other_repair: 129
-  },
-  tablet: {
-    screen_replacement: 189,
-    battery_replacement: 119,
-    charging_port_repair: 109,
-    speaker_repair: 99,
-    button_repair: 89,
-    software_issue: 99,
-    other_repair: 109
-  }
-};
+// Generate cache key for pricing request
+function generateCacheKey(deviceType: string, brand: string, model: string, service: string, tier: string): string {
+  return `pricing_${deviceType}_${brand}_${model}_${service}_${tier}`.toLowerCase().replace(/\s+/g, '_');
+}
 
+// Enhanced database search with caching
 async function findDynamicPricing(deviceType: string, brand: string, model: string, service: string, tier: string): Promise<any> {
+  const cacheKey = generateCacheKey(deviceType, brand, model, service, tier);
+  
   try {
-    console.log(`[DEBUG] Searching for pricing: ${deviceType}/${brand}/${model}/${service}/${tier}`);
+    // Check cache first
+    const cachedResult = await pricingCache.get(cacheKey);
+    if (cachedResult) {
+      apiLogger.info('Pricing cache hit', { cacheKey });
+      return { ...cachedResult, _cached: true };
+    }
+
+    apiLogger.info('Pricing cache miss, querying database', { cacheKey });
+
+    const supabase = getServiceSupabase();
     
     // SIMPLE QUERY PATTERN (like working management API)
     const { data: allPricing, error: pricingError } = await supabase
@@ -134,18 +113,18 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
       .order('created_at', { ascending: false });
 
     if (pricingError) {
-      console.error('[ERROR] Database query failed:', pricingError);
+      apiLogger.error('Database query failed', { error: pricingError });
       return null;
     }
 
     if (!allPricing || allPricing.length === 0) {
-      console.log('[WARN] No pricing data found in database');
+      apiLogger.warn('No pricing data found in database');
       return null;
     }
 
-    console.log(`[DEBUG] Retrieved ${allPricing.length} pricing entries from database`);
+    apiLogger.debug(`Retrieved ${allPricing.length} pricing entries from database`);
 
-    // Get lookup tables for JavaScript post-processing
+    // Get lookup tables for JavaScript post-processing with parallel requests
     const [
       { data: deviceTypes },
       { data: brands },  
@@ -162,7 +141,7 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
       supabase.from('pricing_tiers').select('*')
     ]);
 
-    // Create lookup maps
+    // Create lookup maps for efficient searching
     const deviceTypeMap = new Map(deviceTypes?.map(dt => [dt.id, dt]) || []);
     const brandMap = new Map(brands?.map(b => [b.id, b]) || []);
     const modelMap = new Map(deviceModels?.map(m => [m.id, m]) || []);
@@ -170,13 +149,12 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
     const categoryMap = new Map(serviceCategories?.map(c => [c.id, c]) || []);
     const tierMap = new Map(pricingTiers?.map(t => [t.id, t]) || []);
 
-    // JavaScript post-processing to find matching entry
+    // JavaScript post-processing for complex matching
     const matchingEntry = allPricing.find(entry => {
       const model_info = modelMap.get(entry.model_id);
       const brand_info = brandMap.get(model_info?.brand_id);
       const device_type_info = deviceTypeMap.get(brand_info?.device_type_id);
       const service_info = serviceMap.get(entry.service_id);
-      const category_info = categoryMap.get(service_info?.category_id);
       const tier_info = tierMap.get(entry.pricing_tier_id);
 
       const deviceTypeMatch = device_type_info?.name?.toLowerCase() === deviceType.toLowerCase();
@@ -185,14 +163,6 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
                         model.toLowerCase().includes(model_info?.name?.toLowerCase() || '');
       const serviceMatch = service_info?.name === SERVICE_ID_MAPPING[service] || service_info?.name === service;
       const tierMatch = tier_info?.name?.toLowerCase() === tier.toLowerCase();
-
-      console.log(`[DEBUG] Checking entry ${entry.id}:`, {
-        deviceTypeMatch: `${device_type_info?.name} === ${deviceType} = ${deviceTypeMatch}`,
-        brandMatch: `${brand_info?.name} === ${brand} = ${brandMatch}`,
-        modelMatch: `${model_info?.name} ~= ${model} = ${modelMatch}`,
-        serviceMatch: `${service_info?.name} === ${SERVICE_ID_MAPPING[service]} = ${serviceMatch}`,
-        tierMatch: `${tier_info?.name} === ${tier} = ${tierMatch}`
-      });
 
       return deviceTypeMatch && brandMatch && modelMatch && serviceMatch && tierMatch;
     });
@@ -214,65 +184,98 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
         tier: tier_info
       };
 
-      console.log(`[SUCCESS] Found matching entry:`, {
+      // Cache the result for 10 minutes
+      await pricingCache.set(cacheKey, enhancedEntry, 10 * 60 * 1000);
+
+      apiLogger.info('Database pricing found and cached', {
         id: enhancedEntry.id,
         base_price: enhancedEntry.base_price,
-        promotional_price: enhancedEntry.promotional_price,
-        device: `${device_type_info?.name}/${brand_info?.name}/${model_info?.name}`,
-        service: service_info?.name,
-        tier: tier_info?.name
+        cacheKey
       });
 
       return enhancedEntry;
     }
 
-    console.log('[WARN] No matching entry found in database');
+    apiLogger.warn('No matching entry found in database');
     return null;
 
   } catch (error) {
-    console.error('[ERROR] Database search failed:', error);
+    apiLogger.error('Database search failed', { error });
     return null;
   }
 }
 
+// Calculate fallback pricing with caching
 function calculateFallbackPricing(deviceType: string, brand: string, service: string, tier: string) {
-  const serviceKey = SERVICE_ID_MAPPING[service] || service;
+  const cacheKey = `fallback_${deviceType}_${brand}_${service}_${tier}`.toLowerCase();
   
-  // Type-safe fallback pricing lookup
-  const devicePricing = FALLBACK_PRICING[deviceType as keyof typeof FALLBACK_PRICING];
-  const basePrice = devicePricing && typeof devicePricing === 'object' && serviceKey in devicePricing 
-    ? (devicePricing as any)[serviceKey] 
-    : 149;
-  
-  // Brand multipliers
-  const brandMultipliers: Record<string, number> = {
-    apple: 1.2,
-    samsung: 1.1,
-    google: 1.0,
-    oneplus: 0.95,
-    xiaomi: 0.9,
-    dell: 1.05,
-    hp: 1.0,
-    lenovo: 0.95,
-    asus: 1.0
+  // Base pricing matrix
+  const BASE_PRICES: Record<string, Record<string, number>> = {
+    mobile: {
+      screen_replacement: 150,
+      battery_replacement: 80,
+      charging_port_repair: 90,
+      speaker_repair: 70,
+      camera_repair: 120,
+      water_damage: 100
+    },
+    laptop: {
+      screen_replacement: 300,
+      battery_replacement: 120,
+      keyboard_repair: 100,
+      trackpad_repair: 80,
+      ram_upgrade: 150,
+      storage_upgrade: 200,
+      software_troubleshooting: 80,
+      virus_removal: 60,
+      cooling_repair: 150,
+      power_jack_repair: 140
+    },
+    tablet: {
+      screen_replacement: 200,
+      battery_replacement: 100,
+      charging_port_repair: 85
+    }
   };
 
-  const brandMultiplier = brandMultipliers[brand.toLowerCase()] || 0.9;
+  // Brand multipliers
+  const BRAND_MULTIPLIERS: Record<string, number> = {
+    apple: 1.4,
+    samsung: 1.2,
+    google: 1.1,
+    oneplus: 1.1,
+    huawei: 1.0,
+    xiaomi: 0.9,
+    dell: 1.1,
+    hp: 1.0,
+    lenovo: 1.0,
+    asus: 1.1,
+    acer: 0.9
+  };
+
+  const basePrice = BASE_PRICES[deviceType]?.[service] || 100;
+  const brandMultiplier = BRAND_MULTIPLIERS[brand.toLowerCase()] || 1.0;
   const tierConfig = TIER_CONFIG[tier as keyof typeof TIER_CONFIG] || TIER_CONFIG.standard;
   
-  const adjustedPrice = basePrice * brandMultiplier * tierConfig.multiplier;
-  
-  return {
+  const finalPrice = Math.round(basePrice * brandMultiplier * tierConfig.multiplier);
+
+  const result = {
     base_price: basePrice,
-    final_price: Math.round(adjustedPrice * 100) / 100,
-    tier_multiplier: tierConfig.multiplier,
     brand_multiplier: brandMultiplier,
+    tier_multiplier: tierConfig.multiplier,
+    final_price: finalPrice,
     warranty_months: tierConfig.warranty,
     turnaround_hours: tierConfig.turnaround
   };
+
+  // Cache fallback calculations for 1 hour
+  pricingCache.set(cacheKey, result, 60 * 60 * 1000);
+
+  return result;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<PricingCalculation>) {
+  const startTime = Date.now();
   const { deviceType, brand, model, service, tier = 'standard', postalCode } = req.query;
 
   // Validation
@@ -283,10 +286,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     });
   }
 
-  console.log(`[INFO] Pricing request: ${deviceType}/${brand}/${model}/${service}/${tier}`);
+  apiLogger.info('Pricing request received', { 
+    deviceType, brand, model, service, tier, postalCode 
+  });
 
   try {
-    // Try to find dynamic pricing in database
+    // Try to find dynamic pricing in database (with caching)
     const dynamicPricing = await findDynamicPricing(
       deviceType as string,
       brand as string, 
@@ -294,6 +299,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       service as string,
       tier as string
     );
+
+    const responseTime = Date.now() - startTime;
 
     if (dynamicPricing) {
       // Use database pricing
@@ -334,12 +341,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           entry_id: dynamicPricing.id,
           matched_device: `${dynamicPricing.device_type?.name}/${dynamicPricing.brand?.name}/${dynamicPricing.model?.name}`,
           matched_service: dynamicPricing.service?.name,
-          matched_tier: dynamicPricing.tier?.name
+          matched_tier: dynamicPricing.tier?.name,
+          response_time_ms: responseTime
+        },
+        cache_info: {
+          hit: !!dynamicPricing._cached,
+          ttl: 10 * 60 * 1000,
+          generated_at: new Date().toISOString()
         }
       });
     } else {
-      // Use fallback pricing
-      console.log(`[WARN] No dynamic pricing found, using fallback for: ${deviceType}/${brand}/${model}/${service}/${tier}`);
+      // Use fallback pricing (also cached)
+      apiLogger.warn('No dynamic pricing found, using cached fallback', { 
+        deviceType, brand, model, service, tier 
+      });
       
       const fallbackPricing = calculateFallbackPricing(
         deviceType as string,
@@ -377,52 +392,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         debug_info: {
           source: 'fallback',
           reason: 'No database match found',
-          fallback_calculation: fallbackPricing
+          fallback_calculation: fallbackPricing,
+          response_time_ms: responseTime
+        },
+        cache_info: {
+          hit: false,
+          ttl: 60 * 60 * 1000,
+          generated_at: new Date().toISOString()
         }
       });
     }
 
   } catch (error) {
-    console.error('[ERROR] Pricing calculation failed:', error);
+    const responseTime = Date.now() - startTime;
     
-    // Emergency fallback
-    const emergencyPricing = calculateFallbackPricing(
-      deviceType as string,
-      brand as string, 
-      service as string,
-      tier as string
-    );
-
-    return res.status(200).json({
-      success: true,
-      data: {
-        base_price: emergencyPricing.base_price,
-        final_price: emergencyPricing.final_price,
-        is_promotional: false,
-        tier: tier as string,
-        warranty_months: emergencyPricing.warranty_months,
-        turnaround_hours: emergencyPricing.turnaround_hours,
-        device_info: {
-          type: deviceType as string,
-          brand: brand as string,
-          model: model as string
-        },
-        service_info: {
-          name: SERVICE_ID_MAPPING[service as string] || service as string,
-          display_name: SERVICE_DISPLAY_NAMES[SERVICE_ID_MAPPING[service as string] || service as string] || service as string,
-          doorstep_available: true
-        },
-        pricing_breakdown: {
-          base_price: emergencyPricing.base_price,
-          tier_multiplier: emergencyPricing.tier_multiplier,
-          final_calculation: `Emergency: $${emergencyPricing.base_price} × ${emergencyPricing.tier_multiplier} = $${emergencyPricing.final_price}`
-        }
-      },
-      fallback_used: true,
-      error: `Database error: ${error}`,
+    apiLogger.error('Pricing calculation failed', { 
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
+      deviceType, brand, model, service, tier,
+      response_time_ms: responseTime
+    });
+    
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to calculate pricing',
       debug_info: {
-        source: 'emergency_fallback',
-        error: String(error)
+        response_time_ms: responseTime
       }
     });
   }
