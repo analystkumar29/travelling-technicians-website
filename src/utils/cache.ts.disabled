@@ -264,11 +264,11 @@ class AdvancedCache<T> {
   getByPattern(pattern: RegExp): Array<{ key: string; value: T }> {
     const results: Array<{ key: string; value: T }> = [];
     
-    for (const [key, entry] of this.cache) {
+    this.cache.forEach((entry, key) => {
       if (pattern.test(key) && Date.now() <= entry.expires) {
         results.push({ key, value: entry.value });
       }
-    }
+    });
 
     return results;
   }
@@ -277,12 +277,12 @@ class AdvancedCache<T> {
   invalidateByPattern(pattern: RegExp): number {
     let invalidated = 0;
     
-    for (const key of this.cache.keys()) {
+    this.cache.forEach((entry, key) => {
       if (pattern.test(key)) {
         this.delete(key);
         invalidated++;
       }
-    }
+    });
 
     cacheLogger.info('Cache invalidation by pattern', { pattern: pattern.toString(), invalidated });
     return invalidated;
@@ -293,12 +293,12 @@ class AdvancedCache<T> {
     let oldestKey: string | null = null;
     let oldestAccess = Infinity;
 
-    for (const [key, accessTime] of this.accessOrder) {
+    this.accessOrder.forEach((accessTime, key) => {
       if (accessTime < oldestAccess) {
         oldestAccess = accessTime;
         oldestKey = key;
       }
-    }
+    });
 
     if (oldestKey) {
       this.cache.delete(oldestKey);
