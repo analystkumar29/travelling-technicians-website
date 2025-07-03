@@ -1,0 +1,138 @@
+{
+  "timestamp": "2025-07-03T07:16:05.800Z",
+  "summary": {
+    "totalEndpoints": 9,
+    "overallSuccessRate": "100.00",
+    "averageResponseTime": "73.57",
+    "thresholdViolations": 0
+  },
+  "endpoints": [
+    {
+      "endpoint": "brands",
+      "totalRequests": 5,
+      "successRate": "100.00",
+      "averageResponseTime": "65.60",
+      "medianResponseTime": "65.00",
+      "p95ResponseTime": "85.00",
+      "minResponseTime": "53.00",
+      "maxResponseTime": "85.00",
+      "statusCodeDistribution": {
+        "200": 5
+      },
+      "thresholdViolations": 0
+    },
+    {
+      "endpoint": "models",
+      "totalRequests": 5,
+      "successRate": "100.00",
+      "averageResponseTime": "60.00",
+      "medianResponseTime": "61.00",
+      "p95ResponseTime": "66.00",
+      "minResponseTime": "55.00",
+      "maxResponseTime": "66.00",
+      "statusCodeDistribution": {
+        "200": 5
+      },
+      "thresholdViolations": 0
+    },
+    {
+      "endpoint": "pricing",
+      "totalRequests": 5,
+      "successRate": "100.00",
+      "averageResponseTime": "60.20",
+      "medianResponseTime": "61.00",
+      "p95ResponseTime": "66.00",
+      "minResponseTime": "55.00",
+      "maxResponseTime": "66.00",
+      "statusCodeDistribution": {
+        "200": 5
+      },
+      "thresholdViolations": 0
+    },
+    {
+      "endpoint": "services",
+      "totalRequests": 5,
+      "successRate": "100.00",
+      "averageResponseTime": "15.00",
+      "medianResponseTime": "2.00",
+      "p95ResponseTime": "66.00",
+      "minResponseTime": "2.00",
+      "maxResponseTime": "66.00",
+      "statusCodeDistribution": {
+        "200": 5
+      },
+      "thresholdViolations": 0
+    },
+    {
+      "endpoint": "coverage",
+      "totalRequests": 5,
+      "successRate": "100.00",
+      "averageResponseTime": "156.20",
+      "medianResponseTime": "141.00",
+      "p95ResponseTime": "253.00",
+      "minResponseTime": "98.00",
+      "maxResponseTime": "253.00",
+      "statusCodeDistribution": {
+        "200": 5
+      },
+      "thresholdViolations": 0
+    },
+    {
+      "endpoint": "health_check",
+      "totalRequests": 5,
+      "successRate": "100.00",
+      "averageResponseTime": "2.60",
+      "medianResponseTime": "2.00",
+      "p95ResponseTime": "4.00",
+      "minResponseTime": "2.00",
+      "maxResponseTime": "4.00",
+      "statusCodeDistribution": {
+        "200": 5
+      },
+      "thresholdViolations": 0
+    },
+    {
+      "endpoint": "brands_load",
+      "totalRequests": 10,
+      "successRate": "100.00",
+      "averageResponseTime": "81.50",
+      "medianResponseTime": "81.00",
+      "p95ResponseTime": "119.00",
+      "minResponseTime": "56.00",
+      "maxResponseTime": "119.00",
+      "statusCodeDistribution": {
+        "200": 10
+      },
+      "thresholdViolations": 0
+    },
+    {
+      "endpoint": "models_load",
+      "totalRequests": 10,
+      "successRate": "100.00",
+      "averageResponseTime": "99.80",
+      "medianResponseTime": "105.00",
+      "p95ResponseTime": "130.00",
+      "minResponseTime": "67.00",
+      "maxResponseTime": "130.00",
+      "statusCodeDistribution": {
+        "200": 10
+      },
+      "thresholdViolations": 0
+    },
+    {
+      "endpoint": "pricing_load",
+      "totalRequests": 10,
+      "successRate": "100.00",
+      "averageResponseTime": "80.30",
+      "medianResponseTime": "69.00",
+      "p95ResponseTime": "122.00",
+      "minResponseTime": "61.00",
+      "maxResponseTime": "122.00",
+      "statusCodeDistribution": {
+        "200": 10
+      },
+      "thresholdViolations": 0
+    }
+  ],
+  "recommendations": []
+}
