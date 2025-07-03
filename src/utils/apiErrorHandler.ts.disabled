@@ -180,11 +180,18 @@ class ErrorMetrics {
 
   shouldAlert(type: ErrorType, endpoint: string): boolean {
     const errorRate = this.getErrorRate(type, endpoint);
-    const alertThresholds = {
-      [ErrorType.CRITICAL]: 1,   // 1 error per minute
-      [ErrorType.DATABASE]: 5,   // 5 errors per minute
-      [ErrorType.TIMEOUT]: 10,   // 10 errors per minute
-      [ErrorType.VALIDATION]: 20 // 20 errors per minute
+    const alertThresholds: Record<ErrorType, number> = {
+      [ErrorType.VALIDATION]: 20,
+      [ErrorType.AUTHENTICATION]: 10,
+      [ErrorType.AUTHORIZATION]: 10,
+      [ErrorType.NOT_FOUND]: 5,
+      [ErrorType.RATE_LIMIT]: 15,
+      [ErrorType.DATABASE]: 5,
+      [ErrorType.EXTERNAL_API]: 8,
+      [ErrorType.TIMEOUT]: 10,
+      [ErrorType.NETWORK]: 8,
+      [ErrorType.INTERNAL]: 3,
+      [ErrorType.CONFIGURATION]: 2
     };
     
     return errorRate > (alertThresholds[type] || 15);
@@ -199,14 +206,14 @@ class ErrorMetrics {
   getMetrics(): Record<string, any> {
     const metrics: Record<string, any> = {};
     
-    for (const [key, count] of this.errorCounts) {
+    this.errorCounts.forEach((count, key) => {
       const [type, endpoint] = key.split(':');
       if (!metrics[endpoint]) metrics[endpoint] = {};
       metrics[endpoint][type] = {
         count,
         rate: this.getErrorRate(type as ErrorType, endpoint)
       };
-    }
+    });
     
     return metrics;
   }

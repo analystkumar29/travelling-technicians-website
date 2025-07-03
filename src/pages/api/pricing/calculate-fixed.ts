@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getServiceSupabase } from '@/utils/supabaseClient';
 import { logger } from '@/utils/logger';
-import { pricingCache } from '@/utils/cache';
+// import { pricingCache } from '@/utils/cache';
 
 const apiLogger = logger.createModuleLogger('api/pricing/calculate-fixed');
 
@@ -96,11 +96,11 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
   
   try {
     // Check cache first
-    const cachedResult = await pricingCache.get(cacheKey);
-    if (cachedResult) {
-      apiLogger.info('Pricing cache hit', { cacheKey });
-      return { ...cachedResult, _cached: true };
-    }
+    // const cachedResult = await pricingCache.get(cacheKey);
+    // if (cachedResult) {
+    //   apiLogger.info('Pricing cache hit', { cacheKey });
+    //   return { ...cachedResult, _cached: true };
+    // }
 
     apiLogger.info('Pricing cache miss, querying database', { cacheKey });
 
@@ -185,7 +185,7 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
       };
 
       // Cache the result for 10 minutes
-      await pricingCache.set(cacheKey, enhancedEntry, 10 * 60 * 1000);
+      // await pricingCache.set(cacheKey, enhancedEntry, 10 * 60 * 1000);
 
       apiLogger.info('Database pricing found and cached', {
         id: enhancedEntry.id,
@@ -269,7 +269,7 @@ function calculateFallbackPricing(deviceType: string, brand: string, service: st
   };
 
   // Cache fallback calculations for 1 hour
-  pricingCache.set(cacheKey, result, 60 * 60 * 1000);
+  // pricingCache.set(cacheKey, result, 60 * 60 * 1000);
 
   return result;
 }
@@ -343,11 +343,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           matched_service: dynamicPricing.service?.name,
           matched_tier: dynamicPricing.tier?.name,
           response_time_ms: responseTime
-        },
-        cache_info: {
-          hit: !!dynamicPricing._cached,
-          ttl: 10 * 60 * 1000,
-          generated_at: new Date().toISOString()
         }
       });
     } else {
@@ -395,11 +390,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           fallback_calculation: fallbackPricing,
           response_time_ms: responseTime
         },
-        cache_info: {
-          hit: false,
-          ttl: 60 * 60 * 1000,
-          generated_at: new Date().toISOString()
-        }
+        // cache_info: {
+        //   hit: false,
+        //   ttl: 60 * 60 * 1000,
+        //   generated_at: new Date().toISOString()
+        // }
       });
     }
 
