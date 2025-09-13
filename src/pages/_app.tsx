@@ -129,8 +129,9 @@ function EnvironmentGuard({ children }: { children: ReactNode }) {
   
   useEffect(() => {
     // Only validate on client-side to avoid build-time issues
+    // Use client-side only validation to avoid checking server-side env vars in browser
     if (typeof window !== 'undefined') {
-      const result = validateEnvironmentSafe();
+      const result = validateEnvironmentSafe(true); // true = client-side only
       setEnvValidation({
         isValid: result.isValid,
         error: result.error,

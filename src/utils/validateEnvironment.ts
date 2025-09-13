@@ -3,7 +3,7 @@ import { logger } from './logger';
 // Create a module logger
 const envLogger = logger.createModuleLogger('environment');
 
-// Required environment variables
+// Required environment variables (server-side and client-side)
 export const REQUIRED_ENV_VARS = {
   // Supabase configuration
   NEXT_PUBLIC_SUPABASE_URL: 'Public Supabase URL',
@@ -14,6 +14,19 @@ export const REQUIRED_ENV_VARS = {
   ADMIN_JWT_SECRET: 'JWT secret for admin authentication',
   
   // Email service
+  SENDGRID_API_KEY: 'SendGrid API key for email notifications'
+} as const;
+
+// Client-side only environment variables (available in browser)
+export const CLIENT_ENV_VARS = {
+  NEXT_PUBLIC_SUPABASE_URL: 'Public Supabase URL',
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: 'Public Supabase anonymous key'
+} as const;
+
+// Server-side only environment variables (not available in browser)
+export const SERVER_ENV_VARS = {
+  SUPABASE_SERVICE_ROLE_KEY: 'Supabase service role key (server-side)',
+  ADMIN_JWT_SECRET: 'JWT secret for admin authentication',
   SENDGRID_API_KEY: 'SendGrid API key for email notifications'
 } as const;
 
@@ -42,12 +55,16 @@ export class EnvironmentValidationError extends Error {
 
 /**
  * Validates that all required environment variables are present
+ * @param clientSideOnly - If true, only validate client-side variables
  * @throws {EnvironmentValidationError} If any required variables are missing
  */
-export function validateRequiredEnvVars(): void {
+export function validateRequiredEnvVars(clientSideOnly: boolean = false): void {
   const missingVars: RequiredEnvVar[] = [];
   
-  for (const [varName, description] of Object.entries(REQUIRED_ENV_VARS)) {
+  // Choose which variables to validate based on context
+  const varsToCheck = clientSideOnly ? CLIENT_ENV_VARS : REQUIRED_ENV_VARS;
+  
+  for (const [varName, description] of Object.entries(varsToCheck)) {
     const value = process.env[varName];
     
     if (!value || value.trim() === '') {
@@ -60,7 +77,8 @@ export function validateRequiredEnvVars(): void {
     throw new EnvironmentValidationError(missingVars);
   }
   
-  envLogger.info('All required environment variables are present');
+  const context = clientSideOnly ? 'client-side' : 'all';
+  envLogger.info(`All required ${context} environment variables are present`);
 }
 
 /**
@@ -110,14 +128,18 @@ export function validateEnvInProduction(): void {
 
 /**
  * Safely logs environment status without exposing secrets
+ * @param clientSideOnly - If true, only log client-side variables
  */
-export function logEnvStatus(): void {
+export function logEnvStatus(clientSideOnly: boolean = false): void {
   const isProduction = process.env.NODE_ENV === 'production';
   const isDevelopment = process.env.NODE_ENV === 'development';
   
   envLogger.info(`Environment: ${process.env.NODE_ENV || 'unknown'}`);
   
-  for (const [varName, description] of Object.entries(REQUIRED_ENV_VARS)) {
+  // Choose which variables to log based on context
+  const varsToCheck = clientSideOnly ? CLIENT_ENV_VARS : REQUIRED_ENV_VARS;
+  
+  for (const [varName, description] of Object.entries(varsToCheck)) {
     const value = process.env[varName];
     
     if (!value) {
@@ -160,21 +182,25 @@ export function logEnvStatus(): void {
 /**
  * Comprehensive environment validation
  * Checks required variables and production configuration
+ * @param clientSideOnly - If true, only validate client-side variables
  */
-export function validateEnvironment(): void {
+export function validateEnvironment(clientSideOnly: boolean = false): void {
   try {
-    envLogger.info('Starting environment validation...');
+    const context = clientSideOnly ? 'client-side' : 'full';
+    envLogger.info(`Starting ${context} environment validation...`);
     
     // Log current environment status
-    logEnvStatus();
+    logEnvStatus(clientSideOnly);
     
     // Validate required variables
-    validateRequiredEnvVars();
+    validateRequiredEnvVars(clientSideOnly);
     
-    // Validate production configuration
-    validateEnvInProduction();
+    // Only validate production configuration on server-side
+    if (!clientSideOnly) {
+      validateEnvInProduction();
+    }
     
-    envLogger.info('✅ Environment validation successful');
+    envLogger.info(`✅ ${context} environment validation successful`);
   } catch (error) {
     if (error instanceof EnvironmentValidationError) {
       envLogger.error(`❌ Environment validation failed: ${error.message}`);
@@ -189,10 +215,11 @@ export function validateEnvironment(): void {
 /**
  * Safe environment validation that doesn't throw
  * Returns validation result instead
+ * @param clientSideOnly - If true, only validate client-side variables
  */
-export function validateEnvironmentSafe(): { isValid: boolean; error?: EnvironmentValidationError } {
+export function validateEnvironmentSafe(clientSideOnly: boolean = false): { isValid: boolean; error?: EnvironmentValidationError } {
   try {
-    validateEnvironment();
+    validateEnvironment(clientSideOnly);
     return { isValid: true };
   } catch (error) {
     if (error instanceof EnvironmentValidationError) {
