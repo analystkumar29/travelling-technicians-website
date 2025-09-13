@@ -783,7 +783,7 @@ collections:
     brand: apple
     device_type: mobile
     category: screen_replacement
-    products_count: 783
+    products_count: 775
   - handle: samsung-other
     brand: apple
     device_type: mobile

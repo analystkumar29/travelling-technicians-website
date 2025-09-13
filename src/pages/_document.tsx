@@ -1,6 +1,7 @@
 import { Html, Head, Main, NextScript } from 'next/document';
-import Document, { DocumentContext } from 'next/document';
+import Document, { DocumentContext, DocumentInitialProps } from 'next/document';
 import Script from 'next/script';
+import { getSiteUrl } from '@/utils/supabaseClient';
 
 // Define routerFixScript (copied from _app.tsx originally)
 const routerFixScript = `
@@ -72,21 +73,79 @@ const routerFixScript = `
 
 /**
  * Custom Document for The Travelling Technicians website
- * Added error handling and fallback content mechanisms to prevent white screens
+ * Added error handling, dynamic SEO improvements, and security headers
  */
 class MyDocument extends Document {
-  static async getInitialProps(ctx: DocumentContext) {
+  static async getInitialProps(ctx: DocumentContext): Promise<DocumentInitialProps> {
     let initialProps;
     try {
       initialProps = await Document.getInitialProps(ctx);
+      
+      // Add security headers
+      if (ctx.res) {
+        MyDocument.setSecurityHeaders(ctx.res);
+      }
+      
     } catch (error) {
       console.error('Error in _document.getInitialProps:', error);
       initialProps = { html: '', head: [], styles: [] };
     }
     return initialProps;
   }
+  
+  /**
+   * Set security and performance headers
+   */
+  static setSecurityHeaders(res: any) {
+    const siteUrl = getSiteUrl();
+    const domain = new URL(siteUrl).hostname;
+    
+    // Content Security Policy
+    const cspPolicy = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://maps.googleapis.com https://api.mapbox.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.mapbox.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      "img-src 'self' data: https: blob:",
+      "connect-src 'self' https://www.google-analytics.com https://api.mapbox.com https://*.supabase.co wss://*.supabase.co",
+      "frame-src 'self' https://www.google.com",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'"
+    ].join('; ');
+    
+    // Set security headers
+    res.setHeader('Content-Security-Policy', cspPolicy);
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'geolocation=(self), microphone=(), camera=()');
+    
+    // Performance headers
+    res.setHeader('X-DNS-Prefetch-Control', 'on');
+  }
+  
+  /**
+   * Generate dynamic cache-busted version for assets
+   */
+  private getAssetVersion(): string {
+    const now = new Date();
+    return `${now.getFullYear()}.${now.getMonth() + 1}`;
+  }
+  
+  /**
+   * Get current site URL
+   */
+  private getSiteUrl(): string {
+    return getSiteUrl();
+  }
 
   render() {
+    const assetVersion = this.getAssetVersion();
+    const siteUrl = this.getSiteUrl();
+    
     return (
       <Html lang="en">
         <Head>
@@ -95,29 +154,42 @@ class MyDocument extends Document {
             <meta name="robots" content="noindex" />
           )}
           
+          {/* DNS Prefetch for External Resources */}
+          <link rel="dns-prefetch" href="//www.googletagmanager.com" />
+          <link rel="dns-prefetch" href="//www.google-analytics.com" />
+          <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+          <link rel="dns-prefetch" href="//fonts.gstatic.com" />
+          <link rel="dns-prefetch" href="//api.mapbox.com" />
+          <link rel="dns-prefetch" href="//maps.googleapis.com" />
+          
+          {/* Preconnect for Critical Resources */}
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+          <link rel="preconnect" href={siteUrl} />
+          
           {/* Web App Manifest - include both formats for maximum compatibility */}
-          <link rel="manifest" href="/manifest.json" />
-          <link rel="manifest" href="/site.webmanifest" />
+          <link rel="manifest" href={`/manifest.json?v=${assetVersion}`} />
+          <link rel="manifest" href={`/site.webmanifest?v=${assetVersion}`} />
           
           {/* Theme Color */}
-                  <meta name="theme-color" content="#075985" />
-        <meta name="msapplication-TileColor" content="#075985" />
-        <meta name="msapplication-navbutton-color" content="#075985" />
+          <meta name="theme-color" content="#075985" />
+          <meta name="msapplication-TileColor" content="#075985" />
+          <meta name="msapplication-navbutton-color" content="#075985" />
           <meta name="apple-mobile-web-app-status-bar-style" content="default" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-title" content="TT Repair" />
           
           {/* PWA Splash Screens for iOS */}
-          <link rel="apple-touch-startup-image" href="/favicons/android-chrome-512x512.png?v=2024.2&orange=true" />
+          <link rel="apple-touch-startup-image" href={`/favicons/android-chrome-512x512.png?v=${assetVersion}`} />
           <meta name="mobile-web-app-capable" content="yes" />
           
-          {/* Favicon - Orange logo with strong cache busting */}
-          <link rel="icon" href="/favicon.ico?v=2024.2&orange=true" />
-          <link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png?v=2024.2&orange=true" />
-          <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png?v=2024.2&orange=true" />
-          <link rel="icon" type="image/png" sizes="192x192" href="/favicons/favicon-192x192.png?v=2024.2&orange=true" />
-          <link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png?v=2024.2&orange=true" />
-          <link rel="shortcut icon" href="/favicon.ico?v=2024.2&orange=true" />
+          {/* Dynamic Favicon with Cache Busting */}
+          <link rel="icon" href={`/favicon.ico?v=${assetVersion}`} />
+          <link rel="icon" type="image/png" sizes="16x16" href={`/favicons/favicon-16x16.png?v=${assetVersion}`} />
+          <link rel="icon" type="image/png" sizes="32x32" href={`/favicons/favicon-32x32.png?v=${assetVersion}`} />
+          <link rel="icon" type="image/png" sizes="192x192" href={`/favicons/favicon-192x192.png?v=${assetVersion}`} />
+          <link rel="apple-touch-icon" href={`/favicons/apple-touch-icon.png?v=${assetVersion}`} />
+          <link rel="shortcut icon" href={`/favicon.ico?v=${assetVersion}`} />
           
           {/* Add the cache cleaning script */}
           <script src="/clean-cache.js" async></script>
@@ -182,14 +254,12 @@ class MyDocument extends Document {
               `,
             }}
           />
-          {/* Preconnect to origin to speed up loading */}
-          <link rel="preconnect" href={`https://${process.env.NEXT_PUBLIC_VERCEL_URL || 'localhost:3000'}`} />
-          
-          {/* Preload critical logo */}
-          <link rel="preload" href="/images/logo/logo-orange.png" as="image" type="image/png" />
+          {/* Preload critical resources */}
+          <link rel="preload" href={`/images/logo/logo-orange.png?v=${assetVersion}`} as="image" type="image/png" />
+          <link rel="preload" href={`/favicons/android-chrome-512x512.png?v=${assetVersion}`} as="image" type="image/png" />
           
           {/* Force search engines to update favicon */}
-          <meta property="og:image" content="/favicons/android-chrome-512x512.png?v=2024.2&orange=true" />
+          <meta property="og:image" content={`${siteUrl}/favicons/android-chrome-512x512.png?v=${assetVersion}`} />
           <meta name="msapplication-config" content="none" />
 
           {/* Moved Scripts from _app.tsx */}
@@ -205,10 +275,10 @@ class MyDocument extends Document {
               __html: JSON.stringify({
                 "@context": "https://schema.org",
                 "@type": "LocalBusiness",
-                "@id": "https://www.travelling-technicians.ca/#business",
+                "@id": `${siteUrl}/#business`,
                 "name": "The Travelling Technicians",
                 "description": "Professional mobile phone and laptop repair services with same-day doorstep service across Vancouver, Burnaby, Richmond, and surrounding Lower Mainland areas.",
-                "url": "https://www.travelling-technicians.ca",
+                "url": siteUrl,
                 "telephone": "+1-778-389-9251",
                 "email": "info@travelling-technicians.ca",
                 "priceRange": "$79-$249",
@@ -344,6 +414,12 @@ class MyDocument extends Document {
                     "datePublished": "2024-12-10"
                   }
                 ],
+                "logo": {
+                  "@type": "ImageObject",
+                  "url": `${siteUrl}/images/logo/logo-orange.png`,
+                  "width": 300,
+                  "height": 60
+                },
                 "sameAs": [
                   "https://www.facebook.com/travellingtechnicians",
                   "https://www.instagram.com/travellingtechnicians", 
@@ -364,7 +440,8 @@ class MyDocument extends Document {
                 "description": "Professional mobile phone repair services including screen replacement, battery replacement, and more across Vancouver and Lower Mainland.",
                 "provider": {
                   "@type": "LocalBusiness",
-                  "name": "The Travelling Technicians"
+                  "name": "The Travelling Technicians",
+                  "url": siteUrl
                 },
                 "areaServed": "Vancouver, BC",
                 "hasOfferCatalog": {
@@ -447,52 +524,55 @@ class MyDocument extends Document {
               })
             }}
           />
-          {/* Service Schema for Mobile Repair */}
+          {/* Website and Organization Schemas */}
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
               __html: JSON.stringify({
                 "@context": "https://schema.org",
-                "@type": "Service",
-                "name": "Mobile Phone Repair Vancouver",
-                "description": "Professional mobile phone repair services including screen replacement, battery replacement, and more across Vancouver and Lower Mainland.",
-                "provider": {
-                  "@type": "LocalBusiness",
-                  "name": "The Travelling Technicians"
-                },
-                "areaServed": "Vancouver, BC",
-                "hasOfferCatalog": {
-                  "@type": "OfferCatalog",
-                  "name": "Mobile Repair Services",
-                  "itemListElement": [
-                    {
-                      "@type": "Offer",
-                      "itemOffered": {
-                        "@type": "Service",
-                        "name": "iPhone Screen Repair",
-                        "description": "Professional iPhone screen replacement with same-day service"
-                      },
-                      "priceSpecification": {
-                        "@type": "PriceSpecification",
-                        "priceCurrency": "CAD", 
-                        "price": "129-189"
-                      }
-                    },
-                    {
-                      "@type": "Offer",
-                      "itemOffered": {
-                        "@type": "Service",
-                        "name": "Samsung Screen Repair",
-                        "description": "Samsung Galaxy screen replacement service"
-                      },
-                      "priceSpecification": {
-                        "@type": "PriceSpecification",
-                        "priceCurrency": "CAD",
-                        "price": "99-169"
-                      }
-                    }
-                  ]
+                "@type": "WebSite",
+                name: "The Travelling Technicians",
+                url: siteUrl,
+                description: "Professional mobile phone and laptop repair services with doorstep service across Vancouver and Lower Mainland",
+                potentialAction: {
+                  "@type": "SearchAction",
+                  target: {
+                    "@type": "EntryPoint",
+                    urlTemplate: `${siteUrl}/search?q={search_term_string}`
+                  },
+                  "query-input": "required name=search_term_string"
                 }
+              })
+            }}
+          />
+          
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                "@id": `${siteUrl}/#organization`,
+                name: "The Travelling Technicians",
+                url: siteUrl,
+                logo: {
+                  "@type": "ImageObject",
+                  url: `${siteUrl}/images/logo/logo-orange.png`,
+                  width: 300,
+                  height: 60
+                },
+                contactPoint: {
+                  "@type": "ContactPoint",
+                  telephone: "+1-778-389-9251",
+                  contactType: "customer service",
+                  areaServed: "CA-BC",
+                  availableLanguage: ["en", "fr"]
+                },
+                sameAs: [
+                  "https://www.facebook.com/travellingtechnicians",
+                  "https://www.instagram.com/travellingtechnicians",
+                  "https://www.linkedin.com/company/travelling-technicians"
+                ]
               })
             }}
           />

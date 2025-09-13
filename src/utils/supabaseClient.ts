@@ -5,24 +5,25 @@ import { logger } from './logger';
 const supabaseLogger = logger.createModuleLogger('supabaseClient');
 
 // Supabase client configuration
-// In development mode, use default test values if environment variables are not set
-const isDev = process.env.NODE_ENV === 'development';
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || (isDev ? 'https://test-supabase-project.supabase.co' : '');
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || (isDev ? 'test-anon-key-for-development-only' : '');
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || (isDev ? 'test-service-key-for-development-only' : '');
+// All environment variables are required - no fallbacks allowed
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Log supabase configuration (without exposing keys)
+// Validate required environment variables
 if (!supabaseUrl) {
   supabaseLogger.error('NEXT_PUBLIC_SUPABASE_URL is not set');
-} else {
-  supabaseLogger.debug(`NEXT_PUBLIC_SUPABASE_URL is configured: ${supabaseUrl.substring(0, 10)}...`);
+  throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is required');
 }
 
 if (!supabaseAnonKey) {
   supabaseLogger.error('NEXT_PUBLIC_SUPABASE_ANON_KEY is not set');
-} else {
-  supabaseLogger.debug('NEXT_PUBLIC_SUPABASE_ANON_KEY is configured');
+  throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable is required');
 }
+
+// Log supabase configuration (without exposing keys)
+supabaseLogger.debug(`NEXT_PUBLIC_SUPABASE_URL is configured: ${supabaseUrl.substring(0, 10)}...`);
+supabaseLogger.debug('NEXT_PUBLIC_SUPABASE_ANON_KEY is configured');
 
 // Function to get the correct site URL
 export const getSiteUrl = () => {
@@ -58,7 +59,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 export const getServiceSupabase = () => {
   if (!supabaseServiceKey) {
     supabaseLogger.error('SUPABASE_SERVICE_ROLE_KEY is not set');
-    throw new Error('Service role key not available');
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is required for server-side operations');
+  }
+  
+  if (!supabaseUrl) {
+    supabaseLogger.error('NEXT_PUBLIC_SUPABASE_URL is not set');
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is required for server-side operations');
   }
   
   return createClient(supabaseUrl, supabaseServiceKey, {
