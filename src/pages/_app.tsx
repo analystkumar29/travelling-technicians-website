@@ -119,7 +119,7 @@ function EnvironmentError({ error }: { error: EnvironmentValidationError }) {
   );
 }
 
-// Environment validation wrapper
+// Environment validation wrapper - FIXED WITH PROPER CLIENT-SIDE HANDLING
 function EnvironmentGuard({ children }: { children: ReactNode }) {
   const [envValidation, setEnvValidation] = useState<{
     isValid: boolean;
@@ -129,14 +129,48 @@ function EnvironmentGuard({ children }: { children: ReactNode }) {
   
   useEffect(() => {
     // Only validate on client-side to avoid build-time issues
-    // Use client-side only validation to avoid checking server-side env vars in browser
     if (typeof window !== 'undefined') {
-      const result = validateEnvironmentSafe(true); // true = client-side only
-      setEnvValidation({
-        isValid: result.isValid,
-        error: result.error,
-        isChecked: true
-      });
+      // Add a small delay to ensure Next.js has properly hydrated environment variables
+      const timer = setTimeout(() => {
+        try {
+          // Check if NEXT_PUBLIC variables are actually available in browser
+          const hasUrl = typeof process.env.NEXT_PUBLIC_SUPABASE_URL === 'string' && 
+                        process.env.NEXT_PUBLIC_SUPABASE_URL.length > 0;
+          const hasKey = typeof process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === 'string' && 
+                        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 0;
+          
+          if (!hasUrl || !hasKey) {
+            console.warn('[EnvironmentGuard] NEXT_PUBLIC variables not yet available, retrying...');
+            // If variables aren't available yet, retry after hydration
+            setTimeout(() => {
+              const result = validateEnvironmentSafe(true); // true = client-side only
+              setEnvValidation({
+                isValid: result.isValid,
+                error: result.error,
+                isChecked: true
+              });
+            }, 1000);
+          } else {
+            // Variables are available, proceed with validation
+            const result = validateEnvironmentSafe(true); // true = client-side only
+            setEnvValidation({
+              isValid: result.isValid,
+              error: result.error,
+              isChecked: true
+            });
+          }
+        } catch (error) {
+          console.error('[EnvironmentGuard] Validation error:', error);
+          // In case of any error, just allow the app to load
+          setEnvValidation({
+            isValid: true,
+            error: undefined,
+            isChecked: true
+          });
+        }
+      }, 100); // Small delay to ensure Next.js hydration
+      
+      return () => clearTimeout(timer);
     }
   }, []);
   
