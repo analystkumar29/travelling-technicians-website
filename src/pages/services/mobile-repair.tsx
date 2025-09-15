@@ -1,6 +1,7 @@
 import Layout from '@/components/layout/Layout';
 import Head from 'next/head';
 import Image from 'next/image';
+import OptimizedImage from '@/components/common/OptimizedImage';
 import Link from 'next/link';
 import { FaCheckCircle, FaMobileAlt, FaBatteryFull, FaBolt, FaMicrophone, FaCamera, FaWater, FaMemory, FaSdCard } from 'react-icons/fa';
 import { ServiceSchema, LocalBusinessSchema } from '@/components/seo/StructuredData';
@@ -145,12 +146,12 @@ export default function MobileRepairPage() {
             </div>
             <div className="relative">
               <div className="relative h-[450px] w-full rounded-lg overflow-hidden shadow-custom-lg">
-                <Image
+                <OptimizedImage
                   src="/images/services/mobileRepair-optimized.webp"
-                  alt="Mobile phone repair technician"
+                  alt="Professional mobile phone repair technician fixing smartphones with precision tools"
                   fill
                   className="object-cover object-center"
-                  priority
+                  isCritical={true}
                 />
               </div>
               <div className="absolute -bottom-6 -right-6 bg-white p-4 rounded-lg shadow-custom-lg">

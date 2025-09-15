@@ -335,8 +335,8 @@ export default function Home() {
               {/* Hero Image with Overlay */}
               <div className="relative rounded-2xl overflow-hidden shadow-2xl h-80 md:h-96">
                 <OptimizedImage 
-                  src="/images/services/doorstep-repair-tech.jpg" 
-                  alt="Professional technician providing doorstep device repair services" 
+                  src="/images/services/doorstep-repair-tech-optimized.webp" 
+                  alt="Professional technician providing doorstep device repair services at customer's location" 
                   className="object-cover"
                   fill={true}
                   isCritical={true}

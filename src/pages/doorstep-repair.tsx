@@ -1,6 +1,7 @@
 import Layout from '@/components/layout/Layout';
 import Link from 'next/link';
 import Image from 'next/image';
+import OptimizedImage from '@/components/common/OptimizedImage';
 import { FaTools, FaCheck, FaClock, FaMapMarkerAlt, FaShieldAlt, FaStar, FaArrowRight, FaMobile, FaLaptop } from 'react-icons/fa';
 
 // Benefits of doorstep repair
@@ -133,11 +134,12 @@ export default function DoorstepRepairPage() {
             </div>
             <div className="relative">
               <div className="relative h-[400px] w-full rounded-lg overflow-hidden shadow-custom-lg">
-                <Image
+                <OptimizedImage
                   src="/images/services/doorstep-repair-tech.jpg"
-                  alt="Technician repairing a device at customer location"
+                  alt="Technician providing professional device repair services at customer location"
                   fill
                   className="object-cover"
+                  isCritical={true}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
                   <div className="p-6">
