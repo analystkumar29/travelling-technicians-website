@@ -105,6 +105,13 @@ export default function ContactPage() {
   return (
     <>
       <Head>
+        <title>Contact Us | The Travelling Technicians | Mobile & Laptop Repair</title>
+        <meta name="description" content="Contact The Travelling Technicians for professional mobile phone and laptop repair services across Vancouver and Lower Mainland, BC. Call, email, or book online today." />
+        <link rel="canonical" href="https://travelling-technicians.ca/contact" />
+        <meta property="og:title" content="Contact Us | The Travelling Technicians | Mobile & Laptop Repair" />
+        <meta property="og:description" content="Get in touch with our expert repair technicians for mobile phone and laptop repair services across Vancouver and Lower Mainland, BC." />
+        <meta property="og:url" content="https://travelling-technicians.ca/contact" />
+        <meta property="og:type" content="website" />
         {/* Contact Page Structured Data */}
         <OrganizationSchema />
         <LocalBusinessSchema

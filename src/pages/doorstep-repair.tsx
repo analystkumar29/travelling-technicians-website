@@ -1,5 +1,6 @@
 import Layout from '@/components/layout/Layout';
 import Link from 'next/link';
+import Head from 'next/head';
 import Image from 'next/image';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import { FaTools, FaCheck, FaClock, FaMapMarkerAlt, FaShieldAlt, FaStar, FaArrowRight, FaMobile, FaLaptop } from 'react-icons/fa';
@@ -111,6 +112,16 @@ const repairProcess = [
 
 export default function DoorstepRepairPage() {
   return (
+    <>
+      <Head>
+        <title>Doorstep Device Repair Service | The Travelling Technicians</title>
+        <meta name="description" content="Professional doorstep mobile phone and laptop repair services across Vancouver and Lower Mainland. Expert technicians come to you with same-day service and 90-day warranty." />
+        <link rel="canonical" href="https://travelling-technicians.ca/doorstep-repair" />
+        <meta property="og:title" content="Doorstep Device Repair Service | The Travelling Technicians" />
+        <meta property="og:description" content="Expert mobile phone and laptop repair technicians come to your location across Vancouver and Lower Mainland. Same-day service with 90-day warranty." />
+        <meta property="og:url" content="https://travelling-technicians.ca/doorstep-repair" />
+        <meta property="og:type" content="service" />
+      </Head>
     <Layout>
       {/* Hero Section */}
       <section className="pt-16 pb-20 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
@@ -543,5 +554,6 @@ export default function DoorstepRepairPage() {
         </div>
       </section>
     </Layout>
+    </>
   );
 } 

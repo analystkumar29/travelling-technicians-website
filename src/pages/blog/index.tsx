@@ -1,5 +1,6 @@
 import Layout from '@/components/layout/Layout';
 import Link from 'next/link';
+import Head from 'next/head';
 import { FaCalendarAlt, FaUser, FaTag, FaClock } from 'react-icons/fa';
 import { LazyImage } from '@/components/common/OptimizedImage';
 
@@ -92,6 +93,16 @@ const categories = [
 
 export default function BlogPage() {
   return (
+    <>
+      <Head>
+        <title>Expert Tech Repair Guides & Tips | The Travelling Technicians Blog</title>
+        <meta name="description" content="Get professional tech repair tips, guides, and insights from our expert technicians. Learn about mobile phone repair, laptop maintenance, and device troubleshooting." />
+        <link rel="canonical" href="https://travelling-technicians.ca/blog" />
+        <meta property="og:title" content="Expert Tech Repair Guides & Tips | The Travelling Technicians Blog" />
+        <meta property="og:description" content="Professional tech repair tips, guides, and insights from our expert technicians. Mobile phone repair, laptop maintenance, and device troubleshooting." />
+        <meta property="og:url" content="https://travelling-technicians.ca/blog" />
+        <meta property="og:type" content="website" />
+      </Head>
     <Layout>
       {/* Hero Section */}
       <section className="pt-16 pb-20 blog-hero text-white">
@@ -288,5 +299,6 @@ export default function BlogPage() {
         </div>
       </section>
     </Layout>
+    </>
   );
 } 
