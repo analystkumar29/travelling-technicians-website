@@ -157,19 +157,23 @@ export default function ServiceAreasPage() {
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-6">Communities We Serve</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Our technicians provide doorstep repair services throughout these communities across the Lower Mainland, from Whistler to Chilliwack.
+              Our technicians provide doorstep repair services throughout these communities across the Lower Mainland, from Whistler to Chilliwack. Click any location to learn more about services in that area.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {serviceAreas.map((area) => (
-              <div key={area.id} className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow">
+              <Link 
+                key={area.id} 
+                href={`/repair/${area.id}`}
+                className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.02] group"
+              >
                 <div className="relative h-48 w-full">
                   <Image 
                     src={area.image} 
                     alt={`${area.name}, BC`} 
                     layout="fill"
-                    className="object-cover"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
                     <div className="p-4 text-white">
@@ -184,18 +188,23 @@ export default function ServiceAreasPage() {
                 </div>
                 <div className="p-4">
                   <p className="text-gray-600 mb-4 text-sm">{area.description}</p>
-                  <div className="flex items-center">
-                    <FaRegClock className="text-gray-400 mr-2" />
-                    <span className="text-sm">
-                      {area.sameDay ? (
-                        <span className="text-green-600 font-medium">Same-day service available</span>
-                      ) : (
-                        <span className="text-gray-600">Scheduled service available</span>
-                      )}
-                    </span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <FaRegClock className="text-gray-400 mr-2" />
+                      <span className="text-sm">
+                        {area.sameDay ? (
+                          <span className="text-green-600 font-medium">Same-day service available</span>
+                        ) : (
+                          <span className="text-gray-600">Scheduled service available</span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="text-primary-600 text-sm font-medium group-hover:text-primary-700 transition-colors">
+                      Learn More →
+                    </div>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
