@@ -40,7 +40,10 @@
     "db:full-rebuild:enhanced": "node scripts/master-database-rebuild-enhanced.js",
     "db:full-rebuild:dry": "node scripts/master-database-rebuild.js --dry-run",
     "db:full-rebuild:verbose": "node scripts/master-database-rebuild.js --verbose",
-    "db:enhanced-rebuild": "npm run data:clean:enhanced && npm run db:rebuild:enhanced"
+    "db:enhanced-rebuild": "npm run data:clean:enhanced && npm run db:rebuild:enhanced",
+    "validate:schema": "node scripts/test-structured-data.js",
+    "test:structured-data": "node scripts/test-structured-data.js",
+    "analyze:structured-data": "node scripts/enhanced-structured-data-test.js"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",

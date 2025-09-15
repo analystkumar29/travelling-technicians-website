@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Head from 'next/head';
 import { FaCalendarAlt, FaUser, FaTag, FaClock, FaChevronLeft, FaShare, FaFacebook, FaTwitter, FaLinkedin } from 'react-icons/fa';
+import { ArticleSchema } from '@/components/seo/StructuredData';
 
 export default function ExtendLaptopBatteryLifePost() {
   return (
@@ -23,6 +24,18 @@ export default function ExtendLaptopBatteryLifePost() {
         <meta property="article:tag" content="laptop battery" />
         <meta property="article:tag" content="battery maintenance" />
         <meta property="article:tag" content="laptop tips" />
+        {/* Blog Article Structured Data */}
+        <ArticleSchema
+          headline="How to Extend Your Laptop Battery Life"
+          description="Learn proven techniques to extend your laptop battery life and maximize performance. Expert tips on charging habits, power settings, and battery maintenance for longer laptop usage."
+          author="Sarah Johnson"
+          datePublished="2023-04-02"
+          dateModified="2023-04-02"
+          image="https://images.unsplash.com/photo-1588872657578-7efd1f1555ed"
+          url="https://travellingtechnicians.ca/blog/how-to-extend-your-laptop-battery-life"
+          category="Laptop Maintenance"
+          tags={["laptop battery", "battery maintenance", "laptop tips"]}
+        />
         
         {/* Article Schema Markup */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{

@@ -1,11 +1,28 @@
 import Layout from '@/components/layout/Layout';
+import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
 import { FaCalendarAlt, FaUser, FaTag, FaClock, FaChevronLeft, FaShare, FaFacebook, FaTwitter, FaLinkedin } from 'react-icons/fa';
+import { ArticleSchema } from '@/components/seo/StructuredData';
 
 export default function SignsYourPhoneNeedsRepairPost() {
   return (
-    <Layout>
+    <>
+      <Head>
+        {/* Blog Article Structured Data */}
+        <ArticleSchema
+          headline="5 Warning Signs Your Phone Needs Repair"
+          description="Learn to recognize the early warning signs that indicate your mobile phone needs professional repair. From battery issues to screen problems, we cover the most common symptoms."
+          author="Alex Chen"
+          datePublished="2023-03-15"
+          dateModified="2023-03-15"
+          image="https://images.unsplash.com/photo-1592899677977-9c10ca588bbd"
+          url="https://travellingtechnicians.ca/blog/signs-your-phone-needs-repair"
+          category="Mobile Repair"
+          tags={["mobile repair", "phone maintenance", "smartphone issues", "device care"]}
+        />
+      </Head>
+      <Layout>
       {/* Hero Section */}
       <section className="pt-16 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
         <div className="container-custom">
@@ -402,5 +419,6 @@ export default function SignsYourPhoneNeedsRepairPost() {
         </div>
       </section>
     </Layout>
+    </>
   );
 } 

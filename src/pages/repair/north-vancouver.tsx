@@ -1,6 +1,8 @@
 import Layout from '@/components/layout/Layout';
+import Head from 'next/head';
 import Link from 'next/link';
 import { FaPhone, FaClock, FaShieldAlt, FaMapMarkerAlt, FaStar, FaCheckCircle, FaMobile, FaLaptop, FaTabletAlt, FaTools } from 'react-icons/fa';
+import { LocalBusinessSchema } from '@/components/seo/StructuredData';
 
 // North Vancouver-specific testimonials
 const northvancouverTestimonials = [
@@ -38,7 +40,33 @@ const northvancouverAreas = [
 
 export default function NorthVancouverRepairPage() {
   return (
-    <Layout 
+    <>
+      <Head>
+        {/* The Travelling Technicians - North Vancouver Location Structured Data */}
+        <LocalBusinessSchema
+          name="The Travelling Technicians - North Vancouver"
+          description="Professional mobile phone and laptop repair services with doorstep service in North Vancouver, BC. Serving Lower Lonsdale, Lynn Valley, Deep Cove, and surrounding areas."
+          address={{
+            streetAddress: "North vancouver Service Area",
+            addressLocality: "North vancouver",
+            addressRegion: "BC",
+            addressCountry: "CA"
+          }}
+          geo={{
+            latitude: 49.3163,
+            longitude: -123.0755
+          }}
+          areaServed={[
+                      "North Vancouver, BC",
+                      "Lower Lonsdale",
+                      "Lynn Valley",
+                      "Deep Cove",
+                      "Capilano",
+                      "Seymour"
+            ]}
+        />
+      </Head>
+      <Layout 
       title="Mobile & Laptop Repair North Vancouver | The Travelling Technicians"
       metaDescription="Professional mobile and laptop repair in North Vancouver. Doorstep service to Lonsdale, Lynn Valley, Deep Cove. Same-day iPhone, MacBook repair. Book online!"
     >
@@ -356,5 +384,6 @@ export default function NorthVancouverRepairPage() {
         }}
       />
     </Layout>
+    </>
   );
 }

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Head from 'next/head';
 import { FaCalendarAlt, FaUser, FaTag, FaClock, FaChevronLeft, FaShare, FaFacebook, FaTwitter, FaLinkedin, FaLock, FaMobile, FaCheckCircle, FaTimesCircle, FaStar } from 'react-icons/fa';
+import { ArticleSchema } from '@/components/seo/StructuredData';
 
 export default function ScreenProtectionGuidePost() {
   return (
@@ -23,6 +24,18 @@ export default function ScreenProtectionGuidePost() {
         <meta property="article:tag" content="screen protector" />
         <meta property="article:tag" content="mobile accessories" />
         <meta property="article:tag" content="device protection" />
+        {/* Blog Article Structured Data */}
+        <ArticleSchema
+          headline="The Ultimate Guide to Mobile Screen Protection"
+          description="Complete guide to screen protectors for phones and laptops. Learn about tempered glass vs plastic film, 9H hardness, and how to choose the best protection for your device."
+          author="Chris Lee"
+          datePublished="2024-02-25"
+          dateModified="2024-02-25"
+          image="https://travelling-technicians.ca/images/blog/screen-protection.jpg"
+          url="https://travellingtechnicians.ca/blog/ultimate-guide-to-screen-protection"
+          category="Mobile Accessories"
+          tags={["screen protector", "mobile accessories", "device protection"]}
+        />
         
         {/* Article Schema Markup */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{

@@ -1,7 +1,9 @@
 import Layout from '@/components/layout/Layout';
+import Head from 'next/head';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FaCheckCircle, FaLaptop, FaBatteryFull, FaKeyboard, FaMouse, FaMemory, FaHdd, FaBug, FaShieldAlt, FaFan, FaBolt } from 'react-icons/fa';
+import { ServiceSchema, LocalBusinessSchema } from '@/components/seo/StructuredData';
 
 // Laptop repair services data
 const laptopServices = [
@@ -123,7 +125,30 @@ const brands = [
 
 export default function LaptopRepairPage() {
   return (
-    <Layout title="Laptop Repair Services | The Travelling Technicians">
+    <>
+      <Head>
+        {/* Laptop Repair Service Structured Data */}
+        <ServiceSchema
+          name="Laptop Repair Services"
+          description="Professional laptop repair services including screen replacement, battery replacement, keyboard repair, RAM upgrades, and more. Convenient doorstep service across Vancouver and Lower Mainland."
+          serviceType="Laptop Repair"
+          provider="The Travelling Technicians"
+          hasOfferCatalog={{
+            name: "Laptop Repair Services",
+            description: "Comprehensive laptop repair services",
+            offers: laptopServices.map(service => ({
+              name: service.name,
+              description: service.description,
+              priceCurrency: "CAD",
+              priceRange: service.price
+            }))
+          }}
+          doorstepService={true}
+          warranty="1 year"
+        />
+        <LocalBusinessSchema />
+      </Head>
+      <Layout title="Laptop Repair Services | The Travelling Technicians">
       {/* Hero Section */}
       <section className="pt-16 pb-20 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
         <div className="container-custom">
@@ -407,5 +432,6 @@ export default function LaptopRepairPage() {
         </div>
       </section>
     </Layout>
+    </>
   );
 } 

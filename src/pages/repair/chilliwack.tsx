@@ -1,6 +1,8 @@
 import Layout from '@/components/layout/Layout';
+import Head from 'next/head';
 import Link from 'next/link';
 import { FaPhone, FaClock, FaShieldAlt, FaMapMarkerAlt, FaStar, FaCheckCircle, FaMobile, FaLaptop, FaTabletAlt, FaTools } from 'react-icons/fa';
+import { LocalBusinessSchema } from '@/components/seo/StructuredData';
 
 // Chilliwack-specific testimonials
 const chilliwackTestimonials = [
@@ -39,7 +41,32 @@ const chilliwackAreas = [
 
 export default function ChilliwackRepairPage() {
   return (
-    <Layout 
+    <>
+      <Head>
+        {/* The Travelling Technicians - Chilliwack Location Structured Data */}
+        <LocalBusinessSchema
+          name="The Travelling Technicians - Chilliwack"
+          description="Professional mobile phone and laptop repair services with doorstep service in Chilliwack, BC. Serving downtown Chilliwack, Sardis, and surrounding areas."
+          address={{
+            streetAddress: "Chilliwack Service Area",
+            addressLocality: "Chilliwack",
+            addressRegion: "BC",
+            addressCountry: "CA"
+          }}
+          geo={{
+            latitude: 49.1579,
+            longitude: -121.9514
+          }}
+          areaServed={[
+                      "Chilliwack, BC",
+                      "Downtown Chilliwack",
+                      "Sardis",
+                      "Promontory",
+                      "Vedder Crossing"
+            ]}
+        />
+      </Head>
+      <Layout 
       title="Mobile & Laptop Repair Chilliwack | The Travelling Technicians"
       metaDescription="Professional mobile and laptop repair in Chilliwack. Scheduled doorstep service for iPhone, MacBook, Samsung repair. Quality service in the Fraser Valley. Book online!"
     >
@@ -357,5 +384,6 @@ export default function ChilliwackRepairPage() {
         }}
       />
     </Layout>
+    </>
   );
 }

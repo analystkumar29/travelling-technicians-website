@@ -5,11 +5,11 @@ import {
   generatePageMetadata, 
   createBreadcrumbs, 
   generateBreadcrumbSchema,
-  validateStructuredData,
   PageType,
   PageContext,
   PageMetadata
 } from '@/utils/seoHelpers';
+import { isValidStructuredData } from '@/utils/structuredDataValidation';
 import { getSiteUrl } from '@/utils/supabaseClient';
 import { logger } from '@/utils/logger';
 
@@ -159,7 +159,7 @@ export default function DynamicMeta({
       {includeJsonLd && (
         <>
           {/* Page-specific structured data */}
-          {metadata.structuredData && validateStructuredData(metadata.structuredData) && (
+          {metadata.structuredData && isValidStructuredData(metadata.structuredData) && (
             <script
               type="application/ld+json"
               dangerouslySetInnerHTML={{

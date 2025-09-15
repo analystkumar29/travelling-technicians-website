@@ -1,6 +1,8 @@
 import Layout from '@/components/layout/Layout';
+import Head from 'next/head';
 import Link from 'next/link';
 import { FaPhone, FaClock, FaShieldAlt, FaMapMarkerAlt, FaStar, FaCheckCircle, FaMobile, FaLaptop, FaTabletAlt, FaTools } from 'react-icons/fa';
+import { LocalBusinessSchema } from '@/components/seo/StructuredData';
 
 // Coquitlam-specific testimonials
 const coquitlamTestimonials = [
@@ -38,7 +40,32 @@ const coquitlamAreas = [
 
 export default function CoquitlamRepairPage() {
   return (
-    <Layout 
+    <>
+      <Head>
+        {/* The Travelling Technicians - Coquitlam Location Structured Data */}
+        <LocalBusinessSchema
+          name="The Travelling Technicians - Coquitlam"
+          description="Professional mobile phone and laptop repair services with doorstep service in Coquitlam, BC. Serving Port Coquitlam, Port Moody, and surrounding areas."
+          address={{
+            streetAddress: "Coquitlam Service Area",
+            addressLocality: "Coquitlam",
+            addressRegion: "BC",
+            addressCountry: "CA"
+          }}
+          geo={{
+            latitude: 49.2838,
+            longitude: -122.7932
+          }}
+          areaServed={[
+                      "Coquitlam, BC",
+                      "Port Coquitlam",
+                      "Port Moody",
+                      "Burke Mountain",
+                      "Austin Heights"
+            ]}
+        />
+      </Head>
+      <Layout 
       title="Mobile & Laptop Repair Coquitlam | The Travelling Technicians"
       metaDescription="Professional mobile and laptop repair in Coquitlam. Doorstep service to Town Centre, Westwood Plateau, Burke Mountain. Same-day iPhone, MacBook repair. Book online!"
     >
@@ -356,5 +383,6 @@ export default function CoquitlamRepairPage() {
         }}
       />
     </Layout>
+    </>
   );
 }
