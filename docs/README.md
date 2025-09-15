@@ -1,101 +1,117 @@
-# The Travelling Technicians Website
+# The Travelling Technicians - Documentation
 
-A professional website for a mobile phone and laptop doorstep repair service operating in Lower Mainland, BC.
+Welcome to the comprehensive documentation for The Travelling Technicians website. This documentation is organized by category for easy navigation and maintenance.
 
-## Features
+## 📚 Documentation Structure
 
-- Doorstep repair service booking
-- Device repair services (mobile phones and laptops)
-- Online booking system
-- Service area identification
-- Transparent pricing
+### [📡 API Documentation](./api/)
+Complete API reference, database schemas, and integration guides.
+- [Database Schema](./api/booking-system-db-schema.md) - Complete database structure
+- [Supabase Integration](./api/SUPABASE_INTEGRATION_DONE.md) - Database setup and configuration
+- [Email Setup](./api/SUPABASE_EMAIL_SETUP.md) - Email notification configuration
 
-## Getting Started
+### [🚀 Deployment Guides](./deployment/)
+Production deployment and infrastructure documentation.
+- [Production Deployment](./deployment/PRODUCTION_DEPLOYMENT_SUCCESS.md) - Live deployment guide
+- [Launch Checklist](./deployment/LAUNCH_CHECKLIST.md) - Pre-launch verification
+- [Deployment Success](./deployment/FINAL_DEPLOYMENT_SUCCESS.md) - Post-deployment validation
 
-### Prerequisites
+### [🔒 Security Documentation](./security/)
+Security setup, incident resolution, and best practices.
+- [Security Setup](./security/SECURITY_SETUP.md) - Initial security configuration
+- [Incident Resolution](./security/SECURITY_INCIDENT_RESOLUTION.md) - Security incident handling
 
-- Node.js 18 or higher
-- Docker and Docker Compose (for containerized setup)
-- Supabase account (for database)
+### [⚡ Development Guides](./development/)
+Development workflows, fixes, and implementation guides.
+- [Build Fixes](./development/BUILD_FIX_SUMMARY.md) - Common build issue solutions
+- [Router Fixes](./development/NEXT_ROUTER_FIXES.md) - Next.js router troubleshooting
+- [Implementation Guide](./development/IMPLEMENTATION_INSTRUCTIONS.md) - Development best practices
+- [UI Improvements](./development/UI_IMPROVEMENTS_PLAN.md) - Design system guidelines
 
-### Local Development
+### [📊 Technical Reports](./technical-reports/)
+Performance analyses, optimization reports, and system studies.
+- [Performance Optimization](./technical-reports/PERFORMANCE_OPTIMIZATION_REPORT.md) - Performance analysis
+- [SEO Master Guide](./technical-reports/SEO_MASTER_REFERENCE_GUIDE.md) - Complete SEO implementation
+- [Image Optimization](./technical-reports/IMAGE_OPTIMIZATION_COMPLETE.md) - Image performance optimization
+- [Caching System](./technical-reports/CACHING_SYSTEM_IMPLEMENTATION.md) - Cache strategy implementation
 
-1. Clone the repository
-   ```bash
-   git clone <repository-url>
-   cd <repository-folder>
-   ```
+### [📝 Release Notes](./release-notes/)
+Version history, changelogs, and upgrade guides.
+- [Version 4.0.0](./release-notes/FINAL_RELEASE_NOTES_v4.0.0.md) - Latest major release
+- [Version 3.0.0](./release-notes/RELEASE_NOTES_V3.0.0.md) - Previous major release
+- [Version 2.0.0](./release-notes/RELEASE_NOTES_V2.0.0.md) - Historical release
+- [Changelog](./release-notes/CHANGELOG.md) - Complete change history
 
-2. Install dependencies
-   ```bash
-   npm install
-   ```
+### [📦 Archive](./archive/)
+Historical documentation, deprecated guides, and project artifacts.
 
-3. Set up environment variables
-   ```bash
-   cp .env.example .env.local
-   # Edit .env.local to add your Supabase URL and anon key
-   ```
+## 🚀 Quick Start
 
-4. Run the development server
-   ```bash
-   npm run dev
-   ```
+### For Developers
+1. Review the [Development Guides](./development/) for setup instructions
+2. Check [API Documentation](./api/) for integration details
+3. Follow [Security Documentation](./security/) for secure development practices
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser
+### For Deployment
+1. Follow the [Deployment Guides](./deployment/) for production setup
+2. Use the [Launch Checklist](./deployment/LAUNCH_CHECKLIST.md) before going live
+3. Monitor using guidelines in [Technical Reports](./technical-reports/)
 
-### Docker Setup
+### For Maintenance
+1. Reference [Technical Reports](./technical-reports/) for performance monitoring
+2. Check [Release Notes](./release-notes/) for update procedures
+3. Use [Security Documentation](./security/) for ongoing security maintenance
 
-1. Build and run using Docker Compose
-   ```bash
-   docker-compose up -d
-   ```
+## 🎯 Key Features Documented
 
-2. Access the application at [http://localhost:3000](http://localhost:3000)
+### Core Business Features
+- **Doorstep Repair Service** - Mobile technician dispatch system
+- **Online Booking System** - Multi-step booking flow with email confirmations
+- **Service Area Coverage** - Lower Mainland BC with postal code verification
+- **Dynamic Pricing** - Device-specific pricing with warranty options
 
-3. To stop the containers
-   ```bash
-   docker-compose down
-   ```
+### Technical Implementation
+- **Next.js 14** - Modern React framework with App Router
+- **Supabase** - PostgreSQL database with real-time features
+- **Vercel Deployment** - Serverless hosting with edge functions
+- **SendGrid Integration** - Transactional email delivery
 
-## Database Setup
+### Performance & SEO
+- **Image Optimization** - WebP conversion and lazy loading
+- **Cache Strategy** - Multi-layer caching for performance
+- **SEO Optimization** - Structured data and local search optimization
+- **Performance Monitoring** - Lighthouse and Core Web Vitals tracking
 
-The application uses Supabase for the database. The schema migrations are provided in the `./sql` directory.
+## 📞 Support & Contact
 
-### Setting Up the Database
+### Development Support
+- Check [Development Guides](./development/) for common issues
+- Review [Technical Reports](./technical-reports/) for performance troubleshooting
+- Use npm scripts: `npm run scripts:help` for available development tools
 
-1. Create a new Supabase project
-2. Run the SQL scripts in the `./sql` directory in order
-3. Update your environment variables with the Supabase URL and anon key
+### Production Issues
+- Follow [Deployment Guides](./deployment/) for production troubleshooting
+- Check [Security Documentation](./security/) for security incident response
+- Monitor using guidelines in [Technical Reports](./technical-reports/)
 
-## Deployment
+## 🔄 Documentation Maintenance
 
-### Deploy to Production
+### Updating Documentation
+1. Keep documentation synchronized with code changes
+2. Update version numbers in release notes
+3. Add new features to appropriate documentation sections
+4. Archive outdated documentation to the [Archive](./archive/) folder
 
-1. Build the Docker image
-   ```bash
-   docker build -t travelling-technicians .
-   ```
+### Contributing Guidelines
+- Use clear, descriptive headings
+- Include code examples where applicable
+- Maintain consistent formatting across documents
+- Update this index when adding new documentation
 
-2. Push to your container registry
-   ```bash
-   docker tag travelling-technicians:latest <registry-url>/travelling-technicians:latest
-   docker push <registry-url>/travelling-technicians:latest
-   ```
+---
 
-## Technology Stack
+**Last Updated:** September 15, 2025  
+**Documentation Version:** 4.0.0  
+**Project Status:** Production Ready ✅
 
-- **Frontend:** Next.js, React, Tailwind CSS
-- **Backend:** Next.js API Routes
-- **Database:** PostgreSQL with Supabase
-- **Containerization:** Docker
-- **Booking System:** Custom implementation
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Contact
-
-For any inquiries, please reach out to [contact@travellingtechnicians.com](mailto:contact@travellingtechnicians.com)
-
+For the latest updates and quick start guide, see the [main README.md](../README.md) in the project root.
