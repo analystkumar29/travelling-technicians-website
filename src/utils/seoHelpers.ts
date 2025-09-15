@@ -59,7 +59,7 @@ export function generatePageMetadata(context: PageContext): PageMetadata {
   const canonical = `${siteUrl}${context.path}`;
   
   // Default image for social sharing
-  const defaultImage = `${siteUrl}/images/logo/logo-orange.png`;
+  const defaultImage = `${siteUrl}/images/logo/logo-orange-optimized.webp`;
   
   try {
     switch (context.type) {

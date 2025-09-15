@@ -212,7 +212,7 @@ export default function DynamicMeta({
                 url: siteUrl,
                 logo: {
                   '@type': 'ImageObject',
-                  url: `${siteUrl}/images/logo/logo-orange.png`,
+                  url: `${siteUrl}/images/logo/logo-orange-optimized.webp`,
                   width: 300,
                   height: 60
                 },
@@ -246,7 +246,7 @@ export default function DynamicMeta({
 function generateFallbackMetadata(path: string): PageMetadata {
   const siteUrl = getSiteUrl();
   const canonical = `${siteUrl}${path}`;
-  const defaultImage = `${siteUrl}/images/logo/logo-orange.png`;
+  const defaultImage = `${siteUrl}/images/logo/logo-orange-optimized.webp`;
   
   return {
     title: 'The Travelling Technicians | Mobile & Laptop Repair',

@@ -105,7 +105,7 @@ export default function AboutPage() {
             <div className="relative">
               <div className="relative h-[400px] w-full rounded-lg overflow-hidden shadow-custom-lg">
                 <HeroImage
-                  src="/images/services/doorstep-repair-tech.jpg"
+                  src="/images/services/doorstep-repair-tech-optimized.webp"
                   alt="Professional technician providing doorstep mobile and laptop repair services"
                   fill
                   className="object-cover"
