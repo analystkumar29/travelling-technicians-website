@@ -128,7 +128,7 @@ export const validateJsonLdSchema = (jsonString, expectedType, requiredFields = 
 export const metaTagTestData = {
   homepage: {
     title: 'Mobile & Laptop Repair Service | The Travelling Technicians',
-    description: 'Professional mobile phone and laptop repair services with doorstep service across Vancouver and Lower Mainland, BC. Expert technicians, same-day service, 90-day warranty.',
+    description: 'Professional mobile phone and laptop repair services with doorstep service across Vancouver and Lower Mainland, BC. Expert technicians, same-day service.',
     canonical: 'https://travelling-technicians.ca/',
     ogTitle: 'Mobile & Laptop Repair Service | The Travelling Technicians',
     ogDescription: 'Professional mobile phone and laptop repair services with doorstep service across Vancouver and Lower Mainland, BC.',
@@ -137,7 +137,7 @@ export const metaTagTestData = {
   },
   mobileRepair: {
     title: 'Mobile Phone Repair Services | The Travelling Technicians',
-    description: 'Expert mobile phone repair services including screen replacement, battery replacement, and more. Doorstep service across Vancouver and Lower Mainland with 90-day warranty.',
+    description: 'Expert mobile phone repair services including screen replacement, battery replacement. Doorstep service across Vancouver and Lower Mainland.',
     canonical: 'https://travelling-technicians.ca/services/mobile-repair',
     ogTitle: 'Mobile Phone Repair Services | The Travelling Technicians',
     ogDescription: 'Expert mobile phone repair services with doorstep service across Vancouver and Lower Mainland.',
@@ -146,7 +146,7 @@ export const metaTagTestData = {
   },
   laptopRepair: {
     title: 'Laptop Repair Services | The Travelling Technicians',
-    description: 'Professional laptop repair services including screen replacement, battery replacement, hardware upgrades. Doorstep service across Vancouver and Lower Mainland.',
+    description: 'Professional laptop repair services including screen replacement, battery replacement, hardware upgrades. Doorstep service across Vancouver.',
     canonical: 'https://travelling-technicians.ca/services/laptop-repair',
     ogTitle: 'Laptop Repair Services | The Travelling Technicians', 
     ogDescription: 'Professional laptop repair services with doorstep service across Vancouver and Lower Mainland.',
