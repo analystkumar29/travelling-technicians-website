@@ -11,7 +11,7 @@ export default function LaptopScreenRepairPage() {
         <title>Laptop Screen Repair Vancouver | MacBook Screen Replacement | The Travelling Technicians</title>
         <meta name="description" content="Professional laptop screen repair in Vancouver, Burnaby, Richmond. Same-day MacBook, Dell, HP, Lenovo screen replacement. Doorstep service with 90-day warranty." />
         <meta name="keywords" content="laptop screen repair, MacBook screen repair, laptop screen replacement, broken laptop screen, cracked laptop screen, laptop screen fix" />
-        <link rel="canonical" href="https://www.travelling-technicians.ca/laptop-screen-repair" />
+        <link rel="canonical" href="https://travelling-technicians.ca/laptop-screen-repair" />
         <meta property="og:title" content="Laptop Screen Repair Vancouver | MacBook Screen Replacement" />
         <meta property="og:description" content="Professional laptop screen repair with same-day doorstep service. MacBook, Dell, HP, and all major brands. 90-day warranty." />
         <meta property="og:url" content="https://travelling-technicians.ca/laptop-screen-repair" />

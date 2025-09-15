@@ -74,6 +74,13 @@ export default function AboutPage() {
   return (
     <>
       <Head>
+        <title>About Us | The Travelling Technicians | Mobile & Laptop Repair Experts</title>
+        <meta name="description" content="Learn about The Travelling Technicians - your trusted mobile phone and laptop repair experts serving Vancouver and Lower Mainland with professional doorstep repair services." />
+        <link rel="canonical" href="https://travelling-technicians.ca/about" />
+        <meta property="og:title" content="About Us | The Travelling Technicians | Mobile & Laptop Repair Experts" />
+        <meta property="og:description" content="Professional mobile phone and laptop repair experts serving Vancouver and Lower Mainland with convenient doorstep repair services. Learn our story and mission." />
+        <meta property="og:url" content="https://travelling-technicians.ca/about" />
+        <meta property="og:type" content="website" />
         {/* About Page Structured Data */}
         <OrganizationSchema />
         <LocalBusinessSchema

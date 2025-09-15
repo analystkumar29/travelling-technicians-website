@@ -12,7 +12,7 @@ export default function ScreenProtectionGuidePost() {
         <title>Ultimate Guide to Screen Protection | Mobile & Laptop | The Travelling Technicians</title>
         <meta name="description" content="Complete guide to screen protectors for phones and laptops. Learn about tempered glass vs plastic film, 9H hardness, and how to choose the best protection for your device." />
         <meta name="keywords" content="screen protector guide, tempered glass protector, phone screen protection, laptop screen protector, mobile accessories, device protection" />
-        <link rel="canonical" href="https://www.travelling-technicians.ca/blog/ultimate-guide-to-screen-protection" />
+        <link rel="canonical" href="https://travelling-technicians.ca/blog/ultimate-guide-to-screen-protection" />
         <meta property="og:title" content="Ultimate Guide to Screen Protection | Mobile & Laptop" />
         <meta property="og:description" content="Everything you need to know about protecting your device screens. Expert advice on choosing the right screen protector." />
         <meta property="og:url" content="https://travelling-technicians.ca/blog/ultimate-guide-to-screen-protection" />

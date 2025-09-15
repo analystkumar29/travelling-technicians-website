@@ -12,7 +12,7 @@ export default function WaterDamageFirstAidPost() {
         <title>Water Damage First Aid for Devices | Emergency Repair Guide | The Travelling Technicians</title>
         <meta name="description" content="Emergency steps to save water-damaged phones and laptops. Learn immediate response protocols, what to do and avoid, and when to call professionals for device recovery." />
         <meta name="keywords" content="water damage repair, phone water damage, laptop water damage, emergency device repair, water damage first aid, spilled liquid on phone" />
-        <link rel="canonical" href="https://www.travelling-technicians.ca/blog/water-damage-first-aid-for-devices" />
+        <link rel="canonical" href="https://travelling-technicians.ca/blog/water-damage-first-aid-for-devices" />
         <meta property="og:title" content="Water Damage First Aid for Your Devices | Emergency Guide" />
         <meta property="og:description" content="Critical steps to take in the first minutes after water damage. Emergency protocols that could save your device and data." />
         <meta property="og:url" content="https://travelling-technicians.ca/blog/water-damage-first-aid-for-devices" />
