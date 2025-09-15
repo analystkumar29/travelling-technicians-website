@@ -55,7 +55,15 @@
     "audit:legal-compliance": "node scripts/legal-compliance-audit.js",
     "test:cache-performance": "node scripts/test-cache-performance.js",
     "benchmark:api-response-times": "node scripts/benchmark-api-response-times.js",
-    "test:cache-full": "npm run test:cache-performance && npm run benchmark:api-response-times"
+    "test:cache-full": "npm run test:cache-performance && npm run benchmark:api-response-times",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:seo": "jest tests/seo/",
+    "test:seo:meta": "jest tests/seo/meta-tags.test.js",
+    "test:seo:structured": "jest tests/seo/structured-data.test.js",
+    "test:seo:sitemap": "jest tests/seo/sitemap.test.js",
+    "test:seo:full": "npm run test:seo && npm run validate:schema && npm run test:structured-data"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",
@@ -94,12 +102,15 @@
     "yaml": "^2.8.0"
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.28.3",
+    "@babel/preset-react": "^7.27.1",
     "@babel/runtime": "^7.27.1",
     "@types/leaflet": "^1.9.17",
     "@types/node": "^20.8.6",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "ajv": "^8.17.1",
+    "babel-jest": "^29.7.0",
     "babel-loader": "^10.0.0",
     "canvas": "^3.1.0",
     "copy-webpack-plugin": "^13.0.0",
@@ -108,6 +119,7 @@
     "eslint-config-next": "14.2.25",
     "gh-pages": "^6.3.0",
     "glob": "^11.0.2",
+    "jest-environment-jsdom": "^29.7.0",
     "node-fetch": "^2.7.0",
     "sharp": "^0.34.2",
     "typescript": "^5.2.2"
