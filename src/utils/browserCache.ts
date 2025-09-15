@@ -350,7 +350,7 @@ export {
   withBrowserCache as cached
 };
 
-export default {
+const browserCacheUtils = {
   profiles: CACHE_PROFILES,
   generateETag,
   generateLastModified,
@@ -361,3 +361,5 @@ export default {
   withBrowserCache,
   BrowserCacheInvalidator
 };
+
+export default browserCacheUtils;
