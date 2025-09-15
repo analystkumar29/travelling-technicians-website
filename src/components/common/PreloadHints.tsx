@@ -11,8 +11,8 @@ interface PreloadHintsProps {
  */
 export default function PreloadHints({ 
   criticalImages = [
-    '/images/logo/logo-orange.png',
-    '/images/services/doorstep-repair-tech.jpg'
+    '/images/logo/logo-orange-optimized.webp',
+    '/images/services/doorstep-repair-tech-optimized.webp'
   ],
   fonts = []
 }: PreloadHintsProps) {
@@ -64,8 +64,8 @@ export function HomePagePreloads() {
   return (
     <PreloadHints
       criticalImages={[
-        '/images/logo/logo-orange.png',
-        '/images/services/doorstep-repair-tech.jpg',
+        '/images/logo/logo-orange-optimized.webp',
+        '/images/services/doorstep-repair-tech-optimized.webp',
         '/images/brands/apple.svg',
         '/images/brands/samsung.svg'
       ]}
@@ -74,14 +74,14 @@ export function HomePagePreloads() {
 }
 
 export function BlogPagePreloads({ featuredImage }: { featuredImage?: string }) {
-  const criticalImages = ['/images/logo/logo-orange.png'];
+  const criticalImages = ['/images/logo/logo-orange-optimized.webp'];
   if (featuredImage) criticalImages.push(featuredImage);
   
   return <PreloadHints criticalImages={criticalImages} />;
 }
 
 export function ServicePagePreloads({ heroImage }: { heroImage?: string }) {
-  const criticalImages = ['/images/logo/logo-orange.png'];
+  const criticalImages = ['/images/logo/logo-orange-optimized.webp'];
   if (heroImage) criticalImages.push(heroImage);
   
   return <PreloadHints criticalImages={criticalImages} />;

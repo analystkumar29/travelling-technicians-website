@@ -12,7 +12,7 @@ export default function Footer() {
           <div>
             <div className="flex items-center mb-4">
               <LogoImage 
-                src="/images/logo/logo-orange.png" 
+                src="/images/logo/logo-orange-optimized.webp" 
                 alt="Travelling Technicians Logo" 
                 width={48} 
                 height={48} 

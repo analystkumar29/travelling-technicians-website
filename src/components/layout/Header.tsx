@@ -31,7 +31,7 @@ const Header = () => {
             <Link href="/" className="flex items-center">
               <div className="w-20 h-20 relative mr-2 overflow-hidden">
                 <LogoImage
-                  src="/images/logo/logo-orange.png"
+                  src="/images/logo/logo-orange-optimized.webp"
                   alt="Travelling Technicians Logo"
                   fill
                   className="object-contain"

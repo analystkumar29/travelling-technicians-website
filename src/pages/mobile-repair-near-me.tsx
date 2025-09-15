@@ -1,5 +1,6 @@
 import Layout from '@/components/layout/Layout';
 import Image from 'next/image';
+import OptimizedImage from '@/components/common/OptimizedImage';
 import Link from 'next/link';
 import Head from 'next/head';
 import { FaMapMarkerAlt, FaClock, FaShieldAlt, FaPhone, FaCalendarAlt, FaStar, FaCheckCircle, FaRoute } from 'react-icons/fa';
@@ -96,12 +97,12 @@ export default function MobileRepairNearMePage() {
               </div>
               <div className="relative">
                 <div className="relative h-[400px] w-full rounded-lg overflow-hidden shadow-custom-lg">
-                  <Image
+                  <OptimizedImage
                     src="/images/services/doorstep-repair-tech.jpg"
-                    alt="Mobile repair technician providing doorstep service"
+                    alt="Mobile repair technician providing professional doorstep service at customer location"
                     fill
                     className="object-cover"
-                    priority
+                    isCritical={true}
                   />
                 </div>
               </div>
@@ -296,9 +297,9 @@ export default function MobileRepairNearMePage() {
               
               <div className="relative">
                 <div className="relative h-[300px] w-full rounded-lg overflow-hidden shadow-lg">
-                  <Image
+                  <OptimizedImage
                     src="/images/services/mobile-repair-doorstep.jpg"
-                    alt="Technician repairing mobile phone at customer's location"
+                    alt="Professional technician repairing mobile phone at customer's location with precision tools"
                     fill
                     className="object-cover"
                   />

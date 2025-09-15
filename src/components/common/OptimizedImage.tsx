@@ -67,7 +67,7 @@ export default function OptimizedImage({
   const finalSizes = sizes || optimization.sizes;
   
   // Error fallback source
-  const errorFallback = fallbackSrc || '/images/logo/logo-orange.png';
+  const errorFallback = fallbackSrc || '/images/logo/logo-orange-optimized.webp';
   
   // Generate blur placeholder
   const blurDataURL = generateBlurDataURL(40, 30);
