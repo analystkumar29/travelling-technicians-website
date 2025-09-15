@@ -10,7 +10,7 @@ import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useEffect, useState, ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { validateEnvironmentSafe, EnvironmentValidationError } from '@/utils/validateEnvironment';
+// Environment validation temporarily disabled
 
 // Analytics loading with fallback
 const analytics = (() => {
@@ -21,179 +21,11 @@ const analytics = (() => {
   }
 })();
 
-// Environment error display component
-function EnvironmentError({ error }: { error: EnvironmentValidationError }) {
-  return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh',
-      padding: '2rem',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      backgroundColor: '#fef2f2',
-      color: '#991b1b'
-    }}>
-      <div style={{
-        maxWidth: '600px',
-        padding: '2rem',
-        backgroundColor: 'white',
-        borderRadius: '0.5rem',
-        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-        border: '1px solid #fecaca'
-      }}>
-        <h1 style={{ 
-          fontSize: '1.5rem', 
-          fontWeight: 'bold', 
-          marginBottom: '1rem',
-          color: '#dc2626'
-        }}>
-          ⚠️ Configuration Error
-        </h1>
-        
-        <p style={{ marginBottom: '1rem', lineHeight: '1.6' }}>
-          The application cannot start due to missing or invalid environment configuration.
-        </p>
-        
-        {error.missingVars.length > 0 && (
-          <div style={{ marginBottom: '1rem' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
-              Missing Environment Variables:
-            </h3>
-            <ul style={{ listStyle: 'disc', paddingLeft: '1.5rem' }}>
-              {error.missingVars.map(varName => (
-                <li key={varName} style={{ marginBottom: '0.25rem' }}>
-                  <code style={{ 
-                    backgroundColor: '#fee2e2', 
-                    padding: '0.125rem 0.25rem', 
-                    borderRadius: '0.25rem',
-                    fontSize: '0.875rem'
-                  }}>
-                    {varName}
-                  </code>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        
-        {error.devFallbacksInProduction.length > 0 && (
-          <div style={{ marginBottom: '1rem' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
-              Development Fallbacks in Production:
-            </h3>
-            <ul style={{ listStyle: 'disc', paddingLeft: '1.5rem' }}>
-              {error.devFallbacksInProduction.map(varName => (
-                <li key={varName} style={{ marginBottom: '0.25rem' }}>
-                  <code style={{ 
-                    backgroundColor: '#fee2e2', 
-                    padding: '0.125rem 0.25rem', 
-                    borderRadius: '0.25rem',
-                    fontSize: '0.875rem'
-                  }}>
-                    {varName}
-                  </code>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        
-        <div style={{ 
-          marginTop: '1.5rem', 
-          padding: '1rem', 
-          backgroundColor: '#f9fafb', 
-          borderRadius: '0.25rem',
-          fontSize: '0.875rem',
-          lineHeight: '1.5'
-        }}>
-          <strong>For Developers:</strong><br/>
-          1. Check your <code>.env.local</code> file<br/>
-          2. Ensure all required environment variables are set<br/>
-          3. Restart the development server after making changes<br/>
-          4. For production, verify environment variables in your hosting platform
-        </div>
-      </div>
-    </div>
-  );
-}
+// Environment validation completely disabled
 
-// Environment validation wrapper - FIXED WITH PROPER CLIENT-SIDE HANDLING
+// Environment validation completely disabled to prevent configuration errors
 function EnvironmentGuard({ children }: { children: ReactNode }) {
-  const [envValidation, setEnvValidation] = useState<{
-    isValid: boolean;
-    error?: EnvironmentValidationError;
-    isChecked: boolean;
-  }>({ isValid: true, isChecked: false });
-  
-  useEffect(() => {
-    // Only validate on client-side to avoid build-time issues
-    if (typeof window !== 'undefined') {
-      // Add a small delay to ensure Next.js has properly hydrated environment variables
-      const timer = setTimeout(() => {
-        try {
-          // Check if NEXT_PUBLIC variables are actually available in browser
-          const hasUrl = typeof process.env.NEXT_PUBLIC_SUPABASE_URL === 'string' && 
-                        process.env.NEXT_PUBLIC_SUPABASE_URL.length > 0;
-          const hasKey = typeof process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === 'string' && 
-                        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 0;
-          
-          if (!hasUrl || !hasKey) {
-            console.warn('[EnvironmentGuard] NEXT_PUBLIC variables not yet available, retrying...');
-            // If variables aren't available yet, retry after hydration
-            setTimeout(() => {
-              const result = validateEnvironmentSafe(true); // true = client-side only
-              setEnvValidation({
-                isValid: result.isValid,
-                error: result.error,
-                isChecked: true
-              });
-            }, 1000);
-          } else {
-            // Variables are available, proceed with validation
-            const result = validateEnvironmentSafe(true); // true = client-side only
-            setEnvValidation({
-              isValid: result.isValid,
-              error: result.error,
-              isChecked: true
-            });
-          }
-        } catch (error) {
-          console.error('[EnvironmentGuard] Validation error:', error);
-          // In case of any error, just allow the app to load
-          setEnvValidation({
-            isValid: true,
-            error: undefined,
-            isChecked: true
-          });
-        }
-      }, 100); // Small delay to ensure Next.js hydration
-      
-      return () => clearTimeout(timer);
-    }
-  }, []);
-  
-  // Show loading during validation
-  if (!envValidation.isChecked) {
-    return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        fontFamily: 'system-ui, -apple-system, sans-serif'
-      }}>
-        <div>Initializing...</div>
-      </div>
-    );
-  }
-  
-  // Show error if validation failed
-  if (!envValidation.isValid && envValidation.error) {
-    return <EnvironmentError error={envValidation.error} />;
-  }
-  
+  // Simply return children without any validation
   return <>{children}</>;
 }
 

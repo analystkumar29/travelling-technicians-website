@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node start-dev-stable.js",
+    "dev": "node scripts/dev-server-simple.js",
     "dev:legacy": "next dev",
-    "dev:stable": "node start-dev-stable.js",
+    "dev:stable": "node scripts/dev-server-simple.js",
     "validate-env": "node scripts/validate-env.js",
     "prebuild": "npm run validate-env",
     "build": "SHARP_IGNORE_GLOBAL_LIBVIPS=1 next build",
