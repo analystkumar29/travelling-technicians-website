@@ -1,6 +1,8 @@
 import Layout from '@/components/layout/Layout';
+import Head from 'next/head';
 import Link from 'next/link';
 import { FaPhone, FaClock, FaShieldAlt, FaMapMarkerAlt, FaStar, FaCheckCircle, FaMobile, FaLaptop, FaTabletAlt, FaTools } from 'react-icons/fa';
+import { LocalBusinessSchema } from '@/components/seo/StructuredData';
 
 // Richmond-specific testimonials
 const richmondTestimonials = [
@@ -41,7 +43,33 @@ const richmondAreas = [
 
 export default function RichmondRepairPage() {
   return (
-    <Layout 
+    <>
+      <Head>
+        {/* The Travelling Technicians - Richmond Location Structured Data */}
+        <LocalBusinessSchema
+          name="The Travelling Technicians - Richmond"
+          description="Professional mobile phone and laptop repair services with doorstep service in Richmond, BC. Serving Richmond Centre, Steveston, Terra Nova, and surrounding areas."
+          address={{
+            streetAddress: "Richmond Service Area",
+            addressLocality: "Richmond",
+            addressRegion: "BC",
+            addressCountry: "CA"
+          }}
+          geo={{
+            latitude: 49.1666,
+            longitude: -123.1336
+          }}
+          areaServed={[
+                      "Richmond, BC",
+                      "Richmond Centre",
+                      "Steveston",
+                      "Terra Nova",
+                      "Hamilton",
+                      "Brighouse"
+            ]}
+        />
+      </Head>
+      <Layout 
       title="Mobile & Laptop Repair Richmond | The Travelling Technicians"
       metaDescription="Professional mobile and laptop repair in Richmond. Doorstep service to City Centre, Steveston, YVR area. Same-day iPhone, MacBook, Samsung repair. Book online!"
     >
@@ -359,5 +387,6 @@ export default function RichmondRepairPage() {
         }}
       />
     </Layout>
+    </>
   );
 }

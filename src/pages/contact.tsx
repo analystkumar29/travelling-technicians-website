@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import Layout from '@/components/layout/Layout';
+import Head from 'next/head';
 import Link from 'next/link';
 import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaClock, FaHeadset, FaComments } from 'react-icons/fa';
+import { OrganizationSchema, LocalBusinessSchema } from '@/components/seo/StructuredData';
 
 // Contact form field types
 type ContactFormData = {
@@ -101,7 +103,18 @@ export default function ContactPage() {
   };
 
   return (
-    <Layout>
+    <>
+      <Head>
+        {/* Contact Page Structured Data */}
+        <OrganizationSchema />
+        <LocalBusinessSchema
+          name="The Travelling Technicians"
+          description="Professional mobile phone and laptop repair services with doorstep service across Vancouver and Lower Mainland, BC. Contact us for fast, reliable tech repair solutions."
+          telephone="+1-778-389-9251"
+          email="info@travellingtechnicians.ca"
+        />
+      </Head>
+      <Layout>
       {/* Hero Section */}
       <section className="pt-16 pb-20 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
         <div className="container-custom">
@@ -466,5 +479,6 @@ export default function ContactPage() {
         </div>
       </section>
     </Layout>
+    </>
   );
 } 

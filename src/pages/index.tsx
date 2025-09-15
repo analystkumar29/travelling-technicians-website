@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import Head from 'next/head';
 import Layout from '@/components/layout/Layout';
 import { FaTools, FaClock, FaShieldAlt, FaCheckCircle, FaMapMarkerAlt, FaStar, FaArrowRight, FaMobile, FaLaptop, FaTabletAlt, FaPhone } from 'react-icons/fa';
 import PostalCodeChecker from '@/components/PostalCodeChecker';
 import { initUIEnhancements } from '@/utils/ui-enhancements';
 import { testSupabaseConnection, supabase } from '@/utils/supabaseClient';
 import { trackLocationEvent } from '@/utils/analytics';
+import StructuredData, { LocalBusinessSchema, OrganizationSchema, ReviewSchema } from '@/components/seo/StructuredData';
 
 // Component to render device brand image with proper dimensions
 const BrandImage = ({ src, alt }: { src: string, alt: string }) => {
@@ -127,7 +129,28 @@ export default function Home() {
   };
 
   return (
-    <Layout>
+    <>
+      <Head>
+        {/* Homepage Structured Data */}
+        <LocalBusinessSchema />
+        <OrganizationSchema />
+        <ReviewSchema 
+          reviews={testimonials.map(testimonial => ({
+            author: testimonial.name,
+            rating: testimonial.rating,
+            reviewBody: testimonial.comment,
+            location: testimonial.location,
+            datePublished: "2024-01-01" // You can make this dynamic
+          }))}
+          aggregateRating={{
+            ratingValue: 4.8,
+            reviewCount: testimonials.length,
+            bestRating: 5,
+            worstRating: 1
+          }}
+        />
+      </Head>
+      <Layout>
       {/* Smart Mobile Floating Action Button */}
       <div className={`fixed bottom-0 left-0 right-0 md:hidden z-50 transition-transform duration-300 ${
         showFAB ? 'translate-y-0' : 'translate-y-full'
@@ -582,5 +605,6 @@ export default function Home() {
         </div>
       </section>
     </Layout>
+    </>
   );
 } 

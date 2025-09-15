@@ -34,8 +34,8 @@ export default function MobileRepairNearMePage() {
               "telephone": "+1-778-389-9251",
               "geo": {
                 "@type": "GeoCoordinates",
-                "latitude": "49.2827",
-                "longitude": "-123.1207"
+                "latitude": 49.2827,
+                "longitude": -123.1207
               }
             },
             "serviceType": "Mobile Device Repair",
@@ -43,8 +43,8 @@ export default function MobileRepairNearMePage() {
               "@type": "GeoCircle",
               "geoMidpoint": {
                 "@type": "GeoCoordinates",
-                "latitude": "49.2827",
-                "longitude": "-123.1207"
+                "latitude": 49.2827,
+                "longitude": -123.1207
               },
               "geoRadius": "50000"
             }

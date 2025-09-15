@@ -336,8 +336,8 @@ class MyDocument extends Document {
                 },
                 "geo": {
                   "@type": "GeoCoordinates",
-                  "latitude": "49.2827",
-                  "longitude": "-123.1207"
+                  "latitude": 49.2827,
+                  "longitude": -123.1207
                 },
                 "hasOfferCatalog": {
                   "@type": "OfferCatalog",

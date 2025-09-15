@@ -1,6 +1,8 @@
 import Layout from '@/components/layout/Layout';
+import Head from 'next/head';
 import Link from 'next/link';
 import { FaPhone, FaClock, FaShieldAlt, FaMapMarkerAlt, FaStar, FaCheckCircle, FaMobile, FaLaptop, FaTabletAlt, FaTools } from 'react-icons/fa';
+import { LocalBusinessSchema } from '@/components/seo/StructuredData';
 
 // West Vancouver-specific testimonials
 const westvancouverTestimonials = [
@@ -39,7 +41,33 @@ const westvancouverAreas = [
 
 export default function WestVancouverRepairPage() {
   return (
-    <Layout 
+    <>
+      <Head>
+        {/* The Travelling Technicians - West Vancouver Location Structured Data */}
+        <LocalBusinessSchema
+          name="The Travelling Technicians - West Vancouver"
+          description="Professional mobile phone and laptop repair services with doorstep service in West Vancouver, BC. Serving Dundarave, Ambleside, British Properties, and surrounding areas."
+          address={{
+            streetAddress: "West vancouver Service Area",
+            addressLocality: "West vancouver",
+            addressRegion: "BC",
+            addressCountry: "CA"
+          }}
+          geo={{
+            latitude: 49.3282,
+            longitude: -123.1624
+          }}
+          areaServed={[
+                      "West Vancouver, BC",
+                      "Dundarave",
+                      "Ambleside",
+                      "British Properties",
+                      "Hollyburn",
+                      "Caulfeild"
+            ]}
+        />
+      </Head>
+      <Layout 
       title="Mobile & Laptop Repair West Vancouver | The Travelling Technicians"
       metaDescription="Premium mobile and laptop repair in West Vancouver. Doorstep service to Ambleside, Dundarave, British Properties. Same-day iPhone, MacBook repair. Book online!"
     >
@@ -357,5 +385,6 @@ export default function WestVancouverRepairPage() {
         }}
       />
     </Layout>
+    </>
   );
 }

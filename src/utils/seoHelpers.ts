@@ -1,5 +1,6 @@
 import { getSiteUrl } from './supabaseClient';
 import { logger } from './logger';
+import { isValidStructuredData } from './structuredDataValidation';
 
 // Create a module logger
 const seoLogger = logger.createModuleLogger('seoHelpers');

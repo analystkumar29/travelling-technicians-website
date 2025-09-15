@@ -1,6 +1,8 @@
 import Layout from '@/components/layout/Layout';
+import Head from 'next/head';
 import Link from 'next/link';
 import { FaPhone, FaClock, FaShieldAlt, FaMapMarkerAlt, FaStar, FaCheckCircle, FaMobile, FaLaptop, FaTabletAlt, FaTools } from 'react-icons/fa';
+import { LocalBusinessSchema } from '@/components/seo/StructuredData';
 
 // New Westminster-specific testimonials
 const newwestminsterTestimonials = [
@@ -38,7 +40,32 @@ const newwestminsterAreas = [
 
 export default function NewWestminsterRepairPage() {
   return (
-    <Layout 
+    <>
+      <Head>
+        {/* The Travelling Technicians - New Westminster Location Structured Data */}
+        <LocalBusinessSchema
+          name="The Travelling Technicians - New Westminster"
+          description="Professional mobile phone and laptop repair services with doorstep service in New Westminster, BC. Serving Uptown, Downtown, Queens Park, and surrounding areas."
+          address={{
+            streetAddress: "New westminster Service Area",
+            addressLocality: "New westminster",
+            addressRegion: "BC",
+            addressCountry: "CA"
+          }}
+          geo={{
+            latitude: 49.2057,
+            longitude: -122.911
+          }}
+          areaServed={[
+                      "New Westminster, BC",
+                      "Uptown New Westminster",
+                      "Downtown New Westminster",
+                      "Queens Park",
+                      "Sapperton"
+            ]}
+        />
+      </Head>
+      <Layout 
       title="Mobile & Laptop Repair New Westminster | The Travelling Technicians"
       metaDescription="Professional mobile and laptop repair in New Westminster. Doorstep service to Uptown, Downtown, Queens Park. Same-day iPhone, MacBook repair. Book online!"
     >
@@ -356,5 +383,6 @@ export default function NewWestminsterRepairPage() {
         }}
       />
     </Layout>
+    </>
   );
 }

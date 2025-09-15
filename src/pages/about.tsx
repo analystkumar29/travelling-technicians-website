@@ -1,7 +1,9 @@
 import Layout from '@/components/layout/Layout';
+import Head from 'next/head';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FaTools, FaUserCheck, FaAward, FaMapMarkerAlt, FaHandshake, FaLeaf, FaCheckCircle, FaShieldAlt } from 'react-icons/fa';
+import { OrganizationSchema, LocalBusinessSchema } from '@/components/seo/StructuredData';
 
 // Team members data
 const teamMembers = [
@@ -70,7 +72,16 @@ const milestones = [
 
 export default function AboutPage() {
   return (
-    <Layout title="About Us | The Travelling Technicians">
+    <>
+      <Head>
+        {/* About Page Structured Data */}
+        <OrganizationSchema />
+        <LocalBusinessSchema
+          name="The Travelling Technicians"
+          description="Professional mobile phone and laptop repair services with doorstep service across Vancouver and Lower Mainland, BC. Founded to provide convenient, reliable tech repair solutions right at your location."
+        />
+      </Head>
+      <Layout title="About Us | The Travelling Technicians">
       {/* Hero Section */}
       <section className="pt-16 pb-20 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
         <div className="container-custom">
@@ -323,5 +334,6 @@ export default function AboutPage() {
         </div>
       </section>
     </Layout>
+    </>
   );
 } 

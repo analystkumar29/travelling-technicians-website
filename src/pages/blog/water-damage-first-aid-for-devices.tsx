@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Head from 'next/head';
 import { FaCalendarAlt, FaUser, FaTag, FaClock, FaChevronLeft, FaShare, FaFacebook, FaTwitter, FaLinkedin, FaExclamationTriangle, FaPhone, FaLaptop } from 'react-icons/fa';
+import { ArticleSchema } from '@/components/seo/StructuredData';
 
 export default function WaterDamageFirstAidPost() {
   return (
@@ -23,6 +24,18 @@ export default function WaterDamageFirstAidPost() {
         <meta property="article:tag" content="water damage" />
         <meta property="article:tag" content="emergency repair" />
         <meta property="article:tag" content="device recovery" />
+        {/* Blog Article Structured Data */}
+        <ArticleSchema
+          headline="Water Damage First Aid for Your Devices"
+          description="Emergency steps to save water-damaged phones and laptops. Learn immediate response protocols, what to do and avoid, and when to call professionals for device recovery."
+          author="Michael Tran"
+          datePublished="2024-03-05"
+          dateModified="2024-03-05"
+          image="https://travelling-technicians.ca/images/blog/water-damage-repair.jpg"
+          url="https://travellingtechnicians.ca/blog/water-damage-first-aid-for-devices"
+          category="Emergency Repair"
+          tags={["water damage", "emergency repair", "device recovery"]}
+        />
         
         {/* Article Schema Markup */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{

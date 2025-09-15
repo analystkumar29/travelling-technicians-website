@@ -1,6 +1,8 @@
 import Layout from '@/components/layout/Layout';
+import Head from 'next/head';
 import Link from 'next/link';
 import { FaPhone, FaClock, FaShieldAlt, FaMapMarkerAlt, FaStar, FaCheckCircle, FaMobile, FaLaptop, FaTabletAlt, FaTools } from 'react-icons/fa';
+import { LocalBusinessSchema, ReviewSchema } from '@/components/seo/StructuredData';
 
 // Vancouver-specific testimonials
 const vancouverTestimonials = [
@@ -72,10 +74,52 @@ const commonRepairs = [
 
 export default function VancouverRepairPage() {
   return (
-    <Layout 
-      title="Mobile & Laptop Repair Vancouver | The Travelling Technicians"
-      metaDescription="Professional mobile and laptop repair in Vancouver. Doorstep service to Downtown, Yaletown, Kitsilano, West End. Same-day iPhone, MacBook, Samsung repair. Book online!"
-    >
+    <>
+      <Head>
+        {/* Vancouver Location Structured Data */}
+        <LocalBusinessSchema
+          name="The Travelling Technicians - Vancouver"
+          description="Professional mobile phone and laptop repair services with doorstep service in Vancouver, BC. Serving Downtown, Yaletown, Kitsilano, West End, and surrounding areas."
+          address={{
+            streetAddress: "Vancouver Service Area",
+            addressLocality: "Vancouver",
+            addressRegion: "BC",
+            addressCountry: "CA"
+          }}
+          geo={{
+            latitude: 49.2827,
+            longitude: -123.1207
+          }}
+          areaServed={[
+            "Vancouver, BC",
+            "Downtown Vancouver",
+            "Yaletown",
+            "Kitsilano",
+            "West End Vancouver",
+            "Gastown",
+            "Coal Harbour"
+          ]}
+        />
+        <ReviewSchema 
+          reviews={vancouverTestimonials.map(testimonial => ({
+            author: testimonial.name,
+            rating: testimonial.rating,
+            reviewBody: testimonial.comment,
+            location: testimonial.location,
+            datePublished: "2024-01-01"
+          }))}
+          aggregateRating={{
+            ratingValue: 5.0,
+            reviewCount: vancouverTestimonials.length,
+            bestRating: 5,
+            worstRating: 1
+          }}
+        />
+      </Head>
+      <Layout 
+        title="Mobile & Laptop Repair Vancouver | The Travelling Technicians"
+        metaDescription="Professional mobile and laptop repair in Vancouver. Doorstep service to Downtown, Yaletown, Kitsilano, West End. Same-day iPhone, MacBook, Samsung repair. Book online!"
+      >
       {/* Hero Section */}
       <section className="pt-16 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
         <div className="container-custom">
@@ -479,5 +523,6 @@ export default function VancouverRepairPage() {
         }}
       />
     </Layout>
+    </>
   );
 } 

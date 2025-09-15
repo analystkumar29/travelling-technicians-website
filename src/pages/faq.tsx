@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import Head from 'next/head';
 import Layout from '@/components/layout/Layout';
 import Link from 'next/link';
 import { FaChevronDown, FaChevronUp, FaTools, FaDollarSign, FaShippingFast, FaShieldAlt, FaRegClock, FaBusinessTime } from 'react-icons/fa';
+import { FAQSchema } from '@/components/seo/StructuredData';
 
 // FAQ Categories and Questions
 const faqCategories = [
@@ -278,8 +280,21 @@ export default function FAQPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredFaqs, setFilteredFaqs] = useState(faqCategories);
 
+  // Collect all FAQs for structured data
+  const allFaqs = faqCategories.flatMap(category => 
+    category.questions.map(q => ({
+      question: q.question,
+      answer: q.answer
+    }))
+  );
+
   return (
-    <Layout>
+    <>
+      <Head>
+        {/* FAQ Page Structured Data */}
+        <FAQSchema faqs={allFaqs} />
+      </Head>
+      <Layout>
       {/* Hero Section */}
       <section className="pt-16 pb-20 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
         <div className="container-custom">
@@ -409,5 +424,6 @@ export default function FAQPage() {
         </div>
       </section>
     </Layout>
+    </>
   );
 } 

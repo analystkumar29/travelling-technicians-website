@@ -1,6 +1,8 @@
 import Layout from '@/components/layout/Layout';
+import Head from 'next/head';
 import Link from 'next/link';
 import { FaPhone, FaClock, FaShieldAlt, FaMapMarkerAlt, FaStar, FaCheckCircle, FaMobile, FaLaptop, FaTabletAlt, FaTools } from 'react-icons/fa';
+import { LocalBusinessSchema } from '@/components/seo/StructuredData';
 
 // Burnaby-specific testimonials
 const burnabyTestimonials = [
@@ -71,7 +73,33 @@ const commonRepairs = [
 
 export default function BurnabyRepairPage() {
   return (
-    <Layout 
+    <>
+      <Head>
+        {/* The Travelling Technicians - Burnaby Location Structured Data */}
+        <LocalBusinessSchema
+          name="The Travelling Technicians - Burnaby"
+          description="Professional mobile phone and laptop repair services with doorstep service in Burnaby, BC. Serving Metrotown, Brentwood, Lougheed, and surrounding areas."
+          address={{
+            streetAddress: "Burnaby Service Area",
+            addressLocality: "Burnaby",
+            addressRegion: "BC",
+            addressCountry: "CA"
+          }}
+          geo={{
+            latitude: 49.2488,
+            longitude: -122.9805
+          }}
+          areaServed={[
+                      "Burnaby, BC",
+                      "Metrotown",
+                      "Brentwood",
+                      "Lougheed",
+                      "Capitol Hill",
+                      "Heights"
+            ]}
+        />
+      </Head>
+      <Layout 
       title="Mobile & Laptop Repair Burnaby | The Travelling Technicians"
       metaDescription="Professional mobile and laptop repair in Burnaby. Doorstep service to Metrotown, Brentwood, SFU, Lougheed. Same-day iPhone, MacBook, Samsung repair. Book online!"
     >
@@ -478,5 +506,6 @@ export default function BurnabyRepairPage() {
         }}
       />
     </Layout>
+    </>
   );
 } 

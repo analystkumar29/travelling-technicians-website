@@ -1,7 +1,9 @@
 import Layout from '@/components/layout/Layout';
+import Head from 'next/head';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FaCheckCircle, FaMobileAlt, FaBatteryFull, FaBolt, FaMicrophone, FaCamera, FaWater, FaMemory, FaSdCard } from 'react-icons/fa';
+import { ServiceSchema, LocalBusinessSchema } from '@/components/seo/StructuredData';
 
 // Mobile repair services data
 const mobileServices = [
@@ -97,7 +99,30 @@ const brands = [
 
 export default function MobileRepairPage() {
   return (
-    <Layout title="Mobile Phone Repair Services | The Travelling Technicians">
+    <>
+      <Head>
+        {/* Mobile Repair Service Structured Data */}
+        <ServiceSchema
+          name="Mobile Phone Repair Services"
+          description="Professional mobile phone repair services including screen replacement, battery replacement, charging port repair, and more. Convenient doorstep service across Vancouver and Lower Mainland."
+          serviceType="Mobile Phone Repair"
+          provider="The Travelling Technicians"
+          hasOfferCatalog={{
+            name: "Mobile Repair Services",
+            description: "Comprehensive mobile phone repair services",
+            offers: mobileServices.map(service => ({
+              name: service.name,
+              description: service.description,
+              priceCurrency: "CAD",
+              priceRange: service.price
+            }))
+          }}
+          doorstepService={true}
+          warranty="1 year"
+        />
+        <LocalBusinessSchema />
+      </Head>
+      <Layout title="Mobile Phone Repair Services | The Travelling Technicians">
       {/* Hero Section */}
       <section className="pt-16 pb-20 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
         <div className="container-custom">
@@ -381,5 +406,6 @@ export default function MobileRepairPage() {
         </div>
       </section>
     </Layout>
+    </>
   );
 } 
