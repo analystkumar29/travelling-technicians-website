@@ -43,7 +43,19 @@
     "db:enhanced-rebuild": "npm run data:clean:enhanced && npm run db:rebuild:enhanced",
     "validate:schema": "node scripts/test-structured-data.js",
     "test:structured-data": "node scripts/test-structured-data.js",
-    "analyze:structured-data": "node scripts/enhanced-structured-data-test.js"
+    "analyze:structured-data": "node scripts/enhanced-structured-data-test.js",
+    "generate:image-sitemap": "node scripts/generate-image-sitemap.js",
+    "optimize:images": "npm run generate:image-sitemap && node scripts/update-robots.js",
+    "audit:images": "node scripts/audit-images.js",
+    "test:image-alt-tags": "node scripts/test-image-alt-tags.js",
+    "lighthouse:performance": "node scripts/lighthouse-performance.js",
+    "optimize:certification-images": "node scripts/optimize-certification-images.js",
+    "performance:boost-100": "node scripts/performance-boost-100.js",
+    "test:image-optimization-full": "npm run audit:images && npm run test:image-alt-tags && npm run lighthouse:performance",
+    "audit:legal-compliance": "node scripts/legal-compliance-audit.js",
+    "test:cache-performance": "node scripts/test-cache-performance.js",
+    "benchmark:api-response-times": "node scripts/benchmark-api-response-times.js",
+    "test:cache-full": "npm run test:cache-performance && npm run benchmark:api-response-times"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",

@@ -1,9 +1,9 @@
 import Layout from '@/components/layout/Layout';
 import Head from 'next/head';
-import Image from 'next/image';
 import Link from 'next/link';
 import { FaTools, FaUserCheck, FaAward, FaMapMarkerAlt, FaHandshake, FaLeaf, FaCheckCircle, FaShieldAlt } from 'react-icons/fa';
 import { OrganizationSchema, LocalBusinessSchema } from '@/components/seo/StructuredData';
+import OptimizedImage, { HeroImage, LazyImage } from '@/components/common/OptimizedImage';
 
 // Team members data
 const teamMembers = [
@@ -104,9 +104,9 @@ export default function AboutPage() {
             </div>
             <div className="relative">
               <div className="relative h-[400px] w-full rounded-lg overflow-hidden shadow-custom-lg">
-                <Image
+                <HeroImage
                   src="/images/services/doorstep-repair-tech.jpg"
-                  alt="Technician repairing a device at customer's doorstep"
+                  alt="Professional technician providing doorstep mobile and laptop repair services"
                   fill
                   className="object-cover"
                   priority

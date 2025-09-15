@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import Head from 'next/head';
 import Layout from '@/components/layout/Layout';
@@ -9,17 +8,21 @@ import { initUIEnhancements } from '@/utils/ui-enhancements';
 import { testSupabaseConnection, supabase } from '@/utils/supabaseClient';
 import { trackLocationEvent } from '@/utils/analytics';
 import StructuredData, { LocalBusinessSchema, OrganizationSchema, ReviewSchema } from '@/components/seo/StructuredData';
+import OptimizedImage from '@/components/common/OptimizedImage';
+import { HomePagePreloads } from '@/components/common/PreloadHints';
 
 // Component to render device brand image with proper dimensions
 const BrandImage = ({ src, alt }: { src: string, alt: string }) => {
   return (
     <div className="relative w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 mx-auto">
-      <Image 
+      <OptimizedImage 
         src={src} 
         alt={alt}
         fill
         className="object-contain"
         sizes="(max-width: 640px) 48px, (max-width: 768px) 64px, 80px"
+        loading="lazy"
+        quality={90}
       />
     </div>
   );
@@ -131,6 +134,9 @@ export default function Home() {
   return (
     <>
       <Head>
+        {/* Critical Resource Preloads */}
+        <HomePagePreloads />
+        
         {/* Homepage Structured Data */}
         <LocalBusinessSchema />
         <OrganizationSchema />
@@ -328,12 +334,12 @@ export default function Home() {
             
               {/* Hero Image with Overlay */}
               <div className="relative rounded-2xl overflow-hidden shadow-2xl h-80 md:h-96">
-                <Image 
+                <OptimizedImage 
                   src="/images/services/doorstep-repair-tech.jpg" 
-                  alt="Technician repairing a device at customer's doorstep" 
+                  alt="Professional technician providing doorstep device repair services" 
                   className="object-cover"
                   fill={true}
-                  priority={true}
+                  isCritical={true}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end">
                   <div className="p-6 w-full">

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaMobileAlt, FaLaptop } from 'react-icons/fa';
+import { LogoImage } from '@/components/common/OptimizedImage';
 
 export default function Footer() {
   return (
@@ -10,7 +11,7 @@ export default function Footer() {
           {/* Company Info */}
           <div>
             <div className="flex items-center mb-4">
-              <img 
+              <LogoImage 
                 src="/images/logo/logo-orange.png" 
                 alt="Travelling Technicians Logo" 
                 width={48} 

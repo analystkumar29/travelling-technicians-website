@@ -1,119 +1,171 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Offline | The Travelling Technicians</title>
-  <link rel="icon" href="/favicon.ico">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background-color: #f7f9fc;
-      color: #333;
-      line-height: 1.6;
-    }
-    .container {
-      max-width: 600px;
-      margin: 4rem auto;
-      padding: 2rem;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-      text-align: center;
-    }
-    h1 {
-      color: #0076be;
-      margin-bottom: 1rem;
-      font-size: 2rem;
-    }
-    .logo {
-      max-width: 150px;
-      margin-bottom: 2rem;
-    }
-    p {
-      margin-bottom: 1.5rem;
-    }
-    .button {
-      display: inline-block;
-      background-color: #0076be;
-      color: white;
-      text-decoration: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 4px;
-      font-weight: 500;
-      transition: background-color 0.2s;
-    }
-    .button:hover {
-      background-color: #0064a2;
-    }
-    .services {
-      margin-top: 2rem;
-      padding-top: 1.5rem;
-      border-top: 1px solid #eee;
-      text-align: left;
-    }
-    .services h2 {
-      font-size: 1.25rem;
-      margin-bottom: 1rem;
-      color: #0076be;
-    }
-    .services ul {
-      padding-left: 1.5rem;
-    }
-    .services li {
-      margin-bottom: 0.5rem;
-    }
-    .contact {
-      margin-top: 2rem;
-      font-size: 0.9rem;
-      color: #666;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - The Travelling Technicians</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+            opacity: 0.8;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        
+        p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+        
+        .actions {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .contact-info {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .contact-info h3 {
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+        
+        .contact-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            opacity: 0.8;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; }
+            100% { opacity: 0.8; }
+        }
+        
+        @media (max-width: 480px) {
+            h1 { font-size: 2rem; }
+            p { font-size: 1rem; }
+            .icon { font-size: 3rem; }
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <img src="/images/logo/logo-horizontal.png" alt="The Travelling Technicians Logo" class="logo" onerror="this.onerror=null; this.src='/favicon.ico'; this.style.width='50px';">
-    
-    <h1>You're currently offline</h1>
-    
-    <p>It looks like you're not connected to the internet. Please check your connection and try again.</p>
-    
-    <a href="/" class="button">Retry Connection</a>
-    
-    <div class="services">
-      <h2>While you're waiting to reconnect:</h2>
-      <p>The Travelling Technicians provides doorstep mobile and laptop repair services across the Lower Mainland, including:</p>
-      <ul>
-        <li>Screen replacements for phones and laptops</li>
-        <li>Battery replacements</li>
-        <li>Software troubleshooting</li>
-        <li>Charging port and power jack repairs</li>
-        <li>And many more repair services!</li>
-      </ul>
+    <div class="container">
+        <div class="icon pulse">📱💻</div>
+        
+        <h1>You're Offline</h1>
+        
+        <p>
+            It looks like you've lost your internet connection. Don't worry - some features 
+            are still available from your cached data, and we'll reconnect you as soon as your 
+            connection is restored.
+        </p>
+        
+        <div class="actions">
+            <button onclick="checkConnection()">Try Again</button>
+            <button onclick="goHome()">Go to Home</button>
+        </div>
+        
+        <div class="contact-info">
+            <h3>Need Immediate Help?</h3>
+            <div class="contact-details">
+                <div>📞 Call: (604) 555-TECH</div>
+                <div>📧 Email: info@travellingtechnicians.ca</div>
+                <div>🏠 Serving: Lower Mainland, BC</div>
+            </div>
+        </div>
     </div>
-    
-    <div class="contact">
-      <p>Contact us: (604) 555-1234 | contact@travellingtechnicians.ca</p>
-      <p>Serving Vancouver, Burnaby, Surrey, Richmond, and the entire Lower Mainland.</p>
-    </div>
-  </div>
-  
-  <script>
-    // Check connection and refresh when back online
-    window.addEventListener('online', () => {
-      window.location.reload();
-    });
-    
-    // Add event listener to retry button
-    document.querySelector('.button').addEventListener('click', (e) => {
-      e.preventDefault();
-      window.location.reload();
-    });
-  </script>
+
+    <script>
+        function checkConnection() {
+            if (navigator.onLine) {
+                location.reload();
+            } else {
+                alert('Still offline. Please check your internet connection and try again.');
+            }
+        }
+        
+        function goHome() {
+            window.location.href = '/';
+        }
+        
+        // Auto-reload when connection is restored
+        window.addEventListener('online', () => {
+            console.log('Connection restored');
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        });
+        
+        // Connection status monitoring
+        function updateConnectionStatus() {
+            if (navigator.onLine) {
+                document.body.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            }
+        }
+        
+        setInterval(updateConnectionStatus, 5000);
+    </script>
 </body>
-</html> 
+</html>

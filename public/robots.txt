@@ -33,3 +33,5 @@ Sitemap: https://travelling-technicians.ca/api/sitemap.xml
 
 # Crawl delay (be nice to servers)
 Crawl-delay: 1 
+# Image Sitemap
+Sitemap: https://travelling-technicians.ca/image-sitemap.xml
