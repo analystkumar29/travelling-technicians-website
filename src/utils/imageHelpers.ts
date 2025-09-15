@@ -227,15 +227,25 @@ export function optimizeImageLoading(
  * Generate WebP source path with fallback
  */
 export function getOptimizedImageSrc(imagePath: string): { webp?: string; fallback: string } {
-  const basePath = imagePath.replace(/\.(jpg|jpeg|png)$/i, '');
-  const extension = imagePath.match(/\.(jpg|jpeg|png|svg)$/i)?.[0] || '';
+  const extension = imagePath.match(/\.(jpg|jpeg|png|webp|svg)$/i)?.[0] || '';
   
   // SVGs don't need WebP conversion
   if (extension.toLowerCase() === '.svg') {
     return { fallback: imagePath };
   }
   
-  // Check if optimized version exists
+  // If already optimized WebP, use as-is
+  if (imagePath.includes('-optimized.webp')) {
+    return { webp: imagePath, fallback: imagePath };
+  }
+  
+  // If already optimized JPG, use as-is
+  if (imagePath.includes('-optimized.jpg')) {
+    return { webp: imagePath, fallback: imagePath };
+  }
+  
+  // For non-optimized images, generate optimized versions
+  const basePath = imagePath.replace(/\.(jpg|jpeg|png|webp)$/i, '');
   const optimizedWebP = `${basePath}-optimized.webp`;
   const optimizedJpg = `${basePath}-optimized.jpg`;
   

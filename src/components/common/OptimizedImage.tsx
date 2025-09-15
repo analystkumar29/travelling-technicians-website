@@ -52,8 +52,8 @@ export default function OptimizedImage({
   // Get optimization settings
   const optimization = optimizeImageLoading(src, isAboveFold, isCritical);
   
-  // Get optimized image sources
-  const { webp, fallback } = getOptimizedImageSrc(src);
+  // Get optimized image sources (not used in simplified version)
+  // const { webp, fallback } = getOptimizedImageSrc(src);
   
   // Get dimensions if not provided
   const dimensions = getImageDimensions(src);
@@ -66,13 +66,14 @@ export default function OptimizedImage({
   const finalQuality = quality || optimization.quality || 80;
   const finalSizes = sizes || optimization.sizes;
   
-  // Error fallback source
-  const errorFallback = fallbackSrc || '/images/logo/logo-orange-optimized.webp';
+  // Simple error handling without aggressive fallbacks
+  // const errorFallback = fallbackSrc || src;
   
   // Generate blur placeholder
   const blurDataURL = generateBlurDataURL(40, 30);
 
   const handleImageError = () => {
+    console.warn('Image failed to load:', src);
     setImgError(true);
     setIsLoading(false);
     onError?.();
@@ -86,7 +87,7 @@ export default function OptimizedImage({
   if (src.endsWith('.svg')) {
     return (
       <Image
-        src={imgError ? errorFallback : src}
+        src={src}
         alt={imageAlt}
         className={className}
         priority={finalPriority}
@@ -101,38 +102,24 @@ export default function OptimizedImage({
     );
   }
 
-  // For raster images, use picture element with WebP support
+  // For raster images, use the actual source directly without complex fallback logic
   return (
-    <picture className={isLoading ? 'opacity-0 transition-opacity duration-300' : 'opacity-100 transition-opacity duration-300'}>
-      {webp && (
-        <source 
-          srcSet={imgError ? undefined : webp} 
-          type="image/webp" 
-          sizes={finalSizes}
-        />
-      )}
-      <source 
-        srcSet={imgError ? errorFallback : (fallback || src)} 
-        type="image/jpeg" 
-        sizes={finalSizes}
-      />
-      <Image
-        src={imgError ? errorFallback : (fallback || src)}
-        alt={imageAlt}
-        className={className}
-        priority={finalPriority}
-        fill={fill}
-        width={!fill ? finalWidth : undefined}
-        height={!fill ? finalHeight : undefined}
-        quality={finalQuality}
-        sizes={finalSizes}
-        loading={finalLoading}
-        placeholder="blur"
-        blurDataURL={blurDataURL}
-        onError={handleImageError}
-        onLoad={handleImageLoad}
-      />
-    </picture>
+    <Image
+      src={src}
+      alt={imageAlt}
+      className={className}
+      priority={finalPriority}
+      fill={fill}
+      width={!fill ? finalWidth : undefined}
+      height={!fill ? finalHeight : undefined}
+      quality={finalQuality}
+      sizes={finalSizes}
+      loading={finalLoading}
+      placeholder="blur"
+      blurDataURL={blurDataURL}
+      onError={handleImageError}
+      onLoad={handleImageLoad}
+    />
   );
 }
 
