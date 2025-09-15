@@ -167,19 +167,19 @@ function getStaticPages(siteUrl: string, now: string): SitemapEntry[] {
       loc: `${siteUrl}/mobile-screen-repair`,
       lastmod: now,
       changefreq: 'weekly',
-      priority: '0.95'
+      priority: '0.9'
     },
     {
       loc: `${siteUrl}/laptop-screen-repair`,
       lastmod: now,
       changefreq: 'weekly',
-      priority: '0.95'
+      priority: '0.9'
     },
     {
       loc: `${siteUrl}/mobile-repair-near-me`,
       lastmod: now,
       changefreq: 'weekly',
-      priority: '0.95'
+      priority: '0.9'
     }
   ];
 }
@@ -207,15 +207,7 @@ function getServiceAreaPages(siteUrl: string, serviceAreas: Array<{ city: string
   areas.forEach(area => {
     const citySlug = area.city.toLowerCase().replace(/\s+/g, '-');
     
-    // Service area pages
-    entries.push({
-      loc: `${siteUrl}/service-areas/${citySlug}`,
-      lastmod: area.updated_at,
-      changefreq: 'weekly',
-      priority: '0.85'
-    });
-    
-    // City repair pages
+    // City repair pages (primary location pages)
     entries.push({
       loc: `${siteUrl}/repair/${citySlug}`,
       lastmod: area.updated_at,
