@@ -181,13 +181,13 @@ export function LocalBusinessSchema({
     },
     "logo": {
       "@type": "ImageObject",
-      "url": `${siteUrl}/images/logo/logo-orange.png`,
+      "url": `${siteUrl}/images/logo/logo-orange-optimized.webp`,
       "width": 300,
       "height": 60
     },
     "image": [
-      `${siteUrl}/images/services/doorstep-repair-tech.jpg`,
-      `${siteUrl}/images/logo/logo-orange.png`
+      `${siteUrl}/images/services/doorstep-repair-tech-optimized.webp`,
+      `${siteUrl}/images/logo/logo-orange-optimized.webp`
     ],
     "sameAs": [
       "https://www.facebook.com/travellingtechnicians",
@@ -418,7 +418,7 @@ export function ArticleSchema({
       "name": "The Travelling Technicians",
       "logo": {
         "@type": "ImageObject",
-        "url": `${siteUrl}/images/logo/logo-orange.png`,
+        "url": `${siteUrl}/images/logo/logo-orange-optimized.webp`,
         "width": 300,
         "height": 60
       }
@@ -472,7 +472,7 @@ export function OrganizationSchema() {
     "url": siteUrl,
     "logo": {
       "@type": "ImageObject",
-      "url": `${siteUrl}/images/logo/logo-orange.png`,
+      "url": `${siteUrl}/images/logo/logo-orange-optimized.webp`,
       "width": 300,
       "height": 60
     },

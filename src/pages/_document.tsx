@@ -255,7 +255,7 @@ class MyDocument extends Document {
             }}
           />
           {/* Preload critical resources */}
-          <link rel="preload" href={`/images/logo/logo-orange.png?v=${assetVersion}`} as="image" type="image/png" />
+          <link rel="preload" href={`/images/logo/logo-orange-optimized.webp?v=${assetVersion}`} as="image" type="image/png" />
           <link rel="preload" href={`/favicons/android-chrome-512x512.png?v=${assetVersion}`} as="image" type="image/png" />
           
           {/* Force search engines to update favicon */}
@@ -416,7 +416,7 @@ class MyDocument extends Document {
                 ],
                 "logo": {
                   "@type": "ImageObject",
-                  "url": `${siteUrl}/images/logo/logo-orange.png`,
+                  "url": `${siteUrl}/images/logo/logo-orange-optimized.webp`,
                   "width": 300,
                   "height": 60
                 },
@@ -557,7 +557,7 @@ class MyDocument extends Document {
                 url: siteUrl,
                 logo: {
                   "@type": "ImageObject",
-                  url: `${siteUrl}/images/logo/logo-orange.png`,
+                  url: `${siteUrl}/images/logo/logo-orange-optimized.webp`,
                   width: 300,
                   height: 60
                 },
