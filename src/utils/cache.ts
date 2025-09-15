@@ -671,7 +671,8 @@ export function getCacheReport(): {
 
 // Export cache instances and utilities
 export { AdvancedCache };
-export default {
+
+const cacheUtils = {
   pricingCache,
   deviceCache,
   apiCache,
@@ -679,4 +680,6 @@ export default {
   invalidatePricingCache,
   invalidateDeviceCache,
   getCacheReport
-}; 
+};
+
+export default cacheUtils; 

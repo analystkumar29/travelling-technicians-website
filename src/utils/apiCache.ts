@@ -360,7 +360,7 @@ export {
   clearAllCaches as clear
 };
 
-export default {
+const apiCacheUtils = {
   generateCacheKey,
   withCache,
   preloadPopularData,
@@ -370,3 +370,5 @@ export default {
   clearAllCaches,
   CACHE_CONFIG
 };
+
+export default apiCacheUtils;

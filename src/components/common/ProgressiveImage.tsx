@@ -89,7 +89,6 @@ export default function ProgressiveImage({
           quality={quality}
           sizes={sizes}
           className="object-cover"
-          onLoad={() => setImageLoaded(true)}
         />
       </div>
     </div>
