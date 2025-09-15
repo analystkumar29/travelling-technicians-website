@@ -5,6 +5,23 @@ module.exports = (phase, { defaultConfig }) => {
   const nextConfig = {
     reactStrictMode: true,
     swcMinify: true,
+    // Disable Fast Refresh in development
+    webpack: (config, { dev, isServer }) => {
+      if (dev) {
+        // Disable Fast Refresh
+        config.plugins = config.plugins.filter(
+          (plugin) => 
+            plugin.constructor.name !== 'HotModuleReplacementPlugin' &&
+            plugin.constructor.name !== 'ReactFreshWebpackPlugin'
+        );
+      }
+      return config;
+    },
+    // Optimize compilation
+    compiler: {
+      // Suppress non-error logs
+      removeConsole: process.env.NODE_ENV === 'production',
+    },
     images: {
       remotePatterns: [
         {
@@ -17,13 +34,34 @@ module.exports = (phase, { defaultConfig }) => {
     },
     // Enable asset copying from public folder to ensure manifest.json and favicons are properly included
     webpack: (config, { dev, isServer }) => {
-      // Only run in production build
+      // Development optimizations
+      if (dev) {
+        // Optimize Fast Refresh
+        config.watchOptions = {
+          aggregateTimeout: 200, // Delay rebuild
+          poll: false, // Use filesystem events
+          ignored: ['**/node_modules', '**/.git', '**/.next']
+        };
+        
+        // Reduce compilation output
+        config.infrastructureLogging = {
+          level: 'error',
+        };
+        
+        // Optimize development performance
+        config.optimization = {
+          ...config.optimization,
+          removeAvailableModules: false,
+          removeEmptyChunks: false,
+          splitChunks: false,
+        };
+      }
+      
+      // Production optimizations
       if (!dev && !isServer) {
         try {
-          // Try to load the copy-webpack-plugin
+          // Copy static assets
           const CopyWebpackPlugin = require('copy-webpack-plugin');
-          
-          // Ensure the manifest and favicon files are properly copied
           config.plugins.push(
             new CopyWebpackPlugin({
               patterns: [
@@ -38,12 +76,11 @@ module.exports = (phase, { defaultConfig }) => {
               ],
             })
           );
-          console.log('Added copy-webpack-plugin to webpack config');
         } catch (error) {
-          console.warn('copy-webpack-plugin not available, skipping file copy:', error.message);
-          // Continue with build even if the plugin is missing
+          console.warn('copy-webpack-plugin not available:', error.message);
         }
       }
+      
       return config;
     },
     // Remove trailing slash to fix API routing
