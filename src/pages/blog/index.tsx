@@ -1,7 +1,7 @@
 import Layout from '@/components/layout/Layout';
 import Link from 'next/link';
-import Image from 'next/image';
 import { FaCalendarAlt, FaUser, FaTag, FaClock } from 'react-icons/fa';
+import { LazyImage } from '@/components/common/OptimizedImage';
 
 // Blog post data
 const blogPosts = [
@@ -144,11 +144,12 @@ export default function BlogPage() {
             {blogPosts.filter(post => post.featured).map((post) => (
               <div key={post.id} className="card blog-card overflow-hidden">
                 <div className="relative h-60 w-full blog-image-container">
-                  <Image 
+                  <LazyImage 
                     src={post.image} 
-                    alt={post.title} 
+                    alt={`${post.title} - ${post.excerpt}`}
                     fill
                     className="object-cover"
+                    context="blog post featured image"
                   />
                 </div>
                 <div className="p-6">
@@ -195,11 +196,12 @@ export default function BlogPage() {
             {blogPosts.map((post) => (
               <div key={post.id} className="card blog-card">
                 <div className="relative h-48 w-full blog-image-container">
-                  <Image 
+                  <LazyImage 
                     src={post.image} 
-                    alt={post.title} 
+                    alt={`${post.title} - ${post.excerpt}`}
                     fill
                     className="object-cover"
+                    context="blog post thumbnail"
                   />
                 </div>
                 <div className="p-5">

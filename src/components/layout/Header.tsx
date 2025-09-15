@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Disclosure } from '@headlessui/react';
-import Image from 'next/image';
+import { LogoImage } from '@/components/common/OptimizedImage';
 import { FaChevronDown, FaBars, FaTimes } from 'react-icons/fa';
 
 /**
@@ -30,16 +30,12 @@ const Header = () => {
           <div className="flex-shrink-0">
             <Link href="/" className="flex items-center">
               <div className="w-20 h-20 relative mr-2 overflow-hidden">
-                <Image
+                <LogoImage
                   src="/images/logo/logo-orange.png"
                   alt="Travelling Technicians Logo"
                   fill
-                  priority={true}
-                  quality={95}
                   className="object-contain"
                   sizes="80px"
-                  placeholder="blur"
-                  blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjZjk3MzE2Ii8+Cjwvc3ZnPgo="
                 />
               </div>
               <div className="font-semibold text-white leading-tight">

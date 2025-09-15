@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getServiceSupabase } from '@/utils/supabaseClient';
 import { logger } from '@/utils/logger';
-// import { pricingCache } from '@/utils/cache';
+import { withCache, generateCacheKey, CACHE_CONFIG } from '@/utils/apiCache';
 
 const apiLogger = logger.createModuleLogger('api/pricing/calculate-fixed');
 
@@ -85,25 +85,32 @@ const TIER_CONFIG = {
   express: { multiplier: 1.5, warranty: 6, turnaround: 12 }
 };
 
-// Generate cache key for pricing request
-function generateCacheKey(deviceType: string, brand: string, model: string, service: string, tier: string): string {
-  return `pricing_${deviceType}_${brand}_${model}_${service}_${tier}`.toLowerCase().replace(/\s+/g, '_');
+// Generate cache key for pricing request (using apiCache utility)
+function generatePricingCacheKey(deviceType: string, brand: string, model: string, service: string, tier: string): string {
+  return generateCacheKey('pricing', { deviceType, brand, model, service, tier }, {
+    prefix: CACHE_CONFIG.PRICING_CALCULATE.keyPrefix,
+    normalize: true
+  });
 }
 
 // Enhanced database search with caching
 async function findDynamicPricing(deviceType: string, brand: string, model: string, service: string, tier: string): Promise<any> {
-  const cacheKey = generateCacheKey(deviceType, brand, model, service, tier);
+  const cacheKey = generatePricingCacheKey(deviceType, brand, model, service, tier);
   
+  // Use cache wrapper for automatic caching
+  return withCache(
+    cacheKey,
+    async () => {
+      apiLogger.info('Pricing cache miss, querying database', { cacheKey });
+      return performDatabaseSearch(deviceType, brand, model, service, tier);
+    },
+    'PRICING_CALCULATE'
+  );
+}
+
+// Extracted database search logic
+async function performDatabaseSearch(deviceType: string, brand: string, model: string, service: string, tier: string): Promise<any> {
   try {
-    // Check cache first
-    // const cachedResult = await pricingCache.get(cacheKey);
-    // if (cachedResult) {
-    //   apiLogger.info('Pricing cache hit', { cacheKey });
-    //   return { ...cachedResult, _cached: true };
-    // }
-
-    apiLogger.info('Pricing cache miss, querying database', { cacheKey });
-
     const supabase = getServiceSupabase();
     
     // SIMPLE QUERY PATTERN (like working management API)
@@ -184,13 +191,9 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
         tier: tier_info
       };
 
-      // Cache the result for 10 minutes
-      // await pricingCache.set(cacheKey, enhancedEntry, 10 * 60 * 1000);
-
-      apiLogger.info('Database pricing found and cached', {
+      apiLogger.info('Database pricing found', {
         id: enhancedEntry.id,
-        base_price: enhancedEntry.base_price,
-        cacheKey
+        base_price: enhancedEntry.base_price
       });
 
       return enhancedEntry;
@@ -277,6 +280,10 @@ function calculateFallbackPricing(deviceType: string, brand: string, service: st
 export default async function handler(req: NextApiRequest, res: NextApiResponse<PricingCalculation>) {
   const startTime = Date.now();
   const { deviceType, brand, model, service, tier = 'standard', postalCode } = req.query;
+
+  // Set Cache-Control headers for 30 minutes
+  res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=3600');
+  res.setHeader('Vary', 'Accept-Encoding');
 
   // Validation
   if (!deviceType || !brand || !model || !service) {

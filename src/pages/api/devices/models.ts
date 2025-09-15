@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getServiceSupabase } from '@/utils/supabaseClient';
 import { logger } from '@/utils/logger';
+import { withCache, generateCacheKey, CACHE_CONFIG } from '@/utils/apiCache';
 
 // Create module logger
 const apiLogger = logger.createModuleLogger('api/devices/models');
@@ -37,6 +38,10 @@ export default async function handler(
     });
   }
 
+  // Set Cache-Control headers for 1 hour
+  res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=7200');
+  res.setHeader('Vary', 'Accept-Encoding');
+
   try {
     const { deviceType, brand } = req.query;
 
@@ -61,90 +66,25 @@ export default async function handler(
 
     apiLogger.info('Fetching models', { deviceType, brand });
 
-    // Get Supabase client
-    const supabase = getServiceSupabase();
+    // Generate cache key
+    const cacheKey = generateCacheKey('models', { deviceType, brand }, {
+      prefix: CACHE_CONFIG.DEVICES_MODELS.keyPrefix,
+      normalize: true
+    });
 
-    // Fetch from dynamic tables
-    try {
-      // Join brands and models tables to get models for specific brand and device type
-      const { data: models, error: modelsError } = await supabase
-        .from('device_models')
-        .select(`
-          id,
-          name,
-          display_name,
-          brand_id,
-          model_year,
-          is_active,
-          is_featured,
-          sort_order,
-          created_at,
-          brands!inner(
-            id,
-            name,
-            display_name,
-            device_types!inner(
-              name
-            )
-          )
-        `)
-        .eq('brands.device_types.name', deviceType)
-        .or(`name.ilike.%${brand}%,display_name.ilike.%${brand}%`, { foreignTable: 'brands' })
-        .eq('is_active', true)
-        .order('sort_order', { ascending: true })
-        .order('name', { ascending: true });
+    // Use cached data if available
+    const models = await withCache(
+      cacheKey,
+      async () => {
+        return await fetchModelsFromDatabase(deviceType as string, brand as string);
+      },
+      'DEVICES_MODELS'
+    );
 
-      if (modelsError) {
-        throw modelsError;
-      }
-
-      // Transform the data to match our interface
-      const transformedModels = (models || []).map((model: any) => ({
-        id: model.id,
-        name: model.name,
-        display_name: model.display_name,
-        brand_id: model.brand_id,
-        brand_name: model.brands?.name,
-        brand_display_name: model.brands?.display_name,
-        device_type: model.brands?.device_types?.name,
-        model_year: model.model_year,
-        is_active: model.is_active,
-        is_featured: model.is_featured,
-        sort_order: model.sort_order,
-        created_at: model.created_at
-      }));
-
-      apiLogger.info('Successfully fetched models from database', { 
-        count: transformedModels.length,
-        deviceType,
-        brand 
-      });
-
-      return res.status(200).json({
-        success: true,
-        models: transformedModels
-      });
-
-    } catch (dbError) {
-      // Database query failed, use fallback static data
-      apiLogger.warn('Database query failed, using fallback static data', { error: dbError });
-      
-      const staticModels = getStaticModels(deviceType as string, brand as string);
-      
-      return res.status(200).json({
-        success: true,
-        models: staticModels.map((name, index) => ({
-          id: index + 1,
-          name,
-          brand_id: 1,
-          brand_name: brand as string,
-          device_type: deviceType as string,
-          is_active: true,
-          sort_order: index,
-          created_at: new Date().toISOString()
-        }))
-      });
-    }
+    return res.status(200).json({
+      success: true,
+      models
+    });
 
   } catch (error) {
     apiLogger.error('Unexpected error in models API', { error });
@@ -154,6 +94,87 @@ export default async function handler(
       error: 'Internal server error',
       message: 'Failed to fetch device models'
     });
+  }
+}
+
+// Database fetching logic
+async function fetchModelsFromDatabase(deviceType: string, brand: string): Promise<Model[]> {
+  const supabase = getServiceSupabase();
+
+  // Fetch from dynamic tables
+  try {
+    // Join brands and models tables to get models for specific brand and device type
+    const { data: models, error: modelsError } = await supabase
+      .from('device_models')
+      .select(`
+        id,
+        name,
+        display_name,
+        brand_id,
+        model_year,
+        is_active,
+        is_featured,
+        sort_order,
+        created_at,
+        brands!inner(
+          id,
+          name,
+          display_name,
+          device_types!inner(
+            name
+          )
+        )
+      `)
+      .eq('brands.device_types.name', deviceType)
+      .or(`name.ilike.%${brand}%,display_name.ilike.%${brand}%`, { foreignTable: 'brands' })
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true });
+
+    if (modelsError) {
+      throw modelsError;
+    }
+
+    // Transform the data to match our interface
+    const transformedModels = (models || []).map((model: any) => ({
+      id: model.id,
+      name: model.name,
+      display_name: model.display_name,
+      brand_id: model.brand_id,
+      brand_name: model.brands?.name,
+      brand_display_name: model.brands?.display_name,
+      device_type: model.brands?.device_types?.name,
+      model_year: model.model_year,
+      is_active: model.is_active,
+      is_featured: model.is_featured,
+      sort_order: model.sort_order,
+      created_at: model.created_at
+    }));
+
+    apiLogger.info('Successfully fetched models from database', { 
+      count: transformedModels.length,
+      deviceType,
+      brand 
+    });
+
+    return transformedModels;
+
+  } catch (dbError) {
+    // Database query failed, use fallback static data
+    apiLogger.warn('Database query failed, using fallback static data', { error: dbError });
+    
+    const staticModels = getStaticModels(deviceType, brand);
+    
+    return staticModels.map((name, index) => ({
+      id: index + 1,
+      name,
+      brand_id: 1,
+      brand_name: brand,
+      device_type: deviceType,
+      is_active: true,
+      sort_order: index,
+      created_at: new Date().toISOString()
+    }));
   }
 }
 
