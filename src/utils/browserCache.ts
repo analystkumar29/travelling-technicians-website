@@ -10,8 +10,19 @@ import { logger } from './logger';
 
 const cacheLogger = logger.createModuleLogger('browserCache');
 
+// Cache configuration interface
+interface CacheConfig {
+  maxAge?: number;
+  staleWhileRevalidate?: number;
+  public?: boolean;
+  immutable?: boolean;
+  noCache?: boolean;
+  noStore?: boolean;
+  mustRevalidate?: boolean;
+}
+
 // Cache control configurations for different content types
-export const CACHE_PROFILES = {
+export const CACHE_PROFILES: Record<string, CacheConfig> = {
   // Static assets
   STATIC_ASSETS: {
     maxAge: 31536000, // 1 year
@@ -54,7 +65,7 @@ export const CACHE_PROFILES = {
     noStore: true,
     mustRevalidate: true
   }
-} as const;
+};
 
 export type CacheProfile = keyof typeof CACHE_PROFILES;
 
@@ -91,37 +102,37 @@ export function generateLastModified(timestamp?: Date | number): string {
 /**
  * Build Cache-Control header string
  */
-export function buildCacheControl(profile: CacheProfile | typeof CACHE_PROFILES[CacheProfile]): string {
+export function buildCacheControl(profile: CacheProfile | CacheConfig): string {
   const config = typeof profile === 'string' ? CACHE_PROFILES[profile] : profile;
   const directives: string[] = [];
 
-  if (config.noCache) {
+  if (config?.noCache) {
     directives.push('no-cache');
   }
   
-  if (config.noStore) {
+  if (config?.noStore) {
     directives.push('no-store');
   }
   
-  if (config.mustRevalidate) {
+  if (config?.mustRevalidate) {
     directives.push('must-revalidate');
   }
   
-  if (config.public) {
+  if (config?.public) {
     directives.push('public');
-  } else if (config.public === false) {
+  } else if (config?.public === false) {
     directives.push('private');
   }
   
-  if (config.maxAge !== undefined) {
+  if (config?.maxAge !== undefined) {
     directives.push(`max-age=${config.maxAge}`);
   }
   
-  if (config.staleWhileRevalidate) {
+  if (config?.staleWhileRevalidate) {
     directives.push(`stale-while-revalidate=${config.staleWhileRevalidate}`);
   }
   
-  if (config.immutable) {
+  if (config?.immutable) {
     directives.push('immutable');
   }
 
