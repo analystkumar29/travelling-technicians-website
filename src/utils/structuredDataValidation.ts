@@ -65,6 +65,7 @@ const SCHEMA_VALIDATION_RULES: Record<string, SchemaValidationRule[]> = {
     { field: '@type', required: true, type: 'string', allowedValues: ['Organization'] },
     { field: 'name', required: true, type: 'string', minLength: 1, maxLength: 100 },
     { field: 'url', required: true, type: 'string', pattern: /^https?:\/\/.+/ },
+    { field: 'description', required: false, type: 'string', minLength: 10, maxLength: 500 },
     { field: 'logo', required: true, type: 'object' },
     { field: 'contactPoint', required: false, type: 'object' }
   ]

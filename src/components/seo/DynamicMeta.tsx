@@ -210,6 +210,7 @@ export default function DynamicMeta({
                 '@id': `${siteUrl}/#organization`,
                 name: 'The Travelling Technicians',
                 url: siteUrl,
+                description: 'Professional mobile phone and laptop repair services with doorstep service across Vancouver and Lower Mainland, BC',
                 logo: {
                   '@type': 'ImageObject',
                   url: `${siteUrl}/images/logo/logo-orange-optimized.webp`,

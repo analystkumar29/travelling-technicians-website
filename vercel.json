@@ -161,10 +161,10 @@
       "has": [
         {
           "type": "host",
-          "value": "travelling-technicians.ca"
+          "value": "www.travelling-technicians.ca"
         }
       ],
-      "destination": "https://www.travelling-technicians.ca/$1",
+      "destination": "https://travelling-technicians.ca/$1",
       "permanent": true
     },
     {
@@ -174,22 +174,42 @@
     },
     {
       "source": "/service-areas/richmond/",
-      "destination": "/service-areas/richmond",
+      "destination": "/repair/richmond",
       "permanent": true
     },
     {
       "source": "/service-areas/new-westminster/",
-      "destination": "/service-areas/new-westminster",
+      "destination": "/repair/new-westminster",
       "permanent": true
     },
     {
       "source": "/service-areas/north-vancouver/",
-      "destination": "/service-areas/north-vancouver",
+      "destination": "/repair/north-vancouver",
       "permanent": true
     },
     {
       "source": "/service-areas/vancouver/",
-      "destination": "/service-areas/vancouver",
+      "destination": "/repair/vancouver",
+      "permanent": true
+    },
+    {
+      "source": "/service-areas/richmond",
+      "destination": "/repair/richmond",
+      "permanent": true
+    },
+    {
+      "source": "/service-areas/new-westminster",
+      "destination": "/repair/new-westminster",
+      "permanent": true
+    },
+    {
+      "source": "/service-areas/north-vancouver",
+      "destination": "/repair/north-vancouver",
+      "permanent": true
+    },
+    {
+      "source": "/service-areas/vancouver",
+      "destination": "/repair/vancouver",
       "permanent": true
     },
     {
@@ -204,6 +224,11 @@
     },
     {
       "source": "/doorstep",
+      "destination": "/doorstep-repair",
+      "permanent": true
+    },
+    {
+      "source": "/doorstep/",
       "destination": "/doorstep-repair",
       "permanent": true
     },
