@@ -17,7 +17,9 @@ import {
   FaEnvelope,
   FaMapMarkerAlt,
   FaSignOutAlt,
-  FaSpinner
+  FaSpinner,
+  FaChartBar,
+  FaUsers
 } from 'react-icons/fa';
 
 interface ManagementStats {
