@@ -636,7 +636,7 @@ export default withAuth(function AdminManagement() {
               <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
             </div>
             <div className="px-6 py-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
                 <Link
                   href="/management/bookings"
                   className="flex items-center justify-center px-4 py-6 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
@@ -684,6 +684,26 @@ export default withAuth(function AdminManagement() {
                   <div className="text-center">
                     <FaExclamationTriangle className="mx-auto h-8 w-8 text-indigo-600 mb-2" />
                     <p className="text-sm font-medium text-indigo-900">Audit Logs</p>
+                  </div>
+                </Link>
+
+                <Link
+                  href="/management/staging-pipeline"
+                  className="flex items-center justify-center px-4 py-6 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
+                >
+                  <div className="text-center">
+                    <FaChartBar className="mx-auto h-8 w-8 text-purple-600 mb-2" />
+                    <p className="text-sm font-medium text-purple-900">Staging Pipeline</p>
+                  </div>
+                </Link>
+
+                <Link
+                  href="/management/customer-feedback"
+                  className="flex items-center justify-center px-4 py-6 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100 transition-colors"
+                >
+                  <div className="text-center">
+                    <FaUsers className="mx-auto h-8 w-8 text-teal-600 mb-2" />
+                    <p className="text-sm font-medium text-teal-900">Customer Feedback</p>
                   </div>
                 </Link>
 
