@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
+import ModelQualityControl from '@/components/management/ModelQualityControl';
 
 interface DeviceType {
   id: number;
@@ -37,7 +38,7 @@ interface Model {
   sort_order: number;
 }
 
-type TabType = 'device-types' | 'brands' | 'models';
+type TabType = 'device-types' | 'brands' | 'models' | 'quality-control';
 
 export default function DevicesAdmin() {
   const router = useRouter();
@@ -400,7 +401,8 @@ export default function DevicesAdmin() {
             {[
               { key: 'device-types', label: 'Device Types', count: deviceTypes.length },
               { key: 'brands', label: 'Brands', count: brands.length },
-              { key: 'models', label: 'Models', count: models.length }
+              { key: 'models', label: 'Models', count: models.length },
+              { key: 'quality-control', label: 'Quality Control', count: 0 }
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -930,6 +932,11 @@ export default function DevicesAdmin() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Quality Control Tab */}
+        {activeTab === 'quality-control' && (
+          <ModelQualityControl />
         )}
       </div>
     </Layout>

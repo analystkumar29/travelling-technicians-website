@@ -14,8 +14,12 @@ interface Model {
   device_type: string;
   model_year?: number;
   is_active: boolean;
+  is_featured?: boolean;
   sort_order: number;
   created_at: string;
+  quality_score?: number;
+  needs_review?: boolean;
+  data_source?: string;
 }
 
 interface ApiResponse {
@@ -116,6 +120,9 @@ async function fetchModelsFromDatabase(deviceType: string, brand: string): Promi
         is_featured,
         sort_order,
         created_at,
+        quality_score,
+        needs_review,
+        data_source,
         brands!inner(
           id,
           name,
@@ -128,6 +135,8 @@ async function fetchModelsFromDatabase(deviceType: string, brand: string): Promi
       .eq('brands.device_types.name', deviceType)
       .or(`name.ilike.%${brand}%,display_name.ilike.%${brand}%`, { foreignTable: 'brands' })
       .eq('is_active', true)
+      .eq('needs_review', false)  // Filter out models needing review
+      .gte('quality_score', 70)    // Only show models with quality score >= 70
       .order('sort_order', { ascending: true })
       .order('name', { ascending: true });
 
@@ -148,7 +157,10 @@ async function fetchModelsFromDatabase(deviceType: string, brand: string): Promi
       is_active: model.is_active,
       is_featured: model.is_featured,
       sort_order: model.sort_order,
-      created_at: model.created_at
+      created_at: model.created_at,
+      quality_score: model.quality_score,
+      needs_review: model.needs_review,
+      data_source: model.data_source
     }));
 
     apiLogger.info('Successfully fetched models from database', { 
@@ -173,7 +185,10 @@ async function fetchModelsFromDatabase(deviceType: string, brand: string): Promi
       device_type: deviceType,
       is_active: true,
       sort_order: index,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      quality_score: 100,  // Static models have highest quality
+      needs_review: false,
+      data_source: 'static'
     }));
   }
 }

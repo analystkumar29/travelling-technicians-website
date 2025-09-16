@@ -8,6 +8,9 @@ interface Model {
   name: string;
   brandId: number;
   isActive: boolean;
+  quality_score?: number;
+  needs_review?: boolean;
+  data_source?: string;
 }
 
 interface DeviceModelSelectorProps {
@@ -16,6 +19,47 @@ interface DeviceModelSelectorProps {
   value: string;
   onChange: (model: string) => void;
 }
+
+// Emergency blacklist for contaminated model names
+const EMERGENCY_BLACKLIST = [
+  'QV7', 'QV6', 'QV8', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', 'V10',
+  'CE2', 'CE3', 'T1', 'T2', 'T3',
+  'Premium', 'Standard', 'Economy', 'Compatible', 'Assembly',
+  '35G00263', '35H00261', '35G00262', '35G00264', '35G00265', '35G00266',
+  '1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
+  'LCD', 'OLED', 'Aftermarket', 'OEM', 'Original'
+];
+
+// Function to check if a model name is blacklisted
+const isBlacklistedModel = (modelName: string): boolean => {
+  const normalizedName = modelName.toLowerCase();
+  return EMERGENCY_BLACKLIST.some(blocked => 
+    normalizedName.includes(blocked.toLowerCase())
+  );
+};
+
+// Function to filter models based on quality score and blacklist
+const filterQualityModels = (models: Model[]): Model[] => {
+  return models.filter(model => {
+    // Filter out blacklisted models
+    if (isBlacklistedModel(model.name)) {
+      return false;
+    }
+    
+    // Filter out models that need review
+    if (model.needs_review === true) {
+      return false;
+    }
+    
+    // Filter out low quality scores (if quality_score exists)
+    if (model.quality_score !== undefined && model.quality_score < 70) {
+      return false;
+    }
+    
+    // Keep model if it passes all checks
+    return true;
+  });
+};
 
 export default function DeviceModelSelector({
   deviceType,
@@ -54,7 +98,17 @@ export default function DeviceModelSelector({
       
       if (response.ok) {
         const data = await response.json();
-        setModels(data.models || []);
+        // Apply quality filtering to API models
+        const filteredModels = filterQualityModels(data.models || []);
+        
+        // If no quality models found from API, use static fallback
+        if (filteredModels.length === 0) {
+          console.log('No quality models found in API, using fallback static data');
+          const fallbackModels = getFallbackModels();
+          setModels(fallbackModels);
+        } else {
+          setModels(filteredModels);
+        }
       } else {
         // Fallback to static data if API endpoint doesn't exist yet
         console.log('API endpoint not available, using fallback static data');
