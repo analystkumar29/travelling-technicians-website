@@ -145,9 +145,16 @@ async function handlePatch(req: NextApiRequest, res: NextApiResponse<ApiResponse
         break;
 
       case 'escalate':
+        // Get current escalation level
+        const { data: currentItem } = await supabase
+          .from('review_queue')
+          .select('escalation_level')
+          .eq('id', id)
+          .single();
+        
         updateData = {
           status: 'escalated',
-          escalation_level: supabase.sql`escalation_level + 1`
+          escalation_level: (currentItem?.escalation_level || 0) + 1
         };
         recordAction = 'escalated';
         break;
