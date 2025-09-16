@@ -28,13 +28,13 @@ Disallow: /debug
 Disallow: /minimal
 
 # Primary Sitemap (dynamic, preferred)
-Sitemap: https://travelling-technicians.ca/api/sitemap.xml
+Sitemap: https://www.travelling-technicians.ca/api/sitemap.xml
 
 # Static Backup Sitemap 
-Sitemap: https://travelling-technicians.ca/sitemap.xml
+Sitemap: https://www.travelling-technicians.ca/sitemap.xml
 
 # Image Sitemap
-Sitemap: https://travelling-technicians.ca/image-sitemap.xml
+Sitemap: https://www.travelling-technicians.ca/image-sitemap.xml
 
 # Crawl delay (be nice to servers)
 Crawl-delay: 1

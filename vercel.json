@@ -97,7 +97,7 @@
         },
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "https://travelling-technicians.ca"
+          "value": "https://www.travelling-technicians.ca"
         },
         {
           "key": "Access-Control-Allow-Methods",
@@ -156,17 +156,6 @@
   },
 
   "redirects": [
-    {
-      "source": "/(.*)",
-      "has": [
-        {
-          "type": "host",
-          "value": "www.travelling-technicians.ca"
-        }
-      ],
-      "destination": "https://travelling-technicians.ca/$1",
-      "permanent": true
-    },
     {
       "source": "/contact/",
       "destination": "/contact",

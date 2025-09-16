@@ -8,6 +8,7 @@ module.exports = (phase, { defaultConfig }) => {
     // Domain redirects and headers
     async redirects() {
       return [
+        // Redirect non-www to www (canonical domain)
         {
           source: '/:path*',
           has: [
