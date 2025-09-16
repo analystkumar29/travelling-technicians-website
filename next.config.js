@@ -21,6 +21,24 @@ module.exports = (phase, { defaultConfig }) => {
         },
       ];
     },
+    // Ensure www domain is treated as primary
+    basePath: '',
+    async rewrites() {
+      return {
+        beforeFiles: [
+          {
+            source: '/:path*',
+            has: [
+              {
+                type: 'host',
+                value: 'www.travelling-technicians.ca',
+              },
+            ],
+            destination: '/:path*',
+          },
+        ],
+      };
+    },
     async headers() {
       return [
         {
