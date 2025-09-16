@@ -636,7 +636,7 @@ export default withAuth(function AdminManagement() {
               <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
             </div>
             <div className="px-6 py-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 <Link
                   href="/management/bookings"
                   className="flex items-center justify-center px-4 py-6 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
@@ -664,6 +664,26 @@ export default withAuth(function AdminManagement() {
                   <div className="text-center">
                     <FaDollarSign className="mx-auto h-8 w-8 text-orange-600 mb-2" />
                     <p className="text-sm font-medium text-orange-900">Pricing Management</p>
+                  </div>
+                </Link>
+
+                <Link
+                  href="/management/review-queue"
+                  className="flex items-center justify-center px-4 py-6 bg-yellow-50 border border-yellow-200 rounded-lg hover:bg-yellow-100 transition-colors"
+                >
+                  <div className="text-center">
+                    <FaClock className="mx-auto h-8 w-8 text-yellow-600 mb-2" />
+                    <p className="text-sm font-medium text-yellow-900">Review Queue</p>
+                  </div>
+                </Link>
+
+                <Link
+                  href="/management/audit-logs"
+                  className="flex items-center justify-center px-4 py-6 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors"
+                >
+                  <div className="text-center">
+                    <FaExclamationTriangle className="mx-auto h-8 w-8 text-indigo-600 mb-2" />
+                    <p className="text-sm font-medium text-indigo-900">Audit Logs</p>
                   </div>
                 </Link>
 
