@@ -9,14 +9,14 @@ module.exports = (phase, { defaultConfig }) => {
     async redirects() {
       return [
         {
-          source: '/',
+          source: '/:path*',
           has: [
             {
               type: 'host',
               value: 'travelling-technicians.ca',
             },
           ],
-          destination: 'https://www.travelling-technicians.ca',
+          destination: 'https://www.travelling-technicians.ca/:path*',
           permanent: true,
         },
       ];
