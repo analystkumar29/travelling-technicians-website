@@ -1,7 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getServiceSupabase } from '@/utils/supabaseClient';
-import { withErrorHandler } from '@/utils/apiErrorHandler';
-import { apiCache } from '@/utils/cache';
 
 // Helper function to generate a unique reference code
 function generateReferenceCode(): string {
@@ -11,51 +9,49 @@ function generateReferenceCode(): string {
   return `${prefix}${timestamp}${random}`;
 }
 
-async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method === 'GET') {
-    // Check cache first for recent bookings data
-    const cacheKey = 'bookings:all';
-    const cachedBookings = await apiCache.get(cacheKey);
-    
-    if (cachedBookings) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    if (req.method === 'GET') {
+      console.log('Fetching bookings...');
+      
+      // Get Supabase client with service role
+      const supabase = getServiceSupabase();
+      
+      // Fetch all bookings from the database
+      const { data: bookings, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Database error:', error);
+        return res.status(500).json({
+          success: false,
+          error: error.message
+        });
+      }
+      
+      console.log(`Found ${bookings?.length || 0} bookings`);
+      
       return res.status(200).json({
         success: true,
-        bookings: cachedBookings,
-        cached: true
+        bookings: bookings || [],
+        cached: false
       });
     }
+
+    // Method not allowed
+    return res.status(405).json({
+      success: false,
+      error: 'Method not allowed'
+    });
     
-    // Get Supabase client with service role
-    const supabase = getServiceSupabase();
-    
-    // Fetch all bookings from the database
-    const { data: bookings, error } = await supabase
-      .from('bookings')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      throw new Error(`Database error: ${error.message}`);
-    }
-    
-    // Cache the results for 5 minutes
-    await apiCache.set(cacheKey, bookings, 5 * 60 * 1000);
-    
-    return res.status(200).json({
-      success: true,
-      bookings,
-      cached: false
+  } catch (error: any) {
+    console.error('API error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack
     });
   }
-
-  // Method not allowed error will be handled by the error handler
-  const error = new Error('Method not allowed');
-  error.name = 'MethodNotAllowedError';
-  throw error;
-}
-
-// Export the handler wrapped with error handling
-export default withErrorHandler(handler, { 
-  timeout: 30000, // 30 second timeout for booking operations
-  includeDebug: process.env.NODE_ENV === 'development' 
-}); 
+} 
