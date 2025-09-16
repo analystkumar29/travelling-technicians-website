@@ -151,7 +151,7 @@ async function getAuditStats(supabase: any): Promise<AuditStats> {
       .gte('timestamp', sevenDaysAgo.toISOString())
       .not('user_email', 'is', null);
 
-    const uniqueUsers = new Set(activeUsers?.map(u => u.user_email)).size;
+    const uniqueUsers = new Set(activeUsers?.map((u: any) => u.user_email)).size;
 
     // Get tables modified (in last 30 days)
     const thirtyDaysAgo = new Date();
@@ -161,7 +161,7 @@ async function getAuditStats(supabase: any): Promise<AuditStats> {
       .select('table_name')
       .gte('timestamp', thirtyDaysAgo.toISOString());
 
-    const uniqueTables = new Set(tablesModified?.map(t => t.table_name)).size;
+    const uniqueTables = new Set(tablesModified?.map((t: any) => t.table_name)).size;
 
     return {
       total_changes: totalChanges || 0,
@@ -244,7 +244,7 @@ async function handleCSVExport(req: NextApiRequest, res: NextApiResponse, supaba
 
     const csvContent = [
       csvHeaders.join(','),
-      ...csvRows.map(row => row.map(field => `"${field}"`).join(','))
+      ...csvRows.map((row: any[]) => row.map(field => `"${field}"`).join(','))
     ].join('\n');
 
     // Set headers for CSV download

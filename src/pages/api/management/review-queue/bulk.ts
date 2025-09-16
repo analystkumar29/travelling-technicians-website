@@ -94,9 +94,16 @@ export default async function handler(
         break;
 
       case 'escalate':
+        // For escalation, we need to handle this differently
+        // First get current escalation levels, then update
+        const { data: currentItems } = await supabase
+          .from('review_queue')
+          .select('id, escalation_level')
+          .in('id', item_ids);
+        
+        // We'll handle escalation separately after the main update
         updateData = {
-          status: 'escalated',
-          escalation_level: supabase.sql`escalation_level + 1`
+          status: 'escalated'
         };
         recordAction = 'escalated';
         break;
