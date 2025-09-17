@@ -22,20 +22,43 @@ interface DeviceModelSelectorProps {
 
 // Emergency blacklist for contaminated model names
 const EMERGENCY_BLACKLIST = [
-  'QV7', 'QV6', 'QV8', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', 'V10',
+  'QV7', 'QV6', 'QV8', 
   'CE2', 'CE3', 'T1', 'T2', 'T3',
   'Premium', 'Standard', 'Economy', 'Compatible', 'Assembly',
   '35G00263', '35H00261', '35G00262', '35G00264', '35G00265', '35G00266',
-  '1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
-  'LCD', 'OLED', 'Aftermarket', 'OEM', 'Original'
+  'LCD', 'OLED', 'Aftermarket', 'OEM', 'Original',
+  // More specific patterns that won't match legitimate model numbers
+  'unknown', 'null', 'undefined', 'n/a', 'none'
 ];
 
 // Function to check if a model name is blacklisted
 const isBlacklistedModel = (modelName: string): boolean => {
-  const normalizedName = modelName.toLowerCase();
-  return EMERGENCY_BLACKLIST.some(blocked => 
-    normalizedName.includes(blocked.toLowerCase())
-  );
+  const normalizedName = modelName.toLowerCase().trim();
+  
+  // Check for exact matches or whole word matches for contaminated terms
+  return EMERGENCY_BLACKLIST.some(blocked => {
+    const normalizedBlocked = blocked.toLowerCase();
+    
+    // Exact match for short terms
+    if (normalizedName === normalizedBlocked) {
+      return true;
+    }
+    
+    // For technical codes, check if they appear as standalone terms
+    if (/^[A-Z]+\d+$/i.test(blocked)) {
+      const regex = new RegExp(`\\b${normalizedBlocked}\\b`, 'i');
+      return regex.test(normalizedName);
+    }
+    
+    // For part numbers, check exact match
+    if (/^\d{5}[A-Z0-9]{5}$/.test(blocked)) {
+      return normalizedName.includes(normalizedBlocked);
+    }
+    
+    // For word-based blacklist items, check as whole words
+    const regex = new RegExp(`\\b${normalizedBlocked}\\b`, 'i');
+    return regex.test(normalizedName);
+  });
 };
 
 // Function to filter models based on quality score and blacklist
