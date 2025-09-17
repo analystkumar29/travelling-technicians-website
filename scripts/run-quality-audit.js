@@ -28,7 +28,20 @@ const CONTAMINATION_PATTERNS = [
   { pattern: /\(\d{4}\)/, name: 'Year in parentheses' },
   { pattern: /\(Version\s*\d+\)/i, name: 'Version indicator' },
   { pattern: /\((With|Without)\s*Frame\)/i, name: 'Frame indicator' },
-  { pattern: /IC\s*Transfer/i, name: 'IC Transfer' }
+  { pattern: /IC\s*Transfer/i, name: 'IC Transfer' },
+  
+  // NEW PATTERNS ADDED AFTER DATA QUALITY AUDIT
+  { pattern: /^unknown$/i, name: 'Generic "unknown" name' },
+  { pattern: /^\s*$/, name: 'Empty or whitespace-only' },
+  { pattern: /^(null|undefined|n\/a|none)$/i, name: 'Null-type value' },
+  { pattern: /^.{1,2}$/, name: 'Too short (1-2 chars)' },
+  
+  // Device type mismatches (for mobile category)
+  { pattern: /\bipad\b/i, name: 'iPad in mobile category' },
+  { pattern: /\bmacbook\b/i, name: 'MacBook in mobile category' },
+  { pattern: /\bimac\b/i, name: 'iMac in mobile category' },
+  { pattern: /\bwatch\b/i, name: 'Watch in mobile category' },
+  { pattern: /\bairpods\b/i, name: 'AirPods in mobile category' }
 ];
 
 function detectContamination(modelName) {
