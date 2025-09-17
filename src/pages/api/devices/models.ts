@@ -1,6 +1,106 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getServiceSupabase } from '@/utils/supabaseClient';
 
+// Intelligent sorting functions for device models
+function extractModelNumber(modelName: string): number {
+  // For iPhone: Extract main number (15, 14, 13, etc.)
+  const iPhoneMatch = modelName.match(/iPhone\s+(\d+)/i);
+  if (iPhoneMatch) {
+    return parseInt(iPhoneMatch[1]);
+  }
+  
+  // For Galaxy S series: Extract S number (S23, S22, S21, etc.)
+  const galaxySMatch = modelName.match(/Galaxy\s+S(\d+)/i);
+  if (galaxySMatch) {
+    // Add 1000 to S series to prioritize over A series
+    return 1000 + parseInt(galaxySMatch[1]);
+  }
+  
+  // For Galaxy Note: Extract Note number
+  const galaxyNoteMatch = modelName.match(/Galaxy\s+Note\s+(\d+)/i);
+  if (galaxyNoteMatch) {
+    // Add 1000 to Note series to prioritize over A series
+    return 1000 + parseInt(galaxyNoteMatch[1]);
+  }
+  
+  // For Galaxy A series: Extract A number (A53, A01, etc.)
+  const galaxyAMatch = modelName.match(/Galaxy\s+A(\d+)/i);
+  if (galaxyAMatch) {
+    return parseInt(galaxyAMatch[1]);
+  }
+  
+  // For iPhone with letters (XS, XR, etc.) - assign approximate values
+  if (modelName.includes('iPhone X') && !modelName.includes('XS') && !modelName.includes('XR')) {
+    return 10; // iPhone X = ~iPhone 10
+  }
+  if (modelName.includes('iPhone XS')) {
+    return 10.5; // iPhone XS = ~iPhone 10.5
+  }
+  if (modelName.includes('iPhone XR')) {
+    return 10.3; // iPhone XR = ~iPhone 10.3
+  }
+  
+  // For Pixel phones
+  const pixelMatch = modelName.match(/Pixel\s+(\d+)/i);
+  if (pixelMatch) {
+    return parseInt(pixelMatch[1]);
+  }
+  
+  // For OnePlus
+  const onePlusMatch = modelName.match(/OnePlus\s+(\d+)/i);
+  if (onePlusMatch) {
+    return parseInt(onePlusMatch[1]);
+  }
+  
+  // For iPad
+  const iPadMatch = modelName.match(/iPad\s+(\d+)/i);
+  if (iPadMatch) {
+    return parseInt(iPadMatch[1]);
+  }
+  
+  // For MacBook
+  const macBookMatch = modelName.match(/MacBook.*(\d{4})/i); // Year like 2023, 2022
+  if (macBookMatch) {
+    return parseInt(macBookMatch[1]);
+  }
+  
+  return 0; // Unknown models get lowest priority
+}
+
+function getVariantPriority(modelName: string): number {
+  const name = modelName.toLowerCase();
+  if (name.includes('pro max')) return 5;
+  if (name.includes('ultra')) return 5;
+  if (name.includes('pro')) return 4;
+  if (name.includes('plus')) return 3;
+  if (name.includes('max') && !name.includes('pro max')) return 3;
+  if (name.includes('mini')) return 1;
+  return 2; // base model
+}
+
+function smartSortModels(models: Model[]): Model[] {
+  return models.sort((a, b) => {
+    const aNumber = extractModelNumber(a.name);
+    const bNumber = extractModelNumber(b.name);
+    
+    // First, sort by model number (descending - newest first)
+    if (aNumber !== bNumber) {
+      return bNumber - aNumber;
+    }
+    
+    // If same model number, sort by variant priority (Pro Max first)
+    const aVariant = getVariantPriority(a.name);
+    const bVariant = getVariantPriority(b.name);
+    
+    if (aVariant !== bVariant) {
+      return bVariant - aVariant;
+    }
+    
+    // If same priority, sort alphabetically
+    return a.name.localeCompare(b.name);
+  });
+}
+
 interface Model {
   id: number;
   name: string;
@@ -147,11 +247,14 @@ export default async function handler(
         data_source: model.data_source
       }));
 
-    console.log(`Found ${transformedModels.length} models for ${brand} ${deviceType}`);
+    // Apply intelligent sorting (latest models first)
+    const sortedModels = smartSortModels(transformedModels);
+
+    console.log(`Found ${sortedModels.length} models for ${brand} ${deviceType}`);
 
     return res.status(200).json({
       success: true,
-      models: transformedModels
+      models: sortedModels
     });
 
   } catch (error) {

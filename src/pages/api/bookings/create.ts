@@ -43,6 +43,10 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  // Add immediate debug logging
+  console.log('🔍 BOOKING API START - Method:', req.method);
+  console.log('🔍 BOOKING API START - Body:', JSON.stringify(req.body, null, 2));
+
   // Only allow POST requests
   if (req.method !== 'POST') {
     apiLogger.warn('Method not allowed', { method: req.method });
@@ -160,37 +164,32 @@ export default async function handler(
       status: 'pending',
     } as FinalDbBookingData; // Cast to the new interface
     
-    // IMPORTANT: Remove any fields that don't exist in the database schema
-    // This prevents errors like "Could not find the 'appointmentDate' column"
-    // With the cast above, dbFieldsOnly can be simplified or even removed if 
-    // FinalDbBookingData perfectly matches the DB schema and denormalizeBookingData is robust.
-    // For now, keeping dbFieldsOnly to be safe and explicit.
-    const dbFieldsOnly: Partial<FinalDbBookingData> = { // Use Partial if not all fields are guaranteed initially
-      reference_number: finalBookingData.reference_number,
-      device_type: finalBookingData.device_type,
-      device_brand: finalBookingData.device_brand,
-      device_model: finalBookingData.device_model,
-      brand: finalBookingData.brand,
-      model: finalBookingData.model,
-      service_type: finalBookingData.service_type,
-      booking_date: finalBookingData.booking_date,
-      booking_time: finalBookingData.booking_time,
+    // IMPORTANT: Only include fields that exist in the actual database schema
+    // Confirmed existing columns: id, booking_reference, customer_name, customer_email, 
+    // customer_phone, device_type, brand (NOT NULL), model, postal_code, status, created_at, updated_at
+    const dbFieldsOnly = {
+      booking_reference: referenceNumber,
+      status: 'pending',
       customer_name: finalBookingData.customer_name,
       customer_email: finalBookingData.customer_email,
       customer_phone: finalBookingData.customer_phone,
-      address: finalBookingData.address,
-      postal_code: finalBookingData.postal_code,
-      city: finalBookingData.city,
-      province: finalBookingData.province,
-      issue_description: finalBookingData.issue_description,
-      status: finalBookingData.status
+      device_type: finalBookingData.device_type,
+      brand: finalBookingData.device_brand || finalBookingData.brand || 'unknown', // Required field
+      model: finalBookingData.device_model || finalBookingData.model || '',
+      postal_code: finalBookingData.postal_code
     };
     
+    // Debug logging to understand the data flow
+    console.log('🔍 DEBUG - Raw request body:', JSON.stringify(req.body, null, 2));
+    console.log('🔍 DEBUG - Normalized booking data:', JSON.stringify(normalizedBookingData, null, 2));
+    console.log('🔍 DEBUG - DB booking data:', JSON.stringify(dbBookingData, null, 2));
+    console.log('🔍 DEBUG - Final booking data:', JSON.stringify(finalBookingData, null, 2));
+    console.log('🔍 DEBUG - DB fields only:', JSON.stringify(dbFieldsOnly, null, 2));
+
     // Log what we're about to insert (limited fields for brevity)
     apiLogger.debug('Prepared booking data for insertion', {
       reference: referenceNumber,
       device_type: dbFieldsOnly.device_type,
-      service_type: dbFieldsOnly.service_type,
       fields: Object.keys(dbFieldsOnly)
     });
 
