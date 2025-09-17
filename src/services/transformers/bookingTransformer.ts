@@ -105,6 +105,8 @@ export function denormalizeBookingData(bookingData: Partial<CreateBookingRequest
     
     ...(bookingData.address && { address: bookingData.address }),
     ...(bookingData.postalCode && { postal_code: bookingData.postalCode }),
+    ...(bookingData.city && { city: bookingData.city }),
+    ...(bookingData.province && { province: bookingData.province }),
   };
 }
 
