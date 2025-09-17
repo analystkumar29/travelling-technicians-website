@@ -43,9 +43,8 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  // Add immediate debug logging
-  console.log('🔍 BOOKING API START - Method:', req.method);
-  console.log('🔍 BOOKING API START - Body:', JSON.stringify(req.body, null, 2));
+  // Log the booking creation request
+  apiLogger.info('Received booking creation request');
 
   // Only allow POST requests
   if (req.method !== 'POST') {
@@ -164,33 +163,43 @@ export default async function handler(
       status: 'pending',
     } as FinalDbBookingData; // Cast to the new interface
     
-    // IMPORTANT: Only include fields that exist in the actual database schema
-    // Confirmed existing columns: id, booking_reference, customer_name, customer_email, 
-    // customer_phone, device_type, brand (NOT NULL), model, postal_code, status, created_at, updated_at
+    // Map to the new proper bookings table schema
     const dbFieldsOnly = {
-      booking_reference: referenceNumber,
+      reference_number: referenceNumber,
       status: 'pending',
+      
+      // Customer information
       customer_name: finalBookingData.customer_name,
       customer_email: finalBookingData.customer_email,
       customer_phone: finalBookingData.customer_phone,
+      
+      // Device information  
       device_type: finalBookingData.device_type,
-      brand: finalBookingData.device_brand || finalBookingData.brand || 'unknown', // Required field
-      model: finalBookingData.device_model || finalBookingData.model || '',
+      device_brand: finalBookingData.device_brand || finalBookingData.brand,
+      device_model: finalBookingData.device_model || finalBookingData.model,
+      
+      // Service information
+      service_type: finalBookingData.service_type,
+      pricing_tier: normalizedBookingData.pricingTier || 'standard',
+      issue_description: finalBookingData.issue_description,
+      
+      // Appointment information
+      booking_date: finalBookingData.booking_date,
+      booking_time: finalBookingData.booking_time,
+      
+      // Location information
+      address: finalBookingData.address,
+      city: finalBookingData.city,
+      province: finalBookingData.province,
       postal_code: finalBookingData.postal_code
     };
     
-    // Debug logging to understand the data flow
-    console.log('🔍 DEBUG - Raw request body:', JSON.stringify(req.body, null, 2));
-    console.log('🔍 DEBUG - Normalized booking data:', JSON.stringify(normalizedBookingData, null, 2));
-    console.log('🔍 DEBUG - DB booking data:', JSON.stringify(dbBookingData, null, 2));
-    console.log('🔍 DEBUG - Final booking data:', JSON.stringify(finalBookingData, null, 2));
-    console.log('🔍 DEBUG - DB fields only:', JSON.stringify(dbFieldsOnly, null, 2));
-
-    // Log what we're about to insert (limited fields for brevity)
-    apiLogger.debug('Prepared booking data for insertion', {
+    // Log what we're about to insert
+    apiLogger.info('Prepared booking data for insertion', {
       reference: referenceNumber,
+      customer_email: normalizedBookingData.customerEmail?.substring(0, 3) + '***',
       device_type: dbFieldsOnly.device_type,
-      fields: Object.keys(dbFieldsOnly)
+      service_type: dbFieldsOnly.service_type
     });
 
     // Use real database implementation
