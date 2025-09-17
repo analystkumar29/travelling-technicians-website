@@ -78,24 +78,73 @@ function getVariantPriority(modelName: string): number {
   return 2; // base model
 }
 
+function deduplicateModels(models: Model[]): Model[] {
+  const seen = new Map<string, Model>();
+  
+  models.forEach(model => {
+    // Create a normalized key for comparison (lowercase, trimmed, standardized spacing)
+    const normalizedKey = model.name.toLowerCase().trim().replace(/\s+/g, ' ');
+    
+    if (!seen.has(normalizedKey)) {
+      // First occurrence - keep it
+      seen.set(normalizedKey, model);
+    } else {
+      // Duplicate found - prefer the one with better quality
+      const existing = seen.get(normalizedKey)!;
+      
+      // Preference logic:
+      // 1. Higher quality score
+      // 2. Better data source (manual > scraped)
+      // 3. Proper capitalization (has uppercase letters)
+      // 4. Lower ID (likely added first/manually)
+      
+      const shouldReplace = (
+        // Prefer higher quality score
+        (model.quality_score || 0) > (existing.quality_score || 0) ||
+        
+        // If same quality, prefer manual over scraped data
+        ((model.quality_score || 0) === (existing.quality_score || 0) && 
+         model.data_source === 'manual' && existing.data_source !== 'manual') ||
+        
+        // If same quality and source, prefer proper capitalization
+        ((model.quality_score || 0) === (existing.quality_score || 0) && 
+         model.data_source === existing.data_source &&
+         /[A-Z]/.test(model.name) && !/[A-Z]/.test(existing.name)) ||
+        
+        // If everything else is equal, prefer lower ID (older/manual entry)
+        ((model.quality_score || 0) === (existing.quality_score || 0) && 
+         model.data_source === existing.data_source &&
+         /[A-Z]/.test(model.name) === /[A-Z]/.test(existing.name) &&
+         model.id < existing.id)
+      );
+      
+      if (shouldReplace) {
+        seen.set(normalizedKey, model);
+      }
+    }
+  });
+  
+  return Array.from(seen.values());
+}
+
 function smartSortModels(models: Model[]): Model[] {
   return models.sort((a, b) => {
     const aNumber = extractModelNumber(a.name);
     const bNumber = extractModelNumber(b.name);
-    
+
     // First, sort by model number (descending - newest first)
     if (aNumber !== bNumber) {
       return bNumber - aNumber;
     }
-    
+
     // If same model number, sort by variant priority (Pro Max first)
     const aVariant = getVariantPriority(a.name);
     const bVariant = getVariantPriority(b.name);
-    
+
     if (aVariant !== bVariant) {
       return bVariant - aVariant;
     }
-    
+
     // If same priority, sort alphabetically
     return a.name.localeCompare(b.name);
   });
@@ -247,10 +296,13 @@ export default async function handler(
         data_source: model.data_source
       }));
 
+    // Apply deduplication to remove duplicate model names
+    const deduplicatedModels = deduplicateModels(transformedModels);
+    
     // Apply intelligent sorting (latest models first)
-    const sortedModels = smartSortModels(transformedModels);
+    const sortedModels = smartSortModels(deduplicatedModels);
 
-    console.log(`Found ${sortedModels.length} models for ${brand} ${deviceType}`);
+    console.log(`Found ${transformedModels.length} models, deduplicated to ${deduplicatedModels.length}, final sorted: ${sortedModels.length} for ${brand} ${deviceType}`);
 
     return res.status(200).json({
       success: true,
