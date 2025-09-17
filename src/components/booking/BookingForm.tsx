@@ -886,7 +886,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           group: 'common'
         },
         { 
-          id: 'charging-port', 
+          id: 'charging-port-repair', 
           label: 'Charging Port Repair', 
           doorstep: true,
           icon: 'M9 4v4h6V4h2v4h1a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8a2 2 0 012-2h1V4h2zm1 16h4v-4h-4v4z',
@@ -895,7 +895,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           group: 'common'
         },
         { 
-          id: 'speaker-mic', 
+          id: 'speaker-repair', 
           label: 'Speaker/Microphone Repair', 
           doorstep: true,
           icon: 'M10 7a5 5 0 015 5 5 5 0 01-5 5 5 5 0 01-5-5 5 5 0 015-5zm0 2a3 3 0 00-3 3 3 3 0 003 3 3 3 0 003-3 3 3 0 00-3-3zm7-5v14a2 2 0 01-2 2H5a2 2 0 01-2-2V4a2 2 0 012-2h10a2 2 0 012 2z',
