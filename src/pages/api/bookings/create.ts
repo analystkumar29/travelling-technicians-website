@@ -180,7 +180,7 @@ export default async function handler(
       
       // Service information
       service_type: finalBookingData.service_type,
-      pricing_tier: normalizedBookingData.pricingTier || 'standard',
+      pricing_tier: req.body.pricingTier || 'standard',
       issue_description: finalBookingData.issue_description,
       
       // Appointment information
