@@ -38,17 +38,18 @@ interface PricingCalculation {
   debug_info?: any;
 }
 
-// Service ID mapping (form kebab-case → database snake_case)
+// Service ID mapping (form kebab-case → database kebab-case)
+// Note: Database uses kebab-case, so most services don't need conversion
 const SERVICE_ID_MAPPING: Record<string, string> = {
-  'screen-replacement': 'screen_replacement',
-  'battery-replacement': 'battery_replacement',
-  'charging-port-repair': 'charging_port_repair',
-  'speaker-repair': 'speaker_repair',
-  'camera-repair': 'camera_repair',
+  'screen-replacement': 'screen-replacement',
+  'battery-replacement': 'battery-replacement',
+  'charging-port-repair': 'charging-port-repair',
+  'speaker-repair': 'speaker-repair',
+  'camera-repair': 'camera-repair',
   'water-damage': 'water_damage_diagnostics',
-  'keyboard-repair': 'keyboard_repair',
+  'keyboard-repair': 'keyboard-repair',
   'trackpad-repair': 'trackpad_repair',
-  'ram-upgrade': 'ram_upgrade',
+  'ram-upgrade': 'ram-upgrade',
   'storage-upgrade': 'storage_upgrade',
   'software-troubleshooting': 'software_troubleshooting',
   'virus-removal': 'virus_removal',
@@ -181,8 +182,27 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
 
       const deviceTypeMatch = device_type_info?.name?.toLowerCase() === deviceType.toLowerCase();
       const brandMatch = brand_info?.name?.toLowerCase() === brand.toLowerCase();
-      const modelMatch = model_info?.name?.toLowerCase().includes(model.toLowerCase()) || 
-                        model.toLowerCase().includes(model_info?.name?.toLowerCase() || '');
+      // More precise model matching - exact match preferred, then smart partial match
+      const modelName = model_info?.name?.toLowerCase() || '';
+      const searchModel = model.toLowerCase();
+      
+      // First try exact match
+      let modelMatch = modelName === searchModel;
+      
+      // If no exact match, try partial match but be very careful
+      if (!modelMatch) {
+        // Only allow partial match if the search term is significantly shorter
+        // This prevents "iPhone 15 Pro" from matching "iPhone 15 Pro max"
+        const lengthDiff = Math.abs(modelName.length - searchModel.length);
+        if (lengthDiff > 5) { // Only allow partial match if lengths are very different
+          if (searchModel.length < modelName.length) {
+            modelMatch = modelName.includes(searchModel);
+          } else {
+            modelMatch = searchModel.includes(modelName);
+          }
+        }
+        // For similar lengths, require exact match to avoid confusion
+      }
       const serviceMatch = service_info?.name === SERVICE_ID_MAPPING[service] || service_info?.name === service;
       const tierMatch = tier_info?.name?.toLowerCase() === tier.toLowerCase();
 
