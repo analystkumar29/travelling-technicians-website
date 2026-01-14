@@ -5,8 +5,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 async function importQueueProcessor() {
   try {
     // Dynamic import for CommonJS module
-    const module = await import('../../../../scripts/process-sitemap-queue');
-    return module;
+    const queueModule = await import('../../../../scripts/process-sitemap-queue');
+    return queueModule;
   } catch (error) {
     console.error('Failed to import queue processor:', error);
     throw error;
@@ -51,13 +51,13 @@ export default async function handler(
     console.log('User Agent:', req.headers['user-agent']);
     
     // Import and run the queue processor
-    const module = await importQueueProcessor();
+    const queueModule = await importQueueProcessor();
     
     // The queue processor exports: processQueue, cleanupOldQueueItems, getQueueStats
     // We'll run the main processing logic
-    const processResult = await module.processQueue();
-    const cleanupResult = await module.cleanupOldQueueItems();
-    const stats = await module.getQueueStats();
+    const processResult = await queueModule.processQueue();
+    const cleanupResult = await queueModule.cleanupOldQueueItems();
+    const stats = await queueModule.getQueueStats();
     
     console.log('Sitemap queue processing completed:', processResult);
     
