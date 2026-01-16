@@ -663,6 +663,12 @@ export const apiCache = new AdvancedCache<any>({
   persistToLocalStorage: false // Don't persist API responses
 });
 
+export const sitemapCache = new AdvancedCache<any>({
+  maxSize: 100,
+  defaultTTL: 24 * 60 * 60 * 1000, // 24 hours for sitemap (matches sitemap.xml.ts CACHE_DURATION)
+  persistToLocalStorage: false // Don't persist sitemap cache
+});
+
 // Cache warming utilities
 export async function warmPricingCache(): Promise<void> {
   cacheLogger.info('Starting pricing cache warm-up');
@@ -718,16 +724,27 @@ export function invalidateDeviceCache(deviceType?: string): void {
   cacheLogger.info('Device cache invalidated', { deviceType });
 }
 
+export function invalidateSitemapCache(pattern?: string): void {
+  if (pattern) {
+    sitemapCache.invalidateByPattern(new RegExp(pattern));
+  } else {
+    sitemapCache.clear();
+  }
+  cacheLogger.info('Sitemap cache invalidated', { pattern });
+}
+
 // Cache monitoring
 export function getCacheReport(): {
   pricing: CacheStats & { health: any };
   device: CacheStats & { health: any };
   api: CacheStats & { health: any };
+  sitemap: CacheStats & { health: any };
 } {
   return {
     pricing: { ...pricingCache.getStats(), health: pricingCache.getHealthStatus() },
     device: { ...deviceCache.getStats(), health: deviceCache.getHealthStatus() },
-    api: { ...apiCache.getStats(), health: apiCache.getHealthStatus() }
+    api: { ...apiCache.getStats(), health: apiCache.getHealthStatus() },
+    sitemap: { ...sitemapCache.getStats(), health: sitemapCache.getHealthStatus() }
   };
 }
 
@@ -740,16 +757,3 @@ export function disposeAllCaches(): void {
 
 // Export cache instances and utilities
 export { AdvancedCache };
-
-// Default export for CommonJS compatibility
-module.exports = {
-  AdvancedCache,
-  pricingCache,
-  deviceCache,
-  apiCache,
-  warmPricingCache,
-  invalidatePricingCache,
-  invalidateDeviceCache,
-  getCacheReport,
-  disposeAllCaches
-};

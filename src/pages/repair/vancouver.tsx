@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { FaPhone, FaClock, FaShieldAlt, FaMapMarkerAlt, FaStar, FaCheckCircle, FaMobile, FaLaptop, FaTabletAlt, FaTools } from 'react-icons/fa';
 import { LocalBusinessSchema, ReviewSchema } from '@/components/seo/StructuredData';
+import { getSameAsUrls } from '@/utils/wikidata';
 
 // Vancouver-specific testimonials
 const vancouverTestimonials = [
@@ -73,6 +74,8 @@ const commonRepairs = [
 ];
 
 export default function VancouverRepairPage() {
+  const sameAsUrls = getSameAsUrls('vancouver');
+  
   return (
     <>
       <Head>
@@ -99,6 +102,7 @@ export default function VancouverRepairPage() {
             "Gastown",
             "Coal Harbour"
           ]}
+          sameAs={sameAsUrls}
         />
         <ReviewSchema 
           reviews={vancouverTestimonials.map(testimonial => ({
@@ -478,7 +482,7 @@ export default function VancouverRepairPage() {
       </section>
 
       {/* Schema Markup */}
-      <script 
+      <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
@@ -499,10 +503,7 @@ export default function VancouverRepairPage() {
               "longitude": -123.1207
             },
             "url": "https://travellingtechnicians.ca/repair/vancouver",
-            "sameAs": [
-              "https://facebook.com/travellingtechnicians",
-              "https://instagram.com/travellingtechnicians"
-            ],
+            "sameAs": sameAsUrls,
             "openingHours": "Mo-Su 08:00-20:00",
             "priceRange": "$50-$300",
             "acceptsReservations": true,
@@ -513,7 +514,7 @@ export default function VancouverRepairPage() {
             },
             "serviceType": [
               "Mobile Phone Repair",
-              "Laptop Repair", 
+              "Laptop Repair",
               "iPhone Repair",
               "MacBook Repair",
               "Samsung Repair",

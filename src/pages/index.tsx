@@ -8,8 +8,10 @@ import { initUIEnhancements } from '@/utils/ui-enhancements';
 import { testSupabaseConnection, supabase } from '@/utils/supabaseClient';
 import { trackLocationEvent } from '@/utils/analytics';
 import StructuredData, { LocalBusinessSchema, OrganizationSchema, ReviewSchema } from '@/components/seo/StructuredData';
+import { TechnicianSchema } from '@/components/seo/TechnicianSchema';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import { HomePagePreloads } from '@/components/common/PreloadHints';
+import { getPricingData, getPopularServices, getTestimonials } from '@/lib/data-service';
 
 // Component to render device brand image with proper dimensions
 const BrandImage = ({ src, alt }: { src: string, alt: string }) => {
@@ -41,7 +43,8 @@ const deviceBrands = [
 
 
 // Testimonials - focusing only on target cities
-const testimonials = [
+// Note: These are now fetched via getStaticProps, but we keep static fallbacks
+const staticTestimonials = [
   {
     id: 1,
     name: 'Sarah J.',
@@ -76,7 +79,64 @@ const testimonials = [
   },
 ];
 
-export default function Home() {
+// Static pricing data as fallback (matches current hardcoded values)
+const staticPricingData = {
+  mobile: { range: '$79-$189', common: '$129', time: '30-45 min' },
+  laptop: { range: '$99-$249', common: '$169', time: '45-90 min' },
+  tablet: { range: '$89-$199', common: '$149', time: '30-60 min' }
+};
+
+// Static popular services as fallback
+const staticPopularServices = [
+  { name: 'Screen Repair', price: 'From $89', icon: '📱' },
+  { name: 'Battery Replace', price: 'From $79', icon: '🔋' },
+  { name: 'Laptop Repair', price: 'From $99', icon: '💻' },
+  { name: 'Charging Issues', price: 'From $69', icon: '⚡' }
+];
+
+interface HomePageProps {
+  pricingData: typeof staticPricingData;
+  testimonials: typeof staticTestimonials;
+  popularServices: typeof staticPopularServices;
+}
+
+export async function getStaticProps() {
+  try {
+    // Fetch data from our new data service
+    const [pricingData, testimonials, popularServices] = await Promise.all([
+      getPricingData(),
+      getTestimonials(),
+      getPopularServices()
+    ]);
+
+    return {
+      props: {
+        pricingData,
+        testimonials,
+        popularServices
+      },
+      // Revalidate every hour (ISR)
+      revalidate: 3600
+    };
+  } catch (error) {
+    // If anything fails, return static data (zero regression guarantee)
+    console.error('Error in getStaticProps, using static fallback:', error);
+    return {
+      props: {
+        pricingData: staticPricingData,
+        testimonials: staticTestimonials,
+        popularServices: staticPopularServices
+      },
+      revalidate: 3600
+    };
+  }
+}
+
+export default function Home({
+  pricingData = staticPricingData,
+  testimonials = staticTestimonials,
+  popularServices = staticPopularServices
+}: HomePageProps) {
   const [deviceType, setDeviceType] = useState<'mobile' | 'laptop' | 'tablet'>('mobile');
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
   const [selectedIssue, setSelectedIssue] = useState<string | null>(null);
@@ -124,12 +184,8 @@ export default function Home() {
     }
   }, []);
 
-  // Pricing data for quick preview
-  const pricingData = {
-    mobile: { range: '$79-$189', common: '$129', time: '30-45 min' },
-    laptop: { range: '$99-$249', common: '$169', time: '45-90 min' },
-    tablet: { range: '$89-$199', common: '$149', time: '30-60 min' }
-  };
+  // Pricing data is now passed via props (pricingData parameter)
+  // No need for local constant - using the prop directly
 
   return (
     <>
@@ -140,7 +196,7 @@ export default function Home() {
         {/* Homepage Structured Data */}
         <LocalBusinessSchema />
         <OrganizationSchema />
-        <ReviewSchema 
+        <ReviewSchema
           reviews={testimonials.map(testimonial => ({
             author: testimonial.name,
             rating: testimonial.rating,
@@ -153,6 +209,16 @@ export default function Home() {
             reviewCount: testimonials.length,
             bestRating: 5,
             worstRating: 1
+          }}
+        />
+        
+        {/* E-E-A-T Technician Schema for expertise signals */}
+        <TechnicianSchema
+          includeAggregate={true}
+          aggregateData={{
+            totalTechnicians: 4,
+            averageExperience: 7.25,
+            totalCertifications: 11
           }}
         />
       </Head>
@@ -451,26 +517,13 @@ export default function Home() {
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-gray-50 rounded-xl p-4 text-center hover:shadow-md transition-shadow">
-              <div className="text-3xl mb-2">📱</div>
-              <h3 className="font-bold text-sm mb-1">Screen Repair</h3>
-              <p className="text-xs text-gray-600">From $89</p>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-4 text-center hover:shadow-md transition-shadow">
-              <div className="text-3xl mb-2">🔋</div>
-              <h3 className="font-bold text-sm mb-1">Battery Replace</h3>
-              <p className="text-xs text-gray-600">From $79</p>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-4 text-center hover:shadow-md transition-shadow">
-              <div className="text-3xl mb-2">💻</div>
-              <h3 className="font-bold text-sm mb-1">Laptop Repair</h3>
-              <p className="text-xs text-gray-600">From $99</p>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-4 text-center hover:shadow-md transition-shadow">
-              <div className="text-3xl mb-2">⚡</div>
-              <h3 className="font-bold text-sm mb-1">Charging Issues</h3>
-              <p className="text-xs text-gray-600">From $69</p>
-            </div>
+            {popularServices.map((service, index) => (
+              <div key={index} className="bg-gray-50 rounded-xl p-4 text-center hover:shadow-md transition-shadow">
+                <div className="text-3xl mb-2">{service.icon}</div>
+                <h3 className="font-bold text-sm mb-1">{service.name}</h3>
+                <p className="text-xs text-gray-600">{service.price}</p>
+              </div>
+            ))}
           </div>
           
           <div className="text-center">
