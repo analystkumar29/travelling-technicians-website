@@ -23,12 +23,13 @@ export interface LocalBusinessSchemaProps {
   priceRange?: string;
   areaServed?: string[];
   serviceArea?: string[];
+  sameAs?: string[];
 }
 
 export interface ServiceSchemaProps {
   name: string;
   description: string;
-  provider: string;
+  provider?: string;
   serviceType: string;
   areaServed?: string[];
   hasOfferCatalog?: {
@@ -84,9 +85,9 @@ export interface ArticleSchemaProps {
 /**
  * LocalBusiness Schema Component
  */
-export function LocalBusinessSchema({ 
+export function LocalBusinessSchema({
   name = "The Travelling Technicians",
-  description = "Professional mobile phone and laptop repair services with doorstep service across Vancouver and Lower Mainland, BC",
+  description = "Professional mobile phone, laptop, and tablet repair services with doorstep service across Vancouver, Burnaby, Surrey, Richmond, and the Lower Mainland, BC",
   url,
   telephone = "+1-778-389-9251",
   email = "info@travellingtechnicians.ca",
@@ -107,7 +108,7 @@ export function LocalBusinessSchema({
   priceRange = "$$",
   areaServed = [
     "Vancouver, BC",
-    "Burnaby, BC", 
+    "Burnaby, BC",
     "Surrey, BC",
     "Richmond, BC",
     "Coquitlam, BC",
@@ -115,7 +116,15 @@ export function LocalBusinessSchema({
     "West Vancouver, BC",
     "New Westminster, BC",
     "Delta, BC",
-    "Langley, BC"
+    "Langley, BC",
+    "Lower Mainland, BC",
+    "Fraser Valley, BC",
+    "Metro Vancouver, BC"
+  ],
+  sameAs = [
+    "https://www.facebook.com/travellingtechnicians",
+    "https://www.instagram.com/travellingtechnicians",
+    "https://www.linkedin.com/company/travelling-technicians"
   ]
 }: LocalBusinessSchemaProps) {
   const siteUrl = getSiteUrl();
@@ -224,7 +233,8 @@ export function ServiceSchema({
   areaServed = [
     "Vancouver, BC", "Burnaby, BC", "Surrey, BC", "Richmond, BC",
     "Coquitlam, BC", "North Vancouver, BC", "West Vancouver, BC",
-    "New Westminster, BC", "Delta, BC", "Langley, BC"
+    "New Westminster, BC", "Delta, BC", "Langley, BC",
+    "Lower Mainland, BC", "Fraser Valley, BC", "Metro Vancouver, BC"
   ],
   hasOfferCatalog,
   doorstepService = true,
@@ -476,7 +486,7 @@ export function OrganizationSchema() {
       "width": 300,
       "height": 60
     },
-    "description": "Professional mobile phone and laptop repair services with doorstep service across Vancouver and Lower Mainland, BC",
+    "description": "Professional mobile phone, laptop, and tablet repair services with doorstep service across Vancouver, Burnaby, Surrey, Richmond, and the Lower Mainland, BC",
     "contactPoint": {
       "@type": "ContactPoint",
       "telephone": "+1-778-389-9251",

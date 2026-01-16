@@ -78,7 +78,10 @@
     "fix:router": "node scripts/development/fix-router.js",
     "fix:syntax": "node scripts/development/fix-syntax-errors.js",
     "docs:open": "open docs/README.md",
-    "scripts:help": "cat scripts/README.md"
+    "scripts:help": "cat scripts/README.md",
+    "seed:services": "npx tsx scripts/seed-service-pages.ts",
+    "seed:services:dry-run": "npx tsx scripts/seed-service-pages.ts --dry-run",
+    "seed:services:execute": "npx tsx scripts/seed-service-pages.ts --execute"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",
