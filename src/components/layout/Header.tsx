@@ -72,6 +72,9 @@ const Header = () => {
                   <Link href="/services/laptop-repair" className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-700 transition-colors">
                     Laptop Repair
                   </Link>
+                  <Link href="/services/tablet-repair" className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-700 transition-colors">
+                    Tablet Repair
+                  </Link>
                   <div className="border-t border-gray-100 my-1"></div>
                   <Link href="/doorstep-repair" className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-700 transition-colors">
                     Doorstep Service
@@ -204,22 +207,29 @@ const Header = () => {
               {/* Mobile Services */}
               <div className="px-3 py-2">
                 <div className="text-gray-300 text-sm font-semibold mb-2">Services</div>
-                <Link 
-                  href="/services/mobile-repair" 
+                <Link
+                  href="/services/mobile-repair"
                   className="block px-3 py-1 text-white hover:text-accent-400 transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Mobile Repair
                 </Link>
-                <Link 
-                  href="/services/laptop-repair" 
+                <Link
+                  href="/services/laptop-repair"
                   className="block px-3 py-1 text-white hover:text-accent-400 transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Laptop Repair
                 </Link>
-                <Link 
-                  href="/doorstep-repair" 
+                <Link
+                  href="/services/tablet-repair"
+                  className="block px-3 py-1 text-white hover:text-accent-400 transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Tablet Repair
+                </Link>
+                <Link
+                  href="/doorstep-repair"
                   className="block px-3 py-1 text-white hover:text-accent-400 transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >

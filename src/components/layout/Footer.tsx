@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaMobileAlt, FaLaptop } from 'react-icons/fa';
+import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaMobileAlt, FaLaptop, FaTabletAlt } from 'react-icons/fa';
 import { LogoImage } from '@/components/common/OptimizedImage';
 
 export default function Footer() {
@@ -85,6 +85,12 @@ export default function Footer() {
                 <Link href="/services/laptop-repair" className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
                   <FaLaptop className="mr-2" />
                   Laptop Repair
+                </Link>
+              </li>
+              <li>
+                <Link href="/services/tablet-repair" className="text-gray-300 hover:text-primary-300 transition-colors duration-300 flex items-center">
+                  <FaTabletAlt className="mr-2" />
+                  Tablet Repair
                 </Link>
               </li>
               <li>
