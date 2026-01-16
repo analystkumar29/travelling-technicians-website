@@ -6,7 +6,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { logger } from '@/utils/logger';
 import { invalidateByPattern, clearAllCaches } from '@/utils/apiCache';
-import { invalidatePricingCache, invalidateDeviceCache } from '@/utils/cache';
+import { invalidatePricingCache, invalidateDeviceCache, invalidateSitemapCache } from '@/utils/cache';
 
 const apiLogger = logger.createModuleLogger('api/cache/invalidate');
 
@@ -50,6 +50,7 @@ export default async function handler(
       await clearAllCaches();
       invalidatePricingCache();
       invalidateDeviceCache();
+      invalidateSitemapCache();
       
       invalidatedCaches = ['all'];
       invalidatedCount = 1;
@@ -68,6 +69,10 @@ export default async function handler(
             invalidateDeviceCache(pattern);
             invalidatedCaches.push('device');
             break;
+          case 'sitemap':
+            invalidateSitemapCache(pattern);
+            invalidatedCaches.push('sitemap');
+            break;
           default:
             invalidatedCount = await invalidateByPattern(pattern, cacheType);
             invalidatedCaches.push(cacheType);
@@ -78,6 +83,7 @@ export default async function handler(
         invalidatedCount = await invalidateByPattern(pattern);
         invalidatePricingCache(pattern);
         invalidateDeviceCache(pattern);
+        invalidateSitemapCache(pattern);
         invalidatedCaches = ['all'];
       }
       
@@ -93,6 +99,11 @@ export default async function handler(
         case 'device':
           invalidateDeviceCache();
           invalidatedCaches.push('device');
+          invalidatedCount = 1;
+          break;
+        case 'sitemap':
+          invalidateSitemapCache();
+          invalidatedCaches.push('sitemap');
           invalidatedCount = 1;
           break;
         default:

@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { useBookingForm } from '@/hooks/useBookingForm';
 import { supabase } from '@/utils/supabaseClient';
 import { FaCheckCircle, FaRegCalendarAlt, FaMapMarkerAlt, FaTools, FaMobileAlt, FaLaptop } from 'react-icons/fa';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { formatDate, formatTimeSlot } from '@/utils/formatters';
 // Import temporarily commented out due to build issues
 // import ConfettiExplosion from 'react-confetti-explosion';
