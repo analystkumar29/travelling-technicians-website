@@ -247,7 +247,7 @@ const { price, isLoading, error } = usePriceCalculation({
 **Pattern**: Database‑triggered sitemap regeneration with queue‑based processing for SEO freshness.
 
 **Implementation**:
-- **Database triggers** on key tables (`service_locations`, `services`, `mobileactive_products`, `dynamic_pricing`, `technicians`, `testimonials`, `bookings`) insert into `sitemap_regeneration_queue`.
+- **Database triggers** on key tables (`service_locations`, `services`, `dynamic_pricing`, `technicians`, `testimonials`, `bookings`) insert into `sitemap_regeneration_queue`.
 - **Queue table** (`sitemap_regeneration_queue`) tracks pending, processing, completed, and failed regeneration requests.
 - **Queue processor** (`scripts/process-sitemap-queue.js`) runs as cron job, calls webhook endpoint to invalidate cache.
 - **Webhook endpoint** (`/api/webhooks/sitemap-regenerate`) triggers sitemap cache invalidation and logs activity.
@@ -404,13 +404,7 @@ The following tables exist in the `public` schema:
 | pricing_tiers | 10 | ✅ | id | 1 | 0 |
 | dynamic_pricing | 12 | ✅ | id | 3 | 24 |
 | service_locations | 9 | ✅ | id | 0 | 0 |
-| mobileactive_products | 18 | ✅ | id | 1 | 0 |
-| quality_tiers | 10 | ✅ | id | 1 | 0 |
 | service_categories | 8 | ✅ | id | 1 | 0 |
-| brand_mappings | 5 | ✅ | id | 1 | 0 |
-| model_mappings | 7 | ✅ | id | 2 | 0 |
-| service_mappings | 5 | ✅ | id | 1 | 0 |
-| mobileactive_pricing | 9 | ✅ | id | 2 | 0 |
 | bookings | 30 | ✅ | id | 0 | 0 |
 | testimonials | 10 | ❌ | id | 0 | 4 |
 | technicians | 15 | ✅ | id | 0 | 4 |
