@@ -271,7 +271,85 @@ const result = await fetch(webhookUrl, {
 });
 ```
 
-### 13. Custom Hooks Pattern
+### 13. Database-First Pattern with Fallback
+**Pattern**: Query database first, fall back to hardcoded constants if database is empty or fails, with safety mechanisms for data integrity.
+
+**Implementation**:
+- `src/lib/data-service.ts` implements singleton caching with 5-minute TTL for database queries.
+- Functions like `getServicesByDeviceType()` query Supabase first, return hardcoded constants if database returns empty or errors.
+- **10% Price Deviation Safety**: Database prices are validated against hardcoded baseline prices; if deviation exceeds 10%, fallback to hardcoded price.
+- **Upsert Logic**: Seed scripts use upsert (update existing, insert new) to handle pre-existing data with unique constraints.
+- **Schema Evolution**: Database schema extended with new columns (`icon`, `is_popular`, `is_limited`, `is_doorstep_eligible`) to support UI requirements.
+
+**Example Implementation**:
+```typescript
+// Singleton cache pattern
+const globalCache = {
+  services: { data: null, timestamp: 0 },
+  pricing: { data: null, timestamp: 0 }
+};
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+export async function getServicesByDeviceType(deviceType: string) {
+  const cacheKey = `services-${deviceType}`;
+  const cached = globalCache.services;
+  
+  if (cached.data && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+  
+  try {
+    const { data, error } = await supabase
+      .from('services')
+      .select('*')
+      .eq('device_type_id', deviceTypeId)
+      .eq('is_active', true);
+    
+    if (error || !data || data.length === 0) {
+      return getHardcodedServices(deviceType); // Fallback
+    }
+    
+    globalCache.services = { data, timestamp: Date.now() };
+    return data;
+  } catch (error) {
+    return getHardcodedServices(deviceType); // Fallback
+  }
+}
+```
+
+### 14. Dynamic Service Pages Pattern (Seed & Switch)
+**Pattern**: Four-phase strategy for migrating static content to database-driven dynamic pages with zero UI regression.
+
+**Implementation**:
+1. **Seed Phase**: Extract hardcoded data from React components, upsert into database with data normalization.
+2. **Safety Phase**: Update data layer with DB-first fallback and safety mechanisms.
+3. **Switch Phase**: Create dynamic route (`pages/services/[slug].tsx`) with ISR (`revalidate: 3600`).
+4. **SEO Phase**: Inject dynamic JSON-LD structured data with location-specific keywords.
+
+**Key Learnings**:
+- **Production vs. Migration Schema Mismatch**: Production uses integer IDs with foreign keys; migration files define UUID-based schemas.
+- **Data Quality Issues**: Existing database had inconsistent casing, inactive records, conflicting sort orders.
+- **Icon Mapping Strategy**: Map React JSX icon components to string identifiers for database storage.
+- **Price Parsing**: Convert strings like "From $149" to numeric values for dynamic pricing table.
+
+**Example Seed Script Logic**:
+```typescript
+// Upsert pattern for services
+const { data: existingService } = await supabase
+  .from('services')
+  .select('id')
+  .eq('name', service.name)
+  .eq('device_type_id', deviceTypeId)
+  .single();
+
+if (existingService) {
+  await supabase.from('services').update(serviceData).eq('id', existingService.id);
+} else {
+  await supabase.from('services').insert(serviceData);
+}
+```
+
+### 15. Custom Hooks Pattern
 **Pattern**: Domain‑specific hooks encapsulate complex business logic and data fetching.
 
 **Implementation**:
@@ -308,7 +386,7 @@ export function useBookingForm(initialStep = 1) {
 
 ## Database Schema (Live State)
 
-*Audit performed: 2026-01-13 (UTC)*
+*Audit performed: 2026-01-16 (UTC) - After Dynamic Service Pages Implementation*
 
 ### Tables
 The following tables exist in the `public` schema:
@@ -319,12 +397,12 @@ The following tables exist in the `public` schema:
 | quality_rules | 15 | ❌ | id | 0 | 0 |
 | anomaly_detections | 16 | ❌ | id | 1 | 0 |
 | customer_feedback | 18 | ❌ | id | 0 | 0 |
-| device_types | 7 | ✅ | id | 4 | 0 |
-| brands | 10 | ✅ | id | 4 | 0 |
+| device_types | 7 | ✅ | id | 4 | 3 |
+| brands | 10 | ✅ | id | 4 | 30+ |
 | device_models | 20 | ✅ | id | 4 | 0 |
-| services | 16 | ✅ | id | 3 | 0 |
+| services | 16 | ✅ | id | 3 | 26 |
 | pricing_tiers | 10 | ✅ | id | 1 | 0 |
-| dynamic_pricing | 12 | ✅ | id | 3 | 0 |
+| dynamic_pricing | 12 | ✅ | id | 3 | 24 |
 | service_locations | 9 | ✅ | id | 0 | 0 |
 | mobileactive_products | 18 | ✅ | id | 1 | 0 |
 | quality_tiers | 10 | ✅ | id | 1 | 0 |
@@ -338,7 +416,19 @@ The following tables exist in the `public` schema:
 | technicians | 15 | ✅ | id | 0 | 4 |
 | sitemap_regeneration_queue | 13 | ❌ | id | 0 | 1+ |
 
-*Note: Row counts are approximate (0 indicates empty table).*
+*Note: Row counts reflect post-seed state after Dynamic Service Pages implementation.*
+
+### Key Schema Learnings (Production vs. Migration)
+1. **Production Schema Uses Integer IDs**: Actual production database uses integer IDs with foreign key relationships, while migration files (`sql/001-create-tables.sql`) define UUID-based schemas.
+2. **Services Table Evolution**: Extended with new columns (`icon`, `is_popular`, `is_limited`, `is_doorstep_eligible`) to support UI requirements from hardcoded service pages.
+3. **Data Quality Issues**: Existing database had inconsistent brand naming (casing), inactive records, and conflicting sort orders.
+4. **Unique Constraints**: Added unique constraints on `(name, device_type_id)` for services and brands tables to prevent duplicate entries.
+5. **Schema Mapping Strategy**: Developed mapping from React JSX icon components to string identifiers for database storage.
+6. **Price Parsing**: Convert strings like "From $149" to numeric values for dynamic pricing table.
+
+### Schema Changes Applied
+- **SQL/006-add-service-icon-flags.sql**: Adds `icon`, `is_popular`, `is_limited`, `is_doorstep_eligible` columns to services table.
+- **SQL/007-update-unique-constraints.sql**: Adds unique constraints for data integrity.
 
 ### Indexes
 - Each table has a primary key index.

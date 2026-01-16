@@ -16,13 +16,14 @@
 - Maintain high customer satisfaction through reliable service and clear communication.
 
 ## Core Features (Based on Code Analysis)
-- **Doorstep Service** – Technicians come to the customer’s location.
+- **Doorstep Service** – Technicians come to the customer's location.
 - **Multi‑step Booking Flow** – Device selection, brand/model, service, tier, customer info, confirmation (implemented with `BookingForm` component and `BookingContext`).
 - **Dynamic Pricing System** – 1,526+ pricing entries across 338 device models, 22 services, and 4 tiers. Pricing API (`/api/pricing/calculate`) uses a simple query + JavaScript post‑processing pattern; fallback static pricing when database matches fail.
 - **Email Notifications** – Booking confirmations and updates via SendGrid (`/api/send‑confirmation`).
 - **Service Area Verification** – Postal‑code checker and interactive map (`PostalCodeChecker` component).
 - **Admin Management Panel** – Pricing management, audit logging, review queue, quality control, data lineage tracking (Phase 2 implementation).
 - **SEO Optimization** – Structured data, local search optimization, sitemaps, meta tags.
+- **Dynamic Service Pages** – Database-driven service pages with ISR (Incremental Static Regeneration) for laptop, mobile, and tablet repair services.
 - **Performance & Security** – Lighthouse scores >90, HTTPS, security headers, Row‑Level Security, environment‑variable validation.
 
 ## Technology Stack (Verified from package.json)
@@ -70,6 +71,12 @@
     - **Phase 2**: Database-driven pricing & content injection
     - **Phase 3**: Dynamic city pages & schema markup (E-E-A-T signals, Wikidata integration)
     - **Phase 4**: Sitemap freshness & fallback (database-driven sitemap with webhook regeneration)
+  - **Dynamic Service Pages Implementation (January 2026)** – Database-driven service pages with ISR (Incremental Static Regeneration) for laptop, mobile, and tablet repair services:
+    - **Seed Phase**: Extracted hardcoded data from service pages and upserted into Supabase (26 services, 30+ brands, 24 dynamic pricing records)
+    - **Safety Phase**: Updated data-service.ts with DB-first fallback pattern and 10% price deviation safety
+    - **Switch Phase**: Created dynamic route `pages/services/[slug].tsx` with ISR (1-hour revalidation)
+    - **SEO Phase**: Enhanced StructuredData component with location-specific JSON-LD injection
+    - **Validation Phase**: Zero UI regression achieved with full testing and production deployment
   - **Dynamic Pricing Fix** – A fixed version of the customer pricing API (`calculate‑fixed.ts`) exists, but the primary endpoint (`calculate.ts`) already uses the simple query pattern. Caching and logging improvements are pending full deployment.
 - **Technical Debt / Red Flags**:
   - Duplicate API endpoints (`calculate.ts` and `calculate‑fixed.ts`).
@@ -93,5 +100,5 @@
 
 ---
 
-*Last Updated: January 2026*  
+*Last Updated: January 2026 (Updated with Dynamic Service Pages Implementation)*
 *Based on source‑code analysis; may differ from older documentation.*
