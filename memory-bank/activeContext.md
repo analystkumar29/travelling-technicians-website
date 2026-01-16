@@ -20,6 +20,14 @@ The website now features:
 **Target Outcome**: Dominate search rankings for "travelling technicians" and local service keywords in British Columbia service areas.
 
 ## Recent Changes & Milestones
+### Dynamic Service Pages Implementation – "Seed & Switch" Strategy (Completed January 2026)
+- **Phase 1: Seed (Database Population)** – Extracted 26 services and 30+ brands from hardcoded files, created comprehensive mapping strategy for icons, prices, and boolean flags. Successfully upserted data into production database with sophisticated upsert logic.
+- **Phase 2: Safety (DB-First Fallback)** – Enhanced `src/lib/data-service.ts` with DB-first pattern and 10% price deviation safety. Maintained singleton caching with 5-minute TTL and graceful fallback to hardcoded constants.
+- **Phase 3: Switch (Dynamic Routing with ISR)** – Created `src/pages/services/[slug].tsx` dynamic route with Next.js ISR (`revalidate: 3600`). Database-driven `getStaticPaths` generates paths from service data. Updated navigation links to use dynamic routes.
+- **Phase 4: SEO (Structured Data Injection)** – Enhanced `StructuredData.tsx` component to accept dynamic service data and inject location-specific keywords ("Lower Mainland", British Columbia). Dynamic JSON-LD Service/Product schema for search engines.
+- **Phase 5: Validation (Zero UI Regression)** – Verified all three service pages render identically to original. Fixed "Why Choose Us", "Process", and CTA sections to match original styling. End-to-end testing confirmed zero UI changes.
+- **Deployment & Build Fixes** – Resolved Vercel build failures by removing backup files causing route conflicts, organized legacy scripts, and ensured environment validation script accessibility. Successfully deployed to Vercel preview environment.
+
 ### Phase 4 – SEO Sitemap Freshness & Fallback (Completed January 2026)
 - **XML Sitemap Fixes** – Fixed `escapeXml` function with proper HTML entities, completed `generateFallbackSitemap` function.
 - **Database-Driven Freshness** – Sitemap uses `updated_at` timestamps from `service_locations`, `services`, `mobileactive_products` tables.
@@ -86,6 +94,67 @@ The website now features:
 - **Contaminated Models**: 33 models (12%) flagged as contaminated; review queue needs manual attention.
 - **Email Deliverability**: SendGrid integration works but subject‑line formatting issues may affect open rates.
 - **Mobile Responsiveness**: Some UI enhancements may need further tuning on small screens.
+
+## Database Schema Learnings (Dynamic Service Pages Implementation)
+*Key discoveries from the "Seed & Switch" implementation, January 2026*
+
+### Production vs. Migration Schema Mismatch
+**Critical Discovery**: The production database uses **integer IDs with foreign keys** while migration files (`sql/001-create-tables.sql`) define **UUID-based schemas**. This discrepancy required adapting the seed script to work with the actual production schema rather than the migration definitions.
+
+**Implications**:
+- Migration files serve as documentation but may not reflect deployed state
+- Direct SQL queries (`SELECT * FROM services`) revealed actual schema vs. assumptions
+- Foreign key relationships use integer IDs, not UUIDs
+- This pattern appears consistent across all core tables (services, brands, device_types, dynamic_pricing)
+
+### Services Table Schema Evolution
+**Original Schema** (from migration):
+- Basic columns: `id`, `name`, `description`, `device_type_id`, `created_at`, `updated_at`
+- Missing critical UI fields: `icon`, `is_popular`, `is_limited`, `is_doorstep_eligible`
+
+**Enhanced Schema** (implemented via `sql/006-add-service-icon-flags.sql`):
+- Added `icon` column (VARCHAR) to store icon identifiers (e.g., "laptop", "mobile", "tablet")
+- Added `is_popular` (BOOLEAN) to flag popular services for UI highlighting
+- Added `is_limited` (BOOLEAN) to indicate limited availability services
+- Added `is_doorstep_eligible` (BOOLEAN) to map from hardcoded `doorstep` field
+- Added unique constraint on `(name, device_type_id)` via `sql/007-update-unique-constraints.sql`
+
+### Data Quality Issues Discovered
+1. **Brand Table Inconsistencies**:
+   - Inconsistent `display_name` casing (e.g., "huawei", "xiaomi" vs. "Apple", "Samsung")
+   - Many records with `is_active: false` despite being referenced in hardcoded files
+   - Conflicting `sort_order` values (some set to 0, others sequential)
+
+2. **Services Table State**:
+   - Only 10 of 26 services existed in database (5 mobile, 5 laptop)
+   - Missing tablet services entirely
+   - Inconsistent `is_active` status (only 4 of 10 services active)
+
+3. **Dynamic Pricing Table**:
+   - Empty (0 rows) before seed execution
+   - Required parsing price strings like "From $149" to numeric `base_price`
+
+### Schema Mapping Strategy
+**Hardcoded to Database Field Mapping**:
+- `doorstep` → `is_doorstep_eligible` (direct mapping)
+- `popular` → `is_popular` (new column)
+- `limited` → `is_limited` (new column)
+- `icon` (JSX component) → `icon` (string identifier via mapping: `<FaLaptop />` → "laptop")
+
+**Price Parsing Logic**:
+- Extract numeric value from strings: "From $149" → 149
+- Store in `dynamic_pricing` table with `service_id`, `device_type_id`, `base_price`
+- Apply 10% deviation safety in `data-service.ts`
+
+### Row-Level Security (RLS) Considerations
+- All core tables have RLS enabled
+- Seed script requires `SUPABASE_SERVICE_ROLE_KEY` to bypass RLS for upsert operations
+- Service role policies allow full CRUD operations while public policies restrict to read-only
+
+### Unique Constraint Patterns
+- **Services**: Unique on `(name, device_type_id)` prevents duplicate service definitions per device type
+- **Brands**: Unique on `(name, device_type_id)` ensures brand uniqueness per device category
+- **Dynamic Pricing**: Unique on `(service_id, device_type_id, pricing_tier_id)` prevents duplicate pricing entries
 
 ## Schema Drift Audit
 *Audit performed: 2026-01-13 (UTC)*
