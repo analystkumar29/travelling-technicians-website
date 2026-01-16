@@ -58,7 +58,6 @@ export default async function handler(
     const sitemapRelevantTables = [
       'service_locations',
       'services',
-      'mobileactive_products',
       'dynamic_pricing',
       'technicians',
       'testimonials',

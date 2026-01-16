@@ -1156,6 +1156,258 @@ export async function getAllActiveCities() {
 }
 
 /**
+ * Get nearby service locations based on geographic proximity
+ * Returns the 3 closest active service locations (excluding the current city)
+ */
+export async function getNearbyLocations(
+  currentCitySlug: string
+): Promise<Array<{
+  id: number;
+  city: string;
+  slug: string;
+  distanceKm: number;
+}>> {
+  try {
+    const supabase = getServiceSupabase();
+    
+    // First, get the current city's coordinates
+    const { data: currentCityData, error: currentCityError } = await supabase
+      .from('service_locations')
+      .select('id, city, latitude, longitude')
+      .ilike('city', currentCitySlug.replace('-', ' '))
+      .eq('is_active', true)
+      .single();
+    
+    if (currentCityError || !currentCityData) {
+      dataLogger.warn(`Current city ${currentCitySlug} not found or has no coordinates, returning empty nearby locations`, {
+        error: currentCityError?.message
+      });
+      return [];
+    }
+    
+    const currentLat = parseFloat(currentCityData.latitude as string);
+    const currentLng = parseFloat(currentCityData.longitude as string);
+    
+    if (isNaN(currentLat) || isNaN(currentLng)) {
+      dataLogger.warn(`Current city ${currentCitySlug} has invalid coordinates (lat: ${currentLat}, lng: ${currentLng}), returning empty nearby locations`);
+      return [];
+    }
+    
+    // Get all other active service locations
+    const { data: allLocations, error: locationsError } = await supabase
+      .from('service_locations')
+      .select('id, city, latitude, longitude')
+      .eq('is_active', true)
+      .neq('id', currentCityData.id);
+    
+    if (locationsError) {
+      dataLogger.warn('Error fetching service locations for nearby calculation, returning empty', {
+        error: locationsError.message
+      });
+      return [];
+    }
+    
+    if (!allLocations || allLocations.length === 0) {
+      dataLogger.info('No other service locations found for nearby calculation');
+      return [];
+    }
+    
+    // Calculate distances using Haversine formula
+    const locationsWithDistance = allLocations
+      .map(location => {
+        const lat = parseFloat(location.latitude as string);
+        const lng = parseFloat(location.longitude as string);
+        
+        if (isNaN(lat) || isNaN(lng)) {
+          return null;
+        }
+        
+        // Haversine formula to calculate distance in kilometers
+        const R = 6371; // Earth's radius in km
+        const dLat = (lat - currentLat) * Math.PI / 180;
+        const dLng = (lng - currentLng) * Math.PI / 180;
+        const a =
+          Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.cos(currentLat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) *
+          Math.sin(dLng/2) * Math.sin(dLng/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distanceKm = R * c;
+        
+        return {
+          id: location.id,
+          city: location.city,
+          slug: location.city.toLowerCase().replace(/\s+/g, '-'),
+          distanceKm: parseFloat(distanceKm.toFixed(1))
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null)
+      .sort((a, b) => a.distanceKm - b.distanceKm)
+      .slice(0, 3); // Return only the 3 closest locations
+    
+    dataLogger.info(`Found ${locationsWithDistance.length} nearby locations for ${currentCitySlug}`, {
+      locations: locationsWithDistance.map(l => `${l.city} (${l.distanceKm}km)`)
+    });
+    
+    return locationsWithDistance;
+    
+  } catch (error) {
+    dataLogger.error('Unexpected error calculating nearby locations, returning empty', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    return [];
+  }
+}
+
+/**
+ * Get dynamic pricing for specific city/service/model combination
+ * Returns pricing data in format expected by repair pages
+ */
+export async function getDynamicPricing(
+  citySlug: string,
+  serviceSlug: string,
+  modelSlug: string
+): Promise<{
+  basePrice: number;
+  discountedPrice?: number;
+  priceRange: string;
+}> {
+  try {
+    const supabase = getServiceSupabase();
+    
+    // Map URL slugs to database names
+    const serviceMapping: Record<string, string> = {
+      'screen-repair': 'screen-replacement',
+      'battery-replacement': 'battery-replacement',
+      'charging-port-repair': 'charging-port-repair',
+      'laptop-screen-repair': 'laptop-screen-replacement',
+      'water-damage-repair': 'water-damage-repair',
+      'software-repair': 'software-repair',
+      'camera-repair': 'camera-repair'
+    };
+    
+    const modelMapping: Record<string, string> = {
+      'iphone-14': 'iPhone 14',
+      'iphone-15': 'iPhone 15',
+      'iphone-13': 'iPhone 13',
+      'samsung-galaxy-s23': 'Samsung Galaxy S23',
+      'samsung-galaxy-s22': 'Samsung Galaxy S22',
+      'google-pixel-7': 'Google Pixel 7',
+      'macbook-pro-2023': 'MacBook Pro 14-inch' // Approximate mapping
+    };
+    
+    const serviceName = serviceMapping[serviceSlug] || serviceSlug;
+    const modelName = modelMapping[modelSlug] || modelSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    
+    // First, get city price adjustment percentage
+    let priceAdjustmentPercentage = 0;
+    try {
+      const { data: cityData, error: cityError } = await supabase
+        .from('service_locations')
+        .select('price_adjustment_percentage')
+        .ilike('city', citySlug.replace('-', ' '))
+        .eq('is_active', true)
+        .single();
+      
+      if (!cityError && cityData) {
+        priceAdjustmentPercentage = parseFloat(cityData.price_adjustment_percentage as string) || 0;
+      }
+    } catch (error) {
+      dataLogger.warn(`Error fetching city price adjustment for ${citySlug}, using 0%`, {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+    
+    // Query dynamic pricing with joins
+    const { data: pricingData, error } = await supabase
+      .from('dynamic_pricing')
+      .select(`
+        base_price,
+        discounted_price,
+        services!inner(name),
+        device_models!inner(name),
+        brands!inner(name)
+      `)
+      .eq('is_active', true)
+      .ilike('services.name', `%${serviceName}%`)
+      .ilike('device_models.name', `%${modelName}%`)
+      .order('base_price', { ascending: true })
+      .limit(1);
+    
+    if (error) {
+      dataLogger.warn(`Database error fetching dynamic pricing for ${citySlug}/${serviceSlug}/${modelSlug}, using fallback`, { error: error.message });
+      return getFallbackPricing(serviceSlug);
+    }
+    
+    if (!pricingData || pricingData.length === 0) {
+      dataLogger.info(`No dynamic pricing found for ${citySlug}/${serviceSlug}/${modelSlug}, using fallback`);
+      return getFallbackPricing(serviceSlug);
+    }
+    
+    const pricing = pricingData[0];
+    let basePrice = parseFloat(pricing.base_price as string);
+    let discountedPrice = pricing.discounted_price ? parseFloat(pricing.discounted_price as string) : undefined;
+    
+    // Apply city price adjustment
+    if (priceAdjustmentPercentage !== 0) {
+      const adjustmentFactor = 1 + (priceAdjustmentPercentage / 100);
+      basePrice = Math.round(basePrice * adjustmentFactor);
+      if (discountedPrice) {
+        discountedPrice = Math.round(discountedPrice * adjustmentFactor);
+      }
+    }
+    
+    // Calculate price range (base price ± 20% for display purposes)
+    const minPrice = Math.round(basePrice * 0.8);
+    const maxPrice = Math.round(basePrice * 1.2);
+    const priceRange = `$${minPrice}-$${maxPrice}`;
+    
+    dataLogger.info(`Dynamic pricing found for ${citySlug}/${serviceSlug}/${modelSlug}: base=$${basePrice}, range=${priceRange}`);
+    
+    return {
+      basePrice,
+      discountedPrice,
+      priceRange
+    };
+    
+  } catch (error) {
+    dataLogger.error(`Unexpected error fetching dynamic pricing for ${citySlug}/${serviceSlug}/${modelSlug}, using fallback`, {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    return getFallbackPricing(serviceSlug);
+  }
+}
+
+/**
+ * Helper function to get fallback pricing based on service slug
+ */
+function getFallbackPricing(serviceSlug: string): {
+  basePrice: number;
+  discountedPrice?: number;
+  priceRange: string;
+} {
+  // Current hardcoded logic from repair page
+  if (serviceSlug.includes('screen')) {
+    return {
+      basePrice: 129,
+      discountedPrice: 109,
+      priceRange: '$109-$189'
+    };
+  } else if (serviceSlug.includes('battery')) {
+    return {
+      basePrice: 99,
+      discountedPrice: 89,
+      priceRange: '$89-$149'
+    };
+  } else {
+    return {
+      basePrice: 149,
+      discountedPrice: 129,
+      priceRange: '$129-$249'
+    };
+  }
+}
+
+/**
  * Get all active service slugs for ISR paths
  * Fetches active device types from database and maps them to service page slugs
  */

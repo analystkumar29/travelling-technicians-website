@@ -10,6 +10,8 @@ import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useEffect, useState, ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { generateDefaultSeo } from 'next-seo/pages';
+import { defaultSeoConfig } from '@/next-seo.config';
 // Environment validation temporarily disabled
 
 // Analytics loading with fallback
@@ -92,19 +94,8 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <>
       <Head>
-        <title>The Travelling Technicians | Mobile & Laptop Repair</title>
-        <meta name="description" content="Expert mobile phone and laptop repair with convenient doorstep service across the Lower Mainland, BC. Same-day service available with 1-year warranty." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        
-        {/* Favicon Configuration */}
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="manifest" href="/site.webmanifest" />
-        <meta name="theme-color" content="#075985" />
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/favicons/favicon-192x192.png" />
-        <link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png" />
+        {generateDefaultSeo(defaultSeoConfig)}
       </Head>
 
       <EnvironmentGuard>
@@ -116,4 +107,4 @@ export default function App({ Component, pageProps }: AppProps) {
       </EnvironmentGuard>
     </>
   );
-} 
+}

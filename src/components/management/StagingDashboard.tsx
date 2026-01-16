@@ -275,7 +275,6 @@ export default function StagingDashboard() {
               className="border rounded px-3 py-1 text-sm"
             >
               <option value="all">All Sources</option>
-              <option value="mobileactive">MobileActive</option>
               <option value="manual_upload">Manual Upload</option>
               <option value="api_import">API Import</option>
             </select>

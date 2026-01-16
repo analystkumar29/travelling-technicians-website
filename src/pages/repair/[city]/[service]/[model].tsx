@@ -4,8 +4,11 @@ import Link from 'next/link';
 import { FaPhone, FaClock, FaShieldAlt, FaMapMarkerAlt, FaTools, FaCheckCircle } from 'react-icons/fa';
 import { LocalBusinessSchema, ServiceSchema } from '@/components/seo/StructuredData';
 import { TechnicianSchema } from '@/components/seo/TechnicianSchema';
+import Breadcrumbs from '@/components/seo/Breadcrumbs';
+import NearbyCities from '@/components/seo/NearbyCities';
 import { GetStaticPaths, GetStaticProps } from 'next';
-import { getCityData } from '@/lib/data-service';
+import { getCityData, getDynamicPricing } from '@/lib/data-service';
+import { createBreadcrumbs } from '@/utils/seoHelpers';
 
 interface CityServiceModelPageProps {
   city: string;
@@ -53,25 +56,105 @@ const WIKIDATA_MAP: Record<string, string> = {
 };
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const popularCombinations = [
-    { city: 'vancouver', service: 'screen-repair', model: 'iphone-14' },
-    { city: 'vancouver', service: 'battery-replacement', model: 'iphone-14' },
-    { city: 'burnaby', service: 'screen-repair', model: 'samsung-galaxy-s23' },
-    { city: 'richmond', service: 'charging-port-repair', model: 'google-pixel-7' },
-    { city: 'coquitlam', service: 'laptop-screen-repair', model: 'macbook-pro-2023' },
-    { city: 'north-vancouver', service: 'water-damage-repair', model: 'iphone-15' },
-    { city: 'surrey', service: 'software-repair', model: 'samsung-galaxy-s22' },
-    { city: 'new-westminster', service: 'camera-repair', model: 'iphone-13' }
-  ];
-
-  const paths = popularCombinations.map(({ city, service, model }) => ({
-    params: { city, service, model }
-  }));
-
-  return {
-    paths,
-    fallback: 'blocking'
-  };
+  try {
+    // Import the data service functions
+    const { getAllActiveCities } = await import('@/lib/data-service');
+    
+    // Get all active cities from database
+    const activeCities = await getAllActiveCities();
+    
+    // Service slugs from the service mapping in getDynamicPricing
+    const serviceSlugs = [
+      'screen-repair',
+      'battery-replacement',
+      'charging-port-repair',
+      'laptop-screen-repair',
+      'water-damage-repair',
+      'software-repair',
+      'camera-repair'
+    ];
+    
+    // Model slugs from the model mapping in getDynamicPricing
+    const modelSlugs = [
+      'iphone-14',
+      'iphone-15',
+      'iphone-13',
+      'samsung-galaxy-s23',
+      'samsung-galaxy-s22',
+      'google-pixel-7',
+      'macbook-pro-2023'
+    ];
+    
+    // Generate all combinations
+    const paths = [];
+    
+    for (const city of activeCities) {
+      const citySlug = city.slug;
+      
+      for (const serviceSlug of serviceSlugs) {
+        for (const modelSlug of modelSlugs) {
+          paths.push({
+            params: {
+              city: citySlug,
+              service: serviceSlug,
+              model: modelSlug
+            }
+          });
+        }
+      }
+    }
+    
+    // Also include the original popular combinations as a fallback
+    // in case database query fails or returns no cities
+    if (paths.length === 0) {
+      const popularCombinations = [
+        { city: 'vancouver', service: 'screen-repair', model: 'iphone-14' },
+        { city: 'vancouver', service: 'battery-replacement', model: 'iphone-14' },
+        { city: 'burnaby', service: 'screen-repair', model: 'samsung-galaxy-s23' },
+        { city: 'richmond', service: 'charging-port-repair', model: 'google-pixel-7' },
+        { city: 'coquitlam', service: 'laptop-screen-repair', model: 'macbook-pro-2023' },
+        { city: 'north-vancouver', service: 'water-damage-repair', model: 'iphone-15' },
+        { city: 'surrey', service: 'software-repair', model: 'samsung-galaxy-s22' },
+        { city: 'new-westminster', service: 'camera-repair', model: 'iphone-13' }
+      ];
+      
+      for (const { city, service, model } of popularCombinations) {
+        paths.push({
+          params: { city, service, model }
+        });
+      }
+    }
+    
+    console.log(`Generated ${paths.length} static paths for repair pages`);
+    
+    return {
+      paths,
+      fallback: 'blocking'
+    };
+  } catch (error) {
+    console.error('Error generating static paths:', error);
+    
+    // Fallback to original popular combinations if there's an error
+    const popularCombinations = [
+      { city: 'vancouver', service: 'screen-repair', model: 'iphone-14' },
+      { city: 'vancouver', service: 'battery-replacement', model: 'iphone-14' },
+      { city: 'burnaby', service: 'screen-repair', model: 'samsung-galaxy-s23' },
+      { city: 'richmond', service: 'charging-port-repair', model: 'google-pixel-7' },
+      { city: 'coquitlam', service: 'laptop-screen-repair', model: 'macbook-pro-2023' },
+      { city: 'north-vancouver', service: 'water-damage-repair', model: 'iphone-15' },
+      { city: 'surrey', service: 'software-repair', model: 'samsung-galaxy-s22' },
+      { city: 'new-westminster', service: 'camera-repair', model: 'iphone-13' }
+    ];
+    
+    const paths = popularCombinations.map(({ city, service, model }) => ({
+      params: { city, service, model }
+    }));
+    
+    return {
+      paths,
+      fallback: 'blocking'
+    };
+  }
 };
 
 export const getStaticProps: GetStaticProps<CityServiceModelPageProps> = async ({ params }) => {
@@ -123,10 +206,13 @@ export const getStaticProps: GetStaticProps<CityServiceModelPageProps> = async (
       imageUrl: `/images/devices/${modelSlug}.webp`
     };
 
+    // Fetch dynamic pricing from database
+    const dynamicPricing = await getDynamicPricing(citySlug, serviceSlug, modelSlug);
+    
     const pricingData = {
-      basePrice: serviceSlug.includes('screen') ? 129 : serviceSlug.includes('battery') ? 99 : 149,
-      discountedPrice: serviceSlug.includes('screen') ? 109 : serviceSlug.includes('battery') ? 89 : 129,
-      priceRange: serviceSlug.includes('screen') ? '$109-$189' : serviceSlug.includes('battery') ? '$89-$149' : '$129-$249'
+      basePrice: dynamicPricing.basePrice,
+      discountedPrice: dynamicPricing.discountedPrice,
+      priceRange: dynamicPricing.priceRange
     };
 
     const wikidataId = WIKIDATA_MAP[citySlug];
@@ -150,6 +236,11 @@ export const getStaticProps: GetStaticProps<CityServiceModelPageProps> = async (
   } catch (error) {
     console.error(`Error fetching data for ${citySlug}/${serviceSlug}/${modelSlug}:`, error);
     
+    // Fallback to hardcoded pricing if database fetch fails
+    const fallbackBasePrice = serviceSlug.includes('screen') ? 129 : serviceSlug.includes('battery') ? 99 : 149;
+    const fallbackDiscountedPrice = serviceSlug.includes('screen') ? 109 : serviceSlug.includes('battery') ? 89 : 129;
+    const fallbackPriceRange = serviceSlug.includes('screen') ? '$109-$189' : serviceSlug.includes('battery') ? '$89-$149' : '$129-$249';
+    
     return {
       props: {
         city: citySlug,
@@ -163,7 +254,7 @@ export const getStaticProps: GetStaticProps<CityServiceModelPageProps> = async (
           name: serviceSlug,
           displayName: serviceSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
           description: `Professional repair service in ${citySlug.replace('-', ' ')}.`,
-          estimatedDurationMinutes: 60
+          estimatedDurationMinutes: serviceSlug.includes('screen') ? 45 : serviceSlug.includes('battery') ? 60 : 90
         },
         modelData: {
           name: modelSlug,
@@ -173,9 +264,9 @@ export const getStaticProps: GetStaticProps<CityServiceModelPageProps> = async (
           imageUrl: '/images/devices/default.webp'
         },
         pricingData: {
-          basePrice: 149,
-          discountedPrice: 129,
-          priceRange: '$129-$249'
+          basePrice: fallbackBasePrice,
+          discountedPrice: fallbackDiscountedPrice,
+          priceRange: fallbackPriceRange
         },
         wikidataId: WIKIDATA_MAP[citySlug]
       },
@@ -198,6 +289,9 @@ export default function CityServiceModelPage({
   const metaDescription = `Professional ${modelData.displayName} ${serviceData.displayName.toLowerCase()} service in ${cityData.name}, BC. Doorstep repair with certified technicians. ${pricingData.priceRange} with 90-day warranty.`;
   
   const sameAs = wikidataId ? [`https://www.wikidata.org/wiki/${wikidataId}`] : [];
+
+  // Generate breadcrumb items for the current page
+  const breadcrumbItems = createBreadcrumbs(`/repair/${city}/${service}/${model}`);
 
   return (
     <>
@@ -237,7 +331,7 @@ export default function CityServiceModelPage({
           warranty="90 days"
         />
         
-        <TechnicianSchema 
+        <TechnicianSchema
           includeAggregate={true}
           aggregateData={{
             totalTechnicians: 4,
@@ -247,11 +341,16 @@ export default function CityServiceModelPage({
         />
       </Head>
       
-      <Layout 
+      <Layout
         title={pageTitle}
         metaDescription={metaDescription}
       >
-        <section className="pt-16 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
+        {/* Breadcrumb navigation */}
+        <div className="container-custom pt-6">
+          <Breadcrumbs items={breadcrumbItems} showSchema={true} />
+        </div>
+
+        <section className="pt-8 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
           <div className="container-custom">
             <div className="text-center max-w-4xl mx-auto">
               <div className="flex items-center justify-center mb-4">
@@ -501,6 +600,17 @@ export default function CityServiceModelPage({
                 </p>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Nearby Cities linking widget */}
+        <section className="py-16 bg-gray-50">
+          <div className="container-custom">
+            <NearbyCities
+              currentCitySlug={city}
+              currentServiceSlug={service}
+              currentModelSlug={model}
+            />
           </div>
         </section>
 

@@ -170,7 +170,8 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
 
 /**
  * Get popular city-service-model combinations for sitemap
- * Queries database to get top 30 combinations of cities, services, and models
+ * Queries database to get top 1,000 combinations of cities, services, and models
+ * Focuses on combinations with actual price data in dynamic_pricing table
  */
 async function getPopularCityServiceModels(): Promise<Array<{
   city: string;
@@ -181,124 +182,187 @@ async function getPopularCityServiceModels(): Promise<Array<{
   const supabase = getServiceSupabase();
   
   try {
-    // Fetch active service locations
-    const { data: cities } = await supabase
+    // Query to get city-service-model combinations with actual price data
+    // We join dynamic_pricing with device_models and services, then cross-join with service_locations
+    // Since dynamic_pricing is location-agnostic, we generate city-specific URLs for all active locations
+    const { data: combinations, error } = await supabase
+      .from('dynamic_pricing')
+      .select(`
+        service_id,
+        model_id,
+        updated_at,
+        services!inner (
+          name,
+          is_active,
+          updated_at
+        ),
+        device_models!inner (
+          name,
+          popularity_score,
+          is_active,
+          updated_at
+        )
+      `)
+      .eq('is_active', true)
+      .eq('services.is_active', true)
+      .eq('device_models.is_active', true)
+      .limit(1000);
+
+    if (error || !combinations) {
+      sitemapLogger.error('Error fetching dynamic pricing combinations:', error);
+      return getFallbackCombinations();
+    }
+
+    // Get active service locations
+    const { data: locations, error: locationsError } = await supabase
       .from('service_locations')
       .select('city, updated_at')
       .eq('is_active', true)
-      .order('city')
-      .limit(8);
+      .order('city');
 
-    // Fetch popular device models with pricing data
-    const { data: products } = await supabase
-      .from('mobileactive_products')
-      .select('model_name, brand_name, updated_at')
-      .not('model_name', 'is', null)
-      .order('model_name')
-      .limit(15);
+    if (locationsError || !locations) {
+      sitemapLogger.error('Error fetching service locations:', locationsError);
+      return getFallbackCombinations();
+    }
 
-    // Define common repair services
-    const services = [
-      { name: 'screen-repair', label: 'Screen Repair' },
-      { name: 'battery-replacement', label: 'Battery Replacement' },
-      { name: 'charging-port-repair', label: 'Charging Port Repair' },
-      { name: 'water-damage-repair', label: 'Water Damage Repair' },
-      { name: 'camera-repair', label: 'Camera Repair' }
-    ];
+    // If we have no combinations or locations, return fallback
+    if (combinations.length === 0 || locations.length === 0) {
+      sitemapLogger.warn('No dynamic pricing combinations or service locations found, using fallback');
+      return getFallbackCombinations();
+    }
 
-    const combinations: Array<{
+    // Debug: Log first combination structure
+    if (combinations.length > 0) {
+      sitemapLogger.debug('First combination structure:', JSON.stringify({
+        service_id: combinations[0].service_id,
+        model_id: combinations[0].model_id,
+        services: combinations[0].services,
+        device_models: combinations[0].device_models,
+        services_length: combinations[0].services?.length,
+        device_models_length: combinations[0].device_models?.length
+      }, null, 2));
+    }
+
+    // Sort combinations by popularity_score in descending order for SEO prioritization
+    const sortedCombinations = [...combinations].sort((a, b) => {
+      // Handle both array and object cases for joined data
+      const modelDataA = Array.isArray(a.device_models) ? a.device_models[0] : a.device_models;
+      const modelDataB = Array.isArray(b.device_models) ? b.device_models[0] : b.device_models;
+      
+      const scoreA = modelDataA?.popularity_score || 0;
+      const scoreB = modelDataB?.popularity_score || 0;
+      return scoreB - scoreA; // Descending order
+    });
+
+    sitemapLogger.info(`Sorted ${sortedCombinations.length} combinations by popularity_score`);
+
+    // Generate city-service-model combinations
+    const result: Array<{
       city: string;
       service: string;
       model: string;
       updated_at: string;
     }> = [];
 
-    // Generate combinations if we have database data
-    if (cities && cities.length > 0 && products && products.length > 0) {
-      // Create combinations for popular cities and models
-      const popularCities = cities.slice(0, 5); // Top 5 cities
-      const popularProducts = products.slice(0, 6); // Top 6 products
+    // For each combination, create entries for all active locations
+    // Limit to 1000 total combinations to avoid overwhelming the sitemap
+    const maxCombinations = 1000;
+    let combinationCount = 0;
 
-      popularCities.forEach(city => {
-        const citySlug = city.city.toLowerCase().replace(/\s+/g, '-');
-        
-        // Add 2 services per city for top products
-        popularProducts.slice(0, 3).forEach((product, idx) => {
-          const modelSlug = `${product.brand_name}-${product.model_name}`
-            .toLowerCase()
-            .replace(/\s+/g, '-')
-            .replace(/[^a-z0-9-]/g, '');
-          
-          const service = services[idx % services.length];
-          
-          combinations.push({
-            city: citySlug,
-            service: service.name,
-            model: modelSlug,
-            updated_at: product.updated_at || city.updated_at || new Date().toISOString()
-          });
+    for (const combo of sortedCombinations) {
+      if (combinationCount >= maxCombinations) break;
+
+      // Handle both array and object cases for joined data
+      // Supabase returns objects for single matches, arrays for multiple matches
+      const serviceData = Array.isArray(combo.services) ? combo.services[0] : combo.services;
+      const modelData = Array.isArray(combo.device_models) ? combo.device_models[0] : combo.device_models;
+      
+      const serviceName = serviceData?.name;
+      const modelName = modelData?.name;
+      
+      if (!serviceName || !modelName) {
+        sitemapLogger.debug(`Skipping combo - missing serviceName: ${serviceName}, modelName: ${modelName}`);
+        continue;
+      }
+
+      // Generate slugs
+      const serviceSlug = serviceName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const modelSlug = modelName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+      // Use the most recent updated_at from the combination
+      const comboUpdatedAt = combo.updated_at ||
+                            serviceData?.updated_at ||
+                            modelData?.updated_at ||
+                            new Date().toISOString();
+
+      // Create entries for each location
+      for (const location of locations) {
+        if (combinationCount >= maxCombinations) break;
+
+        const citySlug = location.city.toLowerCase().replace(/\s+/g, '-');
+
+        result.push({
+          city: citySlug,
+          service: serviceSlug,
+          model: modelSlug,
+          updated_at: comboUpdatedAt
         });
-      });
 
-      sitemapLogger.info(`Generated ${combinations.length} city-service-model combinations from database`);
+        combinationCount++;
+      }
     }
 
-    // If we don't have enough from database, add fallback popular combinations
-    if (combinations.length < 30) {
-      const fallbackCombinations = [
-        { city: 'vancouver', service: 'screen-repair', model: 'iphone-14', updated_at: new Date().toISOString() },
-        { city: 'vancouver', service: 'battery-replacement', model: 'iphone-14', updated_at: new Date().toISOString() },
-        { city: 'vancouver', service: 'screen-repair', model: 'samsung-galaxy-s23', updated_at: new Date().toISOString() },
-        { city: 'burnaby', service: 'screen-repair', model: 'iphone-14', updated_at: new Date().toISOString() },
-        { city: 'burnaby', service: 'battery-replacement', model: 'samsung-galaxy-s23', updated_at: new Date().toISOString() },
-        { city: 'richmond', service: 'charging-port-repair', model: 'google-pixel-7', updated_at: new Date().toISOString() },
-        { city: 'richmond', service: 'screen-repair', model: 'iphone-13', updated_at: new Date().toISOString() },
-        { city: 'coquitlam', service: 'screen-repair', model: 'macbook-pro-2023', updated_at: new Date().toISOString() },
-        { city: 'coquitlam', service: 'battery-replacement', model: 'macbook-air-2023', updated_at: new Date().toISOString() },
-        { city: 'north-vancouver', service: 'water-damage-repair', model: 'iphone-15', updated_at: new Date().toISOString() },
-        { city: 'north-vancouver', service: 'screen-repair', model: 'iphone-15', updated_at: new Date().toISOString() },
-        { city: 'surrey', service: 'screen-repair', model: 'samsung-galaxy-s22', updated_at: new Date().toISOString() },
-        { city: 'surrey', service: 'battery-replacement', model: 'iphone-13', updated_at: new Date().toISOString() },
-        { city: 'new-westminster', service: 'camera-repair', model: 'iphone-13', updated_at: new Date().toISOString() },
-        { city: 'new-westminster', service: 'screen-repair', model: 'samsung-galaxy-s21', updated_at: new Date().toISOString() },
-        { city: 'west-vancouver', service: 'screen-repair', model: 'iphone-14-pro', updated_at: new Date().toISOString() },
-        { city: 'west-vancouver', service: 'battery-replacement', model: 'macbook-pro-2023', updated_at: new Date().toISOString() },
-        { city: 'vancouver', service: 'charging-port-repair', model: 'samsung-galaxy-s23', updated_at: new Date().toISOString() },
-        { city: 'vancouver', service: 'camera-repair', model: 'google-pixel-8', updated_at: new Date().toISOString() },
-        { city: 'burnaby', service: 'water-damage-repair', model: 'iphone-14', updated_at: new Date().toISOString() },
-        { city: 'richmond', service: 'battery-replacement', model: 'iphone-14', updated_at: new Date().toISOString() },
-        { city: 'coquitlam', service: 'charging-port-repair', model: 'samsung-galaxy-s23', updated_at: new Date().toISOString() },
-        { city: 'surrey', service: 'camera-repair', model: 'google-pixel-7', updated_at: new Date().toISOString() },
-        { city: 'vancouver', service: 'screen-repair', model: 'ipad-pro-2023', updated_at: new Date().toISOString() },
-        { city: 'burnaby', service: 'screen-repair', model: 'ipad-air-2022', updated_at: new Date().toISOString() }
-      ];
-
-      // Add fallback combinations not already in list
-      fallbackCombinations.forEach(combo => {
-        const exists = combinations.some(
-          c => c.city === combo.city && c.service === combo.service && c.model === combo.model
-        );
-        if (!exists && combinations.length < 30) {
-          combinations.push(combo);
-        }
-      });
-    }
-
-    // Limit to 30 combinations for sitemap optimization
-    return combinations.slice(0, 30);
+    sitemapLogger.info(`Generated ${result.length} city-service-model combinations from dynamic pricing data`);
+    sitemapLogger.debug(`Processed ${combinationCount} total entries from ${sortedCombinations.length} combinations across ${locations.length} locations`);
+    return result;
     
   } catch (error) {
     sitemapLogger.error('Error fetching city-service-model combinations:', error);
     
-    // Return essential fallback combinations
-    return [
-      { city: 'vancouver', service: 'screen-repair', model: 'iphone-14', updated_at: new Date().toISOString() },
-      { city: 'vancouver', service: 'battery-replacement', model: 'iphone-14', updated_at: new Date().toISOString() },
-      { city: 'burnaby', service: 'screen-repair', model: 'samsung-galaxy-s23', updated_at: new Date().toISOString() },
-      { city: 'richmond', service: 'charging-port-repair', model: 'google-pixel-7', updated_at: new Date().toISOString() },
-      { city: 'coquitlam', service: 'screen-repair', model: 'macbook-pro-2023', updated_at: new Date().toISOString() }
-    ];
+    // Return fallback combinations on error
+    return getFallbackCombinations();
   }
+}
+
+/**
+ * Fallback combinations for when database queries fail
+ */
+function getFallbackCombinations(): Array<{
+  city: string;
+  service: string;
+  model: string;
+  updated_at: string;
+}> {
+  const now = new Date().toISOString();
+  
+  // Essential fallback combinations that maintain SEO value
+  return [
+    { city: 'vancouver', service: 'screen-repair', model: 'iphone-14', updated_at: now },
+    { city: 'vancouver', service: 'battery-replacement', model: 'iphone-14', updated_at: now },
+    { city: 'vancouver', service: 'screen-repair', model: 'samsung-galaxy-s23', updated_at: now },
+    { city: 'burnaby', service: 'screen-repair', model: 'iphone-14', updated_at: now },
+    { city: 'burnaby', service: 'battery-replacement', model: 'samsung-galaxy-s23', updated_at: now },
+    { city: 'richmond', service: 'charging-port-repair', model: 'google-pixel-7', updated_at: now },
+    { city: 'richmond', service: 'screen-repair', model: 'iphone-13', updated_at: now },
+    { city: 'coquitlam', service: 'screen-repair', model: 'macbook-pro-2023', updated_at: now },
+    { city: 'coquitlam', service: 'battery-replacement', model: 'macbook-air-2023', updated_at: now },
+    { city: 'north-vancouver', service: 'water-damage-repair', model: 'iphone-15', updated_at: now },
+    { city: 'north-vancouver', service: 'screen-repair', model: 'iphone-15', updated_at: now },
+    { city: 'surrey', service: 'screen-repair', model: 'samsung-galaxy-s22', updated_at: now },
+    { city: 'surrey', service: 'battery-replacement', model: 'iphone-13', updated_at: now },
+    { city: 'new-westminster', service: 'camera-repair', model: 'iphone-13', updated_at: now },
+    { city: 'new-westminster', service: 'screen-repair', model: 'samsung-galaxy-s21', updated_at: now },
+    { city: 'west-vancouver', service: 'screen-repair', model: 'iphone-14-pro', updated_at: now },
+    { city: 'west-vancouver', service: 'battery-replacement', model: 'macbook-pro-2023', updated_at: now },
+    { city: 'vancouver', service: 'charging-port-repair', model: 'samsung-galaxy-s23', updated_at: now },
+    { city: 'vancouver', service: 'camera-repair', model: 'google-pixel-8', updated_at: now },
+    { city: 'burnaby', service: 'water-damage-repair', model: 'iphone-14', updated_at: now },
+    { city: 'richmond', service: 'battery-replacement', model: 'iphone-14', updated_at: now },
+    { city: 'coquitlam', service: 'charging-port-repair', model: 'samsung-galaxy-s23', updated_at: now },
+    { city: 'surrey', service: 'camera-repair', model: 'google-pixel-7', updated_at: now },
+    { city: 'vancouver', service: 'screen-repair', model: 'ipad-pro-2023', updated_at: now },
+    { city: 'burnaby', service: 'screen-repair', model: 'ipad-air-2022', updated_at: now }
+  ];
 }
 
 /**

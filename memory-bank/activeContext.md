@@ -28,10 +28,18 @@ The website now features:
 - **Phase 5: Validation (Zero UI Regression)** – Verified all three service pages render identically to original. Fixed "Why Choose Us", "Process", and CTA sections to match original styling. End-to-end testing confirmed zero UI changes.
 - **Deployment & Build Fixes** – Resolved Vercel build failures by removing backup files causing route conflicts, organized legacy scripts, and ensured environment validation script accessibility. Successfully deployed to Vercel preview environment.
 
+### MobileActive Pipeline Removal – Cleanup & SEO Optimization (Completed January 2026)
+- **Comprehensive Analysis** – Analyzed 50+ mobileactive pipeline files and dependencies to ensure safe removal without breaking functionality.
+- **Code Updates** – Updated Sitemap API to remove `mobileactive_products` query, replaced with dynamic pricing system. Updated webhook cache invalidation to remove mobileactive references. Updated Staging Dashboard component to remove "mobileactive" dropdown option.
+- **File Deletion** – Safely deleted `scripts/mobileactive/` directory (50+ files) and three mobileactive-specific SQL migration files containing only mobileactive schema.
+- **SEO Verification** – Verified sitemap generates 1052 total URLs (52 static pages + 1000 dynamic city-service-model combinations) with proper URL patterns (`/repair/{city}/{service}/{model}`) and SEO prioritization by `popularity_score`.
+- **Zero Regression** – All functionality preserved: sitemap generation, webhook cache invalidation, staging dashboard, and application runtime. Development server runs successfully on port 3001.
+- **Technical Fixes** – Fixed Supabase query syntax errors, TypeScript compilation issues, and implemented client-side sorting for `popularity_score` (Supabase doesn't support ordering by joined table columns). Handled both array and object cases for joined Supabase data.
+
 ### Phase 4 – SEO Sitemap Freshness & Fallback (Completed January 2026)
 - **XML Sitemap Fixes** – Fixed `escapeXml` function with proper HTML entities, completed `generateFallbackSitemap` function.
-- **Database-Driven Freshness** – Sitemap uses `updated_at` timestamps from `service_locations`, `services`, `mobileactive_products` tables.
-- **Dynamic Route Inclusion** – City-service-model pages (e.g., `/repair/vancouver/screen-repair/iphone-14`) included in sitemap (55 total URLs).
+- **Database-Driven Freshness** – Sitemap uses `updated_at` timestamps from `service_locations`, `services`, and dynamic pricing tables.
+- **Dynamic Route Inclusion** – City-service-model pages (e.g., `/repair/vancouver/screen-repair/iphone-14`) included in sitemap (1052 total URLs with SEO prioritization by popularity_score).
 - **Webhook Regeneration** – Created `/api/webhooks/sitemap-regenerate` endpoint for real-time sitemap updates on database changes.
 - **Cache Integration** – Added `sitemapCache` with 24-hour TTL and cache invalidation support.
 - **Zero-Regression Guarantee** – All changes additive with no UI, booking system, or admin functionality impact.
