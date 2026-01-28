@@ -34,8 +34,12 @@ export const getSiteUrl = () => {
   
   // In production, check for explicit URL or use Vercel URL with https://
   const vercelUrl = process.env.NEXT_PUBLIC_VERCEL_URL;
-  const primaryDomain = 'travelling-technicians.ca';
-  const mainSiteUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || 'https://www.travelling-technicians.ca';
+  
+  // Check for site URL in multiple environment variables for backward compatibility
+  const mainSiteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_WEBSITE_URL ||
+    'https://www.travelling-technicians.ca';
   
   // If this is a Vercel preview deployment, use the Vercel URL
   if (vercelUrl && process.env.VERCEL_ENV === 'preview') {
