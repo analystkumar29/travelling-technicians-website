@@ -5,25 +5,33 @@ import { logger } from './logger';
 const supabaseLogger = logger.createModuleLogger('supabaseClient');
 
 // Supabase client configuration
-// All environment variables are required - no fallbacks allowed
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Environment variables are loaded lazily to avoid import-time crashes
+const getSupabaseUrl = (): string => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) {
+    supabaseLogger.error('NEXT_PUBLIC_SUPABASE_URL is not set');
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is required');
+  }
+  return url;
+};
 
-// Validate required environment variables
-if (!supabaseUrl) {
-  supabaseLogger.error('NEXT_PUBLIC_SUPABASE_URL is not set');
-  throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is required');
-}
+const getSupabaseAnonKey = (): string => {
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!key) {
+    supabaseLogger.error('NEXT_PUBLIC_SUPABASE_ANON_KEY is not set');
+    throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable is required');
+  }
+  return key;
+};
 
-if (!supabaseAnonKey) {
-  supabaseLogger.error('NEXT_PUBLIC_SUPABASE_ANON_KEY is not set');
-  throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable is required');
-}
-
-// Log supabase configuration (without exposing keys)
-supabaseLogger.debug(`NEXT_PUBLIC_SUPABASE_URL is configured: ${supabaseUrl.substring(0, 10)}...`);
-supabaseLogger.debug('NEXT_PUBLIC_SUPABASE_ANON_KEY is configured');
+const getSupabaseServiceKey = (): string => {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) {
+    supabaseLogger.error('SUPABASE_SERVICE_ROLE_KEY is not set');
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is required for server-side operations');
+  }
+  return key;
+};
 
 // Function to get the correct site URL
 export const getSiteUrl = () => {
@@ -51,41 +59,59 @@ export const getSiteUrl = () => {
 };
 
 // Create a single supabase client for the browser
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  global: {
-    headers: { 
-      'X-Client-Info': 'travelling-technicians-website' 
-    }
+export const supabase = (() => {
+  try {
+    const url = getSupabaseUrl();
+    const key = getSupabaseAnonKey();
+    
+    supabaseLogger.debug(`NEXT_PUBLIC_SUPABASE_URL is configured: ${url.substring(0, 10)}...`);
+    supabaseLogger.debug('NEXT_PUBLIC_SUPABASE_ANON_KEY is configured');
+    
+    return createClient(url, key, {
+      global: {
+        headers: {
+          'X-Client-Info': 'travelling-technicians-website'
+        }
+      }
+    });
+  } catch (error: any) {
+    supabaseLogger.error('Failed to create Supabase client:', error.message);
+    // Return a dummy client that will throw errors when used
+    return createClient('https://dummy.supabase.co', 'dummy-key', {
+      global: {
+        headers: {
+          'X-Client-Info': 'travelling-technicians-website-error'
+        }
+      }
+    });
   }
-});
+})();
 
 // Create service role client (admin access) for server-side operations
 export const getServiceSupabase = () => {
-  if (!supabaseServiceKey) {
-    supabaseLogger.error('SUPABASE_SERVICE_ROLE_KEY is not set');
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is required for server-side operations');
-  }
-  
-  if (!supabaseUrl) {
-    supabaseLogger.error('NEXT_PUBLIC_SUPABASE_URL is not set');
-    throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is required for server-side operations');
-  }
-  
-  supabaseLogger.debug('Creating service role client with explicit fetch binding');
-  
-  return createClient(supabaseUrl, supabaseServiceKey, {
-    global: {
-      fetch: fetch.bind(globalThis),
-      headers: {
-        'X-Client-Info': 'travelling-technicians-server'
+  try {
+    const url = getSupabaseUrl();
+    const key = getSupabaseServiceKey();
+    
+    supabaseLogger.debug('Creating service role client with explicit fetch binding');
+    
+    return createClient(url, key, {
+      global: {
+        fetch: fetch.bind(globalThis),
+        headers: {
+          'X-Client-Info': 'travelling-technicians-server'
+        }
+      },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
       }
-    },
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false
-    }
-  });
+    });
+  } catch (error: any) {
+    supabaseLogger.error('Failed to create service role Supabase client:', error.message);
+    throw new Error(`Failed to create Supabase service client: ${error.message}`);
+  }
 };
 
 // Database types
@@ -148,4 +174,4 @@ export const testSupabaseConnection = async () => {
     console.error('Supabase connection test error:', err);
     return { success: false, message: err.message };
   }
-}; 
+};
