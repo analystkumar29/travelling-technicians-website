@@ -94,7 +94,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const result = await supabase
         .from('bookings')
-        .select('count(*)', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true });
       
       tableData = result.data;
       tableError = result.error;
@@ -114,7 +114,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
       }
       
-      console.log('Table check successful, count:', tableData);
+      console.log('Table check successful, count:', result.count);
     } catch (error) {
       console.error('Exception during table check:', error);
       return res.status(500).json({
