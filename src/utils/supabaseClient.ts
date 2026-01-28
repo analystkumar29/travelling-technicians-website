@@ -71,11 +71,19 @@ export const getServiceSupabase = () => {
     throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is required for server-side operations');
   }
   
+  supabaseLogger.debug('Creating service role client with explicit fetch binding');
+  
   return createClient(supabaseUrl, supabaseServiceKey, {
     global: {
+      fetch: fetch.bind(globalThis),
       headers: {
         'X-Client-Info': 'travelling-technicians-server'
       }
+    },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false
     }
   });
 };

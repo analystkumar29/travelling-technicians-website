@@ -1,10 +1,13 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getServiceSupabase } from '@/utils/supabaseClient';
+import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // This endpoint is for testing the Supabase connection and booking creation
+  const timestamp = new Date().toISOString();
+  const isProduction = process.env.NODE_ENV === 'production';
+  
   try {
-    console.log('Testing Supabase connection...');
+    console.log(`[${timestamp}] Testing Supabase connection in ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} environment...`);
 
     // Check environment variables
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -27,25 +30,172 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Get Supabase client with service role
-    const supabase = getServiceSupabase();
+    console.log('Creating Supabase client with service role...');
+    console.log('Supabase URL present:', !!supabaseUrl);
+    console.log('Service role key present:', !!serviceRoleKey);
+    console.log('Service role key first 10 chars:', serviceRoleKey?.substring(0, 10) + '...');
+    
+    // Test service role key with direct HTTP request first
+    console.log('Testing service role key with direct HTTP request...');
+    try {
+      const testUrl = `${supabaseUrl}/rest/v1/bookings?select=count&limit=1`;
+      const testResponse = await fetch(testUrl, {
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Direct HTTP test response status:', testResponse.status);
+      console.log('Direct HTTP test response headers:', Object.fromEntries(testResponse.headers.entries()));
+      
+      if (!testResponse.ok) {
+        const errorText = await testResponse.text();
+        console.error('Direct HTTP test failed:', {
+          status: testResponse.status,
+          statusText: testResponse.statusText,
+          body: errorText
+        });
+      } else {
+        console.log('Direct HTTP test successful');
+      }
+    } catch (httpError) {
+      console.error('Direct HTTP test exception:', httpError);
+    }
+    
+    // Create Supabase client directly in the API route to isolate issues
+    console.log('Creating Supabase client directly in API route...');
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      global: {
+        fetch: fetch.bind(globalThis),
+        headers: {
+          'X-Client-Info': 'travelling-technicians-server-test'
+        }
+      },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
+      }
+    });
+    
+    // Debug: Check if supabase client has the expected methods
+    console.log('Supabase client created:', {
+      hasFrom: typeof supabase.from === 'function',
+      clientType: typeof supabase
+    });
 
     // 1. First try a simple query to check connection
     console.log('Checking table existence...');
-    const { data: tableData, error: tableError } = await supabase
-      .from('bookings')
-      .select('count(*)', { count: 'exact', head: true });
+    let tableData: any = null;
+    let tableError: any = null;
+    
+    try {
+      const result = await supabase
+        .from('bookings')
+        .select('count(*)', { count: 'exact', head: true });
+      
+      tableData = result.data;
+      tableError = result.error;
 
-    if (tableError) {
-      console.error('Error checking table:', tableError);
+      if (tableError) {
+        console.error('Error checking table:', {
+          message: tableError.message,
+          code: tableError.code,
+          details: tableError.details,
+          hint: tableError.hint,
+          fullError: JSON.stringify(tableError, null, 2)
+        });
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to connect to Supabase or table not found',
+          details: tableError
+        });
+      }
+      
+      console.log('Table check successful, count:', tableData);
+    } catch (error) {
+      console.error('Exception during table check:', error);
       return res.status(500).json({
         success: false,
-        error: 'Failed to connect to Supabase or table not found',
-        details: tableError
+        error: 'Exception during table check',
+        details: error instanceof Error ? error.message : String(error)
       });
     }
 
-    // 2. Try inserting a test booking
-    console.log('Attempting to insert test booking...');
+    // 2. Fetch foreign key IDs from reference tables for V2 schema
+    console.log('Fetching foreign key IDs for V2 schema...');
+    
+    // Get first available device model ID
+    const { data: deviceModels, error: deviceModelsError } = await supabase
+      .from('device_models')
+      .select('id')
+      .limit(1);
+    
+    if (deviceModelsError) {
+      console.error('Error fetching device models:', deviceModelsError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch device models',
+        details: deviceModelsError
+      });
+    }
+    
+    // Get first available service ID
+    const { data: services, error: servicesError } = await supabase
+      .from('services')
+      .select('id')
+      .limit(1);
+    
+    if (servicesError) {
+      console.error('Error fetching services:', servicesError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch services',
+        details: servicesError
+      });
+    }
+    
+    // Get first available service location ID
+    const { data: serviceLocations, error: serviceLocationsError } = await supabase
+      .from('service_locations')
+      .select('id')
+      .limit(1);
+    
+    if (serviceLocationsError) {
+      console.error('Error fetching service locations:', serviceLocationsError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch service locations',
+        details: serviceLocationsError
+      });
+    }
+    
+    // Check if we have all required foreign keys
+    if (!deviceModels?.[0]?.id || !services?.[0]?.id || !serviceLocations?.[0]?.id) {
+      console.error('Missing foreign key references:', {
+        deviceModelId: deviceModels?.[0]?.id,
+        serviceId: services?.[0]?.id,
+        serviceLocationId: serviceLocations?.[0]?.id
+      });
+      return res.status(500).json({
+        success: false,
+        error: 'Missing required foreign key references in database',
+        details: {
+          deviceModelId: deviceModels?.[0]?.id,
+          serviceId: services?.[0]?.id,
+          serviceLocationId: serviceLocations?.[0]?.id
+        }
+      });
+    }
+    
+    const modelId = deviceModels[0].id;
+    const serviceId = services[0].id;
+    const serviceLocationId = serviceLocations[0].id;
+
+    // 3. Try inserting a test booking with V2 schema
+    console.log('Attempting to insert test booking with V2 schema...');
     const testReference = `TEST-${Date.now()}`;
     
     const { data: insertData, error: insertError } = await supabase
@@ -55,17 +205,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           customer_name: 'Test Customer',
           customer_email: 'test@example.com',
           customer_phone: '123-456-7890',
-          device_type: 'mobile',
-          device_brand: 'Test Brand',
-          device_model: 'Test Model',
-          issue_description: 'Test insertion',
-          service_type: 'test',
-          address: 'Test Address',
-          postal_code: 'T3ST',
-          booking_date: new Date().toISOString().split('T')[0],
-          booking_time: '09-11',
+          customer_address: 'Test Address, T3ST',
+          model_id: modelId,
+          service_id: serviceId,
+          location_id: serviceLocationId,
+          scheduled_at: new Date().toISOString(),
           status: 'pending',
-          reference_number: testReference,
+          booking_ref: testReference,
         }
       ])
       .select();
@@ -79,12 +225,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // 3. Verify the insertion
+    // 4. Verify the insertion
     console.log('Verifying test booking insertion...');
     const { data: verifyData, error: verifyError } = await supabase
       .from('bookings')
       .select('*')
-      .eq('reference_number', testReference)
+      .eq('booking_ref', testReference)
       .single();
 
     if (verifyError) {
@@ -96,11 +242,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       success: true,
       message: 'Supabase connection test complete',
       tableCheck: { success: !tableError, data: tableData },
+      foreignKeys: {
+        modelId,
+        serviceId,
+        serviceLocationId
+      },
       insertion: { success: !insertError, data: insertData },
-      verification: { 
-        success: !verifyError, 
+      verification: {
+        success: !verifyError,
         found: !!verifyData,
-        data: verifyData 
+        data: verifyData
       }
     });
   } catch (error) {
@@ -111,4 +262,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       stack: error instanceof Error ? error.stack : undefined
     });
   }
-} 
+}
