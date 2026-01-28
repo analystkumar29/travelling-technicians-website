@@ -5,9 +5,9 @@ import { FaPhone, FaClock, FaShieldAlt, FaMapMarkerAlt, FaTools, FaCheckCircle }
 import { LocalBusinessSchema, ServiceSchema } from '@/components/seo/StructuredData';
 import { TechnicianSchema } from '@/components/seo/TechnicianSchema';
 import Breadcrumbs from '@/components/seo/Breadcrumbs';
-import NearbyCities from '@/components/seo/NearbyCities';
+import NearbyCities, { NearbyCity } from '@/components/seo/NearbyCities';
 import { GetStaticPaths, GetStaticProps } from 'next';
-import { getCityData, getDynamicPricing } from '@/lib/data-service';
+import { getCityData, getDynamicPricing, getNearbyLocations } from '@/lib/data-service';
 import { createBreadcrumbs } from '@/utils/seoHelpers';
 
 interface CityServiceModelPageProps {
@@ -37,6 +37,7 @@ interface CityServiceModelPageProps {
     priceRange: string;
   };
   wikidataId?: string;
+  nearbyCities: NearbyCity[];
 }
 
 // Wikidata mapping for BC cities
@@ -58,32 +59,13 @@ const WIKIDATA_MAP: Record<string, string> = {
 export const getStaticPaths: GetStaticPaths = async () => {
   try {
     // Import the data service functions
-    const { getAllActiveCities } = await import('@/lib/data-service');
+    const { getAllActiveCities, getAllActiveServices, getModelsForService } = await import('@/lib/data-service');
     
     // Get all active cities from database
     const activeCities = await getAllActiveCities();
     
-    // Service slugs from the service mapping in getDynamicPricing
-    const serviceSlugs = [
-      'screen-repair',
-      'battery-replacement',
-      'charging-port-repair',
-      'laptop-screen-repair',
-      'water-damage-repair',
-      'software-repair',
-      'camera-repair'
-    ];
-    
-    // Model slugs from the model mapping in getDynamicPricing
-    const modelSlugs = [
-      'iphone-14',
-      'iphone-15',
-      'iphone-13',
-      'samsung-galaxy-s23',
-      'samsung-galaxy-s22',
-      'google-pixel-7',
-      'macbook-pro-2023'
-    ];
+    // Get all active services from database
+    const activeServices = await getAllActiveServices();
     
     // Generate all combinations
     const paths = [];
@@ -91,8 +73,15 @@ export const getStaticPaths: GetStaticPaths = async () => {
     for (const city of activeCities) {
       const citySlug = city.slug;
       
-      for (const serviceSlug of serviceSlugs) {
-        for (const modelSlug of modelSlugs) {
+      for (const service of activeServices) {
+        const serviceSlug = service.slug;
+        
+        // Get models for this specific service
+        const models = await getModelsForService(serviceSlug);
+        
+        for (const model of models) {
+          const modelSlug = model.slug;
+          
           paths.push({
             params: {
               city: citySlug,
@@ -105,7 +94,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
     }
     
     // Also include the original popular combinations as a fallback
-    // in case database query fails or returns no cities
+    // in case database query fails or returns no combinations
     if (paths.length === 0) {
       const popularCombinations = [
         { city: 'vancouver', service: 'screen-repair', model: 'iphone-14' },
@@ -217,6 +206,19 @@ export const getStaticProps: GetStaticProps<CityServiceModelPageProps> = async (
 
     const wikidataId = WIKIDATA_MAP[citySlug];
 
+    // Fetch nearby cities for internal linking
+    let nearbyCities: NearbyCity[] = [];
+    try {
+      nearbyCities = await getNearbyLocations(citySlug);
+      // Filter out the current city and limit to 3
+      nearbyCities = nearbyCities
+        .filter(city => city.slug !== citySlug)
+        .slice(0, 3);
+    } catch (nearbyError) {
+      console.error(`Error fetching nearby cities for ${citySlug}:`, nearbyError);
+      // Continue without nearby cities - empty array is fine
+    }
+
     return {
       props: {
         city: citySlug,
@@ -229,7 +231,8 @@ export const getStaticProps: GetStaticProps<CityServiceModelPageProps> = async (
         serviceData,
         modelData,
         pricingData,
-        wikidataId
+        wikidataId,
+        nearbyCities
       },
       revalidate: 3600
     };
@@ -268,7 +271,8 @@ export const getStaticProps: GetStaticProps<CityServiceModelPageProps> = async (
           discountedPrice: fallbackDiscountedPrice,
           priceRange: fallbackPriceRange
         },
-        wikidataId: WIKIDATA_MAP[citySlug]
+        wikidataId: WIKIDATA_MAP[citySlug],
+        nearbyCities: [] // Empty array for fallback
       },
       revalidate: 3600
     };
@@ -283,7 +287,8 @@ export default function CityServiceModelPage({
   serviceData,
   modelData,
   pricingData,
-  wikidataId
+  wikidataId,
+  nearbyCities
 }: CityServiceModelPageProps) {
   const pageTitle = `${modelData.displayName} ${serviceData.displayName} in ${cityData.name} | The Travelling Technicians`;
   const metaDescription = `Professional ${modelData.displayName} ${serviceData.displayName.toLowerCase()} service in ${cityData.name}, BC. Doorstep repair with certified technicians. ${pricingData.priceRange} with 90-day warranty.`;
@@ -610,6 +615,7 @@ export default function CityServiceModelPage({
               currentCitySlug={city}
               currentServiceSlug={service}
               currentModelSlug={model}
+              nearbyCities={nearbyCities}
             />
           </div>
         </section>

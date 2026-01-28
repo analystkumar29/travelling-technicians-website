@@ -1408,6 +1408,260 @@ function getFallbackPricing(serviceSlug: string): {
 }
 
 /**
+ * Get all active services for ISR paths
+ * Fetches all active services from the database
+ */
+export async function getAllActiveServices(): Promise<Array<{
+  id: number;
+  name: string;
+  display_name: string;
+  slug: string;
+  device_type_id: number;
+  device_type: string;
+  is_doorstep_eligible: boolean;
+  is_popular: boolean;
+  is_limited: boolean;
+  base_price?: number;
+  estimated_duration_minutes?: number;
+}>> {
+  try {
+    const supabase = getServiceSupabase();
+    
+    // Fetch active services from database with device type info
+    const { data, error } = await supabase
+      .from('services')
+      .select(`
+        id,
+        name,
+        display_name,
+        device_type_id,
+        is_doorstep_eligible,
+        is_popular,
+        is_limited,
+        base_price,
+        estimated_duration_minutes,
+        device_types!inner(name)
+      `)
+      .eq('is_active', true)
+      .eq('device_types.is_active', true)
+      .order('sort_order', { ascending: true });
+
+    if (error) {
+      dataLogger.warn('Error fetching active services, using fallback', { error: error.message });
+      // Return empty array as fallback
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      dataLogger.info('No active services found in database');
+      return [];
+    }
+
+    // Map database results to our expected format
+    const services = data.map(service => {
+      // Convert service name to URL slug format
+      const slug = service.name.toLowerCase().replace(/\s+/g, '-');
+      
+      // device_types is an array, get the first one
+      const deviceTypeName = service.device_types && service.device_types.length > 0
+        ? service.device_types[0].name
+        : 'unknown';
+      
+      return {
+        id: service.id,
+        name: service.name,
+        display_name: service.display_name || service.name,
+        slug: slug,
+        device_type_id: service.device_type_id,
+        device_type: deviceTypeName,
+        is_doorstep_eligible: service.is_doorstep_eligible || false,
+        is_popular: service.is_popular || false,
+        is_limited: service.is_limited || false,
+        base_price: service.base_price ? parseFloat(service.base_price as string) : undefined,
+        estimated_duration_minutes: service.estimated_duration_minutes
+      };
+    });
+
+    dataLogger.info(`Found ${services.length} active services from database`, {
+      services: services.map(s => s.slug)
+    });
+
+    return services;
+  } catch (error) {
+    dataLogger.error('Unexpected error fetching services, using fallback', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    return [];
+  }
+}
+
+/**
+ * Get all device models for a specific service
+ * Fetches models that have pricing for the given service
+ */
+export async function getModelsForService(serviceSlug: string): Promise<Array<{
+  id: number;
+  name: string;
+  display_name: string;
+  slug: string;
+  brand_id: number;
+  brand_name: string;
+  device_type_id: number;
+  device_type: string;
+  is_active: boolean;
+  base_price?: number;
+  discounted_price?: number;
+}>> {
+  try {
+    const supabase = getServiceSupabase();
+    
+    // First, get the service ID from the service slug
+    // Need to map URL slug to database service name
+    const serviceMapping: Record<string, string> = {
+      'screen-repair': 'screen-replacement',
+      'battery-replacement': 'battery-replacement',
+      'charging-port-repair': 'charging-port-repair',
+      'laptop-screen-repair': 'laptop-screen-replacement',
+      'water-damage-repair': 'water-damage-repair',
+      'software-repair': 'software-repair',
+      'camera-repair': 'camera-repair'
+    };
+    
+    const serviceName = serviceMapping[serviceSlug] || serviceSlug;
+    
+    // Find the service by name
+    const { data: serviceData, error: serviceError } = await supabase
+      .from('services')
+      .select('id, name, device_type_id')
+      .ilike('name', `%${serviceName}%`)
+      .eq('is_active', true)
+      .single();
+
+    if (serviceError || !serviceData) {
+      dataLogger.warn(`Service not found for slug ${serviceSlug}, using fallback`, { error: serviceError?.message });
+      return [];
+    }
+
+    // Get all device models that have pricing for this service
+    // Use a simpler query: first get model IDs from dynamic_pricing, then fetch models
+    const { data: pricingData, error: pricingError } = await supabase
+      .from('dynamic_pricing')
+      .select(`
+        model_id,
+        base_price,
+        discounted_price,
+        device_models!inner(
+          id,
+          name,
+          display_name,
+          brand_id,
+          device_type_id,
+          is_active
+        )
+      `)
+      .eq('service_id', serviceData.id)
+      .eq('is_active', true)
+      .eq('device_models.is_active', true);
+
+    if (pricingError) {
+      dataLogger.warn(`Error fetching models for service ${serviceSlug}, using fallback`, { error: pricingError.message });
+      return [];
+    }
+
+    if (!pricingData || pricingData.length === 0) {
+      dataLogger.info(`No models found for service ${serviceSlug}`);
+      return [];
+    }
+
+    // Get unique model IDs
+    const modelIds = [...new Set(pricingData.map(item => item.model_id).filter(Boolean))];
+    
+    if (modelIds.length === 0) {
+      dataLogger.info(`No valid model IDs found for service ${serviceSlug}`);
+      return [];
+    }
+
+    // Fetch complete model data with brand and device type info
+    const { data: modelsData, error: modelsError } = await supabase
+      .from('device_models')
+      .select(`
+        id,
+        name,
+        display_name,
+        brand_id,
+        device_type_id,
+        is_active,
+        brands(name),
+        device_types(name)
+      `)
+      .in('id', modelIds)
+      .eq('is_active', true);
+
+    if (modelsError) {
+      dataLogger.warn(`Error fetching model details for service ${serviceSlug}, using fallback`, { error: modelsError.message });
+      return [];
+    }
+
+    if (!modelsData || modelsData.length === 0) {
+      dataLogger.info(`No model details found for service ${serviceSlug}`);
+      return [];
+    }
+
+    // Create a map of model ID to pricing data
+    const pricingMap = new Map<number, { base_price?: string; discounted_price?: string }>();
+    pricingData.forEach(item => {
+      if (item.model_id) {
+        pricingMap.set(item.model_id, {
+          base_price: item.base_price,
+          discounted_price: item.discounted_price
+        });
+      }
+    });
+
+    // Map models to our expected format
+    const models = modelsData.map(model => {
+      const pricing = pricingMap.get(model.id);
+      // Convert model name to URL slug format
+      const slug = model.name.toLowerCase().replace(/\s+/g, '-');
+      
+      // Handle nested arrays for brands and device_types
+      const brandName = model.brands && Array.isArray(model.brands) && model.brands.length > 0
+        ? model.brands[0].name
+        : 'Unknown';
+      
+      const deviceTypeName = model.device_types && Array.isArray(model.device_types) && model.device_types.length > 0
+        ? model.device_types[0].name
+        : 'unknown';
+      
+      return {
+        id: model.id,
+        name: model.name,
+        display_name: model.display_name || model.name,
+        slug: slug,
+        brand_id: model.brand_id,
+        brand_name: brandName,
+        device_type_id: model.device_type_id,
+        device_type: deviceTypeName,
+        is_active: model.is_active,
+        base_price: pricing?.base_price ? parseFloat(pricing.base_price as string) : undefined,
+        discounted_price: pricing?.discounted_price ? parseFloat(pricing.discounted_price as string) : undefined
+      };
+    });
+
+    dataLogger.info(`Found ${models.length} unique models for service ${serviceSlug}`, {
+      models: models.map(m => m.slug)
+    });
+
+    return models;
+  } catch (error) {
+    dataLogger.error(`Unexpected error fetching models for service ${serviceSlug}, using fallback`, {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    return [];
+  }
+}
+
+/**
  * Get all active service slugs for ISR paths
  * Fetches active device types from database and maps them to service page slugs
  */
@@ -1482,6 +1736,180 @@ function getFallbackServiceSlugs(): Array<{ slug: string; deviceType: string }> 
     { slug: 'mobile-repair', deviceType: 'mobile' },
     { slug: 'tablet-repair', deviceType: 'tablet' }
   ];
+}
+
+/**
+ * Get service data by slug
+ * Fetches service information from database using URL slug
+ */
+export async function getServiceBySlug(serviceSlug: string): Promise<{
+  id: number;
+  name: string;
+  display_name: string;
+  slug: string;
+  device_type_id: number;
+  device_type: string;
+  is_doorstep_eligible: boolean;
+  is_popular: boolean;
+  is_limited: boolean;
+  base_price?: number;
+  estimated_duration_minutes?: number;
+} | null> {
+  try {
+    const supabase = getServiceSupabase();
+    
+    // Map URL slug to database service name
+    const serviceMapping: Record<string, string> = {
+      'screen-repair': 'screen-replacement',
+      'battery-replacement': 'battery-replacement',
+      'charging-port-repair': 'charging-port-repair',
+      'laptop-screen-repair': 'laptop-screen-replacement',
+      'water-damage-repair': 'water-damage-diagnostics',
+      'software-repair': 'software-repair',
+      'camera-repair': 'camera-repair'
+    };
+    
+    const serviceName = serviceMapping[serviceSlug] || serviceSlug;
+    
+    // Fetch service from database
+    const { data, error } = await supabase
+      .from('services')
+      .select(`
+        id,
+        name,
+        display_name,
+        device_type_id,
+        is_doorstep_eligible,
+        is_popular,
+        is_limited,
+        base_price,
+        estimated_duration_minutes,
+        device_types!inner(name)
+      `)
+      .ilike('name', `%${serviceName}%`)
+      .eq('is_active', true)
+      .single();
+
+    if (error) {
+      dataLogger.warn(`Service not found for slug ${serviceSlug}`, { error: error.message });
+      return null;
+    }
+
+    if (!data) {
+      dataLogger.info(`No service found for slug ${serviceSlug}`);
+      return null;
+    }
+
+    // Map database result to our expected format
+    const deviceTypeName = data.device_types && Array.isArray(data.device_types) && data.device_types.length > 0
+      ? data.device_types[0].name
+      : 'unknown';
+    
+    return {
+      id: data.id,
+      name: data.name,
+      display_name: data.display_name || data.name,
+      slug: serviceSlug,
+      device_type_id: data.device_type_id,
+      device_type: deviceTypeName,
+      is_doorstep_eligible: data.is_doorstep_eligible || false,
+      is_popular: data.is_popular || false,
+      is_limited: data.is_limited || false,
+      base_price: data.base_price ? parseFloat(data.base_price as string) : undefined,
+      estimated_duration_minutes: data.estimated_duration_minutes
+    };
+  } catch (error) {
+    dataLogger.error(`Unexpected error fetching service for slug ${serviceSlug}`, {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    return null;
+  }
+}
+
+/**
+ * Get model data by slug
+ * Fetches model information from database using URL slug
+ */
+export async function getModelBySlug(modelSlug: string): Promise<{
+  id: number;
+  name: string;
+  display_name: string;
+  slug: string;
+  brand_id: number;
+  brand_name: string;
+  device_type_id: number;
+  device_type: string;
+  is_active: boolean;
+} | null> {
+  try {
+    const supabase = getServiceSupabase();
+    
+    // Map URL slug to database model name
+    const modelMapping: Record<string, string> = {
+      'iphone-14': 'iPhone 14',
+      'iphone-15': 'iPhone 15',
+      'iphone-13': 'iPhone 13',
+      'samsung-galaxy-s23': 'Samsung Galaxy S23',
+      'samsung-galaxy-s22': 'Samsung Galaxy S22',
+      'google-pixel-7': 'Google Pixel 7',
+      'macbook-pro-2023': 'MacBook Pro 14-inch'
+    };
+    
+    const modelName = modelMapping[modelSlug] || modelSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    
+    // Fetch model from database
+    const { data, error } = await supabase
+      .from('device_models')
+      .select(`
+        id,
+        name,
+        display_name,
+        brand_id,
+        device_type_id,
+        is_active,
+        brands(name),
+        device_types(name)
+      `)
+      .ilike('name', `%${modelName}%`)
+      .eq('is_active', true)
+      .single();
+
+    if (error) {
+      dataLogger.warn(`Model not found for slug ${modelSlug}`, { error: error.message });
+      return null;
+    }
+
+    if (!data) {
+      dataLogger.info(`No model found for slug ${modelSlug}`);
+      return null;
+    }
+
+    // Map database result to our expected format
+    const brandName = data.brands && Array.isArray(data.brands) && data.brands.length > 0
+      ? data.brands[0].name
+      : 'Unknown';
+    
+    const deviceTypeName = data.device_types && Array.isArray(data.device_types) && data.device_types.length > 0
+      ? data.device_types[0].name
+      : 'unknown';
+    
+    return {
+      id: data.id,
+      name: data.name,
+      display_name: data.display_name || data.name,
+      slug: modelSlug,
+      brand_id: data.brand_id,
+      brand_name: brandName,
+      device_type_id: data.device_type_id,
+      device_type: deviceTypeName,
+      is_active: data.is_active
+    };
+  } catch (error) {
+    dataLogger.error(`Unexpected error fetching model for slug ${modelSlug}`, {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    return null;
+  }
 }
 
 /**

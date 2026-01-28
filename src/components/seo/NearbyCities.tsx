@@ -18,6 +18,7 @@ export interface NearbyCitiesProps {
   showDistance?: boolean;
   showPriceAdjustment?: boolean;
   className?: string;
+  nearbyCities?: NearbyCity[];
 }
 
 export default function NearbyCities({
@@ -27,13 +28,22 @@ export default function NearbyCities({
   maxCities = 3,
   showDistance = true,
   showPriceAdjustment = false,
-  className = ''
+  className = '',
+  nearbyCities: propNearbyCities
 }: NearbyCitiesProps) {
-  const [nearbyCities, setNearbyCities] = React.useState<NearbyCity[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const [nearbyCities, setNearbyCities] = React.useState<NearbyCity[]>(propNearbyCities || []);
+  const [loading, setLoading] = React.useState(!propNearbyCities);
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
+    // If nearbyCities prop is provided, use it and skip client-side fetching
+    if (propNearbyCities) {
+      setNearbyCities(propNearbyCities);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     async function fetchNearbyCities() {
       try {
         setLoading(true);
@@ -56,7 +66,7 @@ export default function NearbyCities({
     }
 
     fetchNearbyCities();
-  }, [currentCitySlug, maxCities]);
+  }, [currentCitySlug, maxCities, propNearbyCities]);
 
   if (loading) {
     return (
