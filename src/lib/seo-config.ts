@@ -1,4 +1,4 @@
-import { DefaultSeoProps } from 'next-seo';
+import { DefaultSeoProps } from 'next-seo/pages';
 
 /**
  * Global SEO configuration for the entire application
@@ -29,9 +29,6 @@ export const defaultSeoConfig: DefaultSeoProps = {
     handle: '@travellingtechs',
     site: '@travellingtechs',
     cardType: 'summary_large_image',
-    title: 'The Travelling Technicians | Mobile & Laptop Repair',
-    description: 'Expert doorstep device repair across Vancouver and Lower Mainland. Same-day service available.',
-    image: 'https://travelling-technicians.ca/images/logo/logo-orange-optimized.webp',
   },
   additionalMetaTags: [
     {
@@ -102,11 +99,6 @@ export function generatePageSeo(
     image?: string;
     type?: string;
     url?: string;
-  },
-  twitter?: {
-    title?: string;
-    description?: string;
-    image?: string;
   }
 ) {
   return {
@@ -117,10 +109,7 @@ export function generatePageSeo(
       ...defaultSeoConfig.openGraph,
       ...openGraph,
     },
-    twitter: {
-      ...defaultSeoConfig.twitter,
-      ...twitter,
-    },
+    twitter: defaultSeoConfig.twitter,
   };
 }
 
