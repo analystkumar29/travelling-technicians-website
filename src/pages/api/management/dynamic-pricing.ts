@@ -1,18 +1,25 @@
+/**
+ * Admin API: Dynamic Pricing Management
+ * Aligned with ACTUAL DATABASE SCHEMA
+ * 
+ * Manages dynamic_pricing records with:
+ * - pricing_tier as TEXT field ('standard' | 'premium')
+ * - No pricing_tiers table (doesn't exist)
+ * - Uses compare_at_price (not discounted_price)
+ * - Includes part_quality, part_warranty_months, includes_installation
+ */
+
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getServiceSupabase } from '@/utils/supabaseClient';
 import { logger } from '@/utils/logger';
 import { 
   DynamicPricingRecord, 
-  AdminApiResponse, 
-  CreateDynamicPricingRequest,
-  UpdateDynamicPricingRequest,
-  isValidUUID,
-  assertValidUUID
+  AdminApiResponse,
+  isValidUUID
 } from '@/types/admin';
 
 const apiLogger = logger.createModuleLogger('api/management/dynamic-pricing');
 
-// Type alias for consistency
 type ApiResponse<T = any> = AdminApiResponse<T>;
 
 export default async function handler(
@@ -49,27 +56,32 @@ export default async function handler(
   }
 }
 
+/**
+ * GET /api/management/dynamic-pricing
+ * Query params: model_id, service_id, pricing_tier
+ */
 async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: any) {
   try {
-    apiLogger.info('Fetching dynamic pricing entries');
+    const { model_id, service_id, pricing_tier } = req.query;
 
-    const { model_id, service_id, tier_id } = req.query;
+    apiLogger.info('Fetching dynamic pricing entries', { model_id, service_id, pricing_tier });
 
-    // Use simple query pattern - fetch all pricing entries
+    // Fetch pricing records
     let query = supabase
       .from('dynamic_pricing')
       .select('*')
       .order('created_at', { ascending: false });
 
     // Apply filters if provided
-    if (model_id) {
+    if (model_id && typeof model_id === 'string') {
       query = query.eq('model_id', model_id);
     }
-    if (service_id) {
+    if (service_id && typeof service_id === 'string') {
       query = query.eq('service_id', service_id);
     }
-    if (tier_id) {
-      query = query.eq('pricing_tier_id', tier_id);
+    if (pricing_tier && typeof pricing_tier === 'string' && 
+        (pricing_tier === 'standard' || pricing_tier === 'premium')) {
+      query = query.eq('pricing_tier', pricing_tier);
     }
 
     const { data: pricing, error } = await query;
@@ -83,44 +95,54 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
       });
     }
 
-    // Fetch related data in separate simple queries
-    const { data: services } = await supabase.from('services').select('id, name, display_name');
-    const { data: deviceModels } = await supabase.from('device_models').select('id, name, display_name, brand_id');
-    const { data: brands } = await supabase.from('brands').select('id, name, display_name, device_type_id');
-    const { data: deviceTypes } = await supabase.from('device_types').select('id, name, display_name');
-    const { data: pricingTiers } = await supabase.from('pricing_tiers').select('id, name, display_name');
+    // Fetch related data separately (no JOINs with non-existent fields)
+    const { data: services } = await supabase
+      .from('services')
+      .select('id, name, display_name, device_type_id');
+    
+    const { data: deviceModels } = await supabase
+      .from('device_models')
+      .select('id, name, slug, brand_id, type_id');
+    
+    const { data: brands } = await supabase
+      .from('brands')
+      .select('id, name, slug, logo_url');
+    
+    const { data: deviceTypes } = await supabase
+      .from('device_types')
+      .select('id, name, slug, icon_name');
 
     // Create lookup maps for efficient data joining
-    const servicesMap = new Map(services?.map((s: any) => [s.id, s]) || []);
-    const modelsMap = new Map(deviceModels?.map((m: any) => [m.id, m]) || []);
-    const brandsMap = new Map(brands?.map((b: any) => [b.id, b]) || []);
-    const deviceTypesMap = new Map(deviceTypes?.map((dt: any) => [dt.id, dt]) || []);
-    const tiersMap = new Map(pricingTiers?.map((t: any) => [t.id, t]) || []);
+    const servicesMap = new Map((services || []).map((s: any) => [s.id, s]));
+    const modelsMap = new Map((deviceModels || []).map((m: any) => [m.id, m]));
+    const brandsMap = new Map((brands || []).map((b: any) => [b.id, b]));
+    const deviceTypesMap = new Map((deviceTypes || []).map((dt: any) => [dt.id, dt]));
 
     // Transform the data to include related information
     const transformedPricing = (pricing || []).map((entry: any) => {
-      const service = servicesMap.get(entry.service_id);
-      const model = modelsMap.get(entry.model_id);
-      const brand = model ? brandsMap.get((model as any).brand_id) : null;
-      const deviceType = brand ? deviceTypesMap.get((brand as any).device_type_id) : null;
-      const tier = tiersMap.get(entry.pricing_tier_id);
+      const service: any = servicesMap.get(entry.service_id);
+      const model: any = modelsMap.get(entry.model_id);
+      const brand: any = model ? brandsMap.get(model.brand_id) : null;
+      const deviceType: any = model ? deviceTypesMap.get(model.type_id) : null;
 
       return {
         id: entry.id,
         service_id: entry.service_id,
         model_id: entry.model_id,
-        pricing_tier_id: entry.pricing_tier_id,
+        pricing_tier: entry.pricing_tier,
         base_price: entry.base_price,
-        discounted_price: entry.discounted_price,
-        cost_price: entry.cost_price,
+        compare_at_price: entry.compare_at_price,
+        part_quality: entry.part_quality,
+        part_warranty_months: entry.part_warranty_months,
+        includes_installation: entry.includes_installation,
         is_active: entry.is_active,
-        service_name: (service as any)?.display_name || (service as any)?.name,
-        model_name: (model as any)?.display_name || (model as any)?.name,
-        brand_name: (brand as any)?.display_name || (brand as any)?.name,
-        tier_name: (tier as any)?.display_name || (tier as any)?.name,
-        device_type: (deviceType as any)?.name,
         created_at: entry.created_at,
-        updated_at: entry.updated_at
+        // Human-readable names for display
+        service_name: service?.display_name || service?.name,
+        model_name: model?.name,
+        brand_name: brand?.name,
+        tier_name: entry.pricing_tier === 'premium' ? 'Premium' : 'Standard',
+        device_type: deviceType?.name
       };
     });
 
@@ -139,29 +161,53 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
   }
 }
 
+/**
+ * POST /api/management/dynamic-pricing
+ * Create new pricing entry
+ */
 async function handlePost(req: NextApiRequest, res: NextApiResponse, supabase: any) {
   try {
-    const { service_id, model_id, pricing_tier_id, base_price, discounted_price, cost_price, is_active } = req.body;
+    const { 
+      service_id, 
+      model_id, 
+      pricing_tier, 
+      base_price, 
+      compare_at_price,
+      part_quality,
+      part_warranty_months,
+      includes_installation,
+      is_active 
+    } = req.body;
 
     // Validate required fields
-    if (!service_id || !model_id || !pricing_tier_id || !base_price) {
+    if (!service_id || !model_id || !pricing_tier || !base_price) {
       return res.status(400).json({
         success: false,
-        message: 'service_id, model_id, pricing_tier_id, and base_price are required'
+        message: 'service_id, model_id, pricing_tier, and base_price are required'
       });
     }
 
-    apiLogger.info('Creating dynamic pricing entry', { service_id, model_id, pricing_tier_id, base_price });
+    // Validate pricing_tier
+    if (pricing_tier !== 'standard' && pricing_tier !== 'premium') {
+      return res.status(400).json({
+        success: false,
+        message: 'pricing_tier must be either "standard" or "premium"'
+      });
+    }
+
+    apiLogger.info('Creating dynamic pricing entry', { service_id, model_id, pricing_tier, base_price });
 
     const { data: entry, error } = await supabase
       .from('dynamic_pricing')
       .insert({
         service_id,
         model_id,
-        pricing_tier_id,
+        pricing_tier,
         base_price,
-        discounted_price: discounted_price || null,
-        cost_price: cost_price || null,
+        compare_at_price: compare_at_price || null,
+        part_quality: part_quality || null,
+        part_warranty_months: part_warranty_months !== undefined ? part_warranty_months : 3,
+        includes_installation: includes_installation !== undefined ? includes_installation : true,
         is_active: is_active !== undefined ? is_active : true
       })
       .select()
@@ -192,10 +238,24 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, supabase: a
   }
 }
 
+/**
+ * PUT /api/management/dynamic-pricing?id={uuid}
+ * Update existing pricing entry
+ */
 async function handlePut(req: NextApiRequest, res: NextApiResponse, supabase: any) {
   try {
     const { id } = req.query;
-    const { service_id, model_id, pricing_tier_id, base_price, discounted_price, cost_price, is_active } = req.body;
+    const { 
+      service_id, 
+      model_id, 
+      pricing_tier, 
+      base_price, 
+      compare_at_price,
+      part_quality,
+      part_warranty_months,
+      includes_installation,
+      is_active 
+    } = req.body;
 
     if (!id) {
       return res.status(400).json({
@@ -204,15 +264,32 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse, supabase: an
       });
     }
 
+    if (!isValidUUID(id as string)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid ID format'
+      });
+    }
+
+    // Validate pricing_tier if provided
+    if (pricing_tier && pricing_tier !== 'standard' && pricing_tier !== 'premium') {
+      return res.status(400).json({
+        success: false,
+        message: 'pricing_tier must be either "standard" or "premium"'
+      });
+    }
+
     apiLogger.info('Updating dynamic pricing entry', { id, base_price });
 
     const updateData: any = {};
     if (service_id !== undefined) updateData.service_id = service_id;
     if (model_id !== undefined) updateData.model_id = model_id;
-    if (pricing_tier_id !== undefined) updateData.pricing_tier_id = pricing_tier_id;
+    if (pricing_tier !== undefined) updateData.pricing_tier = pricing_tier;
     if (base_price !== undefined) updateData.base_price = base_price;
-    if (discounted_price !== undefined) updateData.discounted_price = discounted_price;
-    if (cost_price !== undefined) updateData.cost_price = cost_price;
+    if (compare_at_price !== undefined) updateData.compare_at_price = compare_at_price;
+    if (part_quality !== undefined) updateData.part_quality = part_quality;
+    if (part_warranty_months !== undefined) updateData.part_warranty_months = part_warranty_months;
+    if (includes_installation !== undefined) updateData.includes_installation = includes_installation;
     if (is_active !== undefined) updateData.is_active = is_active;
 
     const { data: entry, error } = await supabase
@@ -247,6 +324,9 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse, supabase: an
   }
 }
 
+/**
+ * DELETE /api/management/dynamic-pricing?id={uuid}
+ */
 async function handleDelete(req: NextApiRequest, res: NextApiResponse<ApiResponse>, supabase: any) {
   try {
     const { id } = req.query;
@@ -255,6 +335,13 @@ async function handleDelete(req: NextApiRequest, res: NextApiResponse<ApiRespons
       return res.status(400).json({
         success: false,
         message: 'ID is required for deletion'
+      });
+    }
+
+    if (!isValidUUID(id as string)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid ID format'
       });
     }
 
@@ -289,22 +376,47 @@ async function handleDelete(req: NextApiRequest, res: NextApiResponse<ApiRespons
   }
 }
 
+/**
+ * PATCH /api/management/dynamic-pricing
+ * Quick price update
+ */
 async function handlePatch(req: NextApiRequest, res: NextApiResponse<ApiResponse>, supabase: any) {
   try {
     const { id, base_price } = req.body;
+    
     if (!id || typeof base_price !== 'number') {
-      return res.status(400).json({ success: false, error: 'Missing id or base_price' });
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Missing id or base_price' 
+      });
     }
+
+    if (!isValidUUID(id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid ID format'
+      });
+    }
+
     apiLogger.info('Updating price', { id, base_price });
+    
     const { error } = await supabase
       .from('dynamic_pricing')
       .update({ base_price })
       .eq('id', id);
+    
     if (error) {
       apiLogger.error('Failed to update price', error);
-      return res.status(500).json({ success: false, error: error.message });
+      return res.status(500).json({ 
+        success: false, 
+        error: error.message 
+      });
     }
-    return res.status(200).json({ success: true, message: 'Price updated' });
+    
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Price updated' 
+    });
   } catch (error) {
     apiLogger.error('Error in handlePatch', { error });
     return res.status(500).json({
@@ -312,4 +424,4 @@ async function handlePatch(req: NextApiRequest, res: NextApiResponse<ApiResponse
       message: 'Failed to update price'
     });
   }
-} 
+}

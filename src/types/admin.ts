@@ -1,54 +1,49 @@
 /**
  * Admin Panel TypeScript Definitions
- * V2 Schema with UUID-based relationships and proper joins
+ * Aligned with ACTUAL DATABASE SCHEMA (Source of Truth)
  * 
- * This file defines all types used in the admin management panel,
- * replacing hardcoded strings with UUID-based references.
+ * Last Updated: Jan 29, 2026
+ * Schema verified via Supabase MCP
  */
 
 /**
  * Device Type Record (e.g., Mobile, Laptop, Tablet)
- * Primary key: UUID
  */
 export interface DeviceTypeRecord {
   id: string;  // UUID
   name: string;  // e.g., "Mobile", "Laptop"
-  display_name: string;
+  slug: string;
+  icon_name: string | null;
   is_active: boolean;
   created_at?: string;
-  updated_at?: string;
 }
 
 /**
  * Brand Record (e.g., Apple, Samsung)
- * Linked to device_type via device_type_id
+ * NOTE: Brands table does NOT have device_type_id FK in current schema
  */
 export interface BrandRecord {
   id: string;  // UUID
   name: string;  // e.g., "Apple"
-  display_name: string;
-  device_type_id: string;  // FK to device_types (UUID)
+  slug: string;
+  logo_url: string | null;
   is_active: boolean;
   created_at?: string;
-  updated_at?: string;
-  
-  // Joined data from relationships
-  device_type?: DeviceTypeRecord;
 }
 
 /**
  * Device Model Record (e.g., iPhone 16, MacBook Pro M3)
- * Linked to brand and device_type
  */
 export interface DeviceModelRecord {
   id: string;  // UUID
   name: string;  // e.g., "iPhone 16"
-  display_name: string;
+  slug: string;
   brand_id: string;  // FK to brands (UUID)
   type_id: string;  // FK to device_types (UUID)
+  release_year: number | null;
+  image_url: string | null;
   is_active: boolean;
   created_at?: string;
-  updated_at?: string;
   
   // Joined data from relationships
   brand?: BrandRecord;
@@ -69,21 +64,22 @@ export interface ServiceCategoryRecord {
 
 /**
  * Service Record (e.g., Screen Replacement, Battery Replacement)
- * Linked to device_type and service_category
+ * NOTE: Services table DOES have display_name field
  */
 export interface ServiceRecord {
   id: string;  // UUID
   name: string;  // e.g., "screen_replacement"
-  display_name: string;  // e.g., "Screen Replacement"
-  device_type_id: string;  // FK to device_types (UUID)
-  category_id?: string;  // FK to service_categories (UUID)
+  display_name: string | null;  // e.g., "Screen Replacement"
+  slug: string;
+  description: string | null;
+  device_type_id: string | null;  // FK to device_types (UUID)
+  category_id: string | null;  // FK to service_categories (UUID)
   is_doorstep_eligible: boolean;
   requires_diagnostics: boolean;
   estimated_duration_minutes: number;
-  warranty_period_days: number;
+  avg_time_minutes: number;
   is_active: boolean;
   created_at?: string;
-  updated_at?: string;
   
   // Joined data from relationships
   device_type?: DeviceTypeRecord;
@@ -91,49 +87,31 @@ export interface ServiceRecord {
 }
 
 /**
- * Pricing Tier Record (e.g., Standard, Premium)
- * Defines price multipliers and service levels
- */
-export interface PricingTierRecord {
-  id: string;  // UUID
-  name: string;  // e.g., "premium"
-  display_name: string;  // e.g., "Premium Service"
-  description?: string;
-  price_multiplier: number;  // e.g., 1.5
-  estimated_delivery_hours?: number;  // e.g., 24
-  includes_features: string[];  // e.g., ["1-Year Warranty", "Premium Parts"]
-  is_active: boolean;
-  sort_order: number;
-  created_at?: string;
-  updated_at?: string;
-}
-
-/**
  * Dynamic Pricing Record (the core pricing matrix)
- * Links: device_model + service + pricing_tier = price
+ * Links: device_model + service + pricing_tier (TEXT) = price
  * 
- * Example: iPhone 16 + Screen Replacement + Premium = $299
+ * IMPORTANT: pricing_tier is TEXT field ('standard'|'premium'), NOT a FK!
+ * There is NO pricing_tiers table in the current schema.
+ * 
+ * Example: iPhone 16 + Screen Replacement + 'premium' = $299
  */
 export interface DynamicPricingRecord {
   id: string;  // UUID
-  model_id: string;  // FK to device_models (UUID)
-  service_id: string;  // FK to services (UUID)
-  pricing_tier_id: string;  // FK to pricing_tiers (UUID)
+  model_id: string | null;  // FK to device_models (UUID)
+  service_id: string | null;  // FK to services (UUID)
   base_price: number;  // e.g., 225.00
-  discounted_price?: number;  // Optional sale price
-  cost_price?: number;  // Cost tracking for profit margin
-  pricing_tier?: string;  // Text: 'standard', 'premium', 'economy', 'express'
-  part_quality?: string;  // e.g., "OEM Parts", "Aftermarket Parts"
-  part_warranty_months?: number;
-  includes_installation: boolean;
+  compare_at_price: number | null;  // Sale/comparison price
+  required_parts: string[];  // UUID array
+  pricing_tier: 'standard' | 'premium';  // TEXT field with CHECK constraint
+  part_quality: string | null;  // e.g., "OEM Parts", "Aftermarket Parts"
+  part_warranty_months: number;  // Default: 3
+  includes_installation: boolean;  // Default: true
   is_active: boolean;
   created_at?: string;
-  updated_at?: string;
   
   // Joined data from relationships - Full objects
   device_model?: DeviceModelRecord;
   service?: ServiceRecord;
-  pricing_tier_record?: PricingTierRecord;
   brand?: BrandRecord;
   device_type?: DeviceTypeRecord;
 }
@@ -204,8 +182,8 @@ export interface PaginatedResponse<T> {
  */
 export interface CreateBrandRequest {
   name: string;
-  display_name: string;
-  device_type_id: string;  // UUID
+  slug?: string;
+  logo_url?: string;
   is_active?: boolean;
 }
 
@@ -214,9 +192,11 @@ export interface CreateBrandRequest {
  */
 export interface CreateDeviceModelRequest {
   name: string;
-  display_name: string;
+  slug?: string;
   brand_id: string;  // UUID
   type_id: string;  // UUID (device_type_id)
+  release_year?: number;
+  image_url?: string;
   is_active?: boolean;
 }
 
@@ -225,28 +205,16 @@ export interface CreateDeviceModelRequest {
  */
 export interface CreateServiceRequest {
   name: string;
-  display_name: string;
-  device_type_id: string;  // UUID
+  display_name?: string;
+  slug?: string;
+  description?: string;
+  device_type_id?: string;  // UUID
   category_id?: string;  // UUID
   is_doorstep_eligible?: boolean;
   requires_diagnostics?: boolean;
   estimated_duration_minutes?: number;
-  warranty_period_days?: number;
+  avg_time_minutes?: number;
   is_active?: boolean;
-}
-
-/**
- * Create Pricing Tier Request
- */
-export interface CreatePricingTierRequest {
-  name: string;
-  display_name: string;
-  description?: string;
-  price_multiplier: number;
-  estimated_delivery_hours?: number;
-  includes_features?: string[];
-  is_active?: boolean;
-  sort_order?: number;
 }
 
 /**
@@ -255,11 +223,9 @@ export interface CreatePricingTierRequest {
 export interface CreateDynamicPricingRequest {
   model_id: string;  // UUID
   service_id: string;  // UUID
-  pricing_tier_id: string;  // UUID
+  pricing_tier: 'standard' | 'premium';  // TEXT field
   base_price: number;
-  discounted_price?: number;
-  cost_price?: number;
-  pricing_tier?: string;
+  compare_at_price?: number;
   part_quality?: string;
   part_warranty_months?: number;
   includes_installation?: boolean;
@@ -272,10 +238,12 @@ export interface CreateDynamicPricingRequest {
 export interface UpdateDynamicPricingRequest {
   model_id?: string;
   service_id?: string;
-  pricing_tier_id?: string;
+  pricing_tier?: 'standard' | 'premium';
   base_price?: number;
-  discounted_price?: number;
-  cost_price?: number;
+  compare_at_price?: number;
+  part_quality?: string;
+  part_warranty_months?: number;
+  includes_installation?: boolean;
   is_active?: boolean;
 }
 
@@ -289,7 +257,7 @@ export interface BulkPriceUpdateRequest {
     brand_id?: string;
     model_id?: string;
     service_id?: string;
-    pricing_tier_id?: string;
+    pricing_tier?: 'standard' | 'premium';
   };
 }
 
@@ -305,7 +273,7 @@ export interface PricingFilterState {
   brandId: string;  // UUID or 'all'
   modelId: string;  // UUID or 'all'
   serviceId: string;  // UUID or 'all'
-  tierId: string;  // UUID or 'all'
+  pricingTier: 'all' | 'standard' | 'premium';
 }
 
 /**
@@ -316,7 +284,6 @@ export interface PricingFilterOptions {
   brands: BrandRecord[];
   models: DeviceModelRecord[];
   services: ServiceRecord[];
-  tiers: PricingTierRecord[];
 }
 
 /**

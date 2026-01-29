@@ -5,23 +5,24 @@ import { logger } from '@/utils/logger';
 const apiLogger = logger.createModuleLogger('api/management/models');
 
 interface Model {
-  id?: number;
+  id?: string;
   name: string;
-  display_name?: string;
-  brand_id: number;
+  slug: string;
+  brand_id: string;
+  type_id: string;
   brand?: {
-    id: number;
+    id: string;
     name: string;
-    display_name: string;
-    device_type_id: number;
+    slug: string;
   };
-  model_year?: number;
-  screen_size?: string;
-  color_options?: string[];
-  storage_options?: string[];
+  device_type?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+  release_year?: number;
+  image_url?: string;
   is_active: boolean;
-  is_featured: boolean;
-  sort_order: number;
 }
 
 interface ApiResponse {
@@ -68,19 +69,17 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse<ApiResponse>,
       .from('device_models')
       .select(`
         *,
-        brands!inner(
+        brands(
           id,
           name,
-          display_name,
-          device_type_id,
-          device_types!inner(
-            id,
-            name,
-            display_name
-          )
+          slug
+        ),
+        device_types(
+          id,
+          name,
+          slug
         )
       `)
-      .order('sort_order', { ascending: true })
       .order('name', { ascending: true });
 
     if (error) {
@@ -92,16 +91,19 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse<ApiResponse>,
       });
     }
 
-    // Transform the data to include brand information
+    // Transform the data to include brand and device_type information
     const transformedModels = (models || []).map((model: any) => ({
       ...model,
-      brand: {
+      brand: model.brands ? {
         id: model.brands.id,
         name: model.brands.name,
-        display_name: model.brands.display_name,
-        device_type_id: model.brands.device_type_id,
-        device_type: model.brands.device_types?.display_name || model.brands.device_types?.name
-      }
+        slug: model.brands.slug
+      } : null,
+      device_type: model.device_types ? {
+        id: model.device_types.id,
+        name: model.device_types.name,
+        slug: model.device_types.slug
+      } : null
     }));
 
     apiLogger.info('Successfully fetched models', { count: transformedModels.length });
@@ -123,40 +125,34 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse<ApiResponse>
   try {
     const { 
       name, 
-      display_name, 
+      slug, 
       brand_id, 
-      model_year, 
-      screen_size, 
-      color_options, 
-      storage_options, 
-      is_active, 
-      is_featured, 
-      sort_order 
+      type_id,
+      release_year, 
+      image_url, 
+      is_active
     } = req.body;
 
     // Validate required fields
-    if (!name || !brand_id) {
+    if (!name || !slug || !brand_id || !type_id) {
       return res.status(400).json({
         success: false,
-        message: 'Name and brand_id are required'
+        message: 'Name, slug, brand_id, and type_id are required'
       });
     }
 
-    apiLogger.info('Creating model', { name, display_name, brand_id });
+    apiLogger.info('Creating model', { name, slug, brand_id, type_id });
 
     const { data: model, error } = await supabase
       .from('device_models')
       .insert({
         name,
-        display_name: display_name || null,
+        slug,
         brand_id,
-        model_year: model_year || null,
-        screen_size: screen_size || null,
-        color_options: color_options || null,
-        storage_options: storage_options || null,
-        is_active: is_active !== undefined ? is_active : true,
-        is_featured: is_featured !== undefined ? is_featured : false,
-        sort_order: sort_order || 0
+        type_id,
+        release_year: release_year || null,
+        image_url: image_url || null,
+        is_active: is_active !== undefined ? is_active : true
       })
       .select()
       .single();
@@ -184,4 +180,4 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse<ApiResponse>
       message: 'Failed to create model'
     });
   }
-} 
+}

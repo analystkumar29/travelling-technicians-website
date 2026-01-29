@@ -35,34 +35,37 @@ interface ManagementStats {
 
 interface RecentBooking {
   id: string;
-  reference_number: string;
+  booking_ref: string;
   customer_name: string;
   customer_email: string;
   customer_phone: string;
-  device_type: string;
-  device_brand: string;
-  device_model: string;
-  service_type: string;
-  booking_date: string;
-  booking_time: string;
-  address: string;
-  status: string;
+  customer_address: string;
+  model_id: string;
+  service_id: string;
+  scheduled_at: string;
   created_at: string;
-  issue_description?: string;
+  // Optional - may not exist in DB
+  status?: string;
+  device_type?: string;
+  device_brand?: string;
+  device_model?: string;
+  service_type?: string;
 }
 
 interface UpcomingAppointment {
   id: string;
-  reference_number: string;
+  booking_ref: string;
   customer_name: string;
   customer_phone: string;
-  device_brand: string;
-  device_model: string;
-  service_type: string;
-  booking_date: string;
-  booking_time: string;
-  address: string;
-  status: string;
+  customer_address: string;
+  model_id: string;
+  service_id: string;
+  scheduled_at: string;
+  // Optional - may not exist in DB  
+  status?: string;
+  device_brand?: string;
+  device_model?: string;
+  service_type?: string;
 }
 
 // Add authentication check component
@@ -209,13 +212,15 @@ export default withAuth(function AdminManagement() {
     const pendingBookings = bookings.filter((b: RecentBooking) => b.status === 'pending').length || 0;
     const confirmedBookings = bookings.filter((b: RecentBooking) => b.status === 'confirmed').length || 0;
     const completedBookings = bookings.filter((b: RecentBooking) => b.status === 'completed').length || 0;
-    const todayBookings = bookings.filter((b: RecentBooking) => b.booking_date === today).length || 0;
+    const todayBookings = bookings.filter((b: RecentBooking) => 
+      b.scheduled_at?.split('T')[0] === today
+    ).length || 0;
     
     const totalWarranties = warranties.length || 0;
     const activeWarranties = warranties.filter((w: any) => w.status === 'active').length || 0;
 
     const thisWeekBookings = bookings.filter((b: RecentBooking) => 
-      b.created_at >= oneWeekAgo && b.status === 'completed'
+      b.created_at >= oneWeekAgo && (b.status === 'completed' || !b.status)
     ).length || 0;
     const thisWeekRevenue = thisWeekBookings * 120;
 
@@ -259,13 +264,14 @@ export default withAuth(function AdminManagement() {
     
     // Filter for upcoming appointments
     const upcomingAppointments = bookings
-      .filter((booking: UpcomingAppointment) => 
-        booking.booking_date >= today && 
-        ['confirmed', 'pending'].includes(booking.status)
-      )
+      .filter((booking: UpcomingAppointment) => {
+        const bookingDate = booking.scheduled_at?.split('T')[0];
+        const status = booking.status || 'pending';
+        return bookingDate >= today && ['confirmed', 'pending'].includes(status);
+      })
       .sort((a: UpcomingAppointment, b: UpcomingAppointment) => {
-        const dateA = new Date(`${a.booking_date} ${a.booking_time}`);
-        const dateB = new Date(`${b.booking_date} ${b.booking_time}`);
+        const dateA = new Date(a.scheduled_at);
+        const dateB = new Date(b.scheduled_at);
         return dateA.getTime() - dateB.getTime();
       })
       .slice(0, 5);
@@ -313,9 +319,9 @@ export default withAuth(function AdminManagement() {
     }
   };
 
-  const getUrgencyColor = (bookingDate: string) => {
+  const getUrgencyColor = (scheduledAt: string) => {
     const today = new Date();
-    const appointmentDate = new Date(bookingDate);
+    const appointmentDate = new Date(scheduledAt);
     const diffTime = appointmentDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
@@ -323,6 +329,22 @@ export default withAuth(function AdminManagement() {
     if (diffDays === 1) return 'border-l-4 border-orange-500 bg-orange-50';
     if (diffDays <= 2) return 'border-l-4 border-yellow-500 bg-yellow-50';
     return 'border-l-4 border-green-500 bg-green-50';
+  };
+
+  const formatDate = (scheduledAt: string) => {
+    try {
+      return new Date(scheduledAt).toLocaleDateString();
+    } catch {
+      return 'Invalid date';
+    }
+  };
+
+  const formatTime = (scheduledAt: string) => {
+    try {
+      return new Date(scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return 'Invalid time';
+    }
   };
 
   if (loading) {
@@ -505,31 +527,33 @@ export default withAuth(function AdminManagement() {
                   </div>
                 ) : (
                   upcomingAppointments.map((appointment) => (
-                    <div key={appointment.id} className={`px-6 py-4 ${getUrgencyColor(appointment.booking_date)}`}>
+                    <div key={appointment.id} className={`px-6 py-4 ${getUrgencyColor(appointment.scheduled_at)}`}>
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="text-sm font-medium text-gray-900">
-                              {appointment.reference_number}
+                              {appointment.booking_ref}
                             </h4>
-                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(appointment.status)}`}>
-                              {appointment.status}
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(appointment.status || 'pending')}`}>
+                              {appointment.status || 'pending'}
                             </span>
                           </div>
                           <p className="text-sm text-gray-600 mb-1">
-                            <strong>{appointment.customer_name}</strong> - {appointment.device_brand} {appointment.device_model}
+                            <strong>{appointment.customer_name}</strong>
+                            {appointment.device_brand && ` - ${appointment.device_brand}`}
+                            {appointment.device_model && ` ${appointment.device_model}`}
                           </p>
                           <p className="text-sm text-gray-500 mb-2">
-                            {appointment.service_type}
+                            {appointment.service_type || `Service ID: ${appointment.service_id?.substring(0, 8)}...`}
                           </p>
                           <div className="text-xs text-gray-500 space-y-1">
                             <div className="flex items-center">
                               <FaCalendarAlt className="mr-1" />
-                              {appointment.booking_date} at {appointment.booking_time}
+                              {formatDate(appointment.scheduled_at)} at {formatTime(appointment.scheduled_at)}
                             </div>
                             <div className="flex items-center">
                               <FaMapMarkerAlt className="mr-1" />
-                              {appointment.address}
+                              {appointment.customer_address}
                             </div>
                             <div className="flex items-center">
                               <FaPhone className="mr-1" />
@@ -539,7 +563,7 @@ export default withAuth(function AdminManagement() {
                         </div>
                       </div>
                       <div className="mt-3 flex space-x-2">
-                        {appointment.status === 'pending' && (
+                        {(!appointment.status || appointment.status === 'pending') && (
                           <button
                             onClick={() => updateBookingStatus(appointment.id, 'confirmed')}
                             className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
@@ -586,17 +610,19 @@ export default withAuth(function AdminManagement() {
                     <div key={booking.id} className="px-6 py-4">
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="text-sm font-medium text-gray-900">
-                          {booking.reference_number}
+                          {booking.booking_ref}
                         </h4>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status)}`}>
-                          {booking.status}
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status || 'pending')}`}>
+                          {booking.status || 'pending'}
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mb-1">
-                        <strong>{booking.customer_name}</strong> - {booking.device_brand} {booking.device_model}
+                        <strong>{booking.customer_name}</strong>
+                        {booking.device_brand && ` - ${booking.device_brand}`}
+                        {booking.device_model && ` ${booking.device_model}`}
                       </p>
                       <p className="text-sm text-gray-500 mb-2">
-                        {booking.service_type}
+                        {booking.service_type || `Service ID: ${booking.service_id?.substring(0, 8)}...`}
                       </p>
                       <div className="text-xs text-gray-500 flex items-center justify-between">
                         <span>Created: {new Date(booking.created_at).toLocaleDateString()}</span>
@@ -666,36 +692,6 @@ export default withAuth(function AdminManagement() {
                   <div className="text-center">
                     <FaDollarSign className="mx-auto h-8 w-8 text-orange-600 mb-2" />
                     <p className="text-sm font-medium text-orange-900">Pricing Management</p>
-                  </div>
-                </Link>
-
-                <Link
-                  href="/management/review-queue"
-                  className="flex items-center justify-center px-4 py-6 bg-yellow-50 border border-yellow-200 rounded-lg hover:bg-yellow-100 transition-colors"
-                >
-                  <div className="text-center">
-                    <FaClock className="mx-auto h-8 w-8 text-yellow-600 mb-2" />
-                    <p className="text-sm font-medium text-yellow-900">Review Queue</p>
-                  </div>
-                </Link>
-
-                <Link
-                  href="/management/audit-logs"
-                  className="flex items-center justify-center px-4 py-6 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors"
-                >
-                  <div className="text-center">
-                    <FaExclamationTriangle className="mx-auto h-8 w-8 text-indigo-600 mb-2" />
-                    <p className="text-sm font-medium text-indigo-900">Audit Logs</p>
-                  </div>
-                </Link>
-
-                <Link
-                  href="/management/staging-pipeline"
-                  className="flex items-center justify-center px-4 py-6 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
-                >
-                  <div className="text-center">
-                    <FaChartBar className="mx-auto h-8 w-8 text-purple-600 mb-2" />
-                    <p className="text-sm font-medium text-purple-900">Staging Pipeline</p>
                   </div>
                 </Link>
 

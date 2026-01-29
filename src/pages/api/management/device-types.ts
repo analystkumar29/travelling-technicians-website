@@ -5,11 +5,11 @@ import { logger } from '@/utils/logger';
 const apiLogger = logger.createModuleLogger('api/management/device-types');
 
 interface DeviceType {
-  id?: number;
+  id?: string;
   name: string;
-  display_name: string;
+  slug: string;
+  icon_name?: string;
   is_active: boolean;
-  sort_order: number;
 }
 
 interface ApiResponse {
@@ -55,7 +55,6 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse<ApiResponse>,
     const { data: deviceTypes, error } = await supabase
       .from('device_types')
       .select('*')
-      .order('sort_order', { ascending: true })
       .order('name', { ascending: true });
 
     if (error) {
@@ -84,25 +83,25 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse<ApiResponse>,
 
 async function handlePost(req: NextApiRequest, res: NextApiResponse<ApiResponse>, supabase: any) {
   try {
-    const { name, display_name, is_active, sort_order } = req.body;
+    const { name, slug, icon_name, is_active } = req.body;
 
     // Validate required fields
-    if (!name || !display_name) {
+    if (!name || !slug) {
       return res.status(400).json({
         success: false,
-        message: 'Name and display_name are required'
+        message: 'Name and slug are required'
       });
     }
 
-    apiLogger.info('Creating device type', { name, display_name });
+    apiLogger.info('Creating device type', { name, slug });
 
     const { data: deviceType, error } = await supabase
       .from('device_types')
       .insert({
         name,
-        display_name,
-        is_active: is_active !== undefined ? is_active : true,
-        sort_order: sort_order || 0
+        slug,
+        icon_name: icon_name || null,
+        is_active: is_active !== undefined ? is_active : true
       })
       .select()
       .single();
@@ -130,4 +129,4 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse<ApiResponse>
       message: 'Failed to create device type'
     });
   }
-} 
+}

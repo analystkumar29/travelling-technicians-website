@@ -27,12 +27,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 async function handleGetWarranties(req: NextApiRequest, res: NextApiResponse) {
   try {
     const { 
-      warranty_code, 
+      warranty_number, 
       booking_id, 
-      status, 
-      technician_id,
-      customer_email,
-      active_only
+      customer_email
     } = req.query;
     
     // Start building the query with joins for related data
@@ -40,7 +37,7 @@ async function handleGetWarranties(req: NextApiRequest, res: NextApiResponse) {
       .from('warranties')
       .select(`
         *,
-        booking:booking_id (
+        bookings:booking_id (
           reference_number,
           customer_name,
           customer_email,
@@ -49,33 +46,16 @@ async function handleGetWarranties(req: NextApiRequest, res: NextApiResponse) {
           device_brand,
           device_model,
           service_type
-        ),
-        technician:technician_id (
-          full_name,
-          email,
-          phone
         )
       `);
     
     // Apply filters
-    if (warranty_code) {
-      query = query.eq('warranty_code', warranty_code);
+    if (warranty_number) {
+      query = query.eq('warranty_number', warranty_number);
     }
     
     if (booking_id) {
       query = query.eq('booking_id', booking_id);
-    }
-    
-    if (status) {
-      query = query.eq('status', status);
-    }
-    
-    if (technician_id) {
-      query = query.eq('technician_id', technician_id);
-    }
-    
-    if (active_only === 'true') {
-      query = query.eq('status', 'active');
     }
     
     // If customer email is provided, we need a more complex query
@@ -111,8 +91,8 @@ async function handleGetWarranties(req: NextApiRequest, res: NextApiResponse) {
     // Add days_remaining for each warranty
     const now = new Date();
     const processedData = data.map(warranty => {
-      const expiryDate = new Date(warranty.expiry_date);
-      const daysRemaining = Math.max(0, Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+      const endDate = new Date(warranty.end_date);
+      const daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
       
       return {
         ...warranty,
@@ -138,15 +118,11 @@ async function handleCreateWarranty(req: NextApiRequest, res: NextApiResponse) {
   try {
     const { body } = req;
     
-    // Validate required fields
+    // Validate required fields based on actual schema
     const requiredFields = [
       'booking_id', 
-      'repair_completion_id', 
-      'technician_id', 
-      'warranty_code',
-      'issue_date',
-      'expiry_date',
-      'status'
+      'start_date',
+      'end_date'
     ];
     
     const missingFields = requiredFields.filter(field => !body[field]);
