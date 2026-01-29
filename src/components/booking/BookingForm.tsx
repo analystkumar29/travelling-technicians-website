@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
-import DeviceModelSelector from './DeviceModelSelector';
 import FloatingProgress from './FloatingProgress';
 import Image from 'next/image';
 // Comment out the non-existent imports for now
@@ -21,6 +20,8 @@ import { formatDate, formatTimeSlot } from '@/utils/formatters';
 import AddressAutocomplete from './AddressAutocomplete';
 import PriceDisplay from './PriceDisplay';
 import TierPriceComparison from './TierPriceComparison';
+// V2 Schema - Dynamic data hooks
+import { useBrands, useModels, useServices, useCalculatePrice } from '@/hooks/useBookingData';
 
 interface BookingFormProps {
   onSubmit: (data: CreateBookingRequest) => void;
@@ -50,6 +51,14 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   const [showSwipeIndicator, setShowSwipeIndicator] = useState(false);
   // Add state for brand selection warning
   const [showBrandWarning, setShowBrandWarning] = useState(false);
+  // Add state for submission loading
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // V2 Schema - UUID tracking state
+  const [selectedBrandId, setSelectedBrandId] = useState<string>('');
+  const [selectedModelId, setSelectedModelId] = useState<string>('');
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [selectedLocationId, setSelectedLocationId] = useState<string>('');
   
   // Function to reveal sections progressively
   const revealSection = useCallback((sectionName: string) => {
@@ -111,10 +120,31 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     reValidateMode: 'onSubmit' // Only revalidate when submitted (i.e., when Next is clicked)
   });
 
+  // V2 Schema - Dynamic data hooks
+  const deviceType = methods.watch('deviceType');
+  const deviceBrand = methods.watch('deviceBrand');
+  const deviceModel = methods.watch('deviceModel');
+  const serviceType = methods.watch('serviceType');
+  const pricingTier = methods.watch('pricingTier');
+  const postalCode = methods.watch('postalCode');
+  
+  const { data: brandsData, isLoading: brandsLoading } = useBrands(deviceType || 'mobile');
+  const { data: modelsData, isLoading: modelsLoading } = useModels(deviceType || 'mobile', deviceBrand || '');
+  const { data: servicesData, isLoading: servicesLoading } = useServices(deviceType || 'mobile');
+  
+  // Get pricing data for quoted_price
+  const { data: pricingData } = useCalculatePrice(
+    selectedModelId,
+    Array.isArray(serviceType) ? serviceType : [serviceType],
+    selectedLocationId || '00000000-0000-0000-0000-000000000001',
+    pricingTier || 'standard',
+    { enabled: !!(selectedModelId && serviceType) }
+  );
+
   // Function to handle model selection attempt without brand
   const handleModelSelectionAttempt = useCallback(() => {
-    const deviceBrand = methods.watch('deviceBrand');
-    if (!deviceBrand) {
+    const currentBrand = methods.watch('deviceBrand');
+    if (!currentBrand) {
       setShowBrandWarning(true);
       // Scroll to brand selection
       const brandSection = document.querySelector('[data-section="brand-selection"]');
@@ -127,10 +157,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     }
     setShowBrandWarning(false);
     return true;
-  }, [methods]);
-
-  // Watch for deviceBrand changes to apply conditional validation for customBrand
-  const deviceBrand = methods.watch('deviceBrand');
+  }, [deviceBrand, methods]);
   
   // Apply conditional validation for customBrand
   useEffect(() => {
@@ -353,6 +380,53 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     return logos[brandValue] || null;
   };
 
+  // Helper function to get service icon SVG path
+  const getServiceIcon = (serviceName: string, categorySlug?: string): string => {
+    // Icon mapping based on service name or category
+    const iconMap: Record<string, string> = {
+      // Service-specific icons
+      'screen_replacement': 'M12 18h-1.5v-2H18v2H12zM6 11v-1h12v1H6zm0 6H4.5v-2H6v2zm10.5-6a.75.75 0 100-1.5.75.75 0 000 1.5zM12 6V4h6v2h-6zM6 6V4h4.5v2H6z',
+      'battery_replacement': 'M20 10V8h-3V4H7v4H4v2h3v8a2 2 0 002 2h6a2 2 0 002-2v-8h3zM13 8V6h1v2h-1zm-3 0V6h1v2h-1z',
+      'charging_port_repair': 'M9 4v4h6V4h2v4h1a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8a2 2 0 012-2h1V4h2zm1 16h4v-4h-4v4z',
+      'speaker_microphone_repair': 'M10 7a5 5 0 015 5 5 5 0 01-5 5 5 5 0 01-5-5 5 5 0 015-5zm0 2a3 3 0 00-3 3 3 3 0 003 3 3 3 0 003-3 3 3 0 00-3-3zm7-5v14a2 2 0 01-2 2H5a2 2 0 01-2-2V4a2 2 0 012-2h10a2 2 0 012 2z',
+      'camera_repair': 'M12 9a3 3 0 100 6 3 3 0 000-6zm0 1.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM20 5H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2zm-8 11a5 5 0 110-10 5 5 0 010 10z',
+      'water_damage_diagnostics': 'M12 3.25a.75.75 0 01.75.75v6.701a4.25 4.25 0 11-1.5 0V4a.75.75 0 01.75-.75zM7.266 7.5a7 7 0 1113.468 2.5 7 7 0 01-13.468-2.5z',
+      'keyboard_repair': 'M20 5H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2zm0 11.5H4V7h16v9.5zM6 10h2v2H6v-2zm3 0h2v2H9v-2zm3 0h2v2h-2v-2zm3 0h2v2h-2v-2z',
+      'trackpad_repair': 'M19 4H5a3 3 0 00-3 3v10a3 3 0 003 3h14a3 3 0 003-3V7a3 3 0 00-3-3zm1 13a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h14a1 1 0 011 1v10zm-8-7a2 2 0 100 4 2 2 0 000-4z',
+      'ram_upgrade': 'M4 4h16a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1zm0 8h16a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4a1 1 0 011-1zm3-6h2v2H7V6zm0 8h2v2H7v-2z',
+      'storage_upgrade': 'M15 15a2 2 0 100-4 2 2 0 000 4zm4-11h-1V3a1 1 0 00-1-1H7a1 1 0 00-1 1v1H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm-4 10a4 4 0 110-8 4 4 0 010 8zm-6-8.5a.5.5 0 100-1 .5.5 0 000 1z',
+      'software_troubleshooting': 'M13 13.5a1 1 0 11-2 0 1 1 0 012 0zm-.25-5v2.992l.25.26a1 1 0 11-2 0l.25-.26V8.5a1 1 0 112 0zM12 4a8 8 0 100 16 8 8 0 000-16zm-6.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z',
+      'virus_removal': 'M11 16.75a.75.75 0 001.5 0v-1.061l.344-.282a4.5 4.5 0 10-2.196.003l.352.279v1.06zm1.956-8.909a1 1 0 00-1.912 0L9.96 9.575A3 3 0 008.633 11H7a1 1 0 100 2h1.633A3.001 3.001 0 0012 15a3.001 3.001 0 003.367-2H17a1 1 0 100-2h-1.633a3 3 0 00-1.327-1.425l-1.084-1.734z',
+      'cooling_repair': 'M10 8a1 1 0 11-2 0 1 1 0 012 0zm5 0a1 1 0 11-2 0 1 1 0 012 0zM8.5 12.5L7 11l-3 3 3 3 1.5-1.5L7 14l1.5-1.5zm7 0L14 14l1.5 1.5L17 14l-3-3-3 3 1.5 1.5 1.5-1.5zM12 2a10 10 0 100 20 10 10 0 000-20zm-8 10a8 8 0 1116 0 8 8 0 01-16 0z',
+      'power_jack_repair': 'M12 7V5M8 9l-2-2M16 9l2-2M7 13H5M19 13h-2M12 17a2 2 0 100-4 2 2 0 000 4z',
+      
+      // Category-based fallback icons
+      'screen_repair': 'M12 18h-1.5v-2H18v2H12zM6 11v-1h12v1H6zm0 6H4.5v-2H6v2zm10.5-6a.75.75 0 100-1.5.75.75 0 000 1.5z',
+      'battery_repair': 'M20 10V8h-3V4H7v4H4v2h3v8a2 2 0 002 2h6a2 2 0 002-2v-8h3z',
+      'charging_repair': 'M9 4v4h6V4h2v4h1a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8a2 2 0 012-2h1V4h2z',
+      'audio_repair': 'M10 7a5 5 0 015 5 5 5 0 01-5 5 5 5 0 01-5-5 5 5 0 015-5zm0 2a3 3 0 00-3 3 3 3 0 003 3 3 3 0 003-3 3 3 0 00-3-3z',
+      'diagnostics': 'M12 3.25a.75.75 0 01.75.75v6.701a4.25 4.25 0 11-1.5 0V4a.75.75 0 01.75-.75z',
+      'input_repair': 'M20 5H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2z',
+      'hardware_upgrade': 'M4 4h16a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1z',
+      'software_repair': 'M13 13.5a1 1 0 11-2 0 1 1 0 012 0z',
+      'hardware_repair': 'M10 8a1 1 0 11-2 0 1 1 0 012 0zm5 0a1 1 0 11-2 0 1 1 0 012 0z'
+    };
+    
+    // Try service name first (convert to lowercase and replace spaces/slashes)
+    const serviceKey = serviceName.toLowerCase().replace(/[\s\/]/g, '_');
+    if (iconMap[serviceKey]) {
+      return iconMap[serviceKey];
+    }
+    
+    // Try category slug
+    if (categorySlug && iconMap[categorySlug]) {
+      return iconMap[categorySlug];
+    }
+    
+    // Default fallback icon
+    return 'M12 18h-1.5v-2H18v2H12zM6 11v-1h12v1H6z';
+  };
+
   // Render the Device Type step
   const renderDeviceTypeStep = () => {
     const deviceType = methods.watch('deviceType');
@@ -376,7 +450,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               Device Type <span className="text-red-500">*</span>
             </label>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Mobile Phone Option */}
               <label className={`device-card relative overflow-hidden rounded-lg border-2 transition-all duration-300 ${
                 deviceType === 'mobile' 
                   ? 'border-primary-500 bg-primary-50 selected' 
@@ -397,7 +472,6 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         methods.setValue('deviceBrand', '');
                         methods.setValue('deviceModel', '');
                         revealSection('brandSelection');
-                        console.log('Changed to mobile');
                       }}
                   />
                 )}
@@ -419,6 +493,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               </div>
             </label>
             
+              {/* Laptop Option */}
               <label className={`device-card relative overflow-hidden rounded-lg border-2 transition-all duration-300 ${
                 deviceType === 'laptop' 
                   ? 'border-primary-500 bg-primary-50 selected' 
@@ -439,7 +514,6 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         methods.setValue('deviceBrand', '');
                         methods.setValue('deviceModel', '');
                         revealSection('brandSelection');
-                        console.log('Changed to laptop');
                       }}
                   />
                 )}
@@ -455,48 +529,6 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   <div>
                   <span className="font-medium text-gray-900">Laptop</span>
                     {deviceType === 'laptop' && (
-                      <div className="h-1 w-full bg-primary-500 absolute bottom-0 left-0 rounded-b-lg"></div>
-                    )}
-                  </div>
-              </div>
-            </label>
-            
-              <label className={`device-card relative overflow-hidden rounded-lg border-2 transition-all duration-300 ${
-                deviceType === 'tablet' 
-                  ? 'border-primary-500 bg-primary-50 selected' 
-                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-              }`}>
-              <Controller
-                name="deviceType"
-                control={methods.control}
-                  rules={{ required: "Please select a device type" }}
-                render={({ field }) => (
-                  <input
-                    type="radio"
-                    className="sr-only"
-                    value="tablet"
-                    checked={field.value === 'tablet'}
-                      onChange={() => {
-                        field.onChange('tablet');
-                        methods.setValue('deviceBrand', '');
-                        methods.setValue('deviceModel', '');
-                        revealSection('brandSelection');
-                        console.log('Changed to tablet');
-                      }}
-                  />
-                )}
-              />
-                <div className="flex items-center p-4 cursor-pointer">
-                  <div className={`bg-primary-100 rounded-full p-3 mr-3 transition-all duration-300 ${
-                    deviceType === 'tablet' ? 'bg-primary-200' : ''
-                  }`}>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-                  </div>
-                  <div>
-                  <span className="font-medium text-gray-900">Tablet</span>
-                    {deviceType === 'tablet' && (
                       <div className="h-1 w-full bg-primary-500 absolute bottom-0 left-0 rounded-b-lg"></div>
                     )}
                   </div>
@@ -528,23 +560,21 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 )}
               </div>
               
-              {/* Mobile device brands */}
+              {/* Mobile device brands - Dynamic from database */}
               {deviceType === 'mobile' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-                  {[
-                    { value: 'apple', label: 'Apple' },
-                    { value: 'samsung', label: 'Samsung' },
-                    { value: 'google', label: 'Google' },
-                    { value: 'oneplus', label: 'OnePlus' },
-                    { value: 'xiaomi', label: 'Xiaomi' },
-                    { value: 'other', label: 'Other' }
-                  ].map((brand) => {
-                    const logo = getBrandLogo(brand.value);
+                  {brandsLoading ? (
+                    <div className="col-span-3 text-center py-4 text-gray-500">
+                      Loading brands...
+                    </div>
+                  ) : (brandsData || []).concat([{ id: 'other' as any, name: 'Other', slug: 'other', is_active: true, created_at: new Date().toISOString() }]).map((brand) => {
+                    const brandSlug = (brand.slug || brand.name).toLowerCase();
+                    const logo = getBrandLogo(brandSlug);
                     return (
                       <label 
-                        key={brand.value}
+                        key={brand.id}
                         className={`device-card relative rounded-md border overflow-hidden transition-all duration-200 ${
-                          methods.watch('deviceBrand') === brand.value
+                          methods.watch('deviceBrand') === brandSlug
                             ? 'border-primary-500 bg-primary-50 shadow-sm selected'
                             : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
                         }`}
@@ -557,13 +587,15 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                             <input
                               type="radio"
                               className="sr-only"
-                              value={brand.value}
-                              checked={field.value === brand.value}
+                              value={brandSlug}
+                              checked={field.value === brandSlug}
                               onChange={() => {
-                                field.onChange(brand.value);
+                                field.onChange(brandSlug);
                                 methods.setValue('deviceModel', '');
                                 revealSection('modelSelection');
                                 setShowBrandWarning(false);
+                                // Store brand UUID
+                                setSelectedBrandId(brand.id as string);
                               }}
                             />
                           )}
@@ -573,7 +605,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                             {logo ? (
                               <Image
                                 src={logo}
-                                alt={`${brand.label} logo`}
+                                alt={`${brand.name} logo`}
                                 width={32}
                                 height={32}
                                 className="w-8 h-8 object-contain"
@@ -584,8 +616,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                               </div>
                             )}
                           </div>
-                          <span className="font-medium text-gray-900">{brand.label}</span>
-                          {methods.watch('deviceBrand') === brand.value && (
+                          <span className="font-medium text-gray-900">{brand.name}</span>
+                          {methods.watch('deviceBrand') === brandSlug && (
                             <div className="ml-auto">
                               <svg className="h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -599,23 +631,21 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 </div>
               )}
               
-              {/* Laptop device brands */}
+              {/* Laptop device brands - Dynamic from database (same as mobile) */}
               {deviceType === 'laptop' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-                  {[
-                    { value: 'apple', label: 'Apple' },
-                    { value: 'dell', label: 'Dell' },
-                    { value: 'hp', label: 'HP' },
-                    { value: 'lenovo', label: 'Lenovo' },
-                    { value: 'asus', label: 'ASUS' },
-                    { value: 'other', label: 'Other' }
-                  ].map((brand) => {
-                    const logo = getBrandLogo(brand.value);
+                  {brandsLoading ? (
+                    <div className="col-span-3 text-center py-4 text-gray-500">
+                      Loading brands...
+                    </div>
+                  ) : (brandsData || []).concat([{ id: 'other' as any, name: 'Other', slug: 'other', is_active: true, created_at: new Date().toISOString() }]).map((brand) => {
+                    const brandSlug = (brand.slug || brand.name).toLowerCase();
+                    const logo = getBrandLogo(brandSlug);
                     return (
                       <label 
-                        key={brand.value}
+                        key={brand.id}
                         className={`device-card relative rounded-md border overflow-hidden transition-all duration-200 ${
-                          methods.watch('deviceBrand') === brand.value
+                          methods.watch('deviceBrand') === brandSlug
                             ? 'border-primary-500 bg-primary-50 shadow-sm selected'
                             : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
                         }`}
@@ -628,13 +658,15 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                             <input
                               type="radio"
                               className="sr-only"
-                              value={brand.value}
-                              checked={field.value === brand.value}
+                              value={brandSlug}
+                              checked={field.value === brandSlug}
                               onChange={() => {
-                                field.onChange(brand.value);
+                                field.onChange(brandSlug);
                                 methods.setValue('deviceModel', '');
                                 revealSection('modelSelection');
                                 setShowBrandWarning(false);
+                                // Store brand UUID
+                                setSelectedBrandId(brand.id as string);
                               }}
                             />
                           )}
@@ -644,89 +676,19 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                             {logo ? (
                               <Image
                                 src={logo}
-                                alt={`${brand.label} logo`}
+                                alt={`${brand.name} logo`}
                                 width={32}
                                 height={32}
                                 className="w-8 h-8 object-contain"
                               />
                             ) : (
                               <div className="w-8 h-8 flex items-center justify-center text-lg font-medium rounded-full bg-gray-100 text-gray-700">
-                                {brand.label.charAt(0)}
+                                {brand.name.charAt(0)}
                               </div>
                             )}
                           </div>
-                          <span className="font-medium text-gray-900">{brand.label}</span>
-                          {methods.watch('deviceBrand') === brand.value && (
-                            <div className="ml-auto">
-                              <svg className="h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-              
-              {/* Tablet device brands */}
-              {deviceType === 'tablet' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-                  {[
-                    { value: 'apple', label: 'Apple' },
-                    { value: 'samsung', label: 'Samsung' },
-                    { value: 'microsoft', label: 'Microsoft' },
-                    { value: 'lenovo', label: 'Lenovo' },
-                    { value: 'other', label: 'Other' }
-                  ].map((brand) => {
-                    const logo = getBrandLogo(brand.value);
-                    return (
-                      <label 
-                        key={brand.value}
-                        className={`device-card relative rounded-md border overflow-hidden transition-all duration-200 ${
-                          methods.watch('deviceBrand') === brand.value
-                            ? 'border-primary-500 bg-primary-50 shadow-sm selected'
-                            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                        }`}
-                      >
-                        <Controller
-                          name="deviceBrand"
-                          control={methods.control}
-                          rules={{ required: "Please select a brand" }}
-                          render={({ field }) => (
-                            <input
-                              type="radio"
-                              className="sr-only"
-                              value={brand.value}
-                              checked={field.value === brand.value}
-                              onChange={() => {
-                                field.onChange(brand.value);
-                                methods.setValue('deviceModel', '');
-                                revealSection('modelSelection');
-                                setShowBrandWarning(false);
-                              }}
-                            />
-                          )}
-                        />
-                        <div className="flex items-center p-3 cursor-pointer">
-                          <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center mr-3">
-                            {logo ? (
-                              <Image
-                                src={logo}
-                                alt={`${brand.label} logo`}
-                                width={32}
-                                height={32}
-                                className="w-8 h-8 object-contain"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 flex items-center justify-center text-lg font-medium rounded-full bg-gray-100 text-gray-700">
-                                {brand.label.charAt(0)}
-                              </div>
-                            )}
-                          </div>
-                          <span className="font-medium text-gray-900">{brand.label}</span>
-                          {methods.watch('deviceBrand') === brand.value && (
+                          <span className="font-medium text-gray-900">{brand.name}</span>
+                          {methods.watch('deviceBrand') === brandSlug && (
                             <div className="ml-auto">
                               <svg className="h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -783,34 +745,90 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             name="deviceModel"
             control={methods.control}
             rules={{ required: "Model is required" }}
-                render={({ field, fieldState }) => {
-                  // Debug output for device selection
-                  console.log('DeviceModelSelector props from BookingForm:', {
-                    deviceType: methods.watch('deviceType'), 
-                    brand: methods.watch('deviceBrand'),
-                    value: field.value
-                  });
-                  
-                  return (
-                    <>
-                      <div className="rounded-md border border-gray-300 overflow-hidden focus-within:border-primary-500 focus-within:ring-1 focus-within:ring-primary-500 transition-all duration-300">
-                    <DeviceModelSelector
-                      deviceType={methods.watch('deviceType')}
-                      brand={methods.watch('deviceBrand')}
-                      value={field.value}
-                      onChange={(model) => {
-                        if (handleModelSelectionAttempt()) {
-                          field.onChange(model);
-                        }
-                      }}
+            render={({ field, fieldState }) => {
+              // If "Other" brand selected, show text input
+              if (deviceBrand === 'other') {
+                return (
+                  <>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder={`Enter your ${deviceType} model`}
+                      value={field.value || ''}
+                      onChange={(e) => field.onChange(e.target.value)}
                     />
-                      </div>
                     {fieldState.error && showValidationErrors && (
-                  <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                )}
-          </>
-                  );
-                }}
+                      <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                    )}
+                  </>
+                );
+              }
+
+              // Otherwise use models from API
+              return (
+                <>
+                  <select
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    value={field.value || ''}
+                    onChange={(e) => {
+                      if (handleModelSelectionAttempt()) {
+                        field.onChange(e.target.value);
+                        // Find and store the model UUID
+                        const selectedModel = modelsData?.find(m => m.name === e.target.value);
+                        if (selectedModel) {
+                          setSelectedModelId(selectedModel.id);
+                        }
+                      }
+                    }}
+                    disabled={!deviceBrand || modelsLoading || (!modelsData?.length && !modelsLoading)}
+                  >
+                    <option value="">
+                      {!deviceBrand ? 'Select a brand first' : 
+                       modelsLoading ? 'Loading models...' : 
+                       !modelsData?.length ? `No ${deviceBrand} ${deviceType} models available` :
+                       `Select your ${deviceBrand} ${deviceType} model`}
+                    </option>
+                    
+                    {modelsData?.map((model) => (
+                      <option key={model.id} value={model.name}>
+                        {model.name}
+                      </option>
+                    ))}
+                    
+                    {modelsData && modelsData.length > 0 && (
+                      <option value="custom-model">My model isn't listed</option>
+                    )}
+                  </select>
+
+                  {/* Custom model input if "My model isn't listed" selected */}
+                  {field.value === 'custom-model' && (
+                    <div className="mt-2">
+                      <input
+                        type="text"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder={`Enter your ${deviceType} model manually`}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        autoFocus
+                      />
+                    </div>
+                  )}
+
+                  {modelsLoading && (
+                    <div className="mt-2 flex items-center text-sm text-gray-500">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Loading available models...
+                    </div>
+                  )}
+
+                  {fieldState.error && showValidationErrors && (
+                    <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
+                  )}
+                </>
+              );
+            }}
           />
             </div>
           )}
@@ -860,12 +878,28 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     );
   };
 
-  // Render the Service Details step
+  // Render the Service Details step  
   const renderServiceDetailsStep = () => {
     const deviceType = methods.watch('deviceType');
     
-    // Enhanced services with icons, time estimates, and price ranges
-    const services = {
+    // Use dynamic services from API
+    const apiServices = servicesData || [];
+    
+    // Transform API services to match UI format - using getServiceIcon helper
+    const transformedServices = apiServices.map(service => ({
+      id: service.slug || service.name,
+      label: service.display_name || service.name,
+      doorstep: service.is_doorstep_eligible !== undefined ? service.is_doorstep_eligible : true,
+      icon: getServiceIcon(service.name, service.category?.icon_name),
+      time: service.estimated_duration_minutes ? `${service.estimated_duration_minutes} min` : '30-60 min',
+      price: 'Get Quote', // Price comes from dynamic pricing API
+      group: service.category?.icon_name || 'common',
+      requires_diagnostics: service.requires_diagnostics || false,
+      description: service.description
+    }));
+    
+    // Use transformed services or fallback while loading
+    const fallbackServices = {
       mobile: [
         { 
           id: 'screen-replacement', 
@@ -1099,10 +1133,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       ]
     };
     
-    const availableServices = services[deviceType as keyof typeof services] || [];
+    const availableServices = servicesLoading || !transformedServices.length 
+      ? fallbackServices[deviceType as keyof typeof fallbackServices] || []
+      : transformedServices;
     
     // Group services by category for better organization
-    const groupedServices = availableServices.reduce((acc, service) => {
+    const groupedServices = availableServices.reduce((acc: Record<string, typeof availableServices>, service: typeof availableServices[0]) => {
       const group = service.group || 'other';
       if (!acc[group]) {
         acc[group] = [];
@@ -1314,6 +1350,51 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   const renderServiceDetailsAndTierStep = () => {
     // Only show validation errors if this step has been validated
     const showValidationErrors = validatedSteps.includes(1);
+    const deviceType = methods.watch('deviceType');
+    
+    // Use dynamic services from API (already being fetched)
+    const apiServices = servicesData || [];
+    
+    // Transform API services to match UI format
+    const transformedServices = apiServices.map(service => ({
+      id: service.slug || service.name,
+      label: service.display_name || service.name,
+      doorstep: service.is_doorstep_eligible !== undefined ? service.is_doorstep_eligible : true,
+      icon: getServiceIcon(service.name, service.category?.icon_name),
+      time: service.estimated_duration_minutes ? `${service.estimated_duration_minutes} min` : '30-60 min',
+      price: 'View pricing below', // Dynamic pricing shown in TierPriceComparison
+      group: 'common'
+    }));
+    
+    // Fallback services while loading (keep the same structure as before for consistency)
+    const fallbackServices = {
+      mobile: [
+        { id: 'screen-replacement', label: 'Screen Replacement', doorstep: true, icon: 'M12 18h-1.5v-2H18v2H12zM6 11v-1h12v1H6zm0 6H4.5v-2H6v2zm10.5-6a.75.75 0 100-1.5.75.75 0 000 1.5zM12 6V4h6v2h-6zM6 6V4h4.5v2H6z', time: '30-60 min', price: 'Get Quote', group: 'common' },
+        { id: 'battery-replacement', label: 'Battery Replacement', doorstep: true, icon: 'M20 10V8h-3V4H7v4H4v2h3v8a2 2 0 002 2h6a2 2 0 002-2v-8h3zM13 8V6h1v2h-1zm-3 0V6h1v2h-1z', time: '20-40 min', price: 'Get Quote', group: 'common' },
+        { id: 'charging-port', label: 'Charging Port Repair', doorstep: true, icon: 'M9 4v4h6V4h2v4h1a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8a2 2 0 012-2h1V4h2zm1 16h4v-4h-4v4z', time: '30-45 min', price: 'Get Quote', group: 'common' },
+        { id: 'speaker-mic', label: 'Speaker/Microphone Repair', doorstep: true, icon: 'M10 7a5 5 0 015 5 5 5 0 01-5 5 5 5 0 01-5-5 5 5 0 015-5zm0 2a3 3 0 00-3 3 3 3 0 003 3 3 3 0 003-3 3 3 0 00-3-3zm7-5v14a2 2 0 01-2 2H5a2 2 0 01-2-2V4a2 2 0 012-2h10a2 2 0 012 2z', time: '25-45 min', price: 'Get Quote', group: 'common' },
+        { id: 'camera-repair', label: 'Camera Repair', doorstep: true, icon: 'M12 9a3 3 0 100 6 3 3 0 000-6zm0 1.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM20 5H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2zm-8 11a5 5 0 110-10 5 5 0 010 10z', time: '30-60 min', price: 'Get Quote', group: 'common' },
+        { id: 'water-damage', label: 'Water Damage Diagnostics', doorstep: false, icon: 'M12 3.25a.75.75 0 01.75.75v6.701a4.25 4.25 0 11-1.5 0V4a.75.75 0 01.75-.75zM7.266 7.5a7 7 0 1113.468 2.5 7 7 0 01-13.468-2.5z', time: '45-90 min', price: 'Get Quote', group: 'special' }
+      ],
+      laptop: [
+        { id: 'screen-replacement', label: 'Screen Replacement', doorstep: true, icon: 'M20 4H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 11.5H4V6h16v9.5zM4 20h16v-2H4v2z', time: '45-75 min', price: 'Get Quote', group: 'common' },
+        { id: 'battery-replacement', label: 'Battery Replacement', doorstep: true, icon: 'M20 10V8h-3V4H7v4H4v2h3v8a2 2 0 002 2h6a2 2 0 002-2v-8h3z', time: '30-45 min', price: 'Get Quote', group: 'common' },
+        { id: 'keyboard-repair', label: 'Keyboard Repair/Replacement', doorstep: true, icon: 'M20 5H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2zm0 11.5H4V7h16v9.5zM6 10h2v2H6v-2zm3 0h2v2H9v-2zm3 0h2v2h-2v-2zm3 0h2v2h-2v-2z', time: '45-75 min', price: 'Get Quote', group: 'common' },
+        { id: 'trackpad-repair', label: 'Trackpad Repair', doorstep: true, icon: 'M19 4H5a3 3 0 00-3 3v10a3 3 0 003 3h14a3 3 0 003-3V7a3 3 0 00-3-3zm1 13a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h14a1 1 0 011 1v10zm-8-7a2 2 0 100 4 2 2 0 000-4z', time: '45-90 min', price: 'Get Quote', group: 'common' },
+        { id: 'ram-upgrade', label: 'RAM Upgrade', doorstep: true, icon: 'M4 4h16a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1zm0 8h16a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4a1 1 0 011-1zm3-6h2v2H7V6zm0 8h2v2H7v-2z', time: '20-40 min', price: 'Get Quote', group: 'upgrades' },
+        { id: 'storage-upgrade', label: 'HDD/SSD Replacement/Upgrade', doorstep: true, icon: 'M15 15a2 2 0 100-4 2 2 0 000 4zm4-11h-1V3a1 1 0 00-1-1H7a1 1 0 00-1 1v1H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm-4 10a4 4 0 110-8 4 4 0 010 8zm-6-8.5a.5.5 0 100-1 .5.5 0 000 1z', time: '30-60 min', price: 'Get Quote', group: 'upgrades' },
+        { id: 'software-trouble', label: 'Software Troubleshooting', doorstep: true, icon: 'M13 13.5a1 1 0 11-2 0 1 1 0 012 0zm-.25-5v2.992l.25.26a1 1 0 11-2 0l.25-.26V8.5a1 1 0 112 0zM12 4a8 8 0 100 16 8 8 0 000-16zm-6.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z', time: '45-90 min', price: 'Get Quote', group: 'software' },
+        { id: 'virus-removal', label: 'Virus Removal', doorstep: true, icon: 'M11 16.75a.75.75 0 001.5 0v-1.061l.344-.282a4.5 4.5 0 10-2.196.003l.352.279v1.06zm1.956-8.909a1 1 0 00-1.912 0L9.96 9.575A3 3 0 008.633 11H7a1 1 0 100 2h1.633A3.001 3.001 0 0012 15a3.001 3.001 0 003.367-2H17a1 1 0 100-2h-1.633a3 3 0 00-1.327-1.425l-1.084-1.734z', time: '60-120 min', price: 'Get Quote', group: 'software' },
+        { id: 'cooling-repair', label: 'Cooling System Repair', doorstep: true, icon: 'M10 8a1 1 0 11-2 0 1 1 0 012 0zm5 0a1 1 0 11-2 0 1 1 0 012 0zM8.5 12.5L7 11l-3 3 3 3 1.5-1.5L7 14l1.5-1.5zm7 0L14 14l1.5 1.5L17 14l-3-3-3 3 1.5 1.5 1.5-1.5zM12 2a10 10 0 100 20 10 10 0 000-20zm-8 10a8 8 0 1116 0 8 8 0 01-16 0z', time: '45-90 min', price: 'Get Quote', group: 'hardware' },
+        { id: 'power-jack', label: 'Power Jack Repair', doorstep: true, icon: 'M12 7V5M8 9l-2-2M16 9l2-2M7 13H5M19 13h-2M12 17a2 2 0 100-4 2 2 0 000 4z', time: '60-90 min', price: 'Get Quote', group: 'hardware' }
+      ],
+      tablet: []
+    };
+
+    // Use transformed services or fallback
+    const deviceServices = servicesLoading || !transformedServices.length
+      ? (fallbackServices[deviceType as keyof typeof fallbackServices] || [])
+      : transformedServices;
     
     return (
       <div className="space-y-8">
@@ -1329,271 +1410,92 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         <div className="space-y-6">
           <h4 className="text-xl font-semibold text-gray-900">What needs repair?</h4>
           
+          {servicesLoading && (
+            <div className="text-center py-4">
+              <div className="inline-flex items-center text-gray-600">
+                <svg className="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Loading available services...
+              </div>
+            </div>
+          )}
+          
           <div className="space-y-4">
-            {/* Service selection logic from renderServiceDetailsStep */}
-            {(() => {
-              const deviceType = methods.watch('deviceType');
-              
-              // Enhanced services with icons, time estimates, and price ranges (using existing service definitions)
-              const services = {
-                mobile: [
-                  { 
-                    id: 'screen-replacement', 
-                    label: 'Screen Replacement', 
-                    doorstep: true,
-                    icon: 'M12 18h-1.5v-2H18v2H12zM6 11v-1h12v1H6zm0 6H4.5v-2H6v2zm10.5-6a.75.75 0 100-1.5.75.75 0 000 1.5zM12 6V4h6v2h-6zM6 6V4h4.5v2H6z',
-                    time: '30-60 min',
-                    price: '$89-199',
-                    group: 'common'
-                  },
-                  { 
-                    id: 'battery-replacement', 
-                    label: 'Battery Replacement', 
-                    doorstep: true,
-                    icon: 'M20 10V8h-3V4H7v4H4v2h3v8a2 2 0 002 2h6a2 2 0 002-2v-8h3zM13 8V6h1v2h-1zm-3 0V6h1v2h-1z',
-                    time: '20-40 min',
-                    price: '$69-129',
-                    group: 'common'
-                  },
-                  { 
-                    id: 'charging-port', 
-                    label: 'Charging Port Repair', 
-                    doorstep: true,
-                    icon: 'M9 4v4h6V4h2v4h1a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8a2 2 0 012-2h1V4h2zm1 16h4v-4h-4v4z',
-                    time: '30-45 min',
-                    price: '$79-119',
-                    group: 'common'
-                  },
-                  { 
-                    id: 'speaker-mic', 
-                    label: 'Speaker/Microphone Repair', 
-                    doorstep: true,
-                    icon: 'M10 7a5 5 0 015 5 5 5 0 01-5 5 5 5 0 01-5-5 5 5 0 015-5zm0 2a3 3 0 00-3 3 3 3 0 003 3 3 3 0 003-3 3 3 0 00-3-3zm7-5v14a2 2 0 01-2 2H5a2 2 0 01-2-2V4a2 2 0 012-2h10a2 2 0 012 2z',
-                    time: '25-45 min',
-                    price: '$69-119',
-                    group: 'common'
-                  },
-                  { 
-                    id: 'camera-repair', 
-                    label: 'Camera Repair', 
-                    doorstep: true,
-                    icon: 'M12 9a3 3 0 100 6 3 3 0 000-6zm0 1.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM20 5H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2zm-8 11a5 5 0 110-10 5 5 0 010 10z',
-                    time: '30-60 min',
-                    price: '$89-149',
-                    group: 'common'
-                  },
-                  { 
-                    id: 'water-damage', 
-                    label: 'Water Damage Diagnostics', 
-                    doorstep: false,
-                    icon: 'M12 3.25a.75.75 0 01.75.75v6.701a4.25 4.25 0 11-1.5 0V4a.75.75 0 01.75-.75zM7.266 7.5a7 7 0 1113.468 2.5 7 7 0 01-13.468-2.5z',
-                    time: '45-90 min',
-                    price: '$99-249',
-                    group: 'special'
-                  }
-                ],
-                laptop: [
-                  { 
-                    id: 'screen-replacement', 
-                    label: 'Screen Replacement', 
-                    doorstep: true,
-                    icon: 'M20 4H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm0 11.5H4V6h16v9.5zM4 20h16v-2H4v2z',
-                    time: '45-75 min',
-                    price: '$149-349',
-                    group: 'common'
-                  },
-                  { 
-                    id: 'battery-replacement', 
-                    label: 'Battery Replacement', 
-                    doorstep: true,
-                    icon: 'M20 10V8h-3V4H7v4H4v2h3v8a2 2 0 002 2h6a2 2 0 002-2v-8h3z',
-                    time: '30-45 min',
-                    price: '$99-199',
-                    group: 'common'
-                  },
-                  { 
-                    id: 'keyboard-repair', 
-                    label: 'Keyboard Repair/Replacement', 
-                    doorstep: true,
-                    icon: 'M20 5H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2zm0 11.5H4V7h16v9.5zM6 10h2v2H6v-2zm3 0h2v2H9v-2zm3 0h2v2h-2v-2zm3 0h2v2h-2v-2z',
-                    time: '45-75 min',
-                    price: '$99-189',
-                    group: 'common'
-                  },
-                  { 
-                    id: 'trackpad-repair', 
-                    label: 'Trackpad Repair', 
-                    doorstep: true,
-                    icon: 'M19 4H5a3 3 0 00-3 3v10a3 3 0 003 3h14a3 3 0 003-3V7a3 3 0 00-3-3zm1 13a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h14a1 1 0 011 1v10zm-8-7a2 2 0 100 4 2 2 0 000-4z',
-                    time: '45-90 min',
-                    price: '$99-179',
-                    group: 'common'
-                  },
-                  { 
-                    id: 'ram-upgrade', 
-                    label: 'RAM Upgrade', 
-                    doorstep: true,
-                    icon: 'M4 4h16a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1zm0 8h16a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4a1 1 0 011-1zm3-6h2v2H7V6zm0 8h2v2H7v-2z',
-                    time: '20-40 min',
-                    price: '$69-249',
-                    group: 'upgrades'
-                  },
-                  { 
-                    id: 'storage-upgrade', 
-                    label: 'HDD/SSD Replacement/Upgrade', 
-                    doorstep: true,
-                    icon: 'M15 15a2 2 0 100-4 2 2 0 000 4zm4-11h-1V3a1 1 0 00-1-1H7a1 1 0 00-1 1v1H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm-4 10a4 4 0 110-8 4 4 0 010 8zm-6-8.5a.5.5 0 100-1 .5.5 0 000 1z',
-                    time: '30-60 min',
-                    price: '$89-349',
-                    group: 'upgrades'
-                  },
-                  { 
-                    id: 'software-trouble', 
-                    label: 'Software Troubleshooting', 
-                    doorstep: true,
-                    icon: 'M13 13.5a1 1 0 11-2 0 1 1 0 012 0zm-.25-5v2.992l.25.26a1 1 0 11-2 0l.25-.26V8.5a1 1 0 112 0zM12 4a8 8 0 100 16 8 8 0 000-16zm-6.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z',
-                    time: '45-90 min',
-                    price: '$79-149',
-                    group: 'software'
-                  },
-                  { 
-                    id: 'virus-removal', 
-                    label: 'Virus Removal', 
-                    doorstep: true,
-                    icon: 'M11 16.75a.75.75 0 001.5 0v-1.061l.344-.282a4.5 4.5 0 10-2.196.003l.352.279v1.06zm1.956-8.909a1 1 0 00-1.912 0L9.96 9.575A3 3 0 008.633 11H7a1 1 0 100 2h1.633A3.001 3.001 0 0012 15a3.001 3.001 0 003.367-2H17a1 1 0 100-2h-1.633a3 3 0 00-1.327-1.425l-1.084-1.734z',
-                    time: '60-120 min',
-                    price: '$99-199',
-                    group: 'software'
-                  },
-                  { 
-                    id: 'cooling-repair', 
-                    label: 'Cooling System Repair', 
-                    doorstep: true,
-                    icon: 'M10 8a1 1 0 11-2 0 1 1 0 012 0zm5 0a1 1 0 11-2 0 1 1 0 012 0zM8.5 12.5L7 11l-3 3 3 3 1.5-1.5L7 14l1.5-1.5zm7 0L14 14l1.5 1.5L17 14l-3-3-3 3 1.5 1.5 1.5-1.5zM12 2a10 10 0 100 20 10 10 0 000-20zm-8 10a8 8 0 1116 0 8 8 0 01-16 0z',
-                    time: '45-90 min',
-                    price: '$89-179',
-                    group: 'hardware'
-                  },
-                  { 
-                    id: 'power-jack', 
-                    label: 'Power Jack Repair', 
-                    doorstep: true,
-                    icon: 'M12 7V5M8 9l-2-2M16 9l2-2M7 13H5M19 13h-2M12 17a2 2 0 100-4 2 2 0 000 4z',
-                    time: '60-90 min',
-                    price: '$99-179',
-                    group: 'hardware'
-                  }
-                ],
-                tablet: [
-                  { 
-                    id: 'screen-replacement', 
-                    label: 'Screen Replacement', 
-                    doorstep: true,
-                    icon: 'M18 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2zm0 17H6V5h12v14zm-7-3h2v-2h-2v2z',
-                    time: '45-75 min',
-                    price: '$129-299',
-                    group: 'common'
-                  },
-                  { 
-                    id: 'battery-replacement', 
-                    label: 'Battery Replacement', 
-                    doorstep: true,
-                    icon: 'M20 10V8h-3V4H7v4H4v2h3v8a2 2 0 002 2h6a2 2 0 002-2v-8h3z',
-                    time: '30-60 min',
-                    price: '$89-169',
-                    group: 'common'
-                  },
-                  { 
-                    id: 'charging-port', 
-                    label: 'Charging Port Repair', 
-                    doorstep: true,
-                    icon: 'M9 4v4h6V4h2v4h1a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8a2 2 0 012-2h1V4h2zm1 16h4v-4h-4v4z',
-                    time: '30-60 min',
-                    price: '$79-149',
-                    group: 'common'
-                  }
-                ]
-              };
+            <Controller
+              name="serviceType"
+              control={methods.control}
+              rules={{ required: "Please select at least one service" }}
+              render={({ field, fieldState }) => (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {deviceServices.map((service) => {
+                      const isSelected = Array.isArray(field.value) 
+                        ? field.value.includes(service.id)
+                        : field.value === service.id;
 
-              const deviceServices = services[deviceType as keyof typeof services] || [];
-              const selectedServices = methods.watch('serviceType') || [];
-
-              return (
-                <Controller
-                  name="serviceType"
-                  control={methods.control}
-                  rules={{ required: "Please select at least one service" }}
-                  render={({ field, fieldState }) => (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {deviceServices.map((service) => {
-                          const isSelected = Array.isArray(field.value) 
-                            ? field.value.includes(service.id)
-                            : field.value === service.id;
-
-                          return (
-                            <div
-                              key={service.id}
-                              className={`relative border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                                isSelected
-                                  ? 'border-primary-500 bg-primary-50'
-                                  : 'border-gray-200 hover:border-gray-300'
-                              }`}
-                              onClick={() => {
-                                // Toggle service selection
-                                let newValue;
-                                if (Array.isArray(field.value)) {
-                                  newValue = isSelected
-                                    ? field.value.filter(id => id !== service.id)
-                                    : [...field.value, service.id];
-                                } else {
-                                  newValue = isSelected ? [] : [service.id];
-                                }
-                                field.onChange(newValue);
-                                methods.trigger('serviceType');
-                              }}
-                            >
-                              <div className="flex items-start space-x-3">
-                                <div className="flex-shrink-0 mt-1">
-                                  <svg className="h-6 w-6 text-primary-600" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d={service.icon} />
-                                  </svg>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <h4 className="text-lg font-medium text-gray-900">{service.label}</h4>
-                                    {service.doorstep && (
-                                      <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                                        Doorstep
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center justify-between text-sm text-gray-600">
-                                    <span>{service.time}</span>
-                                    <span className="font-medium text-primary-600">{service.price}</span>
-                                  </div>
-                                </div>
-                                {isSelected && (
-                                  <div className="flex-shrink-0">
-                                    <svg className="h-5 w-5 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
+                      return (
+                        <div
+                          key={service.id}
+                          className={`relative border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                            isSelected
+                              ? 'border-primary-500 bg-primary-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                          onClick={() => {
+                            // Toggle service selection
+                            let newValue;
+                            if (Array.isArray(field.value)) {
+                              newValue = isSelected
+                                ? field.value.filter(id => id !== service.id)
+                                : [...field.value, service.id];
+                            } else {
+                              newValue = isSelected ? [] : [service.id];
+                            }
+                            field.onChange(newValue);
+                            methods.trigger('serviceType');
+                          }}
+                        >
+                          <div className="flex items-start space-x-3">
+                            <div className="flex-shrink-0 mt-1">
+                              <svg className="h-6 w-6 text-primary-600" fill="currentColor" viewBox="0 0 24 24">
+                                <path d={service.icon} />
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="text-lg font-medium text-gray-900">{service.label}</h4>
+                                {service.doorstep && (
+                                  <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                    Doorstep
                                   </div>
                                 )}
                               </div>
+                              <div className="flex items-center justify-between text-sm text-gray-600">
+                                <span>{service.time}</span>
+                                <span className="font-medium text-primary-600">{service.price}</span>
+                              </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                      
-                      {fieldState.error && showValidationErrors && (
-                        <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                      )}
-                    </div>
+                            {isSelected && (
+                              <div className="flex-shrink-0">
+                                <svg className="h-5 w-5 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {fieldState.error && showValidationErrors && (
+                    <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
                   )}
-                />
-              );
-            })()}
+                </div>
+              )}
+            />
           </div>
 
           <div className="space-y-4">
@@ -2821,8 +2723,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           <div className="text-center text-gray-500">
             <p className="mb-2">This is a placeholder for the {steps[currentStep]} step.</p>
             <p>Future implementation will include all necessary fields for this step.</p>
-      </div>
-    );
+          </div>
+        );
     }
         })()}
       </>
@@ -2830,23 +2732,33 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   };
 
   // Override the handleSubmit function to check for terms agreement
-  const handleFinalSubmit = () => {
+  const handleFinalSubmit = async () => {
     if (!agreeToTerms) {
       setSubmitAttempted(true);
       return;
     }
     
-    const data = methods.getValues();
+    if (isSubmitting) return; // Prevent double submission
     
-    // Process the data before submitting
-    const processedData: CreateBookingRequest = {
-      ...data,
-      // If using "other" brand, set the custom brand for database
-      brand: data.deviceBrand === 'other' && data.customBrand ? data.customBrand : data.deviceBrand,
-      model: data.deviceModel
-    };
+    setIsSubmitting(true);
     
-    handleSubmit(processedData);
+    try {
+      const data = methods.getValues();
+      
+      // Process the data before submitting
+      const processedData: CreateBookingRequest = {
+        ...data,
+        // If using "other" brand, set the custom brand for database
+        brand: data.deviceBrand === 'other' && data.customBrand ? data.customBrand : data.deviceBrand,
+        model: data.deviceModel,
+        // Add quoted price from pricing calculation
+        quoted_price: pricingData?.final_price ?? undefined
+      };
+      
+      await handleSubmit(processedData);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
 
@@ -2926,9 +2838,9 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 type="button"
                 onClick={handleFinalSubmit}
                 className="w-full sm:w-auto px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-all duration-300 shadow-md hover:shadow-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center"
-                disabled={methods.formState.isSubmitting}
+                disabled={isSubmitting || methods.formState.isSubmitting}
               >
-                {methods.formState.isSubmitting ? (
+                {isSubmitting || methods.formState.isSubmitting ? (
                   <>
                     <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

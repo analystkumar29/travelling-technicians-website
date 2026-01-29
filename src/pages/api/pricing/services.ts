@@ -72,17 +72,118 @@ export default async function handler(
     // Get Supabase client
     const supabase = getServiceSupabase();
 
-    // Use static services data for now
-    apiLogger.info('Using static services data');
-    const staticServices = getStaticServices(deviceType as string, category as string);
-    
+    // Build query to fetch services from database
+    let query = supabase
+      .from('services')
+      .select(`
+        id,
+        name,
+        slug,
+        display_name,
+        description,
+        estimated_duration_minutes,
+        is_doorstep_eligible,
+        requires_diagnostics,
+        is_active,
+        device_type_id,
+        category:service_categories(
+          id,
+          name,
+          slug,
+          display_order
+        ),
+        device_type:device_types!device_type_id(
+          id,
+          name
+        )
+      `)
+      .eq('is_active', true);
+
+    // Get device type ID first
+    const deviceTypeName = Array.isArray(deviceType) ? deviceType[0] : deviceType;
+    const { data: deviceTypes, error: deviceTypeError } = await supabase
+      .from('device_types')
+      .select('id, name')
+      .ilike('name', deviceTypeName)
+      .limit(1);
+
+    if (deviceTypeError || !deviceTypes || deviceTypes.length === 0) {
+      apiLogger.warn('Device type not found', { deviceType, error: deviceTypeError });
+      // Fallback to static data if device type not found
+      const staticServices = getStaticServices(deviceType as string, category as string);
+      return res.status(200).json({
+        success: true,
+        services: staticServices
+      });
+    }
+
+    const deviceTypeId = deviceTypes[0].id;
+
+    // Filter by device type ID
+    query = query.eq('device_type_id', deviceTypeId);
+
+    // Filter by category if specified
+    if (category) {
+      query = query.eq('category.slug', category);
+    }
+
+    // Order by category display order, then by slug
+    query = query.order('slug', { ascending: true });
+
+    const { data: dbServices, error } = await query;
+
+    if (error) {
+      apiLogger.error('Error fetching services from database', { error });
+      // Fallback to static data
+      const staticServices = getStaticServices(deviceType as string, category as string);
+      return res.status(200).json({
+        success: true,
+        services: staticServices
+      });
+    }
+
+    if (!dbServices || dbServices.length === 0) {
+      apiLogger.warn('No services found in database, using fallback', { deviceType, category });
+      // Fallback to static data
+      const staticServices = getStaticServices(deviceType as string, category as string);
+      return res.status(200).json({
+        success: true,
+        services: staticServices
+      });
+    }
+
+    // Transform database services to API format
+    const services: Service[] = dbServices.map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      display_name: s.display_name || s.name,
+      description: s.description,
+      estimated_duration_minutes: s.estimated_duration_minutes,
+      warranty_period_days: 365, // Default warranty
+      is_doorstep_eligible: s.is_doorstep_eligible,
+      requires_diagnostics: s.requires_diagnostics,
+      category: s.category ? {
+        id: s.category.id,
+        name: s.category.name,
+        display_name: s.category.name,
+        description: undefined,
+        icon_name: s.category.slug
+      } : {
+        id: 0,
+        name: 'General',
+        display_name: 'General Services',
+        icon_name: 'general'
+      },
+      device_type: deviceType as string,
+      sort_order: 0
+    }));
+
+    apiLogger.info('Successfully fetched services from database', { count: services.length });
+
     return res.status(200).json({
       success: true,
-      services: staticServices
+      services
     });
-
-    // TODO: Enable database services once tables are created
-    // For now, all services use static data
 
   } catch (error) {
     apiLogger.error('Unexpected error in services API', { error });
