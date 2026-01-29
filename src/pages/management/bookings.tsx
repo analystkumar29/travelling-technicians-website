@@ -252,19 +252,35 @@ export default function AdminBookings() {
 
   const BookingModal = ({ booking, onClose }: { booking: Booking; onClose: () => void }) => {
     const [note, setNote] = useState('');
+    
+    // Format address with fallbacks
+    const formatAddress = () => {
+      const parts = [
+        booking.address || 'Not provided',
+        booking.city || '',
+        booking.province || '',
+        booking.postal_code || ''
+      ].filter(part => part && part.trim());
+      
+      return parts.length > 0 ? parts.join(', ') : 'Address not provided';
+    };
 
     return (
       <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white max-h-screen overflow-y-auto">
+        <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white max-h-screen overflow-y-auto">
           <div className="mt-3">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                <FaTools className="mr-2 text-primary-600" />
-                Booking Details - {booking.reference_number}
-              </h3>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900 flex items-center">
+                  <FaCalendarAlt className="mr-3 text-primary-600" />
+                  Booking Details
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">Ref: {booking.reference_number}</p>
+              </div>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 focus:outline-none"
               >
                 <span className="sr-only">Close</span>
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -273,100 +289,181 @@ export default function AdminBookings() {
               </button>
             </div>
 
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Customer</label>
-                  <p className="mt-1 text-sm text-gray-900">{booking.customer_name}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Status</label>
-                  <span className={`mt-1 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status)}`}>
-                    {booking.status}
-                  </span>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Device</label>
-                  <p className="mt-1 text-sm text-gray-900">{booking.device_brand} {booking.device_model}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Service</label>
-                  <p className="mt-1 text-sm text-gray-900">{booking.service_type}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Phone</label>
-                  <a href={`tel:${booking.customer_phone}`} className="mt-1 text-sm text-blue-600 hover:text-blue-800">
-                    {booking.customer_phone}
-                  </a>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  <a href={`mailto:${booking.customer_email}`} className="mt-1 text-sm text-blue-600 hover:text-blue-800">
-                    {booking.customer_email}
-                  </a>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Address</label>
-                <p className="mt-1 text-sm text-gray-900">{booking.address}, {booking.city}, {booking.province} {booking.postal_code}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Appointment Date</label>
-                  <p className="mt-1 text-sm text-gray-900">{booking.booking_date}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Appointment Time</label>
-                  <p className="mt-1 text-sm text-gray-900">{booking.booking_time}</p>
+            <div className="space-y-6">
+              {/* Customer Information Section */}
+              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <FaUser className="mr-2 text-blue-600" />
+                  Customer Information
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Name</label>
+                    <p className="mt-1 text-sm font-medium text-gray-900">{booking.customer_name || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Status</label>
+                    <span className={`mt-1 inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status)}`}>
+                      {booking.status?.charAt(0).toUpperCase() + booking.status?.slice(1) || 'Unknown'}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      <FaPhone className="inline mr-1 text-blue-600" />
+                      Phone
+                    </label>
+                    <a href={`tel:${booking.customer_phone}`} className="mt-1 text-sm font-medium text-blue-600 hover:text-blue-800">
+                      {booking.customer_phone || 'Not provided'}
+                    </a>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      <FaEnvelope className="inline mr-1 text-green-600" />
+                      Email
+                    </label>
+                    <a href={`mailto:${booking.customer_email}`} className="mt-1 text-sm font-medium text-green-600 hover:text-green-800">
+                      {booking.customer_email || 'Not provided'}
+                    </a>
+                  </div>
                 </div>
               </div>
 
-              {booking.issue_description && (
+              {/* Device Information Section */}
+              <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <FaTools className="mr-2 text-purple-600" />
+                  Device Information
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Type</label>
+                    <p className="mt-1 text-sm font-medium text-gray-900">
+                      {booking.device_type?.charAt(0).toUpperCase() + booking.device_type?.slice(1) || 'Not provided'}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Brand</label>
+                    <p className="mt-1 text-sm font-medium text-gray-900">{booking.device_brand || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Model</label>
+                    <p className="mt-1 text-sm font-medium text-gray-900">{booking.device_model || 'Not provided'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Service Information Section */}
+              <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <FaTools className="mr-2 text-orange-600" />
+                  Service Information
+                </h4>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Issue Description</label>
-                  <p className="mt-1 text-sm text-gray-900 p-3 bg-gray-50 rounded-md">
-                    {booking.issue_description}
+                  <label className="block text-sm font-medium text-gray-700">Service Type</label>
+                  <p className="mt-1 text-sm font-medium text-gray-900">{booking.service_type || 'Not provided'}</p>
+                </div>
+                {booking.issue_description && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700">Issue Description</label>
+                    <p className="mt-2 text-sm text-gray-900 p-3 bg-white rounded-md border border-orange-200">
+                      {booking.issue_description}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Appointment Information Section */}
+              <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <FaClock className="mr-2 text-green-600" />
+                  Appointment Information
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Date</label>
+                    <p className="mt-1 text-sm font-medium text-gray-900">
+                      {booking.booking_date ? new Date(booking.booking_date).toLocaleDateString() : 'Not provided'}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Time</label>
+                    <p className="mt-1 text-sm font-medium text-gray-900">{booking.booking_time || 'Not provided'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Address Information Section */}
+              <div className="bg-red-50 rounded-lg p-4 border border-red-200">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <FaMapMarkerAlt className="mr-2 text-red-600" />
+                  Service Location
+                </h4>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Full Address</label>
+                  <p className="mt-1 text-sm font-medium text-gray-900 p-3 bg-white rounded-md border border-red-200">
+                    {formatAddress()}
                   </p>
                 </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Existing Notes</label>
-                <div className="mt-1 p-3 bg-gray-50 rounded-md">
-                  <p className="text-sm text-gray-900 whitespace-pre-wrap">
-                    {booking.notes || 'No notes yet'}
-                  </p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600">Street</label>
+                    <p className="mt-1 text-sm text-gray-800">{booking.address || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600">City</label>
+                    <p className="mt-1 text-sm text-gray-800">{booking.city || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600">Province</label>
+                    <p className="mt-1 text-sm text-gray-800">{booking.province || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600">Postal Code</label>
+                    <p className="mt-1 text-sm text-gray-800">{booking.postal_code || 'N/A'}</p>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Add Note</label>
-                <textarea
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                  rows={3}
-                  placeholder="Add a note about this booking..."
-                />
+              {/* Notes Section */}
+              <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <FaStickyNote className="mr-2 text-yellow-600" />
+                  Notes & Comments
+                </h4>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Existing Notes</label>
+                  <div className="p-3 bg-white rounded-md border border-yellow-200 min-h-[80px]">
+                    <p className="text-sm text-gray-900 whitespace-pre-wrap">
+                      {booking.notes || 'No notes yet'}
+                    </p>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Add New Note</label>
+                  <textarea
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                    rows={3}
+                    placeholder="Add a note about this booking..."
+                  />
+                </div>
               </div>
 
-              <div className="flex justify-end space-x-3">
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                  className="px-4 py-2 bg-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-400 transition"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => addBookingNote(booking.id, note)}
                   disabled={!note.trim()}
-                  className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 disabled:opacity-50"
+                  className="px-4 py-2 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
+                  <FaStickyNote className="inline mr-2" />
                   Add Note
                 </button>
               </div>
