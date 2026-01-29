@@ -369,6 +369,126 @@ export function useBookingForm(initialStep = 1) {
 }
 ```
 
+### 16. V2 Database Schema Pattern (Operation Ready)
+**Pattern**: Normalized relational schema with UUID primary keys, foreign key relationships, and PostgreSQL ENUM types for business-critical operations.
+
+**Implementation**:
+- **UUID Primary Keys**: All tables use `UUID PRIMARY KEY DEFAULT uuid_generate_v4()` for globally unique identifiers.
+- **Foreign Key Relationships**: Normalized relationships between core entities (brands → device_models → bookings).
+- **PostgreSQL ENUM Types**: Custom enum types for status fields (`booking_status`, `technician_status`, `warranty_status`).
+- **Triggers & Automation**: Database triggers for auto-generating booking references, warranty numbers, and audit logging.
+- **Row-Level Security (RLS)**: Comprehensive RLS policies for public read access and service role full access.
+
+**Core Tables**:
+1. **brands** - Device manufacturers (Apple, Samsung, etc.)
+2. **device_types** - Device categories (Phone, Laptop, Tablet)
+3. **service_locations** - Service areas/cities with travel fees
+4. **services** - Repair services (Screen Repair, Battery Replacement, etc.)
+5. **device_models** - Specific device models with brand and type references
+6. **dynamic_pricing** - Pricing rules for model-service combinations
+7. **technicians** - Technician information and availability
+8. **customer_profiles** - Customer history and contact information
+9. **bookings** - Core booking table with foreign keys to models, services, locations
+10. **warranties** - Warranty information linked to bookings
+11. **booking_communications** - Communication logs
+12. **booking_status_history** - Audit trail for status changes
+
+**Key Relationships**:
+- `bookings.model_id` → `device_models.id`
+- `bookings.service_id` → `services.id`
+- `bookings.location_id` → `service_locations.id`
+- `device_models.brand_id` → `brands.id`
+- `device_models.type_id` → `device_types.id`
+- `dynamic_pricing.model_id` → `device_models.id`
+- `dynamic_pricing.service_id` → `services.id`
+
+**Example Schema Definition**:
+```sql
+-- Core booking table with V2 normalized schema
+CREATE TABLE IF NOT EXISTS bookings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    booking_ref TEXT UNIQUE, -- Auto-generated (TEC-1001)
+    
+    customer_profile_id UUID REFERENCES customer_profiles(id),
+    customer_name TEXT NOT NULL,
+    customer_phone TEXT NOT NULL,
+    customer_email TEXT,
+    customer_address TEXT,
+    
+    model_id UUID REFERENCES device_models(id),
+    service_id UUID REFERENCES services(id),
+    location_id UUID REFERENCES service_locations(id),
+    
+    status booking_status DEFAULT 'pending',
+    technician_id UUID REFERENCES technicians(id),
+    
+    quoted_price DECIMAL(10,2),
+    final_price DECIMAL(10,2),
+    travel_fee DECIMAL(10,2) DEFAULT 0.00,
+    
+    scheduled_at TIMESTAMPTZ,
+    is_repeat_customer BOOLEAN DEFAULT false,
+    
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+**Triggers & Automation**:
+- **Auto-generate booking reference**: `TEC-1001`, `TEC-1002`, etc.
+- **Auto-generate warranty number**: `WT-YYMMDD-XXXX`
+- **Auto-log status changes**: Audit trail in `booking_status_history`
+- **Updated_at timestamps**: Automatic on row update
+
+**Key Learnings from V2 Migration**:
+- **Schema Mismatch Resolution**: Legacy V1 code used column names like `service_location_id` while V2 schema uses `location_id`.
+- **UUID vs Integer IDs**: V2 uses UUIDs for all foreign keys, requiring code updates to fetch UUIDs from reference tables.
+- **Count Query Syntax**: Supabase client requires `select('*', { count: 'exact', head: true })` not `select('count(*)')`.
+- **Import-Level Crashes**: Top-level `throw` statements in module imports cause Vercel 500 errors with no logs.
+- **Environment Variable Validation**: Must be done at runtime, not module import time, to prevent crashes.
+- **Service Role Client Configuration**: Requires `persistSession: false` and `global.fetch` binding for server-side usage.
+
+### 17. TypeScript Compilation & Build Pipeline Pattern
+**Pattern**: Proactive local build testing before deployment to catch TypeScript errors early, with systematic error resolution.
+
+**Implementation**:
+- **Local Build Testing**: Run `npm run build` locally before pushing to git to identify TypeScript compilation errors that would break Vercel deployment.
+- **Error Analysis**: Parse TypeScript error messages to identify root causes (import paths, interface mismatches, package version incompatibilities).
+- **Package Compatibility**: Verify `next-seo` package version (7.0.1) and its TypeScript definitions; adjust imports and configurations accordingly.
+- **Interface Alignment**: Ensure configuration objects match expected TypeScript interfaces (e.g., `Twitter` interface only accepts `handle`, `site`, `cardType`).
+- **Module Resolution**: With `tsconfig.json` `"moduleResolution": "bundler"`, import paths may need adjustment (e.g., `'next-seo/pages'` vs `'next-seo'`).
+- **Fix & Verify Cycle**: Apply fixes, rebuild to confirm resolution, then commit and push.
+
+**Example Error Resolution**:
+```typescript
+// Before (error: Module '"next-seo"' has no exported member 'DefaultSeoProps')
+import { DefaultSeoProps } from 'next-seo';
+
+// After (correct import path)
+import { DefaultSeoProps } from 'next-seo/pages';
+
+// Before (error: Object literal may only specify known properties)
+twitter={{
+  handle: '@travellingtech',
+  site: '@travellingtech',
+  cardType: 'summary_large_image',
+  title: '...',  // ❌ Not allowed in next-seo@7.0.1 Twitter interface
+}}
+
+// After (only valid properties)
+twitter={{
+  handle: '@travellingtech',
+  site: '@travellingtech',
+  cardType: 'summary_large_image',
+}}
+```
+
+**Key Learnings**:
+- **Vercel Deployment Failure Prevention**: Local build testing catches TypeScript errors before they reach CI/CD pipeline.
+- **Package Version Awareness**: `next-seo@7.0.1` has stricter TypeScript definitions than earlier versions; configuration must match published interfaces.
+- **Import Path Variations**: Some packages export types from subpaths (`'next-seo/pages'`) while others from main entry point.
+- **Systematic Fix Approach**: Address one error at a time, rebuild after each fix to ensure cumulative changes don't introduce new errors.
+
 ## Conventions & Standards
 - **File Naming**: `kebab‑case` for files, `PascalCase` for components, `camelCase` for utilities.
 - **Imports**: Absolute aliases (`@/components`, `@/utils`) over relative paths.
@@ -393,9 +513,6 @@ The following tables exist in the `public` schema:
 
 | Table | Columns | RLS Enabled | Primary Key | Foreign Keys | Row Count |
 |-------|---------|-------------|-------------|--------------|-----------|
-| import_batches | 22 | ❌ | id | 1 | 0 |
-| quality_rules | 15 | ❌ | id | 0 | 0 |
-| anomaly_detections | 16 | ❌ | id | 1 | 0 |
 | customer_feedback | 18 | ❌ | id | 0 | 0 |
 | device_types | 7 | ✅ | id | 4 | 3 |
 | brands | 10 | ✅ | id | 4 | 30+ |
@@ -458,5 +575,5 @@ See `activeContext.md` for detailed drift analysis.
 
 ---
 
-*Last Updated: January 2026*
+*Last Updated: January 28, 2026*
 *These patterns reflect the current design decisions and may evolve as the project grows.*
