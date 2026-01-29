@@ -56,26 +56,17 @@ export default async function handler(
  * GET /api/management/brands
  * 
  * Query params:
- * - device_type_id (UUID, optional): Filter brands by device type
  * - is_active (boolean, optional): Filter by active status
  */
 async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: any) {
   try {
-    const { device_type_id, is_active } = req.query;
+    const { is_active } = req.query;
 
-    apiLogger.info('Fetching brands', { device_type_id, is_active });
+    apiLogger.info('Fetching brands', { is_active });
 
     let query = supabase
       .from('brands')
-      .select(`
-        *,
-        device_types!device_type_id(id, name, display_name)
-      `);
-
-    // Filter by device type if provided
-    if (device_type_id && isValidUUID(device_type_id as string)) {
-      query = query.eq('device_type_id', device_type_id);
-    }
+      .select('*');
 
     // Filter by active status if provided
     if (is_active !== undefined && is_active !== null) {
@@ -114,61 +105,35 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
  * 
  * Body:
  * {
- *   name: string,              // e.g., "Apple"
- *   display_name: string,      // e.g., "Apple"
- *   device_type_id: string,    // UUID of device type
+ *   name: string,           // e.g., "Apple"
+ *   slug: string,           // e.g., "apple"
+ *   logo_url?: string,      // URL to brand logo
  *   is_active?: boolean
  * }
  */
 async function handlePost(req: NextApiRequest, res: NextApiResponse, supabase: any) {
   try {
-    const { name, display_name, device_type_id, is_active = true } = req.body as CreateBrandRequest & { is_active?: boolean };
+    const { name, slug, logo_url, is_active = true } = req.body;
 
     // Validate required fields
-    if (!name || !display_name || !device_type_id) {
+    if (!name || !slug) {
       return res.status(400).json({
         success: false,
-        message: 'name, display_name, and device_type_id are required'
+        message: 'name and slug are required'
       });
     }
 
-    // Validate device_type_id is a valid UUID
-    if (!isValidUUID(device_type_id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'device_type_id must be a valid UUID'
-      });
-    }
-
-    // Check if device type exists
-    const { data: deviceType, error: typeError } = await supabase
-      .from('device_types')
-      .select('id')
-      .eq('id', device_type_id)
-      .single();
-
-    if (typeError || !deviceType) {
-      apiLogger.error('Device type not found', { device_type_id });
-      return res.status(400).json({
-        success: false,
-        message: 'Device type not found'
-      });
-    }
-
-    apiLogger.info('Creating brand', { name, device_type_id });
+    apiLogger.info('Creating brand', { name, slug });
 
     const { data: brand, error } = await supabase
       .from('brands')
       .insert({
         name,
-        display_name,
-        device_type_id,
+        slug,
+        logo_url: logo_url || null,
         is_active
       })
-      .select(`
-        *,
-        device_types!device_type_id(id, name, display_name)
-      `)
+      .select('*')
       .single();
 
     if (error) {
@@ -202,15 +167,15 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, supabase: a
  * Body: Partial update
  * {
  *   name?: string,
- *   display_name?: string,
- *   device_type_id?: string,
+ *   slug?: string,
+ *   logo_url?: string,
  *   is_active?: boolean
  * }
  */
 async function handlePut(req: NextApiRequest, res: NextApiResponse, supabase: any) {
   try {
     const { id } = req.query;
-    const { name, display_name, device_type_id, is_active } = req.body;
+    const { name, slug, logo_url, is_active } = req.body;
 
     if (!id) {
       return res.status(400).json({
@@ -226,45 +191,19 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse, supabase: an
       });
     }
 
-    // If updating device_type_id, validate it exists
-    if (device_type_id && !isValidUUID(device_type_id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid device_type_id format'
-      });
-    }
-
-    if (device_type_id) {
-      const { data: deviceType, error: typeError } = await supabase
-        .from('device_types')
-        .select('id')
-        .eq('id', device_type_id)
-        .single();
-
-      if (typeError || !deviceType) {
-        return res.status(400).json({
-          success: false,
-          message: 'Device type not found'
-        });
-      }
-    }
-
     apiLogger.info('Updating brand', { id, name });
 
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
-    if (display_name !== undefined) updateData.display_name = display_name;
-    if (device_type_id !== undefined) updateData.device_type_id = device_type_id;
+    if (slug !== undefined) updateData.slug = slug;
+    if (logo_url !== undefined) updateData.logo_url = logo_url;
     if (is_active !== undefined) updateData.is_active = is_active;
 
     const { data: brand, error } = await supabase
       .from('brands')
       .update(updateData)
       .eq('id', id)
-      .select(`
-        *,
-        device_types!device_type_id(id, name, display_name)
-      `)
+      .select('*')
       .single();
 
     if (error) {
