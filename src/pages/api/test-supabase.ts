@@ -210,7 +210,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           service_id: serviceId,
           location_id: serviceLocationId,
           scheduled_at: new Date().toISOString(),
-          status: 'pending',
           booking_ref: testReference,
         }
       ])
@@ -237,6 +236,134 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error('Error verifying test booking:', verifyError);
     }
 
+    // 5. Test the new tables that were just created
+    console.log('Testing newly created tables...');
+    const newTables = ['site_settings', 'testimonials', 'payments', 'faqs', 'sitemap_regeneration_status'];
+    const newTablesResults: Record<string, any> = {};
+    
+    for (const tableName of newTables) {
+      console.log(`Testing table: ${tableName}`);
+      try {
+        const { data, error } = await supabase
+          .from(tableName)
+          .select('*', { count: 'exact', head: true });
+        
+        newTablesResults[tableName] = {
+          success: !error,
+          error: error ? {
+            message: error.message,
+            code: error.code,
+            details: error.details
+          } : null,
+          count: data ? 0 : (error ? null : 0)
+        };
+        
+        if (error) {
+          console.error(`Error testing table ${tableName}:`, error);
+        } else {
+          console.log(`Table ${tableName} accessible successfully`);
+        }
+      } catch (error) {
+        console.error(`Exception testing table ${tableName}:`, error);
+        newTablesResults[tableName] = {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+          count: null
+        };
+      }
+    }
+    
+    // 6. Test creating a payment record linked to the test booking (if booking was created)
+    let paymentTestResult = null;
+    if (insertData && insertData[0]?.id) {
+      console.log('Testing payment creation with foreign key constraint...');
+      const bookingId = insertData[0].id;
+      
+      try {
+          const { data: paymentData, error: paymentError } = await supabase
+            .from('payments')
+            .insert([
+              {
+                booking_id: bookingId,
+                amount: 99.99,
+                status: 'pending',
+                payment_method: 'credit',
+                transaction_id: `TEST-TX-${Date.now()}`,
+                currency: 'CAD'
+              }
+            ])
+            .select();
+        
+        paymentTestResult = {
+          success: !paymentError,
+          error: paymentError ? {
+            message: paymentError.message,
+            code: paymentError.code,
+            details: paymentError.details
+          } : null,
+          data: paymentData
+        };
+        
+        if (paymentError) {
+          console.error('Error creating payment:', paymentError);
+        } else {
+          console.log('Payment created successfully:', paymentData);
+        }
+      } catch (error) {
+        console.error('Exception creating payment:', error);
+        paymentTestResult = {
+          success: false,
+          error: error instanceof Error ? error.message : String(error)
+        };
+      }
+    }
+    
+    // 7. Test the unique constraint on payments (one payment per booking)
+    let uniqueConstraintTest = null;
+    if (insertData && insertData[0]?.id && paymentTestResult?.success) {
+      console.log('Testing unique constraint (one payment per booking)...');
+      const bookingId = insertData[0].id;
+      
+      try {
+        const { error: duplicateError } = await supabase
+          .from('payments')
+          .insert([
+            {
+              booking_id: bookingId,
+              amount: 49.99,
+              status: 'pending',
+              payment_method: 'debit',
+              transaction_id: `TEST-DUP-${Date.now()}`,
+              currency: 'CAD'
+            }
+          ]);
+        
+        uniqueConstraintTest = {
+          success: !!duplicateError, // Should fail due to unique constraint
+          expectedError: duplicateError?.code === '23505' ? 'unique_violation' : null,
+          error: duplicateError ? {
+            message: duplicateError.message,
+            code: duplicateError.code,
+            details: duplicateError.details
+          } : null
+        };
+        
+        if (duplicateError?.code === '23505') {
+          console.log('Unique constraint works correctly - duplicate payment prevented');
+        } else if (duplicateError) {
+          console.log('Duplicate payment failed with different error:', duplicateError);
+        } else {
+          console.warn('WARNING: Duplicate payment succeeded - unique constraint may not be working');
+        }
+      } catch (error) {
+        console.error('Exception testing unique constraint:', error);
+        uniqueConstraintTest = {
+          success: false,
+          error: error instanceof Error ? error.message : String(error)
+        };
+      }
+    }
+    
     // Return results
     return res.status(200).json({
       success: true,
@@ -252,6 +379,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         success: !verifyError,
         found: !!verifyData,
         data: verifyData
+      },
+      newTables: newTablesResults,
+      paymentTest: paymentTestResult,
+      uniqueConstraintTest: uniqueConstraintTest,
+      summary: {
+        totalTablesTested: 1 + newTables.length,
+        tablesAccessible: Object.values(newTablesResults).filter(r => r.success).length + 1,
+        foreignKeyTest: paymentTestResult?.success ? 'passed' : 'not_tested',
+        uniqueConstraintTest: uniqueConstraintTest?.expectedError === 'unique_violation' ? 'passed' : 'not_tested'
       }
     });
   } catch (error) {

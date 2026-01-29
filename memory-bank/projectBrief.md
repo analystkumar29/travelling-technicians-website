@@ -51,7 +51,7 @@
 - **Documentation**: Extensive Markdown docs in `/docs/` (some may be outdated)
 
 ## Architecture Highlights (Based on Source Code)
-- **Database Schema**: 8 normalized tables (`device_types`, `brands`, `device_models`, `services`, `dynamic_pricing`, `pricing_tiers`, `service_locations`, `bookings`) with proper indexes and constraints (see `docs/technical‑reports/SYSTEM_ARCHITECTURE_ANALYSIS.md`).
+- **Database Schema**: 8 normalized tables (`device_types`, `brands`, `device_models`, `services`, `dynamic_pricing`, `pricing_tiers`, `service_locations`, `bookings`) with proper indexes and constraints 
 - **API Design**: RESTful endpoints with consistent error handling, caching, and fallback static data. Each endpoint validates parameters, sets cache headers, and uses module‑specific logging.
 - **Caching Strategy**: Per‑endpoint TTL configuration, cache‑key generation, hit‑rate metrics. Caching is implemented for device brands/models and pricing calculations.
 - **Error Handling**: Graceful degradation with static fallback data; user‑friendly error messages; module‑based logging.
@@ -85,11 +85,16 @@
     - **Internal Linking Logic**: Built Breadcrumbs and NearbyCities components with JSON-LD markup and geographic proximity calculations
     - **Database-to-UI Latency & ISR**: Expanded `getStaticPaths` from 8 hardcoded paths to 238+ dynamic paths with 1-hour ISR revalidation
     - **Production Deployment**: All changes deployed to production with zero UI regression and verified functionality
-- **Technical Debt / Red Flags**:
-  - Duplicate API endpoints (`calculate.ts` and `calculate‑fixed.ts`).
-  - Pricing coverage gaps may cause fallback to static prices.
-  - Some components may have leftover debugging console logs.
-  - Staging pipeline for scraped data not yet integrated.
+    - **TypeScript Compilation & Build Pipeline Enhancement (January 2026)** – Resolved critical TypeScript compilation errors that blocked Vercel deployments:
+      - **Error Analysis**: Identified `DefaultSeoProps` import mismatch and Twitter configuration interface incompatibility with `next-seo@7.0.1`
+      - **Systematic Resolution**: Updated import from `'next-seo'` to `'next-seo/pages'` and removed invalid Twitter properties (`siteId`, `creatorId`, `creator`)
+      - **Build Verification**: Local build testing confirmed successful compilation before deployment
+      - **Pattern Documentation**: Added "TypeScript Compilation & Build Pipeline Pattern" to system patterns for future reference
+  - **Technical Debt / Red Flags**:
+    - Duplicate API endpoints (`calculate.ts` and `calculate‑fixed.ts`).
+    - Pricing coverage gaps may cause fallback to static prices.
+    - Some components may have leftover debugging console logs.
+    - Staging pipeline for scraped data not yet integrated.
 
 ## Team & Contacts
 - **Business Contact**: info@travelling‑technicians.ca
@@ -107,5 +112,5 @@
 
 ---
 
-*Last Updated: January 2026 (Updated with 5-Point SEO Audit Protocol Implementation)*
+*Last Updated: January 28, 2026 (Updated with TypeScript Compilation & Build Pipeline Enhancement)*
 *Based on source‑code analysis; may differ from older documentation.*
