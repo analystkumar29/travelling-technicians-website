@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
+import BulkPricingManager from '@/components/admin/BulkPricingManager';
 import { 
   DeviceTypeRecord,
   BrandRecord,
