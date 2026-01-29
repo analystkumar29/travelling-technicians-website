@@ -7,7 +7,6 @@ import {
   BrandRecord,
   DeviceModelRecord,
   ServiceRecord,
-  PricingTierRecord,
   DynamicPricingRecord,
   isValidUUID
 } from '@/types/admin';

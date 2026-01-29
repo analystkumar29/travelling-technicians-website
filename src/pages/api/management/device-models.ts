@@ -69,8 +69,8 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
       .from('device_models')
       .select(`
         *,
-        brands!brand_id(id, name, display_name, device_type_id),
-        device_types!type_id(id, name, display_name)
+        brands!brand_id(id, name, slug, logo_url, is_active),
+        device_types!type_id(id, name, slug, icon_name, is_active)
       `);
 
     // Filter by brand if provided
@@ -129,13 +129,13 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
  */
 async function handlePost(req: NextApiRequest, res: NextApiResponse, supabase: any) {
   try {
-    const { name, display_name, brand_id, type_id, is_active = true } = req.body as CreateDeviceModelRequest & { is_active?: boolean };
+    const { name, brand_id, type_id, slug, release_year, image_url, is_active = true } = req.body as CreateDeviceModelRequest & { is_active?: boolean };
 
     // Validate required fields
-    if (!name || !display_name || !brand_id || !type_id) {
+    if (!name || !brand_id || !type_id) {
       return res.status(400).json({
         success: false,
-        message: 'name, display_name, brand_id, and type_id are required'
+        message: 'name, brand_id, and type_id are required'
       });
     }
 
@@ -183,15 +183,17 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, supabase: a
       .from('device_models')
       .insert({
         name,
-        display_name,
+        slug: slug || name.toLowerCase().replace(/\s+/g, '-'),
         brand_id,
         type_id,
+        release_year: release_year || null,
+        image_url: image_url || null,
         is_active
       })
       .select(`
         *,
-        brands!brand_id(id, name, display_name),
-        device_types!type_id(id, name, display_name)
+        brands!brand_id(id, name, slug, logo_url, is_active),
+        device_types!type_id(id, name, slug, icon_name, is_active)
       `)
       .single();
 
@@ -302,7 +304,6 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse, supabase: an
 
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
-    if (display_name !== undefined) updateData.display_name = display_name;
     if (brand_id !== undefined) updateData.brand_id = brand_id;
     if (type_id !== undefined) updateData.type_id = type_id;
     if (is_active !== undefined) updateData.is_active = is_active;
@@ -313,8 +314,8 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse, supabase: an
       .eq('id', id)
       .select(`
         *,
-        brands!brand_id(id, name, display_name),
-        device_types!type_id(id, name, display_name)
+        brands!brand_id(id, name, slug, logo_url, is_active),
+        device_types!type_id(id, name, slug, icon_name, is_active)
       `)
       .single();
 

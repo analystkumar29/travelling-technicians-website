@@ -100,18 +100,13 @@ async function handleBulkUpdate(
         // Update or create STANDARD tier
         const { error: standardError } = await supabase
           .from('dynamic_pricing')
-          .upsert(
-            {
-              model_id,
-              service_id,
-              pricing_tier: 'standard',
-              base_price: pricing.standard,
-              is_active: true
-            },
-            {
-              onConflict: 'model_id,service_id,pricing_tier'
-            }
-          );
+          .upsert({
+            model_id,
+            service_id,
+            pricing_tier: 'standard',
+            base_price: pricing.standard,
+            is_active: true
+          });
 
         if (standardError) {
           apiLogger.error('Error updating standard pricing', { standardError, model_id, service_id });
@@ -127,18 +122,13 @@ async function handleBulkUpdate(
         // Update or create PREMIUM tier
         const { error: premiumError } = await supabase
           .from('dynamic_pricing')
-          .upsert(
-            {
-              model_id,
-              service_id,
-              pricing_tier: 'premium',
-              base_price: pricing.premium,
-              is_active: true
-            },
-            {
-              onConflict: 'model_id,service_id,pricing_tier'
-            }
-          );
+          .upsert({
+            model_id,
+            service_id,
+            pricing_tier: 'premium',
+            base_price: pricing.premium,
+            is_active: true
+          });
 
         if (premiumError) {
           apiLogger.error('Error updating premium pricing', { premiumError, model_id, service_id });

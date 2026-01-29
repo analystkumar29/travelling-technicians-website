@@ -22,24 +22,26 @@ import {
 
 interface Booking {
   id: string;
-  reference_number: string;
+  booking_ref: string;
   customer_name: string;
   customer_email: string;
   customer_phone: string;
-  device_type: string;
-  device_brand: string;
-  device_model: string;
-  service_type: string;
-  issue_description: string;
-  booking_date: string;
-  booking_time: string;
-  address: string;
-  postal_code: string;
-  city: string;
-  province: string;
-  status: string;
+  customer_address: string;
+  model_id: string;
+  service_id: string;
+  scheduled_at: string;
   created_at: string;
+  issue_description?: string;
   notes?: string;
+  // Optional - may not exist in DB
+  status?: string;
+  device_type?: string;
+  device_brand?: string;
+  device_model?: string;
+  service_type?: string;
+  postal_code?: string;
+  city?: string;
+  province?: string;
 }
 
 interface BookingFilter {
@@ -70,6 +72,23 @@ export default function AdminBookings() {
   useEffect(() => {
     applyFilters();
   }, [bookings, filters]);
+
+  // Helper functions to format date/time from scheduled_at
+  const formatDate = (scheduledAt: string) => {
+    try {
+      return new Date(scheduledAt).toLocaleDateString();
+    } catch {
+      return 'Invalid date';
+    }
+  };
+
+  const formatTime = (scheduledAt: string) => {
+    try {
+      return new Date(scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return 'Invalid time';
+    }
+  };
 
   const fetchBookings = async () => {
     try {
@@ -109,13 +128,13 @@ export default function AdminBookings() {
       
       switch (filters.date_range) {
         case 'today':
-          filtered = filtered.filter(b => b.booking_date === todayString);
+          filtered = filtered.filter(b => b.scheduled_at?.split('T')[0] === todayString);
           break;
         case 'tomorrow':
           const tomorrow = new Date(today);
           tomorrow.setDate(tomorrow.getDate() + 1);
           const tomorrowString = tomorrow.toISOString().split('T')[0];
-          filtered = filtered.filter(b => b.booking_date === tomorrowString);
+          filtered = filtered.filter(b => b.scheduled_at?.split('T')[0] === tomorrowString);
           break;
         case 'this_week':
           const weekStart = new Date(today);
@@ -123,7 +142,7 @@ export default function AdminBookings() {
           const weekEnd = new Date(weekStart);
           weekEnd.setDate(weekStart.getDate() + 6);
           filtered = filtered.filter(b => {
-            const bookingDate = new Date(b.booking_date);
+            const bookingDate = new Date(b.scheduled_at);
             return bookingDate >= weekStart && bookingDate <= weekEnd;
           });
           break;
@@ -134,14 +153,14 @@ export default function AdminBookings() {
     if (filters.search) {
       const searchTerm = filters.search.toLowerCase();
       filtered = filtered.filter(b => 
-        b.reference_number.toLowerCase().includes(searchTerm) ||
+        b.booking_ref.toLowerCase().includes(searchTerm) ||
         b.customer_name.toLowerCase().includes(searchTerm) ||
         b.customer_email.toLowerCase().includes(searchTerm) ||
         b.customer_phone.includes(searchTerm) ||
-        b.device_brand.toLowerCase().includes(searchTerm) ||
-        b.device_model.toLowerCase().includes(searchTerm) ||
-        b.service_type.toLowerCase().includes(searchTerm) ||
-        b.address.toLowerCase().includes(searchTerm)
+        (b.device_brand && b.device_brand.toLowerCase().includes(searchTerm)) ||
+        (b.device_model && b.device_model.toLowerCase().includes(searchTerm)) ||
+        (b.service_type && b.service_type.toLowerCase().includes(searchTerm)) ||
+        b.customer_address.toLowerCase().includes(searchTerm)
       );
     }
 
@@ -238,9 +257,9 @@ export default function AdminBookings() {
     }
   };
 
-  const getUrgencyColor = (bookingDate: string) => {
+  const getUrgencyColor = (scheduledAt: string) => {
     const today = new Date();
-    const appointmentDate = new Date(bookingDate);
+    const appointmentDate = new Date(scheduledAt);
     const diffTime = appointmentDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
@@ -256,7 +275,7 @@ export default function AdminBookings() {
     // Format address with fallbacks
     const formatAddress = () => {
       const parts = [
-        booking.address || 'Not provided',
+        booking.customer_address || 'Not provided',
         booking.city || '',
         booking.province || '',
         booking.postal_code || ''
@@ -276,7 +295,7 @@ export default function AdminBookings() {
                   <FaCalendarAlt className="mr-3 text-primary-600" />
                   Booking Details
                 </h3>
-                <p className="text-sm text-gray-600 mt-1">Ref: {booking.reference_number}</p>
+                <p className="text-sm text-gray-600 mt-1">Ref: {booking.booking_ref}</p>
               </div>
               <button
                 onClick={onClose}
@@ -303,8 +322,8 @@ export default function AdminBookings() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Status</label>
-                    <span className={`mt-1 inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status)}`}>
-                      {booking.status?.charAt(0).toUpperCase() + booking.status?.slice(1) || 'Unknown'}
+                    <span className={`mt-1 inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status || 'pending')}`}>
+                      {(booking.status || 'pending').charAt(0).toUpperCase() + (booking.status || 'pending').slice(1)}
                     </span>
                   </div>
                   <div>
@@ -338,7 +357,7 @@ export default function AdminBookings() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Type</label>
                     <p className="mt-1 text-sm font-medium text-gray-900">
-                      {booking.device_type?.charAt(0).toUpperCase() + booking.device_type?.slice(1) || 'Not provided'}
+                      {booking.device_type ? booking.device_type.charAt(0).toUpperCase() + booking.device_type.slice(1) : 'Not provided'}
                     </p>
                   </div>
                   <div>
@@ -382,12 +401,12 @@ export default function AdminBookings() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Date</label>
                     <p className="mt-1 text-sm font-medium text-gray-900">
-                      {booking.booking_date ? new Date(booking.booking_date).toLocaleDateString() : 'Not provided'}
+                      {formatDate(booking.scheduled_at)}
                     </p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Time</label>
-                    <p className="mt-1 text-sm font-medium text-gray-900">{booking.booking_time || 'Not provided'}</p>
+                    <p className="mt-1 text-sm font-medium text-gray-900">{formatTime(booking.scheduled_at)}</p>
                   </div>
                 </div>
               </div>
@@ -407,7 +426,7 @@ export default function AdminBookings() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-600">Street</label>
-                    <p className="mt-1 text-sm text-gray-800">{booking.address || 'N/A'}</p>
+                    <p className="mt-1 text-sm text-gray-800">{booking.customer_address || 'N/A'}</p>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600">City</label>
@@ -664,44 +683,44 @@ export default function AdminBookings() {
                 </li>
               ) : (
                 filteredBookings.map((booking) => (
-                  <li key={booking.id} className={`px-6 py-4 ${getUrgencyColor(booking.booking_date)}`}>
+                  <li key={booking.id} className={`px-6 py-4 ${getUrgencyColor(booking.scheduled_at)}`}>
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
                           <div>
                             <h3 className="text-lg font-medium text-gray-900 flex items-center">
                               <FaTools className="mr-2 text-primary-600" />
-                              {booking.reference_number}
+                              {booking.booking_ref}
                             </h3>
                             <p className="text-sm text-gray-500">
                               {booking.customer_name} - {booking.customer_email}
                             </p>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <span className={`px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(booking.status)}`}>
-                              {booking.status}
+                            <span className={`px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(booking.status || 'pending')}`}>
+                              {booking.status || 'pending'}
                             </span>
                           </div>
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-600 mb-3">
                           <div>
-                            <strong>Device:</strong> {booking.device_brand} {booking.device_model}
+                            <strong>Device:</strong> {booking.device_brand || 'Unknown'} {booking.device_model || ''}
                           </div>
                           <div>
-                            <strong>Service:</strong> {booking.service_type}
+                            <strong>Service:</strong> {booking.service_type || `Service ID: ${booking.service_id?.substring(0, 8)}...`}
                           </div>
                           <div>
-                            <strong>Date:</strong> {booking.booking_date} at {booking.booking_time}
+                            <strong>Date:</strong> {formatDate(booking.scheduled_at)} at {formatTime(booking.scheduled_at)}
                           </div>
                           <div>
-                            <strong>Address:</strong> {booking.address}, {booking.postal_code}
+                            <strong>Address:</strong> {booking.customer_address}, {booking.postal_code || 'N/A'}
                           </div>
                           <div>
                             <strong>Created:</strong> {new Date(booking.created_at).toLocaleDateString()}
                           </div>
                           <div>
-                            <strong>Location:</strong> {booking.city}, {booking.province}
+                            <strong>Location:</strong> {booking.city || 'N/A'}, {booking.province || 'N/A'}
                           </div>
                         </div>
 
@@ -722,7 +741,7 @@ export default function AdminBookings() {
                           </a>
                           <div className="flex items-center text-gray-500">
                             <FaMapMarkerAlt className="mr-1" />
-                            {booking.address}
+                            {booking.customer_address}
                           </div>
                         </div>
                         
@@ -758,7 +777,7 @@ export default function AdminBookings() {
                         View Details
                       </button>
 
-                      {booking.status === 'pending' && (
+                      {(!booking.status || booking.status === 'pending') && (
                         <button
                           onClick={() => updateBookingStatus(booking.id, 'confirmed')}
                           className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"

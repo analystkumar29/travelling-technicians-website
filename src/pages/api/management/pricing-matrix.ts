@@ -73,7 +73,7 @@ async function handleGetMatrix(
     // Build query for models
     let modelsQuery = supabase
       .from('device_models')
-      .select('id, name, display_name');
+      .select('id, name, slug, brand_id, type_id');
 
     if (device_type_id && typeof device_type_id === 'string') {
       modelsQuery = modelsQuery.eq('type_id', device_type_id);

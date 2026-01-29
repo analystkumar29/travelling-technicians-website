@@ -89,8 +89,8 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
 
     return res.status(200).json({
       success: true,
-      data: brands || []
-    } as any);
+      brands: brands || []
+    });
   } catch (error) {
     apiLogger.error('Error in handleGet', { error });
     return res.status(500).json({
