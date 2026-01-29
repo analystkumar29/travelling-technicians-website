@@ -465,10 +465,10 @@ export async function getPricingData(): Promise<typeof STATIC_PRICING_DATA> {
       return STATIC_PRICING_DATA;
     }
     
-    // Fetch device models with their device types
+    // Fetch device models with their device types (using type_id, not device_type_id)
     const { data: deviceModels, error: modelsError } = await supabase
       .from('device_models')
-      .select('id, device_type_id')
+      .select('id, type_id')
       .in('id', modelIds)
       .eq('is_active', true);
     
@@ -481,8 +481,8 @@ export async function getPricingData(): Promise<typeof STATIC_PRICING_DATA> {
       return STATIC_PRICING_DATA;
     }
     
-    // Get device type IDs and fetch device types
-    const deviceTypeIds = [...new Set(deviceModels.map(model => model.device_type_id).filter(Boolean))];
+    // Get device type IDs and fetch device types (using type_id from deviceModels)
+    const deviceTypeIds = [...new Set(deviceModels.map(model => model.type_id).filter(Boolean))];
     const { data: deviceTypes, error: typesError } = await supabase
       .from('device_types')
       .select('id, name')
@@ -498,10 +498,10 @@ export async function getPricingData(): Promise<typeof STATIC_PRICING_DATA> {
       return STATIC_PRICING_DATA;
     }
     
-    // Create mapping dictionaries
+    // Create mapping dictionaries (using type_id from models)
     const modelToDeviceTypeId: Record<number, number> = {};
     for (const model of deviceModels) {
-      modelToDeviceTypeId[model.id] = model.device_type_id;
+      modelToDeviceTypeId[model.id] = model.type_id;
     }
     
     const deviceTypeIdToName: Record<number, string> = {};
@@ -766,11 +766,11 @@ export async function getTestimonials(): Promise<typeof STATIC_TESTIMONIALS> {
       return STATIC_TESTIMONIALS;
     }
 
-    // If table exists, fetch testimonials
+    // If table exists, fetch testimonials (using is_featured instead of visible)
     const { data, error: fetchError } = await supabase
       .from('testimonials')
       .select('*')
-      .eq('visible', true)
+      .eq('is_featured', true)
       .order('created_at', { ascending: false })
       .limit(4);
 

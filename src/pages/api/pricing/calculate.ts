@@ -38,27 +38,41 @@ interface PricingCalculation {
   debug_info?: any;
 }
 
-// Service ID mapping (form kebab-case → database kebab-case)
-// Note: Database uses kebab-case, so most services don't need conversion
-const SERVICE_ID_MAPPING: Record<string, string> = {
-  'screen-replacement': 'screen-replacement',
-  'battery-replacement': 'battery-replacement',
-  'charging-port-repair': 'charging-port-repair',
-  'speaker-repair': 'speaker-repair',
-  'camera-repair': 'camera-repair',
-  'water-damage': 'water_damage_diagnostics',
-  'keyboard-repair': 'keyboard-repair',
-  'trackpad-repair': 'trackpad_repair',
-  'ram-upgrade': 'ram-upgrade',
-  'storage-upgrade': 'storage_upgrade',
-  'software-troubleshooting': 'software_troubleshooting',
-  'virus-removal': 'virus_removal',
-  'cooling-repair': 'cooling_system_repair',
-  'power-jack-repair': 'power_jack_repair',
-  'button-repair': 'button_repair',
-  'software-issue': 'software_issue',
-  'other-repair': 'other_repair'
+// Service ID mapping (form kebab-case → database service name with tier)
+// NOTE: Your services have tier built into the name: "Screen Replacement (Standard)"
+const SERVICE_ID_MAPPING: Record<string, Record<string, string>> = {
+  'screen-replacement': {
+    'standard': 'Screen Replacement (Standard)',
+    'premium': 'Screen Replacement (Premium)',
+    'economy': 'Screen Replacement (Standard)',
+    'express': 'Screen Replacement (Premium)'
+  },
+  'battery-replacement': {
+    'standard': 'Battery Replacement',
+    'premium': 'Battery Replacement',
+    'economy': 'Battery Replacement',
+    'express': 'Battery Replacement'
+  },
+  'charging-port-repair': {
+    'standard': 'Charging Port Repair',
+    'premium': 'Charging Port Repair',
+    'economy': 'Charging Port Repair',
+    'express': 'Charging Port Repair'
+  }
 };
+
+// Helper function to get service name with tier
+function getServiceNameWithTier(serviceSlug: string, tier: string): string {
+  const serviceTierMap = SERVICE_ID_MAPPING[serviceSlug];
+  if (serviceTierMap) {
+    return serviceTierMap[tier] || serviceTierMap['standard'];
+  }
+  // Fallback: capitalize and add tier if not found
+  const serviceName = serviceSlug.split('-').map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1)
+  ).join(' ');
+  return tier === 'premium' ? `${serviceName} (Premium)` : serviceName;
+}
 
 // Service display names for user-friendly presentation
 const SERVICE_DISPLAY_NAMES: Record<string, string> = {
@@ -147,20 +161,19 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
     console.log(`[DEBUG] Retrieved ${allPricing.length} pricing entries from database`);
 
     // Get lookup tables for JavaScript post-processing
+    // NOTE: No pricing_tiers table - tiers are calculated by multiplying base_price
     const [
       { data: deviceTypes },
       { data: brands },  
       { data: deviceModels },
       { data: services },
-      { data: serviceCategories },
-      { data: pricingTiers }
+      { data: serviceCategories }
     ] = await Promise.all([
       supabase.from('device_types').select('*'),
       supabase.from('brands').select('*'),
       supabase.from('device_models').select('*'),
       supabase.from('services').select('*'),
-      supabase.from('service_categories').select('*'),
-      supabase.from('pricing_tiers').select('*')
+      supabase.from('service_categories').select('*')
     ]);
 
     // Create lookup maps
@@ -169,16 +182,15 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
     const modelMap = new Map(deviceModels?.map(m => [m.id, m]) || []);
     const serviceMap = new Map(services?.map(s => [s.id, s]) || []);
     const categoryMap = new Map(serviceCategories?.map(c => [c.id, c]) || []);
-    const tierMap = new Map(pricingTiers?.map(t => [t.id, t]) || []);
 
     // JavaScript post-processing to find matching entry
+    // NOW matching on tier - standard vs premium pricing in database
     const matchingEntry = allPricing.find(entry => {
       const model_info = modelMap.get(entry.model_id);
       const brand_info = brandMap.get(model_info?.brand_id);
-      const device_type_info = deviceTypeMap.get(brand_info?.device_type_id);
+      // FIX: device_type_id is on device_models.type_id, not brands.device_type_id
+      const device_type_info = deviceTypeMap.get(model_info?.type_id);
       const service_info = serviceMap.get(entry.service_id);
-      const category_info = categoryMap.get(service_info?.category_id);
-      const tier_info = tierMap.get(entry.pricing_tier_id);
 
       const deviceTypeMatch = device_type_info?.name?.toLowerCase() === deviceType.toLowerCase();
       const brandMatch = brand_info?.name?.toLowerCase() === brand.toLowerCase();
@@ -192,7 +204,7 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
       // If no exact match, try partial match but be very careful
       if (!modelMatch) {
         // Only allow partial match if the search term is significantly shorter
-        // This prevents "iPhone 15 Pro" from matching "iPhone 15 Pro max"
+        // This prevents "iPhone 15 Pro" from matching "iPhone 15 Pro Max"
         const lengthDiff = Math.abs(modelName.length - searchModel.length);
         if (lengthDiff > 5) { // Only allow partial match if lengths are very different
           if (searchModel.length < modelName.length) {
@@ -203,15 +215,23 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
         }
         // For similar lengths, require exact match to avoid confusion
       }
-      const serviceMatch = service_info?.name === SERVICE_ID_MAPPING[service] || service_info?.name === service;
-      const tierMatch = tier_info?.name?.toLowerCase() === tier.toLowerCase();
+      // Match service by slug pattern (services have device-type suffix like -mobile or -laptop)
+      const serviceSlug = service.toLowerCase(); // e.g., 'screen-replacement'
+      const serviceSlugInDb = service_info?.slug?.toLowerCase() || '';
+      
+      // Match if: slug includes the service name OR service name matches (for old data)
+      const serviceMatch = serviceSlugInDb.includes(serviceSlug) || 
+                          service_info?.name?.toLowerCase().replace(/\s+/g, '-') === serviceSlug;
+      
+      // Match tier from pricing table (tiers are stored in pricing_tier column, not service name)
+      const tierMatch = entry.pricing_tier === tier;
 
       console.log(`[DEBUG] Checking entry ${entry.id}:`, {
         deviceTypeMatch: `${device_type_info?.name} === ${deviceType} = ${deviceTypeMatch}`,
         brandMatch: `${brand_info?.name} === ${brand} = ${brandMatch}`,
         modelMatch: `${model_info?.name} ~= ${model} = ${modelMatch}`,
-        serviceMatch: `${service_info?.name} === ${SERVICE_ID_MAPPING[service]} = ${serviceMatch}`,
-        tierMatch: `${tier_info?.name} === ${tier} = ${tierMatch}`
+        serviceMatch: `${service_info?.slug} includes ${serviceSlug} = ${serviceMatch}`,
+        tierMatch: `${entry.pricing_tier} === ${tier} = ${tierMatch}`
       });
 
       return deviceTypeMatch && brandMatch && modelMatch && serviceMatch && tierMatch;
@@ -221,26 +241,25 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
       // Enhance with related data
       const model_info = modelMap.get(matchingEntry.model_id);
       const brand_info = brandMap.get(model_info?.brand_id);
-      const device_type_info = deviceTypeMap.get(brand_info?.device_type_id);
+      // FIX: device_type_id is on device_models.type_id, not brands.device_type_id
+      const device_type_info = deviceTypeMap.get(model_info?.type_id);
       const service_info = serviceMap.get(matchingEntry.service_id);
-      const tier_info = tierMap.get(matchingEntry.pricing_tier_id);
 
       const enhancedEntry = {
         ...matchingEntry,
         device_type: device_type_info,
         brand: brand_info,
         model: model_info,
-        service: service_info,
-        tier: tier_info
+        service: service_info
       };
 
       console.log(`[SUCCESS] Found matching entry:`, {
         id: enhancedEntry.id,
         base_price: enhancedEntry.base_price,
-        promotional_price: enhancedEntry.promotional_price,
+        compare_at_price: enhancedEntry.compare_at_price,
         device: `${device_type_info?.name}/${brand_info?.name}/${model_info?.name}`,
         service: service_info?.name,
-        tier: tier_info?.name
+        tier: `${tier} (calculated from base_price)`
       });
 
       return enhancedEntry;
@@ -256,7 +275,8 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
 }
 
 function calculateFallbackPricing(deviceType: string, brand: string, service: string, tier: string) {
-  const serviceKey = SERVICE_ID_MAPPING[service] || service;
+  // Convert service slug to key for fallback pricing
+  const serviceKey = service.replace(/-/g, '_');
   
   // Type-safe fallback pricing lookup
   const devicePricing = FALLBACK_PRICING[deviceType as keyof typeof FALLBACK_PRICING];
@@ -383,8 +403,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             model: model as string
           },
           service_info: {
-            name: SERVICE_ID_MAPPING[service as string] || service as string,
-            display_name: SERVICE_DISPLAY_NAMES[SERVICE_ID_MAPPING[service as string] || service as string] || service as string,
+            name: getServiceNameWithTier(service as string, tier as string),
+            display_name: service as string,
             doorstep_available: true
           },
           pricing_breakdown: {
@@ -428,8 +448,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           model: model as string
         },
         service_info: {
-          name: SERVICE_ID_MAPPING[service as string] || service as string,
-          display_name: SERVICE_DISPLAY_NAMES[SERVICE_ID_MAPPING[service as string] || service as string] || service as string,
+          name: getServiceNameWithTier(service as string, tier as string),
+          display_name: service as string,
           doorstep_available: true
         },
         pricing_breakdown: {

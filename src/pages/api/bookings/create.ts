@@ -163,51 +163,102 @@ export default async function handler(
       status: 'pending',
     } as FinalDbBookingData; // Cast to the new interface
     
-    // Map to the new proper bookings table schema
+    // Get Supabase client for lookups
+    const supabase = getServiceSupabase();
+    
+    // Look up device model UUID
+    let modelId = null;
+    if (normalizedBookingData.deviceModel && normalizedBookingData.deviceBrand) {
+      const { data: modelData } = await supabase
+        .from('device_models')
+        .select('id')
+        .ilike('name', normalizedBookingData.deviceModel)
+        .limit(1)
+        .single();
+      
+      modelId = modelData?.id || null;
+      
+      if (!modelId) {
+        apiLogger.warn('Device model not found in database', {
+          model: normalizedBookingData.deviceModel,
+          brand: normalizedBookingData.deviceBrand
+        });
+      }
+    }
+    
+    // Look up service UUID
+    let serviceId = null;
+    if (normalizedBookingData.serviceType) {
+      // Handle both array and string service types
+      const serviceSlug = Array.isArray(normalizedBookingData.serviceType)
+        ? normalizedBookingData.serviceType[0]
+        : normalizedBookingData.serviceType;
+      
+      const { data: serviceData } = await supabase
+        .from('services')
+        .select('id')
+        .or(`slug.ilike.%${serviceSlug}%,name.ilike.%${serviceSlug.replace(/-/g, ' ')}%`)
+        .limit(1)
+        .single();
+      
+      serviceId = serviceData?.id || null;
+      
+      if (!serviceId) {
+        apiLogger.warn('Service not found in database', {
+          service: serviceSlug
+        });
+      }
+    }
+    
+    // Map to the actual bookings table schema
     const dbFieldsOnly = {
-      reference_number: referenceNumber,
-      status: 'pending',
+      booking_ref: referenceNumber,
       
       // Customer information
       customer_name: finalBookingData.customer_name,
       customer_email: finalBookingData.customer_email,
       customer_phone: finalBookingData.customer_phone,
+      customer_address: finalBookingData.address,
       
-      // Device information  
-      device_type: finalBookingData.device_type,
-      device_brand: finalBookingData.device_brand || finalBookingData.brand,
-      device_model: finalBookingData.device_model || finalBookingData.model,
-      
-      // Service information
-      service_type: finalBookingData.service_type,
-      pricing_tier: req.body.pricingTier || 'standard',
-      issue_description: finalBookingData.issue_description,
+      // Device and service - UUID references
+      model_id: modelId,
+      service_id: serviceId,
       
       // Appointment information
-      booking_date: finalBookingData.booking_date,
-      booking_time: finalBookingData.booking_time,
+      // Convert date + time slot to ISO timestamp
+      // Time slots: morning (9AM), afternoon (1PM), evening (5PM)
+      scheduled_at: finalBookingData.booking_date ? (() => {
+        const date = new Date(finalBookingData.booking_date);
+        const timeSlot = finalBookingData.booking_time?.toLowerCase() || 'afternoon';
+        
+        // Set time based on slot
+        if (timeSlot.includes('morning')) {
+          date.setHours(9, 0, 0, 0);
+        } else if (timeSlot.includes('afternoon')) {
+          date.setHours(13, 0, 0, 0);
+        } else if (timeSlot.includes('evening')) {
+          date.setHours(17, 0, 0, 0);
+        } else {
+          date.setHours(13, 0, 0, 0); // Default to afternoon
+        }
+        
+        return date.toISOString();
+      })() : null,
       
-      // Location information
-      address: finalBookingData.address,
-      city: finalBookingData.city,
-      province: finalBookingData.province,
-      postal_code: finalBookingData.postal_code
+      // Pricing information - save quoted price from form if provided
+      quoted_price: bookingData.quoted_price ?? null,
     };
     
     // Log what we're about to insert
     apiLogger.info('Prepared booking data for insertion', {
       reference: referenceNumber,
       customer_email: normalizedBookingData.customerEmail?.substring(0, 3) + '***',
-      device_type: dbFieldsOnly.device_type,
-      service_type: dbFieldsOnly.service_type
+      device_type: normalizedBookingData.deviceType,
+      service_type: normalizedBookingData.serviceType,
+      model_id: modelId,
+      service_id: serviceId
     });
 
-    // Use real database implementation
-    apiLogger.info('Using real database implementation');
-    
-    // Get Supabase client with service role
-    const supabase = getServiceSupabase();
-    
     // Insert the booking into the database
     apiLogger.info('Inserting booking into database');
     const { data: booking, error } = await supabase

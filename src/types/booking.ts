@@ -48,6 +48,15 @@ export interface CreateBookingRequest {
   province: string;  // Required for Supabase database
   brand?: string;  // Same as deviceBrand, needed for DB triggers
   model?: string;  // Same as deviceModel, needed for DB triggers
+  
+  // V2 Schema - UUID tracking fields (match DOCS_MASTER_SCHEMA)
+  brand_id?: string;      // UUID from brands table
+  model_id?: string;      // UUID from device_models table
+  service_id?: string | string[];  // UUID(s) from services table
+  location_id?: string;   // UUID from service_locations table
+  
+  // Pricing information
+  quoted_price?: number;  // Price quoted to customer at time of booking
 }
 
 /**

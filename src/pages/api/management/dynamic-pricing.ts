@@ -1,32 +1,19 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getServiceSupabase } from '@/utils/supabaseClient';
 import { logger } from '@/utils/logger';
+import { 
+  DynamicPricingRecord, 
+  AdminApiResponse, 
+  CreateDynamicPricingRequest,
+  UpdateDynamicPricingRequest,
+  isValidUUID,
+  assertValidUUID
+} from '@/types/admin';
 
 const apiLogger = logger.createModuleLogger('api/management/dynamic-pricing');
 
-interface DynamicPricing {
-  id?: number;
-  service_id: number;
-  model_id: number;
-  pricing_tier_id: number;
-  base_price: number;
-  discounted_price?: number;
-  cost_price?: number;
-  is_active: boolean;
-  service_name?: string;
-  model_name?: string;
-  tier_name?: string;
-  brand_name?: string;
-  device_type?: string;
-}
-
-interface ApiResponse {
-  success: boolean;
-  pricing?: DynamicPricing[];
-  entry?: DynamicPricing;
-  message?: string;
-  error?: string;
-}
+// Type alias for consistency
+type ApiResponse<T = any> = AdminApiResponse<T>;
 
 export default async function handler(
   req: NextApiRequest,
@@ -62,7 +49,7 @@ export default async function handler(
   }
 }
 
-async function handleGet(req: NextApiRequest, res: NextApiResponse<ApiResponse>, supabase: any) {
+async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: any) {
   try {
     apiLogger.info('Fetching dynamic pricing entries');
 
@@ -142,7 +129,7 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse<ApiResponse>,
     return res.status(200).json({
       success: true,
       pricing: transformedPricing
-    });
+    } as any);
   } catch (error) {
     apiLogger.error('Error in handleGet', { error });
     return res.status(500).json({
@@ -152,7 +139,7 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse<ApiResponse>,
   }
 }
 
-async function handlePost(req: NextApiRequest, res: NextApiResponse<ApiResponse>, supabase: any) {
+async function handlePost(req: NextApiRequest, res: NextApiResponse, supabase: any) {
   try {
     const { service_id, model_id, pricing_tier_id, base_price, discounted_price, cost_price, is_active } = req.body;
 
@@ -195,7 +182,7 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse<ApiResponse>
       success: true,
       entry,
       message: 'Dynamic pricing entry created successfully'
-    });
+    } as any);
   } catch (error) {
     apiLogger.error('Error in handlePost', { error });
     return res.status(500).json({
@@ -205,7 +192,7 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse<ApiResponse>
   }
 }
 
-async function handlePut(req: NextApiRequest, res: NextApiResponse<ApiResponse>, supabase: any) {
+async function handlePut(req: NextApiRequest, res: NextApiResponse, supabase: any) {
   try {
     const { id } = req.query;
     const { service_id, model_id, pricing_tier_id, base_price, discounted_price, cost_price, is_active } = req.body;
@@ -250,7 +237,7 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse<ApiResponse>,
       success: true,
       entry,
       message: 'Dynamic pricing entry updated successfully'
-    });
+    } as any);
   } catch (error) {
     apiLogger.error('Error in handlePut', { error });
     return res.status(500).json({

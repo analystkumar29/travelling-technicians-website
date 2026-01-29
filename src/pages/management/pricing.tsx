@@ -2,6 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
 import PricingCoverageAudit from '@/components/management/PricingCoverageAudit';
+import { 
+  DeviceTypeRecord,
+  BrandRecord,
+  DeviceModelRecord,
+  ServiceRecord,
+  PricingTierRecord,
+  DynamicPricingRecord,
+  isValidUUID
+} from '@/types/admin';
 
 interface PricingTier {
   id: number;
@@ -28,10 +37,10 @@ interface Service {
 }
 
 interface DynamicPricing {
-  id: number;
-  service_id?: number;
-  model_id?: number;
-  pricing_tier_id?: number;
+  id: number | string;
+  service_id?: number | string;
+  model_id?: number | string;
+  pricing_tier_id?: number | string;
   service_name?: string;
   device_model?: string;
   model_name?: string;
@@ -543,7 +552,7 @@ export default function PricingAdmin() {
     });
   };
 
-  const handleDeleteDevicePricing = async (id: number) => {
+  const handleDeleteDevicePricing = async (id: number | string) => {
     if (!confirm('Are you sure you want to delete this pricing entry?')) return;
 
     try {

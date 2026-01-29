@@ -99,51 +99,46 @@ export default async function handler(
 async function fetchBrandsFromDatabase(deviceType: string): Promise<Brand[]> {
   const supabase = getServiceSupabase();
 
-  // First, check if the dynamic brands table exists
-  const { data: tablesExist, error: tableCheckError } = await supabase
-    .from('information_schema.tables')
-    .select('table_name')
-    .eq('table_schema', 'public')
-    .eq('table_name', 'brands');
-
-  if (tableCheckError || !tablesExist || tablesExist.length === 0) {
-    // Tables don't exist yet, return fallback static data
-    apiLogger.info('Dynamic brands table not found, using fallback static data');
-    const staticBrands = getStaticBrands(deviceType);
-    
-    return staticBrands.map((name, index) => ({
-      id: index + 1,
-      name,
-      device_type: deviceType,
-      is_active: true,
-      sort_order: index,
-      created_at: new Date().toISOString()
-    }));
-  }
-
-  // Try to fetch from dynamic tables
+  // Try to fetch from dynamic tables directly (V2 schema)
+  // V2 Schema: brands → device_models → device_types (indirect relationship)
   try {
+    // Step 1: Get device type ID
+    const { data: deviceTypeData, error: deviceTypeError } = await supabase
+      .from('device_types')
+      .select('id')
+      .ilike('name', deviceType)
+      .single();
+
+    if (deviceTypeError || !deviceTypeData) {
+      apiLogger.warn('Device type not found, using fallback', { deviceType, error: deviceTypeError });
+      throw new Error('Device type not found');
+    }
+
+    // Step 2: Get unique brand IDs that have models for this device type
+    const { data: modelData, error: modelError } = await supabase
+      .from('device_models')
+      .select('brand_id')
+      .eq('type_id', deviceTypeData.id)
+      .eq('is_active', true);
+
+    if (modelError) {
+      throw modelError;
+    }
+
+    // Extract unique brand IDs
+    const uniqueBrandIds = [...new Set((modelData || []).map(m => m.brand_id))];
+
+    if (uniqueBrandIds.length === 0) {
+      apiLogger.warn('No brands found for device type, using fallback', { deviceType });
+      throw new Error('No brands found');
+    }
+
+    // Step 3: Fetch brand details
     const { data: brands, error: brandsError } = await supabase
       .from('brands')
-      .select(`
-        id,
-        name,
-        display_name,
-        logo_url,
-        website_url,
-        is_active,
-        sort_order,
-        created_at,
-        updated_at,
-        device_types!inner(
-          id,
-          name,
-          display_name
-        )
-      `)
-      .eq('device_types.name', deviceType)
+      .select('id, name, slug, logo_url, is_active, created_at')
+      .in('id', uniqueBrandIds)
       .eq('is_active', true)
-      .order('sort_order', { ascending: true })
       .order('name', { ascending: true });
 
     if (brandsError) {
@@ -156,13 +151,13 @@ async function fetchBrandsFromDatabase(deviceType: string): Promise<Brand[]> {
     });
 
     // Transform the data to match the Brand interface
-    const transformedBrands: Brand[] = (brands || []).map(brand => ({
-      id: brand.id,
-      name: brand.display_name || brand.name,
-      device_type: brand.device_types[0]?.name || deviceType,
+    const transformedBrands: Brand[] = (brands || []).map((brand, index) => ({
+      id: brand.id as any, // UUID but we're keeping the interface flexible
+      name: brand.name,
+      device_type: deviceType,
       logo_url: brand.logo_url,
       is_active: brand.is_active,
-      sort_order: brand.sort_order,
+      sort_order: index, // Use array index as sort order
       created_at: brand.created_at
     }));
 

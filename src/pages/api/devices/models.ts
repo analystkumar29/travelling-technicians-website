@@ -192,11 +192,11 @@ export default async function handler(
 
     const supabase = getServiceSupabase();
 
-    // Step 1: Get device type ID
+    // Step 1: Get device type ID (case-insensitive search)
     const { data: deviceTypeData, error: deviceTypeError } = await supabase
       .from('device_types')
       .select('id')
-      .eq('name', deviceType)
+      .ilike('name', deviceType as string)
       .single();
 
     if (deviceTypeError || !deviceTypeData) {
