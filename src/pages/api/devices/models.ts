@@ -89,32 +89,19 @@ function deduplicateModels(models: Model[]): Model[] {
       // First occurrence - keep it
       seen.set(normalizedKey, model);
     } else {
-      // Duplicate found - prefer the one with better quality
+      // Duplicate found - prefer by lower ID (first added)
       const existing = seen.get(normalizedKey)!;
       
       // Preference logic:
-      // 1. Higher quality score
-      // 2. Better data source (manual > scraped)
-      // 3. Proper capitalization (has uppercase letters)
-      // 4. Lower ID (likely added first/manually)
+      // 1. Proper capitalization (has uppercase letters)
+      // 2. Lower ID (likely added first/manually)
       
       const shouldReplace = (
-        // Prefer higher quality score
-        (model.quality_score || 0) > (existing.quality_score || 0) ||
+        // Prefer proper capitalization
+        (/[A-Z]/.test(model.name) && !/[A-Z]/.test(existing.name)) ||
         
-        // If same quality, prefer manual over scraped data
-        ((model.quality_score || 0) === (existing.quality_score || 0) && 
-         model.data_source === 'manual' && existing.data_source !== 'manual') ||
-        
-        // If same quality and source, prefer proper capitalization
-        ((model.quality_score || 0) === (existing.quality_score || 0) && 
-         model.data_source === existing.data_source &&
-         /[A-Z]/.test(model.name) && !/[A-Z]/.test(existing.name)) ||
-        
-        // If everything else is equal, prefer lower ID (older/manual entry)
-        ((model.quality_score || 0) === (existing.quality_score || 0) && 
-         model.data_source === existing.data_source &&
-         /[A-Z]/.test(model.name) === /[A-Z]/.test(existing.name) &&
+        // If same capitalization, prefer lower ID
+        (/[A-Z]/.test(model.name) === /[A-Z]/.test(existing.name) &&
          model.id < existing.id)
       );
       
@@ -151,20 +138,15 @@ function smartSortModels(models: Model[]): Model[] {
 }
 
 interface Model {
-  id: number;
+  id: string;
   name: string;
-  display_name: string;
-  brand_id: number;
+  brand_id: string;
   brand_name?: string;
   device_type: string;
-  model_year?: number;
+  release_year?: number;
+  image_url?: string;
   is_active: boolean;
-  is_featured?: boolean;
-  sort_order: number;
   created_at: string;
-  quality_score?: number;
-  needs_review?: boolean;
-  data_source?: string;
 }
 
 interface ApiResponse {
@@ -225,11 +207,10 @@ export default async function handler(
       });
     }
 
-    // Step 2: Get brand ID
+    // Step 2: Get brand ID (removed invalid device_type_id filter)
     const { data: brandData, error: brandError } = await supabase
       .from('brands')
-      .select('id, name, display_name')
-      .eq('device_type_id', deviceTypeData.id)
+      .select('id, name')
       .ilike('name', `%${brand}%`)
       .limit(1);
 
@@ -244,26 +225,21 @@ export default async function handler(
 
     const selectedBrand = brandData[0];
 
-    // Step 3: Get models for this brand
+    // Step 3: Get models for this brand (updated to match actual schema columns)
     const { data: models, error: modelsError } = await supabase
       .from('device_models')
       .select(`
         id,
         name,
-        display_name,
         brand_id,
-        model_year,
+        release_year,
+        image_url,
         is_active,
-        is_featured,
-        sort_order,
-        created_at,
-        quality_score,
-        needs_review,
-        data_source
+        created_at
       `)
       .eq('brand_id', selectedBrand.id)
+      .eq('type_id', deviceTypeData.id)
       .eq('is_active', true)
-      .order('sort_order', { ascending: true })
       .order('name', { ascending: true });
 
     if (modelsError) {
@@ -271,30 +247,18 @@ export default async function handler(
       throw modelsError;
     }
 
-    // Transform and filter the data
-    const transformedModels = (models || [])
-      .filter(model => {
-        // Filter by quality score and review status
-        const qualityOk = !model.quality_score || model.quality_score >= 70;
-        const reviewOk = !model.needs_review || model.needs_review === false;
-        return qualityOk && reviewOk;
-      })
-      .map((model: any) => ({
-        id: model.id,
-        name: model.name,
-        display_name: model.display_name || model.name,
-        brand_id: model.brand_id,
-        brand_name: selectedBrand.name,
-        device_type: deviceType as string,
-        model_year: model.model_year,
-        is_active: model.is_active,
-        is_featured: model.is_featured || false,
-        sort_order: model.sort_order || 0,
-        created_at: model.created_at,
-        quality_score: model.quality_score,
-        needs_review: model.needs_review,
-        data_source: model.data_source
-      }));
+    // Transform the data
+    const transformedModels = (models || []).map((model: any) => ({
+      id: model.id,
+      name: model.name,
+      brand_id: model.brand_id,
+      brand_name: selectedBrand.name,
+      device_type: deviceType as string,
+      release_year: model.release_year,
+      image_url: model.image_url,
+      is_active: model.is_active,
+      created_at: model.created_at
+    }));
 
     // Apply deduplication to remove duplicate model names
     const deduplicatedModels = deduplicateModels(transformedModels);
