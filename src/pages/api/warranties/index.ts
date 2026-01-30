@@ -1,3 +1,4 @@
+import { requireAdminAuth } from '@/middleware/adminAuth';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/utils/supabaseClient';
 import logger from '@/utils/logger';
@@ -153,4 +154,4 @@ async function handleCreateWarranty(req: NextApiRequest, res: NextApiResponse) {
 }
 
 // Export the handler directly
-export default handler; 
+export default requireAdminAuth(handler); 

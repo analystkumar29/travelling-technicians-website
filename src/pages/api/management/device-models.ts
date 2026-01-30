@@ -1,3 +1,4 @@
+import { requireAdminAuth } from '@/middleware/adminAuth';
 /**
  * Admin API: Device Models Management
  * 
@@ -19,7 +20,7 @@ const apiLogger = logger.createModuleLogger('api/management/device-models');
 
 type ApiResponse = AdminApiResponse<any>;
 
-export default async function handler(
+export default requireAdminAuth(async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
@@ -49,7 +50,7 @@ export default async function handler(
       message: 'Failed to process request'
     });
   }
-}
+})
 
 /**
  * GET /api/management/device-models

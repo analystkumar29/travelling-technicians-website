@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase, getServiceSupabase } from '@/utils/supabaseClient';
 import logger from '@/utils/logger';
 import { TechnicianRecord } from '@/types/admin';
+import { requireAdminAuth } from '@/middleware/adminAuth';
 
 /**
  * API handler for technicians endpoint
@@ -237,5 +238,5 @@ async function handleUpdateTechnician(req: NextApiRequest, res: NextApiResponse)
   }
 }
 
-// Export the handler directly
-export default handler;
+// Wrap the handler with admin authentication
+export default requireAdminAuth(handler);

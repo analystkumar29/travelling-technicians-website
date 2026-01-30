@@ -1,3 +1,4 @@
+import { requireAdminAuth } from '@/middleware/adminAuth';
 /**
  * Admin API: Dynamic Pricing Management
  * Aligned with ACTUAL DATABASE SCHEMA
@@ -22,7 +23,7 @@ const apiLogger = logger.createModuleLogger('api/management/dynamic-pricing');
 
 type ApiResponse<T = any> = AdminApiResponse<T>;
 
-export default async function handler(
+export default requireAdminAuth(async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ApiResponse>
 ) {
@@ -54,7 +55,7 @@ export default async function handler(
       message: 'Failed to process request'
     });
   }
-}
+})
 
 /**
  * GET /api/management/dynamic-pricing

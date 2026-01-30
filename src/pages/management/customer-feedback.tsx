@@ -1,3 +1,4 @@
+import { isAuthenticated } from '@/utils/auth';
 import React from 'react';
 import Layout from '@/components/layout/Layout';
 import CustomerFeedback from '@/components/management/CustomerFeedback';

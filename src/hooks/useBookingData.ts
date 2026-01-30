@@ -203,56 +203,61 @@ interface PricingApiResponse {
 
 /**
  * Fetch pricing calculation from API
+ * This now accepts device/brand/model/service names (not UUIDs)
  */
 async function fetchPricing(
-  model_id: string,
-  service_id: string | string[],
-  location_id: string,
-  tier: 'standard' | 'premium'
+  deviceType: string,
+  brand: string,
+  model: string,
+  service: string,
+  tier: 'standard' | 'premium' = 'standard'
 ): Promise<PricingData> {
-  const serviceIds = Array.isArray(service_id) ? service_id : [service_id];
-  
-  const url = '/api/pricing/calculate';
-  
-  dataLogger.debug('Fetching pricing', { model_id, service_id: serviceIds, location_id, tier });
-  
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model_id,
-      service_id: serviceIds,
-      location_id,
-      tier,
-    }),
+  const params = new URLSearchParams({
+    deviceType,
+    brand,
+    model,
+    service,
+    tier,
   });
+  
+  const url = `/api/pricing/calculate?${params.toString()}`;
+  
+  dataLogger.debug('Fetching pricing', { deviceType, brand, model, service, tier });
+  
+  const response = await fetch(url);
   
   if (!response.ok) {
     const errorText = await response.text();
     dataLogger.error('Failed to fetch pricing', { 
       status: response.status, 
       statusText: response.statusText,
-      error: errorText 
+      error: errorText,
+      url
     });
     throw new Error(`Failed to fetch pricing: ${response.statusText}`);
   }
   
-  const data: PricingApiResponse = await response.json();
+  const data: any = await response.json();
   
-  if (!data.success || !data.pricing) {
-    dataLogger.error('API returned error for pricing', { error: data.error, message: data.message });
+  if (!data.success || !data.data) {
+    dataLogger.error('API returned error for pricing', { error: data.error, message: data.message, data });
     throw new Error(data.error || data.message || 'Failed to fetch pricing');
   }
   
+  // Transform API response to match our PricingData interface
+  const pricing: PricingData = {
+    base_price: data.data.base_price || 0,
+    final_price: data.data.final_price || 0,
+    travel_fee: 0, // Not returned by this API
+    discount: 0,
+  };
+  
   dataLogger.info('Successfully fetched pricing', { 
-    base_price: data.pricing.base_price,
-    final_price: data.pricing.final_price,
-    travel_fee: data.pricing.travel_fee
+    base_price: pricing.base_price,
+    final_price: pricing.final_price
   });
   
-  return data.pricing;
+  return pricing;
 }
 
 /**
@@ -414,9 +419,10 @@ export function useServices(
 /**
  * React Query hook to calculate pricing
  * 
- * @param model_id - UUID of the device model
- * @param service_id - UUID(s) of the service(s)
- * @param location_id - UUID of the service location
+ * @param deviceType - Device type (mobile, laptop, tablet)
+ * @param brand - Brand name (e.g., "apple", "samsung")
+ * @param model - Model name (e.g., "iPhone 16 Pro Max")
+ * @param service - Service slug (e.g., "screen-replacement")
  * @param tier - Service tier ('standard' or 'premium')
  * @param options - Optional config to enable/disable the query
  * @returns UseQueryResult with pricing data
@@ -424,24 +430,29 @@ export function useServices(
  * @example
  * ```tsx
  * const { data: pricing, isLoading } = useCalculatePrice(
- *   modelId,
- *   serviceIds,
- *   locationId,
+ *   'mobile',
+ *   'apple',
+ *   'iPhone 16 Pro Max',
+ *   'screen-replacement',
  *   'standard'
  * );
  * ```
  */
 export function useCalculatePrice(
-  model_id: string,
-  service_id: string | string[],
-  location_id: string,
+  deviceType: string,
+  brand: string,
+  model: string,
+  service: string | string[],
   tier: 'standard' | 'premium' = 'standard',
   options?: { enabled?: boolean }
 ): UseQueryResult<PricingData, Error> {
+  // If service is an array, use the first one for pricing calculation
+  const serviceSlug = Array.isArray(service) ? service[0] : service;
+  
   return useQuery<PricingData, Error>({
-    queryKey: ['pricing', model_id, service_id, location_id, tier],
-    queryFn: () => fetchPricing(model_id, service_id, location_id, tier),
-    enabled: options?.enabled !== false && !!model_id && !!service_id && !!location_id,
+    queryKey: ['pricing', deviceType, brand, model, serviceSlug, tier],
+    queryFn: () => fetchPricing(deviceType, brand, model, serviceSlug, tier),
+    enabled: options?.enabled !== false && !!deviceType && !!brand && !!model && !!serviceSlug,
     staleTime: 2 * 60 * 1000, // 2 minutes (pricing can change)
     gcTime: 5 * 60 * 1000, // 5 minutes
     retry: 2,

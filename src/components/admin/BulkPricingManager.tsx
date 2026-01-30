@@ -45,6 +45,7 @@ export default function BulkPricingManager() {
   const [selectedModels, setSelectedModels] = useState<Set<string>>(new Set());
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
   const [pricing, setPricing] = useState({ standard: '', premium: '' });
+  const [modelSearchQuery, setModelSearchQuery] = useState<string>('');
 
   // Data state
   const [deviceTypes, setDeviceTypes] = useState<DeviceType[]>([]);
@@ -367,33 +368,67 @@ export default function BulkPricingManager() {
       {currentStep === 'models' && (
         <div className="bg-white shadow rounded-lg p-6 space-y-4">
           <h2 className="text-xl font-semibold">Step 3: Select Models</h2>
-          <div className="flex gap-2 mb-4">
-            <button
-              onClick={selectAllModels}
-              className="px-3 py-1 bg-primary-100 text-primary-700 rounded text-sm hover:bg-primary-200"
-            >
-              Select All
-            </button>
-            <button
-              onClick={() => setSelectedModels(new Set())}
-              className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
-            >
-              Clear All
-            </button>
+          
+          {/* Search Input */}
+          <div className="mb-4">
+            <input
+              type="text"
+              placeholder="Search models (e.g., 'iPhone 16', 'MacBook Pro')"
+              value={modelSearchQuery}
+              onChange={e => setModelSearchQuery(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
           </div>
+
+          {/* Action Buttons and Count */}
+          <div className="flex gap-2 mb-4 items-center justify-between">
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  const filteredModelIds = models
+                    .filter(m => m.name.toLowerCase().includes(modelSearchQuery.toLowerCase()))
+                    .map(m => m.id);
+                  setSelectedModels(new Set(filteredModelIds));
+                }}
+                className="px-3 py-1 bg-primary-100 text-primary-700 rounded text-sm hover:bg-primary-200"
+              >
+                Select All
+              </button>
+              <button
+                onClick={() => setSelectedModels(new Set())}
+                className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
+              >
+                Clear All
+              </button>
+            </div>
+            <span className="text-xs text-gray-500">
+              {models.filter(m => m.name.toLowerCase().includes(modelSearchQuery.toLowerCase())).length} of {models.length} models
+            </span>
+          </div>
+
+          {/* Models List */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
-            {models.map(model => (
-              <label key={model.id} className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                <input
-                  type="checkbox"
-                  checked={selectedModels.has(model.id)}
-                  onChange={() => toggleModel(model.id)}
-                  className="mr-3"
-                />
-                <span className="font-medium">{model.name}</span>
-              </label>
-            ))}
+            {models
+              .filter(m => m.name.toLowerCase().includes(modelSearchQuery.toLowerCase()))
+              .map(model => (
+                <label key={model.id} className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={selectedModels.has(model.id)}
+                    onChange={() => toggleModel(model.id)}
+                    className="mr-3"
+                  />
+                  <span className="font-medium">{model.name}</span>
+                </label>
+              ))}
           </div>
+
+          {/* Empty State */}
+          {models.filter(m => m.name.toLowerCase().includes(modelSearchQuery.toLowerCase())).length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              <p className="text-sm">No models found matching "{modelSearchQuery}"</p>
+            </div>
+          )}
           <div className="flex gap-2 pt-4">
             <button
               onClick={() => setCurrentStep('brand')}

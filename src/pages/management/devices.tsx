@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
+import { authFetch, handleAuthError } from '@/utils/auth';
 
 // Actual database schema interfaces
 interface DeviceType {
@@ -40,7 +41,32 @@ interface Model {
   is_active: boolean;
 }
 
-type TabType = 'device-types' | 'brands' | 'models';
+interface Service {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  display_name?: string;
+  device_type_id: string;
+  category_id?: string;
+  is_active: boolean;
+  is_doorstep_eligible: boolean;
+  requires_diagnostics: boolean;
+  estimated_duration_minutes: number;
+  created_at?: string;
+  device_type?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+  category?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+}
+
+type TabType = 'device-types' | 'brands' | 'models' | 'services';
 
 export default function DevicesAdmin() {
   const router = useRouter();
@@ -79,12 +105,33 @@ export default function DevicesAdmin() {
     is_active: true
   });
 
-  // Load data on mount
+  // Services State
+  const [services, setServices] = useState<Service[]>([]);
+  const [serviceCategories, setServiceCategories] = useState<any[]>([]);
+  const [serviceForm, setServiceForm] = useState({
+    name: '',
+    slug: '',
+    display_name: '',
+    description: '',
+    device_type_id: '',
+    category_id: '',
+    is_active: true,
+    is_doorstep_eligible: true,
+    requires_diagnostics: false,
+    estimated_duration_minutes: 45
+  });
+  const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
+
+  // Load data on mount and when tab changes
   useEffect(() => {
     loadDeviceTypes();
     loadBrands();
     loadModels();
-  }, []);
+    if (activeTab === 'services') {
+      loadServices();
+      loadServiceCategories();
+    }
+  }, [activeTab]);
 
   // Auto-generate slug from name
   const generateSlug = (name: string) => {
@@ -95,7 +142,7 @@ export default function DevicesAdmin() {
   const loadDeviceTypes = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/management/device-types');
+      const response = await authFetch('/api/management/device-types');
       const result = await response.json();
       
       if (result.success) {
@@ -114,7 +161,7 @@ export default function DevicesAdmin() {
   // Load Brands
   const loadBrands = async () => {
     try {
-      const response = await fetch('/api/management/brands');
+      const response = await authFetch('/api/management/brands');
       const result = await response.json();
       
       if (result.success) {
@@ -131,7 +178,7 @@ export default function DevicesAdmin() {
   // Load Models
   const loadModels = async () => {
     try {
-      const response = await fetch('/api/management/models');
+      const response = await authFetch('/api/management/models');
       const result = await response.json();
       
       if (result.success) {
@@ -142,6 +189,42 @@ export default function DevicesAdmin() {
     } catch (err) {
       setError('Error loading models');
       console.error(err);
+    }
+  };
+
+  // Load Services
+  const loadServices = async () => {
+    try {
+      const response = await authFetch('/api/management/services');
+      const result = await response.json();
+      
+      if (result.success) {
+        setServices(result.services || []);
+      } else {
+        setError('Failed to load services');
+      }
+    } catch (err) {
+      setError('Error loading services');
+      console.error(err);
+    }
+  };
+
+  // Load Service Categories
+  const loadServiceCategories = async () => {
+    try {
+      // Use the enhanced services API that now supports categories parameter
+      const response = await authFetch('/api/management/services?categories=true');
+      const result = await response.json();
+      
+      if (result.success && result.categories) {
+        setServiceCategories(result.categories);
+      } else {
+        // Fallback to empty array
+        setServiceCategories([]);
+      }
+    } catch (err) {
+      console.error('Error loading service categories:', err);
+      setServiceCategories([]);
     }
   };
 
@@ -158,7 +241,7 @@ export default function DevicesAdmin() {
     }
 
     try {
-      const response = await fetch('/api/management/device-types', {
+      const response = await authFetch('/api/management/device-types', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(deviceTypeForm)
@@ -192,7 +275,7 @@ export default function DevicesAdmin() {
     }
 
     try {
-      const response = await fetch('/api/management/brands', {
+      const response = await authFetch('/api/management/brands', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(brandForm)
@@ -226,7 +309,7 @@ export default function DevicesAdmin() {
     }
 
     try {
-      const response = await fetch('/api/management/models', {
+      const response = await authFetch('/api/management/models', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(modelForm)
@@ -251,6 +334,104 @@ export default function DevicesAdmin() {
       }
     } catch (err) {
       setError('Error saving model');
+      console.error(err);
+    }
+  };
+
+  // Service Handlers
+  const handleServiceSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    // Validation
+    if (!serviceForm.name || !serviceForm.slug || !serviceForm.device_type_id) {
+      setError('Name, slug, and device type are required');
+      return;
+    }
+
+    try {
+      const method = editingServiceId ? 'PUT' : 'POST';
+      const url = editingServiceId 
+        ? `/api/management/services?id=${editingServiceId}`
+        : '/api/management/services';
+
+      const response = await authFetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(serviceForm)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setSuccess(editingServiceId ? 'Service updated successfully!' : 'Service added successfully!');
+        loadServices();
+        resetServiceForm();
+      } else {
+        setError(data.message || `Failed to ${editingServiceId ? 'update' : 'save'} service`);
+      }
+    } catch (err) {
+      setError(`Error ${editingServiceId ? 'updating' : 'saving'} service`);
+      console.error(err);
+    }
+  };
+
+  const handleEditService = (service: Service) => {
+    setEditingServiceId(service.id);
+    setServiceForm({
+      name: service.name,
+      slug: service.slug,
+      display_name: service.display_name || '',
+      description: service.description || '',
+      device_type_id: service.device_type_id,
+      category_id: service.category_id || '',
+      is_active: service.is_active,
+      is_doorstep_eligible: service.is_doorstep_eligible,
+      requires_diagnostics: service.requires_diagnostics,
+      estimated_duration_minutes: service.estimated_duration_minutes
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingServiceId(null);
+    resetServiceForm();
+  };
+
+  const resetServiceForm = () => {
+    setServiceForm({
+      name: '',
+      slug: '',
+      display_name: '',
+      description: '',
+      device_type_id: '',
+      category_id: '',
+      is_active: true,
+      is_doorstep_eligible: true,
+      requires_diagnostics: false,
+      estimated_duration_minutes: 45
+    });
+    setEditingServiceId(null);
+  };
+
+  const handleToggleServiceActive = async (serviceId: string, isActive: boolean) => {
+    try {
+      const response = await authFetch(`/api/management/services?id=${serviceId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: isActive })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setSuccess(`Service ${isActive ? 'activated' : 'deactivated'} successfully!`);
+        loadServices();
+      } else {
+        setError(data.message || `Failed to ${isActive ? 'activate' : 'deactivate'} service`);
+      }
+    } catch (err) {
+      setError(`Error ${isActive ? 'activating' : 'deactivating'} service`);
       console.error(err);
     }
   };
@@ -288,7 +469,8 @@ export default function DevicesAdmin() {
             {[
               { key: 'device-types', label: 'Device Types', count: deviceTypes.length },
               { key: 'brands', label: 'Brands', count: brands.length },
-              { key: 'models', label: 'Models', count: models.length }
+              { key: 'models', label: 'Models', count: models.length },
+              { key: 'services', label: 'Services', count: services.length }
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -632,6 +814,214 @@ export default function DevicesAdmin() {
                           }`}>
                             {model.is_active ? 'Active' : 'Inactive'}
                           </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Services Tab */}
+        {activeTab === 'services' && (
+          <div className="space-y-6">
+            <div className="bg-white shadow rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">
+                {editingServiceId ? 'Edit Service' : 'Add New Service'}
+              </h2>
+              <form onSubmit={handleServiceSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                  <input
+                    type="text"
+                    value={serviceForm.name}
+                    onChange={(e) => {
+                      const name = e.target.value;
+                      setServiceForm({
+                        ...serviceForm,
+                        name,
+                        slug: generateSlug(name)
+                      });
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    placeholder="e.g., Screen Replacement"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Slug * (auto-generated)</label>
+                  <input
+                    type="text"
+                    value={serviceForm.slug}
+                    onChange={(e) => setServiceForm({...serviceForm, slug: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    placeholder="e.g., screen-replacement"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
+                  <input
+                    type="text"
+                    value={serviceForm.display_name}
+                    onChange={(e) => setServiceForm({...serviceForm, display_name: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    placeholder="e.g., Screen Repair Service"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Device Type *</label>
+                  <select
+                    value={serviceForm.device_type_id}
+                    onChange={(e) => setServiceForm({...serviceForm, device_type_id: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    required
+                  >
+                    <option value="">Select Device Type</option>
+                    {deviceTypes.map((dt) => (
+                      <option key={dt.id} value={dt.id}>{dt.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <select
+                    value={serviceForm.category_id}
+                    onChange={(e) => setServiceForm({...serviceForm, category_id: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                    <option value="">Select Category (Optional)</option>
+                    {serviceCategories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Duration (minutes)</label>
+                  <input
+                    type="number"
+                    value={serviceForm.estimated_duration_minutes}
+                    onChange={(e) => setServiceForm({...serviceForm, estimated_duration_minutes: parseInt(e.target.value) || 45})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    min="15"
+                    max="240"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <textarea
+                    value={serviceForm.description}
+                    onChange={(e) => setServiceForm({...serviceForm, description: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    rows={3}
+                    placeholder="Describe the service..."
+                  />
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={serviceForm.is_active}
+                    onChange={(e) => setServiceForm({...serviceForm, is_active: e.target.checked})}
+                    className="mr-2"
+                    id="service-active"
+                  />
+                  <label htmlFor="service-active" className="text-sm font-medium text-gray-700">Active</label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={serviceForm.is_doorstep_eligible}
+                    onChange={(e) => setServiceForm({...serviceForm, is_doorstep_eligible: e.target.checked})}
+                    className="mr-2"
+                    id="doorstep-eligible"
+                  />
+                  <label htmlFor="doorstep-eligible" className="text-sm font-medium text-gray-700">Doorstep Eligible</label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={serviceForm.requires_diagnostics}
+                    onChange={(e) => setServiceForm({...serviceForm, requires_diagnostics: e.target.checked})}
+                    className="mr-2"
+                    id="requires-diagnostics"
+                  />
+                  <label htmlFor="requires-diagnostics" className="text-sm font-medium text-gray-700">Requires Diagnostics</label>
+                </div>
+                <div className="md:col-span-2 flex space-x-4">
+                  <button type="submit" className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700">
+                    {editingServiceId ? 'Update Service' : 'Add Service'}
+                  </button>
+                  {editingServiceId && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                    >
+                      Cancel Edit
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
+
+            {/* Services List */}
+            <div className="bg-white shadow rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">Services ({services.length})</h2>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Device Type</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Doorstep</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {services.map((service) => (
+                      <tr key={service.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {service.display_name || service.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {service.device_type?.name || '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {service.category?.name || '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {service.is_doorstep_eligible ? (
+                            <span className="text-green-600">✓</span>
+                          ) : (
+                            <span className="text-gray-400">✗</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            service.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {service.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <button
+                            onClick={() => handleEditService(service)}
+                            className="text-primary-600 hover:text-primary-900 mr-3"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleToggleServiceActive(service.id, !service.is_active)}
+                            className={`${
+                              service.is_active ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'
+                            }`}
+                          >
+                            {service.is_active ? 'Deactivate' : 'Activate'}
+                          </button>
                         </td>
                       </tr>
                     ))}

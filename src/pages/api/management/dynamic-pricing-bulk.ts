@@ -1,3 +1,4 @@
+import { requireAdminAuth } from '@/middleware/adminAuth';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getServiceSupabase } from '@/utils/supabaseClient';
 import { logger } from '@/utils/logger';
@@ -26,7 +27,7 @@ interface ApiResponse {
   };
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse<ApiResponse>) {
+export default requireAdminAuth(async function handler(req: NextApiRequest, res: NextApiResponse<ApiResponse>) {
   const requestId = `bulk-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   
   apiLogger.info(`[${requestId}] Bulk pricing request received`, { 
@@ -241,4 +242,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       error: 'Failed to process bulk pricing update'
     });
   }
-} 
+}) 

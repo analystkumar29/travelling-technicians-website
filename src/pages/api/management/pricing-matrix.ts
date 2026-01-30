@@ -1,3 +1,4 @@
+import { requireAdminAuth } from '@/middleware/adminAuth';
 /**
  * Admin API: Pricing Matrix Retrieval
  * 
@@ -31,7 +32,7 @@ interface PricingMatrixResponse {
   error?: string;
 }
 
-export default async function handler(
+export default requireAdminAuth(async function handler(
   req: NextApiRequest,
   res: NextApiResponse<PricingMatrixResponse>
 ) {
@@ -53,7 +54,7 @@ export default async function handler(
       error: 'Internal server error'
     });
   }
-}
+})
 
 async function handleGetMatrix(
   req: NextApiRequest,

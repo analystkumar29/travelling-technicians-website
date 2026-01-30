@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Layout from '@/components/layout/Layout';
+import { authFetch, handleAuthError } from '@/utils/auth';
 import Link from 'next/link';
 import { 
   FaCalendarAlt, 
@@ -77,11 +78,8 @@ const withAuth = (WrappedComponent: React.ComponentType) => {
 
     useEffect(() => {
       const checkAuth = () => {
-        // Check for auth token in cookies
-        const authToken = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('auth-token='))
-          ?.split('=')[1];
+        // Check for auth token in localStorage
+        const authToken = localStorage.getItem('authToken');
 
         if (!authToken) {
           // No token, redirect to login
@@ -135,7 +133,15 @@ export default withAuth(function AdminManagement() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
-    fetchManagementData();
+    // Only fetch data if authenticated (after withAuth HOC check completes)
+    const checkAndFetch = async () => {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        fetchManagementData();
+      }
+    };
+    
+    checkAndFetch();
   }, []);
 
   // Logout function
@@ -145,7 +151,7 @@ export default withAuth(function AdminManagement() {
     setIsLoggingOut(true);
     
     try {
-      const response = await fetch('/api/management/logout', {
+      const response = await authFetch('/api/management/logout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -156,6 +162,7 @@ export default withAuth(function AdminManagement() {
 
       if (data.success) {
         // Clear any client-side auth state
+        localStorage.removeItem('authToken');
         document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         
         // Redirect to login page with logout message
@@ -191,14 +198,14 @@ export default withAuth(function AdminManagement() {
   };
 
   const fetchStats = async () => {
-    const response = await fetch('/api/bookings');
+    const response = await authFetch('/api/bookings');
     if (!response.ok) {
       throw new Error('Failed to fetch bookings');
     }
     const bookingsData = await response.json();
     const bookings: RecentBooking[] = bookingsData.bookings || [];
 
-    const warrantiesResponse = await fetch('/api/warranties');
+    const warrantiesResponse = await authFetch('/api/warranties');
     let warranties: any[] = [];
     if (warrantiesResponse.ok) {
       const warrantiesData = await warrantiesResponse.json();
@@ -237,7 +244,7 @@ export default withAuth(function AdminManagement() {
   };
 
   const fetchRecentBookings = async () => {
-    const response = await fetch('/api/bookings');
+    const response = await authFetch('/api/bookings');
     if (!response.ok) {
       throw new Error('Failed to fetch recent bookings');
     }
@@ -253,7 +260,7 @@ export default withAuth(function AdminManagement() {
   };
 
   const fetchUpcomingAppointments = async () => {
-    const response = await fetch('/api/bookings');
+    const response = await authFetch('/api/bookings');
     if (!response.ok) {
       throw new Error('Failed to fetch upcoming appointments');
     }
@@ -283,7 +290,7 @@ export default withAuth(function AdminManagement() {
     try {
       console.log('Updating booking status:', { id, newStatus });
       
-      const response = await fetch('/api/bookings/update', {
+      const response = await authFetch('/api/bookings/update', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
