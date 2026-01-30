@@ -55,10 +55,13 @@ export default function OptimizedImage({
   // Get optimized image sources (not used in simplified version)
   // const { webp, fallback } = getOptimizedImageSrc(src);
   
-  // Get dimensions if not provided
+  // Get dimensions if not provided - ensure we have valid dimensions to prevent CLS
   const dimensions = getImageDimensions(src);
-  const finalWidth = width || dimensions.width;
-  const finalHeight = height || dimensions.height;
+  const finalWidth = width || dimensions.width || 600;
+  const finalHeight = height || dimensions.height || 400;
+  
+  // Calculate aspect ratio for CSS to prevent layout shifts
+  const aspectRatio = finalWidth / finalHeight;
   
   // Merge props with optimization settings
   const finalPriority = priority !== undefined ? priority : optimization.priority;
@@ -85,7 +88,43 @@ export default function OptimizedImage({
 
   // SVG images don't need WebP optimization
   if (src.endsWith('.svg')) {
+    // Add aspect ratio for SVG images too to prevent CLS
+    const svgStyle = !fill ? {
+      aspectRatio: `${aspectRatio}`,
+      width: '100%',
+      height: 'auto'
+    } : {};
+    
     return (
+      <div style={!fill ? { position: 'relative', width: '100%' } : {}}>
+        <Image
+          src={src}
+          alt={imageAlt}
+          className={className}
+          priority={finalPriority}
+          fill={fill}
+          width={!fill ? finalWidth : undefined}
+          height={!fill ? finalHeight : undefined}
+          quality={finalQuality}
+          sizes={finalSizes}
+          onError={handleImageError}
+          onLoad={handleImageLoad}
+          style={svgStyle}
+        />
+      </div>
+    );
+  }
+
+  // For raster images, use the actual source directly without complex fallback logic
+  // Add inline styles to prevent layout shifts
+  const imageStyle = !fill ? {
+    aspectRatio: `${aspectRatio}`,
+    width: '100%',
+    height: 'auto'
+  } : {};
+
+  return (
+    <div style={!fill ? { position: 'relative', width: '100%' } : {}}>
       <Image
         src={src}
         alt={imageAlt}
@@ -96,30 +135,14 @@ export default function OptimizedImage({
         height={!fill ? finalHeight : undefined}
         quality={finalQuality}
         sizes={finalSizes}
+        loading={finalLoading}
+        placeholder="blur"
+        blurDataURL={blurDataURL}
         onError={handleImageError}
         onLoad={handleImageLoad}
+        style={imageStyle}
       />
-    );
-  }
-
-  // For raster images, use the actual source directly without complex fallback logic
-  return (
-    <Image
-      src={src}
-      alt={imageAlt}
-      className={className}
-      priority={finalPriority}
-      fill={fill}
-      width={!fill ? finalWidth : undefined}
-      height={!fill ? finalHeight : undefined}
-      quality={finalQuality}
-      sizes={finalSizes}
-      loading={finalLoading}
-      placeholder="blur"
-      blurDataURL={blurDataURL}
-      onError={handleImageError}
-      onLoad={handleImageLoad}
-    />
+    </div>
   );
 }
 
