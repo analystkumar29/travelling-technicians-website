@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS neighborhood_pages (
   -- Metadata
   established_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  is_active BOOLEAN DEFAULT true,
   
   -- Constraints
   UNIQUE(city_id, slug),
