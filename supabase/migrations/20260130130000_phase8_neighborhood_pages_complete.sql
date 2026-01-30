@@ -123,7 +123,7 @@ INSERT INTO neighborhood_pages (
   city_id, neighborhood_name, slug, latitude, longitude,
   monthly_iphone_screens, monthly_samsung_screens, monthly_pixel_screens, monthly_macbook_screens,
   landmark_name, landmark_description, landmark_activity_window,
-  neighborhood_content, common_issues, postal_codes, established_date, is_active
+  neighborhood_content, common_issues, postal_codes, established_date
 ) VALUES
 -- Vancouver: 8 neighborhoods
 (
@@ -138,7 +138,7 @@ INSERT INTO neighborhood_pages (
   'Downtown Vancouver is the financial and business heart of the city, home to numerous corporate offices, tech companies, and professional services. Our doorstep repair service is perfect for busy professionals who cannot leave their workstations. We service all major office buildings and condominiums in the downtown core.',
   ARRAY['iPhone screen damage from urban commuting', 'MacBook overheating in office buildings', 'Samsung water damage from coffee spills', 'Quick turnaround needed for business meetings'],
   ARRAY['V6B', 'V6C', 'V6E'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Vancouver' LIMIT 1),
@@ -152,7 +152,7 @@ INSERT INTO neighborhood_pages (
   'Yaletown is Vancouver''s trendiest neighborhood, filled with young professionals, tech workers, and families. The converted warehouse lofts and modern condos make it a prime location for our doorstep service. We handle everything from gaming laptops to business phones.',
   ARRAY['iPhone screen damage from transit use', 'MacBook overheating in loft spaces', 'Samsung screen damage from high-energy lifestyle'],
   ARRAY['V6B', 'V6Z'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Vancouver' LIMIT 1),
@@ -166,7 +166,7 @@ INSERT INTO neighborhood_pages (
   'Kitsilano is Vancouver''s most family-friendly neighborhood, known for its beautiful beach, community centers, and diverse population. Our doorstep service is ideal for busy parents juggling multiple devices. We repair devices quickly so families can enjoy quality time together.',
   ARRAY['iPhone screen damage from beach activities', 'Water-damaged tablets', 'Battery drain from kids'' usage', 'Screen repair for gaming consoles'],
   ARRAY['V6K', 'V6J'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Vancouver' LIMIT 1),
@@ -180,7 +180,7 @@ INSERT INTO neighborhood_pages (
   'The West End is Vancouver''s most densely populated neighborhood with a vibrant urban culture. Many residents live in high-rise apartments and appreciate the convenience of our doorstep repair service. We handle everything from student devices to professional equipment.',
   ARRAY['iPhone battery degradation from heavy usage', 'MacBook keyboard issues', 'Samsung device water damage'],
   ARRAY['V6G', 'V6H'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Vancouver' LIMIT 1),
@@ -194,7 +194,7 @@ INSERT INTO neighborhood_pages (
   'Mount Pleasant is known for its creative energy, independent businesses, and thriving arts scene. Many creative professionals use multiple devices for their work. Our same-day repair service keeps their productivity uninterrupted.',
   ARRAY['MacBook screen replacement for designers', 'iPhone damage from creative workspace accidents'],
   ARRAY['V5V', 'V5T'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Vancouver' LIMIT 1),
@@ -208,7 +208,7 @@ INSERT INTO neighborhood_pages (
   'Strathcona is Vancouver''s oldest residential neighborhood with strong community roots. We serve the diverse residents here with expert device repair. Our technicians understand the neighborhood''s unique needs and culture.',
   ARRAY['Device repair for seniors', 'Multi-language customer service available'],
   ARRAY['V6A'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Vancouver' LIMIT 1),
@@ -222,7 +222,7 @@ INSERT INTO neighborhood_pages (
   'Marpole is a peaceful residential neighborhood popular with families and long-term residents. We provide reliable device repair service without the hassle of travel. Our technicians are always courteous and professional.',
   ARRAY['Device repair for families', 'Senior-friendly repair appointments'],
   ARRAY['V6M'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Vancouver' LIMIT 1),
@@ -236,7 +236,7 @@ INSERT INTO neighborhood_pages (
   'Cambie is a bustling residential area with diverse communities. Our repair service serves the area''s multicultural population with professional expertise and friendly service.',
   ARRAY['Device repair for families on Cambie Corridor'],
   ARRAY['V5T', 'V5U'],
-  NOW(), true
+  NOW()
 ),
 
 -- Burnaby: 6 neighborhoods
@@ -252,7 +252,7 @@ INSERT INTO neighborhood_pages (
   'Metrotown is Burnaby''s commercial heart and one of the largest shopping destinations in BC. Our doorstep service is ideal for busy shoppers and office workers. We repair devices quickly so you can get back to shopping or business.',
   ARRAY['iPhone damage from shopping trips', 'MacBook issues for office workers', 'Samsung water damage'],
   ARRAY['V5H', 'V5G'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Burnaby' LIMIT 1),
@@ -266,7 +266,7 @@ INSERT INTO neighborhood_pages (
   'Brentwood is experiencing rapid growth with new mixed-use developments. Our technicians are familiar with the area''s modern apartment buildings and tech-savvy residents.',
   ARRAY['iPhone screen damage common in dense residential areas'],
   ARRAY['V5C', 'V5B'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Burnaby' LIMIT 1),
@@ -280,7 +280,7 @@ INSERT INTO neighborhood_pages (
   'Edmonds is a stable, family-friendly neighborhood in Burnaby. We provide reliable repair service to the many families here. Our technicians are experienced with children and pets.',
   ARRAY['Device repair for busy families', 'Fast turnaround for back-to-school devices'],
   ARRAY['V5C'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Burnaby' LIMIT 1),
@@ -294,7 +294,7 @@ INSERT INTO neighborhood_pages (
   'Burnaby Heights offers a perfect balance of urban convenience and access to nature. Our service is available for residents who want to stay home and enjoy their neighborhood.',
   ARRAY['Device damage from outdoor activities'],
   ARRAY['V5B'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Burnaby' LIMIT 1),
@@ -308,7 +308,7 @@ INSERT INTO neighborhood_pages (
   'Central Burnaby includes the beautiful Central Park and surrounding residential areas. Many families use our service while enjoying community activities.',
   ARRAY['Device repair for active families'],
   ARRAY['V5H'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Burnaby' LIMIT 1),
@@ -322,7 +322,7 @@ INSERT INTO neighborhood_pages (
   'Burnaby South is known for its natural beauty and quiet residential charm. Our service brings convenience to residents who prefer to relax at home.',
   ARRAY['Device repair for nature-loving residents'],
   ARRAY['V5G'],
-  NOW(), true
+  NOW()
 ),
 
 -- Coquitlam: 5 neighborhoods
