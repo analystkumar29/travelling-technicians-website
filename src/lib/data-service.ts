@@ -1116,7 +1116,10 @@ export async function getCityData(citySlug: string) {
       return null;
     }
 
-    return data;
+    return {
+      ...data,
+      local_content: data?.local_content ?? null
+    };
   } catch (error) {
     dataLogger.error(`Error fetching city data for ${citySlug}`, {
       error: error instanceof Error ? error.message : 'Unknown error'

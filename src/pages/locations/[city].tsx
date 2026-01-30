@@ -184,7 +184,7 @@ export const getStaticProps: GetStaticProps<CityRepairPageProps> = async ({ para
       return {
         props: {
           cityData: {
-            name: dbCityData.city || citySlug.replace('-', ' '),
+            name: dbCityData.city_name || citySlug.replace('-', ' '),
             slug: citySlug,
             testimonials: citySpecificTestimonials,
             neighborhoods: dbCityData.neighborhoods && dbCityData.neighborhoods.length > 0 
@@ -203,7 +203,7 @@ export const getStaticProps: GetStaticProps<CityRepairPageProps> = async ({ para
               sunday: { open: '10:00', close: '17:00' }
             },
             serviceSince: dbCityData.service_since || '2020-01-01',
-            localContent: dbCityData.local_content || undefined,
+            localContent: dbCityData.local_content ?? null,
             sameAsUrls
           }
         },

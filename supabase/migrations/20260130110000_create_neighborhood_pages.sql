@@ -40,9 +40,9 @@ CREATE TABLE IF NOT EXISTS neighborhood_pages (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_neighborhood_city_id ON neighborhood_pages(city_id);
-CREATE INDEX idx_neighborhood_slug ON neighborhood_pages(slug);
-CREATE INDEX idx_neighborhood_city_slug ON neighborhood_pages(city_id, slug);
+CREATE INDEX IF NOT EXISTS idx_neighborhood_city_id ON neighborhood_pages(city_id);
+CREATE INDEX IF NOT EXISTS idx_neighborhood_slug ON neighborhood_pages(slug);
+CREATE INDEX IF NOT EXISTS idx_neighborhood_city_slug ON neighborhood_pages(city_id, slug);
 
 -- RLS Policies
 ALTER TABLE neighborhood_pages ENABLE ROW LEVEL SECURITY;
