@@ -2,13 +2,92 @@ import Layout from '@/components/layout/Layout';
 import Head from 'next/head';
 import Link from 'next/link';
 import { FaPhone, FaClock, FaShieldAlt, FaMapMarkerAlt } from 'react-icons/fa';
-import { LocalBusinessSchema, ReviewSchema } from '@/components/seo/StructuredData';
+import { LocalBusinessSchema, ReviewSchema, PlaceSchema, CityLocalBusinessSchema } from '@/components/seo/StructuredData';
 import { TechnicianSchema } from '@/components/seo/TechnicianSchema';
+import { NeighborhoodLinks } from '@/components/seo/NeighborhoodLinks';
+import { LocalContent } from '@/components/seo/LocalContent';
 import { getCityData, getAllActiveCities } from '@/lib/data-service';
 import { getSameAsUrls, getCityNameFromSlug } from '@/utils/wikidata';
 import { GetStaticPaths, GetStaticProps } from 'next';
 
 // Static fallback testimonials (used if database fails)
+// City-specific testimonial mapping
+const cityTestimonialMap: Record<string, typeof staticTestimonials> = {
+  vancouver: [
+    {
+      id: 1,
+      name: 'Sarah J.',
+      location: 'Downtown Vancouver',
+      rating: 5,
+      comment: 'Amazing doorstep service! Fixed my iPhone screen right at my Yaletown condo. Professional and fast.',
+      device: 'iPhone 14 Pro',
+      neighborhood: 'Yaletown'
+    },
+    {
+      id: 2,
+      name: 'David M.',
+      location: 'Kitsilano, Vancouver',
+      rating: 5,
+      comment: 'Best tech repair service in Vancouver! Fixed my MacBook battery in under an hour at my home.',
+      device: 'MacBook Air 2021',
+      neighborhood: 'Kitsilano'
+    }
+  ],
+  burnaby: [
+    {
+      id: 3,
+      name: 'Michael C.',
+      location: 'Metrotown, Burnaby',
+      rating: 5,
+      comment: 'Had my MacBook battery replaced at home. Professional service and saved me a trip to the mall. Highly recommend!',
+      device: 'MacBook Pro 2019',
+      neighborhood: 'Metrotown'
+    },
+    {
+      id: 4,
+      name: 'Jennifer L.',
+      location: 'Brentwood, Burnaby',
+      rating: 4,
+      comment: 'Great doorstep service in Burnaby! Quick, reliable, and fair pricing. Will use again.',
+      device: 'iPhone 12',
+      neighborhood: 'Brentwood'
+    }
+  ],
+  coquitlam: [
+    {
+      id: 5,
+      name: 'Robert T.',
+      location: 'Coquitlam Centre, Coquitlam',
+      rating: 5,
+      comment: 'Excellent repair service right to my door in Coquitlam. Technician was knowledgeable and fast.',
+      device: 'Samsung Galaxy S22',
+      neighborhood: 'Coquitlam Centre'
+    }
+  ],
+  richmond: [
+    {
+      id: 6,
+      name: 'Jason T.',
+      location: 'Richmond',
+      rating: 4,
+      comment: 'Great doorstep service for my Samsung. The price was fair and the repair was done perfectly.',
+      device: 'Samsung Galaxy S22',
+      neighborhood: 'Richmond Centre'
+    }
+  ],
+  'north-vancouver': [
+    {
+      id: 7,
+      name: 'Anna W.',
+      location: 'North Vancouver',
+      rating: 5,
+      comment: 'Amazing convenience! The technician was punctual and fixed my laptop keyboard issue in under an hour.',
+      device: 'Dell XPS 13',
+      neighborhood: 'Lonsdale'
+    }
+  ]
+};
+
 const staticTestimonials = [
   {
     id: 1,
@@ -44,9 +123,17 @@ interface CityRepairPageProps {
     neighborhoods: string[];
     commonRepairs: typeof staticCommonRepairs;
     phoneNumber: string;
+    email?: string;
     latitude?: number;
     longitude?: number;
     sameAsUrls: string[];
+    operatingHours?: {
+      weekday?: { open: string; close: string };
+      saturday?: { open: string; close: string };
+      sunday?: { open: string; close: string };
+    };
+    serviceSince?: string;
+    localContent?: string;
   };
 }
 
@@ -90,18 +177,33 @@ export const getStaticProps: GetStaticProps<CityRepairPageProps> = async ({ para
     const sameAsUrls = getSameAsUrls(citySlug);
     
     if (dbCityData) {
-      // Use database data
+      // Use database data with enhanced fields
+      // Get city-specific testimonials
+      const citySpecificTestimonials = cityTestimonialMap[citySlug] || staticTestimonials;
+      
       return {
         props: {
           cityData: {
             name: dbCityData.city || citySlug.replace('-', ' '),
             slug: citySlug,
-            testimonials: staticTestimonials,
-            neighborhoods: staticNeighborhoods,
-            commonRepairs: staticCommonRepairs,
-            phoneNumber: '(604) 555-1234',
-            latitude: 49.2827,
-            longitude: -123.1207,
+            testimonials: citySpecificTestimonials,
+            neighborhoods: dbCityData.neighborhoods && dbCityData.neighborhoods.length > 0 
+              ? dbCityData.neighborhoods 
+              : staticNeighborhoods,
+            commonRepairs: dbCityData.common_repairs && dbCityData.common_repairs.length > 0
+              ? dbCityData.common_repairs
+              : staticCommonRepairs,
+            phoneNumber: dbCityData.local_phone || '+1-778-389-9251',
+            email: dbCityData.local_email || 'info@travellingtechnicians.ca',
+            latitude: dbCityData.latitude || 49.2827,
+            longitude: dbCityData.longitude || -123.1207,
+            operatingHours: dbCityData.operating_hours || {
+              weekday: { open: '08:00', close: '20:00' },
+              saturday: { open: '09:00', close: '18:00' },
+              sunday: { open: '10:00', close: '17:00' }
+            },
+            serviceSince: dbCityData.service_since || '2020-01-01',
+            localContent: dbCityData.local_content || undefined,
             sameAsUrls
           }
         },
@@ -120,7 +222,8 @@ export const getStaticProps: GetStaticProps<CityRepairPageProps> = async ({ para
           testimonials: staticTestimonials,
           neighborhoods: staticNeighborhoods,
           commonRepairs: staticCommonRepairs,
-          phoneNumber: '(604) 555-1234',
+          phoneNumber: '+1-778-389-9251',
+          email: 'info@travellingtechnicians.ca',
           latitude: 49.2827,
           longitude: -123.1207,
           sameAsUrls
@@ -142,7 +245,8 @@ export const getStaticProps: GetStaticProps<CityRepairPageProps> = async ({ para
           testimonials: staticTestimonials,
           neighborhoods: staticNeighborhoods,
           commonRepairs: staticCommonRepairs,
-          phoneNumber: '(604) 555-1234',
+          phoneNumber: '+1-778-389-9251',
+          email: 'info@travellingtechnicians.ca',
           latitude: 49.2827,
           longitude: -123.1207,
           sameAsUrls
@@ -160,12 +264,55 @@ export default function CityRepairPage({ cityData }: CityRepairPageProps) {
     neighborhoods,
     commonRepairs,
     phoneNumber,
-    sameAsUrls
+    email,
+    latitude,
+    longitude,
+    sameAsUrls,
+    operatingHours,
+    serviceSince,
+    localContent
   } = cityData;
 
   return (
     <>
       <Head>
+        {/* Place Schema for Map Pack visibility with precise geo-coordinates */}
+        {latitude && longitude && (
+          <PlaceSchema
+            name={`The Travelling Technicians - ${name}`}
+            description={`Professional mobile phone and laptop repair services with doorstep service in ${name}, BC. Same-day repairs available.`}
+            latitude={latitude}
+            longitude={longitude}
+            address={{
+              streetAddress: `${name} Service Area`,
+              addressLocality: name,
+              addressRegion: "BC",
+              addressCountry: "CA"
+            }}
+            telephone={phoneNumber}
+            url={`/locations/${name.toLowerCase().replace(/\s+/g, '-')}`}
+            openingHours={operatingHours}
+            areaServed={neighborhoods}
+          />
+        )}
+
+        {/* City-specific LocalBusiness Schema with Openness Signal */}
+        {latitude && longitude && (
+          <CityLocalBusinessSchema
+            cityName={name}
+            description={`Professional mobile phone and laptop repair services with doorstep service in ${name}, BC.`}
+            latitude={latitude}
+            longitude={longitude}
+            telephone={phoneNumber}
+            email={email}
+            neighborhoods={neighborhoods}
+            openingHours={operatingHours}
+            serviceSince={serviceSince}
+            url={`/locations/${name.toLowerCase().replace(/\s+/g, '-')}`}
+          />
+        )}
+
+        {/* Fallback LocalBusiness Schema */}
         <LocalBusinessSchema
           name={`The Travelling Technicians - ${name}`}
           description={`Professional mobile phone and laptop repair services with doorstep service in ${name}, BC.`}
@@ -177,6 +324,10 @@ export default function CityRepairPage({ cityData }: CityRepairPageProps) {
           }}
           areaServed={[`${name}, BC`]}
           sameAs={sameAsUrls}
+          geo={{
+            latitude: latitude || 49.2827,
+            longitude: longitude || -123.1207
+          }}
         />
         
         {/* E-E-A-T Technician Schema for city-specific expertise */}
@@ -284,39 +435,16 @@ export default function CityRepairPage({ cityData }: CityRepairPageProps) {
           </div>
         </section>
 
-        <section className="py-16 bg-white">
-          <div className="container-custom">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                {name} Neighborhoods We Serve
-              </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Doorstep repair service available throughout {name}
-              </p>
-            </div>
+        {/* Phase 4: NeighborhoodLinks Component */}
+        <NeighborhoodLinks
+          cityName={name}
+          citySlug={cityData.slug}
+          neighborhoods={neighborhoods}
+          title="Service Neighborhoods"
+        />
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {neighborhoods.map((area, index) => (
-                <div
-                  key={index}
-                  className="bg-gray-50 rounded-lg p-3 text-center hover:bg-primary-50 hover:text-primary-700 transition-colors"
-                >
-                  <FaMapMarkerAlt className="inline-block mr-1 h-4 w-4" />
-                  {area}
-                </div>
-              ))}
-            </div>
-
-            <div className="text-center mt-8">
-              <p className="text-gray-600 mb-4">
-                Don't see your {name} neighborhood listed? We likely serve it too!
-              </p>
-              <Link href="/book-online" className="btn-primary">
-                Check Service Availability
-              </Link>
-            </div>
-          </div>
-        </section>
+        {/* Phase 5: LocalContent Component */}
+        <LocalContent content={localContent} cityName={name} />
       </Layout>
     </>
   );
