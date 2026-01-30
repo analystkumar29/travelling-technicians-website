@@ -60,42 +60,277 @@
     <priority>0.8</priority>
   </url>
   
-  <!-- NEW: City Pages (Phase 3-7 SEO Implementation) -->
+  <!-- City Pages (Phase 8: /locations/{city}) -->
   <url>
     <loc>https://www.travelling-technicians.ca/locations/vancouver</loc>
     <lastmod>2026-01-30T00:00:00.000Z</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.85</priority>
   </url>
   <url>
     <loc>https://www.travelling-technicians.ca/locations/burnaby</loc>
     <lastmod>2026-01-30T00:00:00.000Z</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.85</priority>
   </url>
   <url>
     <loc>https://www.travelling-technicians.ca/locations/coquitlam</loc>
     <lastmod>2026-01-30T00:00:00.000Z</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.85</priority>
   </url>
   <url>
     <loc>https://www.travelling-technicians.ca/locations/richmond</loc>
     <lastmod>2026-01-30T00:00:00.000Z</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.85</priority>
   </url>
   <url>
     <loc>https://www.travelling-technicians.ca/locations/north-vancouver</loc>
     <lastmod>2026-01-30T00:00:00.000Z</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.85</priority>
   </url>
   <url>
     <loc>https://www.travelling-technicians.ca/locations/surrey</loc>
     <lastmod>2026-01-30T00:00:00.000Z</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Neighborhood Pages (Phase 8: /locations/{city}/{neighborhood}) -->
+  <!-- Vancouver Neighborhoods (8) -->
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/vancouver/downtown</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/vancouver/yaletown</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/vancouver/kitsilano</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/vancouver/west-end</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/vancouver/mount-pleasant</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/vancouver/strathcona</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/vancouver/marpole</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/vancouver/cambie</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <!-- Burnaby Neighborhoods (6) -->
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/burnaby/metrotown</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/burnaby/brentwood</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/burnaby/edmonds</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/burnaby/burnaby-heights</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/burnaby/central-burnaby</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/burnaby/burnaby-south</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <!-- Coquitlam Neighborhoods (5) -->
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/coquitlam/town-centre</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/coquitlam/central-coquitlam</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/coquitlam/pinetree</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/coquitlam/westwood-plateau</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/coquitlam/maillardville</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <!-- Richmond Neighborhoods (5) -->
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/richmond/city-centre</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/richmond/ironwood</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/richmond/sea-island</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/richmond/steveston</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/richmond/south-arm</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <!-- North Vancouver Neighborhoods (5) -->
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/north-vancouver/lower-lonsdale</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/north-vancouver/central-north-vancouver</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/north-vancouver/mountainside</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/north-vancouver/seymour</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/north-vancouver/upper-lonsdale</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <!-- Surrey Neighborhoods (8) -->
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/surrey/city-centre</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/surrey/north-surrey</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/surrey/whalley</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/surrey/south-surrey</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/surrey/cloverdale</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/surrey/fleetwood</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/surrey/guildford</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://www.travelling-technicians.ca/locations/surrey/east-surrey</loc>
+    <lastmod>2026-01-30T00:00:00.000Z</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
   </url>
   
   <!-- Legacy City Pages (Redirecting to new /locations/ pages) -->

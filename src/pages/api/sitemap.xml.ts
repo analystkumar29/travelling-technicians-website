@@ -26,6 +26,18 @@ interface DynamicContent {
     model: string;
     updated_at: string;
   }>;
+  neighborhoods: Array<{
+    city: string;
+    citySlug: string;
+    neighborhood: string;
+    neighborhoodSlug: string;
+    updated_at: string;
+  }>;
+  cityLocations: Array<{
+    city: string;
+    citySlug: string;
+    updated_at: string;
+  }>;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -47,8 +59,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Static high-priority pages
       ...getStaticPages(siteUrl, now),
       
-      // Dynamic service area pages
+      // Dynamic service area pages (legacy /repair/{city})
       ...getServiceAreaPages(siteUrl, dynamicContent.serviceAreas),
+      
+      // City location pages (Phase 8: /locations/{city})
+      ...getCityLocationPages(siteUrl, dynamicContent.cityLocations),
+      
+      // Neighborhood pages (Phase 8: /locations/{city}/{neighborhood})
+      ...getNeighborhoodPages(siteUrl, dynamicContent.neighborhoods),
       
       // Dynamic blog pages
       ...getBlogPages(siteUrl, dynamicContent.blogPosts),
@@ -147,6 +165,16 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
     // Fetch popular city-service-model combinations (limited to top 50 for sitemap)
     const cityServiceModels = await getPopularCityServiceModels();
     
+    // Fetch neighborhood pages (Phase 8)
+    const neighborhoods = await getNeighborhoodPagesFromDB();
+    
+    // Fetch city locations for /locations/{city} pages
+    const cityLocations = serviceLocations?.map(loc => ({
+      city: loc.city,
+      citySlug: loc.city.toLowerCase().replace(/\s+/g, '-'),
+      updated_at: loc.updated_at || new Date().toISOString()
+    })) || [];
+    
     return {
       serviceAreas: serviceLocations?.map(loc => ({
         city: loc.city,
@@ -154,7 +182,9 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       })) || [],
       blogPosts,
       services,
-      cityServiceModels
+      cityServiceModels,
+      neighborhoods,
+      cityLocations
     };
     
   } catch (error) {
@@ -163,8 +193,64 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       serviceAreas: [],
       blogPosts: [],
       services: [],
-      cityServiceModels: []
+      cityServiceModels: [],
+      neighborhoods: [],
+      cityLocations: []
     };
+  }
+}
+
+/**
+ * Fetch neighborhood pages from database (Phase 8)
+ */
+async function getNeighborhoodPagesFromDB(): Promise<Array<{
+  city: string;
+  citySlug: string;
+  neighborhood: string;
+  neighborhoodSlug: string;
+  updated_at: string;
+}>> {
+  const supabase = getServiceSupabase();
+  
+  try {
+    // Query neighborhood_pages table
+    const { data: neighborhoods, error } = await supabase
+      .from('neighborhood_pages')
+      .select(`
+        slug,
+        neighborhood_name,
+        updated_at,
+        city_id,
+        service_locations!inner (
+          city_name
+        )
+      `)
+      .eq('is_active', true)
+      .order('neighborhood_name');
+
+    if (error || !neighborhoods) {
+      sitemapLogger.error('Error fetching neighborhoods:', error);
+      return [];
+    }
+
+    // Map to expected format
+    return neighborhoods.map(item => {
+      const locationData = Array.isArray(item.service_locations) 
+        ? item.service_locations[0] 
+        : item.service_locations;
+      
+      return {
+        city: locationData?.city_name || '',
+        citySlug: (locationData?.city_name || '').toLowerCase().replace(/\s+/g, '-'),
+        neighborhood: item.neighborhood_name,
+        neighborhoodSlug: item.slug,
+        updated_at: item.updated_at || new Date().toISOString()
+      };
+    }).filter(n => n.city); // Filter out items without city data
+    
+  } catch (error) {
+    sitemapLogger.error('Error in getNeighborhoodPagesFromDB:', error);
+    return [];
   }
 }
 
@@ -407,6 +493,48 @@ function getStaticPages(siteUrl: string, now: string): SitemapEntry[] {
       priority: '0.9'
     }
   ];
+}
+
+/**
+ * Generate city location pages (Phase 8: /locations/{city})
+ */
+function getCityLocationPages(siteUrl: string, cityLocations: Array<{ city: string; citySlug: string; updated_at: string }>): SitemapEntry[] {
+  const entries: SitemapEntry[] = [];
+  
+  cityLocations.forEach(({ city, citySlug, updated_at }) => {
+    entries.push({
+      loc: `${siteUrl}/locations/${citySlug}`,
+      lastmod: updated_at,
+      changefreq: 'weekly',
+      priority: '0.85' // Higher than neighborhoods, lower than main pages
+    });
+  });
+  
+  return entries;
+}
+
+/**
+ * Generate neighborhood pages (Phase 8: /locations/{city}/{neighborhood})
+ */
+function getNeighborhoodPages(siteUrl: string, neighborhoods: Array<{
+  city: string;
+  citySlug: string;
+  neighborhood: string;
+  neighborhoodSlug: string;
+  updated_at: string;
+}>): SitemapEntry[] {
+  const entries: SitemapEntry[] = [];
+  
+  neighborhoods.forEach(({ citySlug, neighborhoodSlug, updated_at }) => {
+    entries.push({
+      loc: `${siteUrl}/locations/${citySlug}/${neighborhoodSlug}`,
+      lastmod: updated_at,
+      changefreq: 'monthly',
+      priority: '0.75' // Lower than city pages but still important
+    });
+  });
+  
+  return entries;
 }
 
 /**
