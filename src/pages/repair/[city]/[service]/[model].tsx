@@ -93,18 +93,14 @@ export const getStaticPaths: GetStaticPaths = async () => {
       }
     }
     
-    // Also include the original popular combinations as a fallback
+    // Also include the popular combinations for active services only as a fallback
     // in case database query fails or returns no combinations
     if (paths.length === 0) {
       const popularCombinations = [
         { city: 'vancouver', service: 'screen-repair', model: 'iphone-14' },
         { city: 'vancouver', service: 'battery-replacement', model: 'iphone-14' },
         { city: 'burnaby', service: 'screen-repair', model: 'samsung-galaxy-s23' },
-        { city: 'richmond', service: 'charging-port-repair', model: 'google-pixel-7' },
-        { city: 'coquitlam', service: 'laptop-screen-repair', model: 'macbook-pro-2023' },
-        { city: 'north-vancouver', service: 'water-damage-repair', model: 'iphone-15' },
-        { city: 'surrey', service: 'software-repair', model: 'samsung-galaxy-s22' },
-        { city: 'new-westminster', service: 'camera-repair', model: 'iphone-13' }
+        { city: 'coquitlam', service: 'laptop-screen-repair', model: 'macbook-pro-2023' }
       ];
       
       for (const { city, service, model } of popularCombinations) {
@@ -123,16 +119,12 @@ export const getStaticPaths: GetStaticPaths = async () => {
   } catch (error) {
     console.error('Error generating static paths:', error);
     
-    // Fallback to original popular combinations if there's an error
+    // Fallback to popular combinations for active services only if there's an error
     const popularCombinations = [
       { city: 'vancouver', service: 'screen-repair', model: 'iphone-14' },
       { city: 'vancouver', service: 'battery-replacement', model: 'iphone-14' },
       { city: 'burnaby', service: 'screen-repair', model: 'samsung-galaxy-s23' },
-      { city: 'richmond', service: 'charging-port-repair', model: 'google-pixel-7' },
-      { city: 'coquitlam', service: 'laptop-screen-repair', model: 'macbook-pro-2023' },
-      { city: 'north-vancouver', service: 'water-damage-repair', model: 'iphone-15' },
-      { city: 'surrey', service: 'software-repair', model: 'samsung-galaxy-s22' },
-      { city: 'new-westminster', service: 'camera-repair', model: 'iphone-13' }
+      { city: 'coquitlam', service: 'laptop-screen-repair', model: 'macbook-pro-2023' }
     ];
     
     const paths = popularCombinations.map(({ city, service, model }) => ({

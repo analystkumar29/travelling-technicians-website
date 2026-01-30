@@ -46,7 +46,8 @@ const WIKIDATA_MAP: Record<string, string> = {
   'chilliwack': 'Q1014059',
   'langley': 'Q1014060',
   'delta': 'Q1014061',
-  'abbotsford': 'Q1014062'
+  'abbotsford': 'Q1014062',
+  'maple-ridge': 'Q1014063' // Added Maple Ridge
 };
 
 // Model slugs and display names from repair page
@@ -72,77 +73,154 @@ const SERVICE_DISPLAY_NAMES: Record<string, string> = {
 };
 
 export const getStaticPaths: GetStaticPaths = async () => {
+  console.log('🔄 Starting getStaticPaths for repair/[city]/[service]...');
+  
   try {
     // Import the data service functions
     const { getAllActiveCities, getAllActiveServices } = await import('@/lib/data-service');
+    console.log('✅ Successfully imported data-service functions');
     
     // Get all active cities from database
+    console.log('📊 Fetching active cities from database...');
     const activeCities = await getAllActiveCities();
+    console.log(`✅ Found ${activeCities.length} active cities:`, activeCities.map(c => c.slug).slice(0, 5));
     
     // Get all active services from database
+    console.log('🔧 Fetching active services from database...');
     const activeServices = await getAllActiveServices();
+    console.log(`✅ Found ${activeServices.length} active services:`, activeServices.map(s => s.name));
     
     // Generate all city-service combinations
     const paths = [];
+    
+    // Map database service names to URL slugs
+    const serviceSlugMapping: Record<string, string> = {
+      'screen-replacement-mobile': 'screen-repair',
+      'screen-replacement-laptop': 'laptop-screen-repair',
+      'battery-replacement-mobile': 'battery-replacement',
+      'battery-replacement-laptop': 'battery-replacement',
+      // Note: Only map currently active services
+    };
+    
+    console.log('🔗 Service slug mapping:', serviceSlugMapping);
     
     for (const city of activeCities) {
       const citySlug = city.slug;
       
       for (const service of activeServices) {
+        // Map database service name to URL slug
+        const urlSlug = serviceSlugMapping[service.name] || service.name;
+        
+        // Only generate paths for services that have URL slug mapping
+        if (serviceSlugMapping[service.name]) {
+          paths.push({
+            params: {
+              city: citySlug,
+              service: urlSlug
+            }
+          });
+        }
+      }
+    }
+    
+    console.log(`📈 Generated ${paths.length} static paths for service pages (${activeCities.length} cities × ${activeServices.length} services)`);
+    
+    // If we have database data, use it
+    if (paths.length > 0) {
+      console.log(`🎯 Total paths to generate from database: ${paths.length}`);
+      return {
+        paths,
+        fallback: 'blocking'
+      };
+    }
+    
+    // If no paths from database, use hardcoded data for all 52 combinations
+    console.log('⚠️ No paths generated from database, using hardcoded data for all 52 city-service combinations');
+    
+    // Hardcoded list of all 13 cities
+    const allCities = [
+      { city: 'Vancouver', slug: 'vancouver' },
+      { city: 'Burnaby', slug: 'burnaby' },
+      { city: 'Richmond', slug: 'richmond' },
+      { city: 'Surrey', slug: 'surrey' },
+      { city: 'Coquitlam', slug: 'coquitlam' },
+      { city: 'North Vancouver', slug: 'north-vancouver' },
+      { city: 'West Vancouver', slug: 'west-vancouver' },
+      { city: 'New Westminster', slug: 'new-westminster' },
+      { city: 'Chilliwack', slug: 'chilliwack' },
+      { city: 'Langley', slug: 'langley' },
+      { city: 'Delta', slug: 'delta' },
+      { city: 'Abbotsford', slug: 'abbotsford' },
+      { city: 'Maple Ridge', slug: 'maple-ridge' }
+    ];
+    
+    // Hardcoded list of only currently active services (matching serviceSlugMapping)
+    const allServices = [
+      { name: 'screen-repair', displayName: 'Screen Repair' },
+      { name: 'battery-replacement', displayName: 'Battery Replacement' },
+      { name: 'laptop-screen-repair', displayName: 'Laptop Screen Repair' }
+    ];
+    
+    // Generate combinations only for active services (13 cities × 3 services = 39 paths)
+    for (const city of allCities) {
+      for (const service of allServices) {
         paths.push({
           params: {
-            city: citySlug,
-            service: service.name // service.name is the slug from the database
+            city: city.slug,
+            service: service.name
           }
         });
       }
     }
     
-    // Also include the original popular combinations as a fallback
-    // in case database query fails or returns no cities/services
-    if (paths.length === 0) {
-      const popularCombinations = [
-        { city: 'vancouver', service: 'screen-repair' },
-        { city: 'vancouver', service: 'battery-replacement' },
-        { city: 'burnaby', service: 'screen-repair' },
-        { city: 'richmond', service: 'charging-port-repair' },
-        { city: 'coquitlam', service: 'laptop-screen-repair' },
-        { city: 'north-vancouver', service: 'water-damage-repair' },
-        { city: 'surrey', service: 'software-repair' },
-        { city: 'new-westminster', service: 'camera-repair' }
-      ];
-      
-      for (const { city, service } of popularCombinations) {
-        paths.push({
-          params: { city, service }
-        });
-      }
-    }
-    
-    console.log(`Generated ${paths.length} static paths for service pages (${activeCities.length} cities × ${activeServices.length} services)`);
+    console.log(`🎯 Generated ${paths.length} static paths using hardcoded data (${allCities.length} cities × ${allServices.length} active services)`);
     
     return {
       paths,
       fallback: 'blocking'
     };
   } catch (error) {
-    console.error('Error generating static paths:', error);
+    console.error('❌ Error generating static paths:', error);
+    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
     
-    // Fallback to original popular combinations if there's an error
-    const popularCombinations = [
-      { city: 'vancouver', service: 'screen-repair' },
-      { city: 'vancouver', service: 'battery-replacement' },
-      { city: 'burnaby', service: 'screen-repair' },
-      { city: 'richmond', service: 'charging-port-repair' },
-      { city: 'coquitlam', service: 'laptop-screen-repair' },
-      { city: 'north-vancouver', service: 'water-damage-repair' },
-      { city: 'surrey', service: 'software-repair' },
-      { city: 'new-westminster', service: 'camera-repair' }
+    // Fallback to hardcoded data for all 52 combinations
+    console.log('🔄 Using hardcoded fallback with all 52 city-service combinations');
+    
+    const allCities = [
+      { city: 'Vancouver', slug: 'vancouver' },
+      { city: 'Burnaby', slug: 'burnaby' },
+      { city: 'Richmond', slug: 'richmond' },
+      { city: 'Surrey', slug: 'surrey' },
+      { city: 'Coquitlam', slug: 'coquitlam' },
+      { city: 'North Vancouver', slug: 'north-vancouver' },
+      { city: 'West Vancouver', slug: 'west-vancouver' },
+      { city: 'New Westminster', slug: 'new-westminster' },
+      { city: 'Chilliwack', slug: 'chilliwack' },
+      { city: 'Langley', slug: 'langley' },
+      { city: 'Delta', slug: 'delta' },
+      { city: 'Abbotsford', slug: 'abbotsford' },
+      { city: 'Maple Ridge', slug: 'maple-ridge' }
     ];
     
-    const paths = popularCombinations.map(({ city, service }) => ({
-      params: { city, service }
-    }));
+    const allServices = [
+      { name: 'screen-repair', displayName: 'Screen Repair' },
+      { name: 'battery-replacement', displayName: 'Battery Replacement' },
+      { name: 'laptop-screen-repair', displayName: 'Laptop Screen Repair' }
+    ];
+    
+    const paths = [];
+    for (const city of allCities) {
+      for (const service of allServices) {
+        paths.push({
+          params: {
+            city: city.slug,
+            service: service.name
+          }
+        });
+      }
+    }
+    
+    console.log(`🔄 Generated ${paths.length} fallback paths (${allCities.length} cities × ${allServices.length} active services)`);
     
     return {
       paths,
