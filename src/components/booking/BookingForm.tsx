@@ -59,6 +59,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   const [selectedModelId, setSelectedModelId] = useState<string>('');
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
   const [selectedLocationId, setSelectedLocationId] = useState<string>('');
+  // Quoted price state
+  const [quotedPrice, setQuotedPrice] = useState<number | undefined>();
   
   // Function to reveal sections progressively
   const revealSection = useCallback((sectionName: string) => {
@@ -94,6 +96,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       customerPhone: initialData.customerPhone || '',
       address: initialData.address || '',
       postalCode: initialData.postalCode || '',
+      quoted_price: initialData.quoted_price || undefined,
   };
   
   // Add optional fields explicitly if they exist
@@ -132,14 +135,87 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   const { data: modelsData, isLoading: modelsLoading } = useModels(deviceType || 'mobile', deviceBrand || '');
   const { data: servicesData, isLoading: servicesLoading } = useServices(deviceType || 'mobile');
   
+  // Helper function to map service slugs to UUIDs
+  const mapServiceSlugsToIds = useCallback((serviceSlugs: string | string[]): string[] => {
+    if (!servicesData || servicesData.length === 0) return [];
+    
+    const slugs = Array.isArray(serviceSlugs) ? serviceSlugs : [serviceSlugs];
+    const serviceIds: string[] = [];
+    
+    slugs.forEach(slug => {
+      // Try to find service by slug
+      const service = servicesData.find(s => 
+        s.slug === slug || 
+        s.name.toLowerCase().replace(/\s+/g, '-') === slug ||
+        s.display_name?.toLowerCase().replace(/\s+/g, '-') === slug
+      );
+      
+      if (service?.id) {
+        serviceIds.push(service.id);
+      }
+    });
+    
+    return serviceIds;
+  }, [servicesData]);
+  
+  // Update selectedServiceIds when serviceType changes
+  useEffect(() => {
+    if (serviceType && servicesData && servicesData.length > 0) {
+      const serviceIds = mapServiceSlugsToIds(serviceType);
+      setSelectedServiceIds(serviceIds);
+    }
+  }, [serviceType, servicesData, mapServiceSlugsToIds]);
+  
   // Get pricing data for quoted_price
+  // Pass device/brand/model/service names (not UUIDs) to the pricing API
+  const serviceSlug = Array.isArray(serviceType) && serviceType.length > 0 
+    ? serviceType[0] 
+    : typeof serviceType === 'string' 
+      ? serviceType 
+      : '';
+  
   const { data: pricingData } = useCalculatePrice(
-    selectedModelId,
-    Array.isArray(serviceType) ? serviceType : [serviceType],
-    selectedLocationId || '00000000-0000-0000-0000-000000000001',
+    deviceType || 'mobile',
+    deviceBrand || '',
+    deviceModel || '',
+    serviceSlug,
     pricingTier || 'standard',
-    { enabled: !!(selectedModelId && serviceType) }
+    { enabled: !!(deviceType && deviceBrand && deviceModel && serviceSlug) }
   );
+
+  // Update quotedPrice state when pricingData changes
+  useEffect(() => {
+    console.log('🔍 [useEffect] pricingData changed:', {
+      pricingData: pricingData,
+      final_price: pricingData?.final_price,
+      isDefined: pricingData?.final_price !== undefined
+    });
+
+    if (pricingData?.final_price !== undefined) {
+      console.log('💰 [useEffect] Setting quoted_price from pricingData:', {
+        final_price: pricingData.final_price
+      });
+      
+      setQuotedPrice(pricingData.final_price);
+      
+      // Also set the form value for quoted_price
+      console.log('📝 [useEffect] Calling methods.setValue with quoted_price:', pricingData.final_price);
+      methods.setValue('quoted_price', pricingData.final_price);
+      
+      // Verify the value was set
+      setTimeout(() => {
+        const currentValue = methods.getValues('quoted_price');
+        const allFormValues = methods.getValues();
+        console.log('✅ [useEffect] quoted_price after setValue:', {
+          quoted_price: currentValue,
+          allFormValues: allFormValues,
+          hasQuotedPrice: 'quoted_price' in allFormValues
+        });
+      }, 0);
+    } else {
+      console.log('⚠️ [useEffect] pricingData is not ready yet or final_price is undefined');
+    }
+  }, [pricingData, methods]);
 
   // Function to handle model selection attempt without brand
   const handleModelSelectionAttempt = useCallback(() => {
@@ -2733,17 +2809,30 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
 
   // Override the handleSubmit function to check for terms agreement
   const handleFinalSubmit = async () => {
+    console.log('📤 [handleFinalSubmit] Starting final submission...');
+    
     if (!agreeToTerms) {
+      console.log('❌ [handleFinalSubmit] Terms not agreed to');
       setSubmitAttempted(true);
       return;
     }
     
-    if (isSubmitting) return; // Prevent double submission
+    if (isSubmitting) {
+      console.log('⚠️ [handleFinalSubmit] Already submitting, preventing double submission');
+      return; // Prevent double submission
+    }
     
     setIsSubmitting(true);
     
     try {
       const data = methods.getValues();
+      
+      console.log('📋 [handleFinalSubmit] Raw form values:', {
+        quoted_price: data.quoted_price,
+        quotedPriceState: quotedPrice,
+        hasFormQuotedPrice: 'quoted_price' in data,
+        allKeys: Object.keys(data)
+      });
       
       // Process the data before submitting
       const processedData: CreateBookingRequest = {
@@ -2751,9 +2840,31 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         // If using "other" brand, set the custom brand for database
         brand: data.deviceBrand === 'other' && data.customBrand ? data.customBrand : data.deviceBrand,
         model: data.deviceModel,
-        // Add quoted price from pricing calculation
-        quoted_price: pricingData?.final_price ?? undefined
+        // Add quoted price from pricing calculation - use quotedPrice state
+        quoted_price: quotedPrice ?? undefined,
+        // Ensure city and province are included
+        city: data.city || 'Vancouver',
+        province: data.province || 'BC',
+        // Ensure issue description is included
+        issueDescription: data.issueDescription || ''
       };
+      
+      console.log('✅ [handleFinalSubmit] Processed booking data before submission:', {
+        ...processedData,
+        customerEmail: processedData.customerEmail?.substring(0, 3) + '***' || 'MISSING',
+        customerPhone: '[REDACTED]',
+        quoted_price: processedData.quoted_price,
+        hasQuotedPrice: processedData.quoted_price !== undefined
+      });
+      
+      console.log('🎯 [handleFinalSubmit] Final data to be sent to API:', {
+        quoted_price: processedData.quoted_price,
+        deviceType: processedData.deviceType,
+        brand: processedData.brand,
+        model: processedData.model,
+        serviceType: processedData.serviceType,
+        pricingTier: processedData.pricingTier
+      });
       
       await handleSubmit(processedData);
     } finally {

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { authFetch, handleAuthError, isAuthenticated } from '@/utils/auth';
+import { useState, useEffect, useCallback } from 'react';
 import Layout from '@/components/layout/Layout';
 import Link from 'next/link';
 import { 
@@ -33,15 +34,23 @@ interface Booking {
   created_at: string;
   issue_description?: string;
   notes?: string;
-  // Optional - may not exist in DB
   status?: string;
-  device_type?: string;
-  device_brand?: string;
-  device_model?: string;
-  service_type?: string;
-  postal_code?: string;
+  quoted_price?: number;
   city?: string;
   province?: string;
+  // Related data from joins
+  device_models?: {
+    name: string;
+    brand_id: string;
+    type_id: string;
+  };
+  services?: {
+    name: string;
+    display_name: string;
+  };
+  service_locations?: {
+    city_name: string;
+  };
 }
 
 interface BookingFilter {
@@ -65,50 +74,7 @@ export default function AdminBookings() {
     search: ''
   });
 
-  useEffect(() => {
-    fetchBookings();
-  }, []);
-
-  useEffect(() => {
-    applyFilters();
-  }, [bookings, filters]);
-
-  // Helper functions to format date/time from scheduled_at
-  const formatDate = (scheduledAt: string) => {
-    try {
-      return new Date(scheduledAt).toLocaleDateString();
-    } catch {
-      return 'Invalid date';
-    }
-  };
-
-  const formatTime = (scheduledAt: string) => {
-    try {
-      return new Date(scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return 'Invalid time';
-    }
-  };
-
-  const fetchBookings = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/bookings');
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch bookings');
-      }
-      
-      const data = await response.json();
-      setBookings(data.bookings || []);
-    } catch (err) {
-      setError('Failed to fetch bookings');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...bookings];
 
     // Status filter
@@ -116,9 +82,10 @@ export default function AdminBookings() {
       filtered = filtered.filter(b => b.status === filters.status);
     }
 
-    // Device type filter
+    // Device type filter - temporarily disabled since we need device_type from device_models
     if (filters.device_type !== 'all') {
-      filtered = filtered.filter(b => b.device_type === filters.device_type);
+      // TODO: Implement device type filtering once we have device_type data
+      // filtered = filtered.filter(b => b.device_type === filters.device_type);
     }
 
     // Date range filter
@@ -157,21 +124,108 @@ export default function AdminBookings() {
         b.customer_name.toLowerCase().includes(searchTerm) ||
         b.customer_email.toLowerCase().includes(searchTerm) ||
         b.customer_phone.includes(searchTerm) ||
-        (b.device_brand && b.device_brand.toLowerCase().includes(searchTerm)) ||
-        (b.device_model && b.device_model.toLowerCase().includes(searchTerm)) ||
-        (b.service_type && b.service_type.toLowerCase().includes(searchTerm)) ||
+        (b.device_models?.name && b.device_models.name.toLowerCase().includes(searchTerm)) ||
+        (b.services?.name && b.services.name.toLowerCase().includes(searchTerm)) ||
         b.customer_address.toLowerCase().includes(searchTerm)
       );
     }
 
     setFilteredBookings(filtered);
+  }, [bookings, filters]);
+
+  useEffect(() => {
+    fetchBookings();
+  }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
+
+  // Helper functions to format date/time from scheduled_at
+  const formatDate = (scheduledAt: string) => {
+    try {
+      return new Date(scheduledAt).toLocaleDateString();
+    } catch {
+      return 'Invalid date';
+    }
+  };
+
+  const formatTime = (scheduledAt: string) => {
+    try {
+      return new Date(scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return 'Invalid time';
+    }
+  };
+
+  // Helper to parse address into components
+  const parseAddress = (address: string) => {
+    if (!address) return { street: '', city: '', province: '', postalCode: '' };
+    
+    // Try to parse comma-separated address
+    const parts = address.split(',').map(part => part.trim());
+    
+    if (parts.length >= 3) {
+      // Format: "Street, City, Province, Postal Code"
+      return {
+        street: parts[0],
+        city: parts[1],
+        province: parts[2],
+        postalCode: parts.length > 3 ? parts[3] : ''
+      };
+    } else if (parts.length === 2) {
+      // Format: "Street, City"
+      return {
+        street: parts[0],
+        city: parts[1],
+        province: '',
+        postalCode: ''
+      };
+    } else {
+      // Single line address - try to extract postal code
+      const postalCodeMatch = address.match(/\b[A-Z]\d[A-Z] \d[A-Z]\d\b|\b[A-Z]\d[A-Z]\d[A-Z]\d\b/);
+      const postalCode = postalCodeMatch ? postalCodeMatch[0] : '';
+      
+      // Remove postal code from street address
+      let street = address;
+      if (postalCode) {
+        street = address.replace(postalCode, '').trim();
+        // Clean up any trailing commas or extra spaces
+        street = street.replace(/,\s*$/, '').trim();
+      }
+      
+      return {
+        street: street,
+        city: '',
+        province: '',
+        postalCode: postalCode
+      };
+    }
+  };
+
+  const fetchBookings = async () => {
+    try {
+      setLoading(true);
+      const response = await authFetch('/api/bookings');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch bookings');
+      }
+      
+      const data = await response.json();
+      setBookings(data.bookings || []);
+    } catch (err) {
+      setError('Failed to fetch bookings');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updateBookingStatus = async (id: string, newStatus: string) => {
     try {
       console.log('Updating booking status:', { id, newStatus });
       
-      const response = await fetch('/api/bookings/update', {
+      const response = await authFetch('/api/bookings/update', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -204,7 +258,7 @@ export default function AdminBookings() {
       const existingNotes = booking?.notes || '';
       const newNotes = existingNotes ? `${existingNotes}\n\n${new Date().toLocaleString()}: ${note}` : `${new Date().toLocaleString()}: ${note}`;
       
-      const response = await fetch('/api/bookings/update', {
+      const response = await authFetch('/api/bookings/update', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -276,9 +330,7 @@ export default function AdminBookings() {
     const formatAddress = () => {
       const parts = [
         booking.customer_address || 'Not provided',
-        booking.city || '',
-        booking.province || '',
-        booking.postal_code || ''
+        booking.service_locations?.city_name || ''
       ].filter(part => part && part.trim());
       
       return parts.length > 0 ? parts.join(', ') : 'Address not provided';
@@ -355,18 +407,18 @@ export default function AdminBookings() {
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Type</label>
-                    <p className="mt-1 text-sm font-medium text-gray-900">
-                      {booking.device_type ? booking.device_type.charAt(0).toUpperCase() + booking.device_type.slice(1) : 'Not provided'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Brand</label>
-                    <p className="mt-1 text-sm font-medium text-gray-900">{booking.device_brand || 'Not provided'}</p>
-                  </div>
-                  <div>
                     <label className="block text-sm font-medium text-gray-700">Model</label>
-                    <p className="mt-1 text-sm font-medium text-gray-900">{booking.device_model || 'Not provided'}</p>
+                    <p className="mt-1 text-sm font-medium text-gray-900">{booking.device_models?.name || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Service</label>
+                    <p className="mt-1 text-sm font-medium text-gray-900">{booking.services?.display_name || booking.services?.name || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Location</label>
+                    <p className="mt-1 text-sm font-medium text-gray-900">
+                      {booking.service_locations?.city_name || 'Address only (no city specified)'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -378,8 +430,10 @@ export default function AdminBookings() {
                   Service Information
                 </h4>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Service Type</label>
-                  <p className="mt-1 text-sm font-medium text-gray-900">{booking.service_type || 'Not provided'}</p>
+                  <label className="block text-sm font-medium text-gray-700">Service Details</label>
+                  <p className="mt-1 text-sm font-medium text-gray-900">
+                    {booking.services?.display_name || booking.services?.name || 'Service ID: ' + (booking.service_id?.substring(0, 8) || 'N/A')}
+                  </p>
                 </div>
                 {booking.issue_description && (
                   <div className="mt-4">
@@ -390,6 +444,22 @@ export default function AdminBookings() {
                   </div>
                 )}
               </div>
+
+              {/* Pricing Information Section */}
+              {booking.quoted_price && (
+                <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <FaTools className="mr-2 text-emerald-600" />
+                    Pricing Information
+                  </h4>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Quoted Price</label>
+                    <p className="mt-1 text-2xl font-bold text-emerald-600">
+                      ${booking.quoted_price.toFixed(2)} CAD
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Appointment Information Section */}
               <div className="bg-green-50 rounded-lg p-4 border border-green-200">
@@ -426,7 +496,7 @@ export default function AdminBookings() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-600">Street</label>
-                    <p className="mt-1 text-sm text-gray-800">{booking.customer_address || 'N/A'}</p>
+                    <p className="mt-1 text-sm text-gray-800">{parseAddress(booking.customer_address).street || booking.customer_address || 'N/A'}</p>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600">City</label>
@@ -438,7 +508,7 @@ export default function AdminBookings() {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600">Postal Code</label>
-                    <p className="mt-1 text-sm text-gray-800">{booking.postal_code || 'N/A'}</p>
+                    <p className="mt-1 text-sm text-gray-800">{parseAddress(booking.customer_address).postalCode || 'N/A'}</p>
                   </div>
                 </div>
               </div>
@@ -705,22 +775,22 @@ export default function AdminBookings() {
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-600 mb-3">
                           <div>
-                            <strong>Device:</strong> {booking.device_brand || 'Unknown'} {booking.device_model || ''}
+                            <strong>Device:</strong> {booking.device_models?.name || 'Unknown device'}
                           </div>
                           <div>
-                            <strong>Service:</strong> {booking.service_type || `Service ID: ${booking.service_id?.substring(0, 8)}...`}
+                            <strong>Service:</strong> {booking.services?.display_name || booking.services?.name || `Service ID: ${booking.service_id?.substring(0, 8)}...`}
                           </div>
                           <div>
                             <strong>Date:</strong> {formatDate(booking.scheduled_at)} at {formatTime(booking.scheduled_at)}
                           </div>
                           <div>
-                            <strong>Address:</strong> {booking.customer_address}, {booking.postal_code || 'N/A'}
+                            <strong>Address:</strong> {booking.customer_address}
                           </div>
                           <div>
                             <strong>Created:</strong> {new Date(booking.created_at).toLocaleDateString()}
                           </div>
                           <div>
-                            <strong>Location:</strong> {booking.city || 'N/A'}, {booking.province || 'N/A'}
+                            <strong>Location:</strong> {booking.service_locations?.city_name || 'N/A'}
                           </div>
                         </div>
 

@@ -1,3 +1,4 @@
+import { requireAdminAuth } from '@/middleware/adminAuth';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getServiceSupabase } from '@/utils/supabaseClient';
 import { logger } from '@/utils/logger';
@@ -31,7 +32,7 @@ interface ApiResponse {
   error?: string;
 }
 
-export default async function handler(
+export default requireAdminAuth(async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ApiResponse>
 ) {
@@ -61,7 +62,7 @@ export default async function handler(
       message: 'Failed to process request'
     });
   }
-}
+})
 
 async function handleGet(req: NextApiRequest, res: NextApiResponse<ApiResponse>, supabase: any) {
   try {

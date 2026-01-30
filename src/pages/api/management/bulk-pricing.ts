@@ -1,3 +1,4 @@
+import { requireAdminAuth } from '@/middleware/adminAuth';
 /**
  * Admin API: Bulk Pricing Management
  * 
@@ -31,7 +32,7 @@ interface BulkPricingResponse {
   error?: string;
 }
 
-export default async function handler(
+export default requireAdminAuth(async function handler(
   req: NextApiRequest,
   res: NextApiResponse<BulkPricingResponse>
 ) {
@@ -54,7 +55,7 @@ export default async function handler(
       error: 'Internal server error'
     });
   }
-}
+})
 
 async function handleBulkUpdate(
   req: NextApiRequest,

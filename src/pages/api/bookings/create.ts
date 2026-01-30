@@ -210,6 +210,94 @@ export default async function handler(
       }
     }
     
+    // Look up location UUID based on city and postal code
+    let locationId = null;
+    let locationNotes = '';
+    
+    if (normalizedBookingData.city || normalizedBookingData.postalCode) {
+      // Try to find location by city name first
+      if (normalizedBookingData.city) {
+        const { data: cityLocation } = await supabase
+          .from('service_locations')
+          .select('id, city_name')
+          .ilike('city_name', `%${normalizedBookingData.city}%`)
+          .limit(1)
+          .single();
+        
+        if (cityLocation?.id) {
+          locationId = cityLocation.id;
+          apiLogger.info('Found location by city name', {
+            city: normalizedBookingData.city,
+            locationId: locationId,
+            locationCity: cityLocation.city_name
+          });
+        }
+      }
+      
+      // If no location found by city, try postal code prefix
+      if (!locationId && normalizedBookingData.postalCode) {
+        const postalPrefix = normalizedBookingData.postalCode.substring(0, 3).toUpperCase();
+        
+        // Try to find location by postal code prefix
+        try {
+          const { data: postalLocation } = await supabase
+            .from('service_locations')
+            .select('id, city_name')
+            .contains('postal_code_prefixes', [postalPrefix])
+            .limit(1)
+            .single();
+          
+          if (postalLocation?.id) {
+            locationId = postalLocation.id;
+            apiLogger.info('Found location by postal code prefix', {
+              postalCode: normalizedBookingData.postalCode,
+              prefix: postalPrefix,
+              locationId: locationId,
+              locationCity: postalLocation.city_name
+            });
+          } else {
+            apiLogger.info('No location found for postal code prefix', {
+              postalCode: normalizedBookingData.postalCode,
+              prefix: postalPrefix
+            });
+          }
+        } catch (error) {
+          // This might fail if postal_code_prefixes column doesn't exist yet
+          // That's okay - we'll fall back to city-based lookup
+          apiLogger.info('Postal code prefix lookup failed (column may not exist)', {
+            postalCode: normalizedBookingData.postalCode,
+            prefix: postalPrefix,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      }
+      
+      // If still no location, use default Vancouver location
+      if (!locationId) {
+        const { data: defaultLocation } = await supabase
+          .from('service_locations')
+          .select('id, city_name')
+          .ilike('city_name', 'Vancouver')
+          .limit(1)
+          .single();
+        
+        if (defaultLocation?.id) {
+          locationId = defaultLocation.id;
+          locationNotes = `Location Pending: Could not map ${normalizedBookingData.city || 'unknown city'} (${normalizedBookingData.postalCode || 'no postal code'}) to exact service location. Assigned to Vancouver as default.`;
+          apiLogger.warn('Using default Vancouver location', {
+            requestedCity: normalizedBookingData.city,
+            requestedPostalCode: normalizedBookingData.postalCode,
+            defaultLocationId: locationId
+          });
+        }
+      }
+    }
+    
+    if (!locationId) {
+      locationNotes = `Location Pending: No location information provided. Manual verification required.`;
+      apiLogger.warn('No location information provided for booking');
+    }
+    
     // Map to the actual bookings table schema
     const dbFieldsOnly = {
       booking_ref: referenceNumber,
@@ -220,9 +308,14 @@ export default async function handler(
       customer_phone: finalBookingData.customer_phone,
       customer_address: finalBookingData.address,
       
+      // Location details - save city and province separately
+      city: normalizedBookingData.city || 'Vancouver',
+      province: normalizedBookingData.province || 'BC',
+      
       // Device and service - UUID references
       model_id: modelId,
       service_id: serviceId,
+      location_id: locationId,
       
       // Appointment information
       // Convert date + time slot to ISO timestamp
@@ -245,8 +338,14 @@ export default async function handler(
         return date.toISOString();
       })() : null,
       
+      // Issue description from the form
+      issue_description: normalizedBookingData.issueDescription || null,
+      
       // Pricing information - save quoted price from form if provided
       quoted_price: bookingData.quoted_price ?? null,
+      
+      // Location notes if location lookup had issues
+      notes: locationNotes || null,
     };
     
     // Log what we're about to insert

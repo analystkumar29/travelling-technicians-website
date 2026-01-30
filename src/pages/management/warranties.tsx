@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
+import { authFetch, handleAuthError } from '@/utils/auth';
 import Link from 'next/link';
 import { 
   FaShieldAlt, 
@@ -79,7 +80,7 @@ export default function AdminWarranties() {
   const fetchWarranties = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/warranties');
+      const response = await authFetch('/api/warranties');
       
       if (!response.ok) {
         throw new Error('Failed to fetch warranties');
@@ -130,7 +131,7 @@ export default function AdminWarranties() {
 
   const updateWarrantyStatus = async (id: string, newStatus: string) => {
     try {
-      const response = await fetch('/api/warranties/update', {
+      const response = await authFetch('/api/warranties/update', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -155,7 +156,7 @@ export default function AdminWarranties() {
       const existingNotes = warranty?.notes || '';
       const newNotes = existingNotes ? `${existingNotes}\n\n${new Date().toLocaleString()}: ${note}` : `${new Date().toLocaleString()}: ${note}`;
       
-      const response = await fetch('/api/warranties/update', {
+      const response = await authFetch('/api/warranties/update', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

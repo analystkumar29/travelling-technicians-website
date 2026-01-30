@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getServiceSupabase } from '@/utils/supabaseClient';
+import { requireAdminAuth } from '@/middleware/adminAuth';
 
 // Helper function to generate a unique reference code
 function generateReferenceCode(): string {
@@ -9,7 +10,7 @@ function generateReferenceCode(): string {
   return `${prefix}${timestamp}${random}`;
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     if (req.method === 'GET') {
       console.log('============ BOOKINGS API DEBUG ============');
@@ -29,12 +30,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const supabase = getServiceSupabase();
         console.log('4. Supabase client created successfully ✅');
         
-        // Fetch all bookings - simple query without nested relationships
-        // This avoids Supabase PostgREST relationship syntax issues
-        console.log('5. Executing query: SELECT * FROM bookings...');
+        // Fetch all bookings with related data using Supabase joins
+        console.log('5. Executing query: SELECT bookings.* with related data...');
         const { data: bookings, error } = await supabase
           .from('bookings')
-          .select('*')
+          .select(`
+            *,
+            device_models (
+              name,
+              brand_id,
+              type_id
+            ),
+            services (
+              name,
+              display_name
+            ),
+            service_locations (
+              city_name
+            )
+          `)
           .order('created_at', { ascending: false });
         
         if (error) {
@@ -112,3 +126,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 }
+
+// Wrap the handler with admin authentication
+export default requireAdminAuth(handler);

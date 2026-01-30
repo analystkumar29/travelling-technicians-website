@@ -61,8 +61,8 @@ export default function LoginPage() {
       const data: LoginResponse = await response.json();
 
       if (data.success && data.token) {
-        // Store the auth token in a secure cookie
-        document.cookie = `auth-token=${data.token}; path=/; secure; samesite=strict; max-age=${7 * 24 * 60 * 60}`; // 7 days
+        // Store the auth token in localStorage
+        localStorage.setItem('authToken', data.token);
         
         // Redirect to the intended page
         router.push(redirectTo);

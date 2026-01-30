@@ -1,3 +1,4 @@
+import { requireAdminAuth } from '@/middleware/adminAuth';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getServiceSupabase } from '@/utils/supabaseClient';
 import { logger } from '@/utils/logger';
@@ -5,7 +6,7 @@ import { logger } from '@/utils/logger';
 // Create module logger
 const apiLogger = logger.createModuleLogger('warranties/update');
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default requireAdminAuth(async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     apiLogger.warn('Method not allowed', { method: req.method });
     return res.status(405).json({ success: false, message: 'Method not allowed' });
@@ -74,4 +75,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
-} 
+}) 

@@ -1,3 +1,4 @@
+import { requireAdminAuth } from '@/middleware/adminAuth';
 /**
  * Admin API: Brands Management
  * 
@@ -20,7 +21,7 @@ const apiLogger = logger.createModuleLogger('api/management/brands');
 
 type ApiResponse = AdminApiResponse<any>;
 
-export default async function handler(
+export default requireAdminAuth(async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
@@ -50,7 +51,7 @@ export default async function handler(
       message: 'Failed to process request'
     });
   }
-}
+})
 
 /**
  * GET /api/management/brands
