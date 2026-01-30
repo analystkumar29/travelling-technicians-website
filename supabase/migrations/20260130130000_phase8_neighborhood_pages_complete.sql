@@ -76,22 +76,22 @@ CREATE POLICY "anyone_can_read_neighborhood_pages" ON neighborhood_pages
 -- Only authenticated admin users can insert/update/delete
 CREATE POLICY "admin_can_write_neighborhood_pages" ON neighborhood_pages
   FOR INSERT WITH CHECK (
-    auth.uid() IN (
-      SELECT id FROM users WHERE email IN ('admin@travellingtechnicians.ca')
+    auth.uid() IS NOT NULL AND (
+      auth.jwt() ->> 'email' = 'admin@travellingtechnicians.ca'
     )
   );
 
 CREATE POLICY "admin_can_update_neighborhood_pages" ON neighborhood_pages
   FOR UPDATE USING (
-    auth.uid() IN (
-      SELECT id FROM users WHERE email IN ('admin@travellingtechnicians.ca')
+    auth.uid() IS NOT NULL AND (
+      auth.jwt() ->> 'email' = 'admin@travellingtechnicians.ca'
     )
   );
 
 CREATE POLICY "admin_can_delete_neighborhood_pages" ON neighborhood_pages
   FOR DELETE USING (
-    auth.uid() IN (
-      SELECT id FROM users WHERE email IN ('admin@travellingtechnicians.ca')
+    auth.uid() IS NOT NULL AND (
+      auth.jwt() ->> 'email' = 'admin@travellingtechnicians.ca'
     )
   );
 
