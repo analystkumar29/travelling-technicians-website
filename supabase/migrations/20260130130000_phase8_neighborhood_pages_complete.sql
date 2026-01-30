@@ -338,7 +338,7 @@ INSERT INTO neighborhood_pages (
   'Coquitlam Town Centre is rapidly growing with new condominiums and commercial spaces. Many professionals appreciate our convenient doorstep repair service in their busy lives.',
   ARRAY['iPhone damage in office towers', 'MacBook issues for tech workers'],
   ARRAY['V3B'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Coquitlam' LIMIT 1),
@@ -352,7 +352,7 @@ INSERT INTO neighborhood_pages (
   'Central Coquitlam is an established family-friendly area with excellent community amenities. Our repair service fits perfectly into the neighborhood''s family-focused lifestyle.',
   ARRAY['Device repair for busy families'],
   ARRAY['V3J'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Coquitlam' LIMIT 1),
@@ -366,7 +366,7 @@ INSERT INTO neighborhood_pages (
   'Pinetree is a solid residential neighborhood in Coquitlam where families have called home for generations. We provide reliable, affordable repair service.',
   ARRAY['Device repair for Pinetree families'],
   ARRAY['V3B'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Coquitlam' LIMIT 1),
@@ -380,7 +380,7 @@ INSERT INTO neighborhood_pages (
   'Westwood Plateau is a modern suburban community with contemporary design and amenities. Tech-savvy residents appreciate our efficient repair service.',
   ARRAY['Device repair for tech-savvy residents'],
   ARRAY['V3C'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Coquitlam' LIMIT 1),
@@ -394,7 +394,7 @@ INSERT INTO neighborhood_pages (
   'Maillardville is a historic neighborhood with unique character and community spirit. We serve the residents here with respectful and professional service.',
   ARRAY['Device repair for Maillardville community'],
   ARRAY['V3K'],
-  NOW(), true
+  NOW()
 ),
 
 -- Richmond: 5 neighborhoods
@@ -410,7 +410,7 @@ INSERT INTO neighborhood_pages (
   'Richmond City Centre is the cultural and commercial hub with diverse communities from around the world. Our technicians speak multiple languages and understand the area''s diverse needs.',
   ARRAY['Device repair for multicultural community', 'Multiple language support available'],
   ARRAY['V6X'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Richmond' LIMIT 1),
@@ -424,7 +424,7 @@ INSERT INTO neighborhood_pages (
   'Ironwood is an established family neighborhood in Richmond where many families have lived for years. Our repair service is trusted by the community.',
   ARRAY['Device repair for Richmond families'],
   ARRAY['V7A'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Richmond' LIMIT 1),
@@ -438,7 +438,7 @@ INSERT INTO neighborhood_pages (
   'Sea Island includes Richmond''s airport area and many professionals who travel for business. We fix devices quickly so business travelers can stay connected.',
   ARRAY['Fast repair for traveling professionals', 'Airport area accessibility'],
   ARRAY['V7B'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Richmond' LIMIT 1),
@@ -452,7 +452,7 @@ INSERT INTO neighborhood_pages (
   'Steveston is Richmond''s historic fishing village with unique character and waterfront beauty. Our service helps keep this tight-knit community connected.',
   ARRAY['Device repair for Steveston residents'],
   ARRAY['V7E'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Richmond' LIMIT 1),
@@ -466,7 +466,7 @@ INSERT INTO neighborhood_pages (
   'South Arm is a quiet, peaceful neighborhood where residents value reliability and service quality. We are trusted to provide both.',
   ARRAY['Device repair for South Arm community'],
   ARRAY['V7A'],
-  NOW(), true
+  NOW()
 ),
 
 -- North Vancouver: 5 neighborhoods
@@ -482,7 +482,7 @@ INSERT INTO neighborhood_pages (
   'Lower Lonsdale is North Vancouver''s waterfront community center with excellent transit connections. Our service is perfect for busy commuters and residents.',
   ARRAY['Device damage from waterfront recreation'],
   ARRAY['V7M'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'North Vancouver' LIMIT 1),
@@ -496,7 +496,7 @@ INSERT INTO neighborhood_pages (
   'Central North Vancouver is an established residential community with strong community values. We serve this area with expertise and integrity.',
   ARRAY['Device repair for North Shore families'],
   ARRAY['V7L'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'North Vancouver' LIMIT 1),
@@ -510,7 +510,7 @@ INSERT INTO neighborhood_pages (
   'Mountainside offers access to outdoor activities and natural beauty. Active residents appreciate our convenient repair service.',
   ARRAY['Device damage from outdoor activities', 'Quick repair before mountain adventures'],
   ARRAY['V7H'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'North Vancouver' LIMIT 1),
@@ -524,7 +524,7 @@ INSERT INTO neighborhood_pages (
   'Seymour is a peaceful suburban area where residents value quality service and reliability.',
   ARRAY['Device repair for Seymour residents'],
   ARRAY['V7G'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'North Vancouver' LIMIT 1),
@@ -538,7 +538,7 @@ INSERT INTO neighborhood_pages (
   'Upper Lonsdale is an established family neighborhood with excellent schools and parks. Families trust us with their device repairs.',
   ARRAY['Device repair for North Shore schools'],
   ARRAY['V7L'],
-  NOW(), true
+  NOW()
 ),
 
 -- Surrey: 8 neighborhoods
@@ -554,7 +554,7 @@ INSERT INTO neighborhood_pages (
   'Surrey City Centre is the vibrant heart of Surrey with modern development and diverse communities. Our repair service matches the energy and professionalism of this growing area.',
   ARRAY['iPhone damage from urban commuting', 'MacBook issues for office workers'],
   ARRAY['V3T'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Surrey' LIMIT 1),
@@ -568,7 +568,7 @@ INSERT INTO neighborhood_pages (
   'North Surrey is an established family neighborhood where many residents have built their lives. We provide reliable, trustworthy repair service.',
   ARRAY['Device repair for Surrey families'],
   ARRAY['V3R'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Surrey' LIMIT 1),
@@ -582,7 +582,7 @@ INSERT INTO neighborhood_pages (
   'Whalley is a busy mixed-use neighborhood where our service helps keep residents and businesses connected.',
   ARRAY['Device repair for Whalley community'],
   ARRAY['V3S'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Surrey' LIMIT 1),
@@ -596,7 +596,7 @@ INSERT INTO neighborhood_pages (
   'South Surrey offers a peaceful suburban lifestyle. We serve this community with professional and friendly service.',
   ARRAY['Device repair for South Surrey families'],
   ARRAY['V4A'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Surrey' LIMIT 1),
@@ -610,7 +610,7 @@ INSERT INTO neighborhood_pages (
   'Cloverdale maintains its community character while growing. We respect the neighborhood''s values in our service.',
   ARRAY['Device repair for Cloverdale community'],
   ARRAY['V3S'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Surrey' LIMIT 1),
@@ -624,7 +624,7 @@ INSERT INTO neighborhood_pages (
   'Fleetwood is a vibrant multicultural neighborhood. Our technicians understand and respect the community''s diversity.',
   ARRAY['Device repair for diverse Fleetwood community'],
   ARRAY['V3R'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Surrey' LIMIT 1),
@@ -638,7 +638,7 @@ INSERT INTO neighborhood_pages (
   'Guildford is an established neighborhood with good shopping and community services. Our repair service is convenient and reliable.',
   ARRAY['Device repair for Guildford residents'],
   ARRAY['V3R'],
-  NOW(), true
+  NOW()
 ),
 (
   (SELECT id FROM service_locations WHERE city_name = 'Surrey' LIMIT 1),
@@ -652,7 +652,7 @@ INSERT INTO neighborhood_pages (
   'East Surrey is peaceful and friendly. We appreciate serving this wonderful community.',
   ARRAY['Device repair for East Surrey residents'],
   ARRAY['V4A'],
-  NOW(), true
+  NOW()
 )
 ON CONFLICT (city_id, slug) DO NOTHING;
 
