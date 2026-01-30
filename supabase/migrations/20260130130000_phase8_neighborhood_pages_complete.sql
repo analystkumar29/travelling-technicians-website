@@ -99,6 +99,15 @@ CREATE POLICY "admin_can_delete_neighborhood_pages" ON neighborhood_pages
 -- STEP 5: Trigger for updated_at
 -- ============================================================================
 
+-- Create trigger function if it doesn't exist
+CREATE OR REPLACE FUNCTION update_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 DROP TRIGGER IF EXISTS update_neighborhood_pages_timestamp ON neighborhood_pages;
 
 CREATE TRIGGER update_neighborhood_pages_timestamp
