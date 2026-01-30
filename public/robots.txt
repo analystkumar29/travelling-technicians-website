@@ -4,6 +4,7 @@ Allow: /
 # Important pages for SEO
 Allow: /services/
 Allow: /repair/
+Allow: /locations/
 Allow: /service-areas/
 Allow: /blog/
 Allow: /contact
