@@ -1,6 +1,12 @@
 import React from 'react';
 import { getSiteUrl } from '@/utils/supabaseClient';
 import { validateStructuredData } from '@/utils/structuredDataValidation';
+import { PlaceSchema, PlaceSchemaProps } from './PlaceSchema';
+import { CityLocalBusinessSchema, CityLocalBusinessSchemaProps } from './CityLocalBusinessSchema';
+
+// Re-export new schema components
+export { PlaceSchema, type PlaceSchemaProps };
+export { CityLocalBusinessSchema, type CityLocalBusinessSchemaProps };
 
 export interface LocalBusinessSchemaProps {
   name?: string;
@@ -105,21 +111,20 @@ export function LocalBusinessSchema({
     "Sa 09:00-18:00",
     "Su 10:00-17:00"
   ],
-  priceRange = "$$",
+  priceRange = "$79-$299",
   areaServed = [
-    "Vancouver, BC",
+    "Abbotsford, BC",
     "Burnaby, BC",
-    "Surrey, BC",
-    "Richmond, BC",
-    "Coquitlam, BC",
-    "North Vancouver, BC",
-    "West Vancouver, BC",
-    "New Westminster, BC",
+    "Chilliwack, BC",
     "Delta, BC",
     "Langley, BC",
-    "Lower Mainland, BC",
-    "Fraser Valley, BC",
-    "Metro Vancouver, BC"
+    "New Westminster, BC",
+    "North Vancouver, BC",
+    "Richmond, BC",
+    "Squamish, BC",
+    "Surrey, BC",
+    "Vancouver, BC",
+    "West Vancouver, BC"
   ],
   sameAs = [
     "https://www.facebook.com/travellingtechnicians",
@@ -231,14 +236,14 @@ export function ServiceSchema({
   provider = "The Travelling Technicians",
   serviceType,
   areaServed = [
-    "Vancouver, BC", "Burnaby, BC", "Surrey, BC", "Richmond, BC",
-    "Coquitlam, BC", "North Vancouver, BC", "West Vancouver, BC",
-    "New Westminster, BC", "Delta, BC", "Langley, BC",
-    "Lower Mainland, BC", "Fraser Valley, BC", "Metro Vancouver, BC"
+    "Abbotsford, BC", "Burnaby, BC", "Chilliwack, BC", "Delta, BC",
+    "Langley, BC", "New Westminster, BC", "North Vancouver, BC",
+    "Richmond, BC", "Squamish, BC", "Surrey, BC",
+    "Vancouver, BC", "West Vancouver, BC"
   ],
   hasOfferCatalog,
   doorstepService = true,
-  warranty = "1 year"
+  warranty = "90 days"
 }: ServiceSchemaProps) {
   const siteUrl = getSiteUrl();
   
