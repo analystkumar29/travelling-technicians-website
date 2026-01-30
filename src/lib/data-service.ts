@@ -1107,7 +1107,7 @@ export async function getCityData(citySlug: string) {
     const { data, error } = await supabase
       .from('service_locations')
       .select('*')
-      .ilike('city', citySlug.replace('-', ' '))
+      .ilike('city_name', citySlug.replace('-', ' '))
       .eq('is_active', true)
       .single();
 
@@ -1129,26 +1129,34 @@ export async function getCityData(citySlug: string) {
  * Get all active cities for sitemap and ISR paths
  */
 export async function getAllActiveCities() {
+  let supabase;
   try {
-    const supabase = getServiceSupabase();
-    
+    supabase = getServiceSupabase();
+  } catch (error) {
+    dataLogger.warn('Failed to create Supabase client, returning empty cities array', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    return [];
+  }
+  
+  try {
     const { data, error } = await supabase
       .from('service_locations')
-      .select('city')
+      .select('city_name')
       .eq('is_active', true)
-      .order('city');
+      .order('city_name');
 
     if (error) {
-      dataLogger.warn('Error fetching active cities, using fallback', { error: error.message });
+      dataLogger.warn('Error fetching active cities from database, using fallback', { error: error.message });
       return [];
     }
 
     return data.map(item => ({
-      city: item.city,
-      slug: item.city.toLowerCase().replace(/\s+/g, '-')
+      city: item.city_name,
+      slug: item.city_name.toLowerCase().replace(/\s+/g, '-')
     }));
   } catch (error) {
-    dataLogger.error('Error fetching active cities', {
+    dataLogger.error('Unexpected error fetching active cities', {
       error: error instanceof Error ? error.message : 'Unknown error'
     });
     return [];
@@ -1173,8 +1181,8 @@ export async function getNearbyLocations(
     // First, get the current city's coordinates
     const { data: currentCityData, error: currentCityError } = await supabase
       .from('service_locations')
-      .select('id, city, latitude, longitude')
-      .ilike('city', currentCitySlug.replace('-', ' '))
+      .select('id, city_name, latitude, longitude')
+      .ilike('city_name', currentCitySlug.replace('-', ' '))
       .eq('is_active', true)
       .single();
     
@@ -1274,15 +1282,12 @@ export async function getDynamicPricing(
   try {
     const supabase = getServiceSupabase();
     
-    // Map URL slugs to database names
+    // Map URL slugs to database names - only include currently active services
     const serviceMapping: Record<string, string> = {
-      'screen-repair': 'screen-replacement',
-      'battery-replacement': 'battery-replacement',
-      'charging-port-repair': 'charging-port-repair',
-      'laptop-screen-repair': 'laptop-screen-replacement',
-      'water-damage-repair': 'water-damage-repair',
-      'software-repair': 'software-repair',
-      'camera-repair': 'camera-repair'
+      'screen-repair': 'screen-replacement', // Generic - will match both mobile/laptop
+      'battery-replacement': 'battery-replacement', // Generic - will match both mobile/laptop
+      'laptop-screen-repair': 'screen-replacement-laptop', // Active laptop service
+      // Note: Other services are currently inactive
     };
     
     const modelMapping: Record<string, string> = {
@@ -1304,7 +1309,7 @@ export async function getDynamicPricing(
       const { data: cityData, error: cityError } = await supabase
         .from('service_locations')
         .select('price_adjustment_percentage')
-        .ilike('city', citySlug.replace('-', ' '))
+        .ilike('city_name', citySlug.replace('-', ' '))
         .eq('is_active', true)
         .single();
       
@@ -1424,9 +1429,17 @@ export async function getAllActiveServices(): Promise<Array<{
   base_price?: number;
   estimated_duration_minutes?: number;
 }>> {
+  let supabase;
   try {
-    const supabase = getServiceSupabase();
-    
+    supabase = getServiceSupabase();
+  } catch (error) {
+    dataLogger.warn('Failed to create Supabase client, returning empty services array', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    return [];
+  }
+  
+  try {
     // Fetch active services from database with device type info
     const { data, error } = await supabase
       .from('services')
@@ -1447,7 +1460,7 @@ export async function getAllActiveServices(): Promise<Array<{
       .order('sort_order', { ascending: true });
 
     if (error) {
-      dataLogger.warn('Error fetching active services, using fallback', { error: error.message });
+      dataLogger.warn('Error fetching active services from database, using fallback', { error: error.message });
       // Return empty array as fallback
       return [];
     }
@@ -1758,15 +1771,12 @@ export async function getServiceBySlug(serviceSlug: string): Promise<{
   try {
     const supabase = getServiceSupabase();
     
-    // Map URL slug to database service name
+    // Map URL slug to database service name - only include currently active services
     const serviceMapping: Record<string, string> = {
-      'screen-repair': 'screen-replacement',
-      'battery-replacement': 'battery-replacement',
-      'charging-port-repair': 'charging-port-repair',
-      'laptop-screen-repair': 'laptop-screen-replacement',
-      'water-damage-repair': 'water-damage-diagnostics',
-      'software-repair': 'software-repair',
-      'camera-repair': 'camera-repair'
+      'screen-repair': 'screen-replacement', // Generic - will match both mobile/laptop
+      'battery-replacement': 'battery-replacement', // Generic - will match both mobile/laptop
+      'laptop-screen-repair': 'screen-replacement-laptop', // Active laptop service
+      // Note: Other services are currently inactive
     };
     
     const serviceName = serviceMapping[serviceSlug] || serviceSlug;
@@ -1920,6 +1930,274 @@ export function clearCache() {
   globalCache.services = { data: null, timestamp: 0 };
   globalCache.testimonials = { data: null, timestamp: 0 };
   dataLogger.info('Data service cache cleared');
+}
+
+/**
+ * Get neighborhood data by city and neighborhood slug
+ * Phase 8.3: Fetches complete neighborhood data with Proof-of-Life stats and testimonials
+ */
+export async function getNeighborhoodData(citySlug: string, neighborhoodSlug: string): Promise<{
+  id: string;
+  neighborhoodName: string;
+  cityName: string;
+  latitude: number;
+  longitude: number;
+  monthlyIPhoneScreens: number;
+  monthlySamsungScreens: number;
+  monthlyPixelScreens: number;
+  monthlyMacbookScreens: number;
+  landmarkName: string;
+  landmarkDescription: string;
+  landmarkActivityWindow: string;
+  neighborhoodContent: string;
+  commonIssues: string[];
+  postalCodes: string[];
+  testimonials: any[];
+} | null> {
+  try {
+    const supabase = getServiceSupabase();
+
+    // First, get the city ID
+    const { data: cityData, error: cityError } = await supabase
+      .from('service_locations')
+      .select('id, city_name')
+      .ilike('city_name', citySlug.replace(/-/g, ' '))
+      .eq('is_active', true)
+      .single();
+
+    if (cityError || !cityData) {
+      dataLogger.warn(`City not found for slug ${citySlug}`, { error: cityError?.message });
+      return null;
+    }
+
+    // Fetch neighborhood data
+    const { data: neighborhoodData, error: neighborhoodError } = await supabase
+      .from('neighborhood_pages')
+      .select('*')
+      .eq('city_id', cityData.id)
+      .ilike('slug', neighborhoodSlug.replace(/-/g, ' '))
+      .eq('is_active', true)
+      .single();
+
+    if (neighborhoodError || !neighborhoodData) {
+      dataLogger.warn(`Neighborhood not found for city ${citySlug}, slug ${neighborhoodSlug}`, {
+        error: neighborhoodError?.message
+      });
+      return null;
+    }
+
+    dataLogger.info(`Fetched neighborhood data: ${neighborhoodData.neighborhood_name} in ${cityData.city_name}`);
+
+    return {
+      id: neighborhoodData.id,
+      neighborhoodName: neighborhoodData.neighborhood_name,
+      cityName: cityData.city_name,
+      latitude: parseFloat(neighborhoodData.latitude || '0'),
+      longitude: parseFloat(neighborhoodData.longitude || '0'),
+      monthlyIPhoneScreens: neighborhoodData.monthly_iphone_screens || 0,
+      monthlySamsungScreens: neighborhoodData.monthly_samsung_screens || 0,
+      monthlyPixelScreens: neighborhoodData.monthly_pixel_screens || 0,
+      monthlyMacbookScreens: neighborhoodData.monthly_macbook_screens || 0,
+      landmarkName: neighborhoodData.landmark_name || '',
+      landmarkDescription: neighborhoodData.landmark_description || '',
+      landmarkActivityWindow: neighborhoodData.landmark_activity_window || '',
+      neighborhoodContent: neighborhoodData.neighborhood_content || '',
+      commonIssues: neighborhoodData.common_issues || [],
+      postalCodes: neighborhoodData.postal_codes || [],
+      testimonials: neighborhoodData.testimonials || { primary: [], fallback: [] }
+    };
+  } catch (error) {
+    dataLogger.error(`Unexpected error fetching neighborhood data for ${citySlug}/${neighborhoodSlug}`, {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    return null;
+  }
+}
+
+/**
+ * Get all neighborhood paths for ISR static generation
+ * Phase 8.3: Returns array of { params: { city, neighborhood } } for getStaticPaths
+ */
+export async function getAllNeighborhoodPaths(): Promise<Array<{
+  city: string;
+  citySlug: string;
+  neighborhood: string;
+  neighborhoodSlug: string;
+}>> {
+  try {
+    const supabase = getServiceSupabase();
+
+    // Fetch all active neighborhoods with their city relationships
+    const { data: neighborhoodData, error } = await supabase
+      .from('neighborhood_pages')
+      .select(`
+        id,
+        neighborhood_name,
+        slug,
+        city_id,
+        service_locations!inner(city_name)
+      `)
+      .eq('is_active', true)
+      .eq('service_locations.is_active', true)
+      .order('service_locations.city_name', { ascending: true })
+      .order('neighborhood_name', { ascending: true });
+
+    if (error) {
+      dataLogger.warn('Error fetching neighborhood paths for ISR', { error: error.message });
+      return [];
+    }
+
+    if (!neighborhoodData || neighborhoodData.length === 0) {
+      dataLogger.info('No active neighborhoods found for ISR paths');
+      return [];
+    }
+
+    // Map to expected format
+    const paths = neighborhoodData.map(neighborhood => {
+      const cityData = neighborhood.service_locations && Array.isArray(neighborhood.service_locations)
+        ? neighborhood.service_locations[0]
+        : null;
+
+      return {
+        city: neighborhood.neighborhood_name,
+        citySlug: cityData?.city_name.toLowerCase().replace(/\s+/g, '-') || '',
+        neighborhood: neighborhood.neighborhood_name,
+        neighborhoodSlug: neighborhood.slug.toLowerCase().replace(/\s+/g, '-')
+      };
+    });
+
+    dataLogger.info(`Found ${paths.length} neighborhood paths for ISR generation`, {
+      neighborhoods: paths.length
+    });
+
+    return paths;
+  } catch (error) {
+    dataLogger.error('Unexpected error fetching all neighborhood paths', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    return [];
+  }
+}
+
+/**
+ * Get related neighborhoods for a specific neighborhood
+ * Phase 8.3: Returns 3-4 nearby neighborhoods for internal linking
+ */
+export async function getRelatedNeighborhoods(
+  citySlug: string,
+  currentNeighborhoodSlug: string
+): Promise<Array<{
+  neighborhood: string;
+  neighborhoodSlug: string;
+  city: string;
+  citySlug: string;
+  latitude: number;
+  longitude: number;
+}>> {
+  try {
+    const supabase = getServiceSupabase();
+
+    // Get current neighborhood data
+    const { data: currentCity, error: cityError } = await supabase
+      .from('service_locations')
+      .select('id, city_name')
+      .ilike('city_name', citySlug.replace(/-/g, ' '))
+      .eq('is_active', true)
+      .single();
+
+    if (cityError || !currentCity) {
+      dataLogger.warn(`City not found for related neighborhoods: ${citySlug}`, { error: cityError?.message });
+      return [];
+    }
+
+    const { data: currentNeighborhood, error: neighborhoodError } = await supabase
+      .from('neighborhood_pages')
+      .select('latitude, longitude')
+      .eq('city_id', currentCity.id)
+      .ilike('slug', currentNeighborhoodSlug.replace(/-/g, ' '))
+      .eq('is_active', true)
+      .single();
+
+    if (neighborhoodError || !currentNeighborhood) {
+      dataLogger.warn(`Neighborhood not found for related calculation: ${currentNeighborhoodSlug}`, {
+        error: neighborhoodError?.message
+      });
+      return [];
+    }
+
+    const currentLat = parseFloat(currentNeighborhood.latitude || '0');
+    const currentLng = parseFloat(currentNeighborhood.longitude || '0');
+
+    // Get all other neighborhoods in the same city
+    const { data: otherNeighborhoods, error } = await supabase
+      .from('neighborhood_pages')
+      .select(`
+        id,
+        neighborhood_name,
+        slug,
+        latitude,
+        longitude,
+        service_locations!inner(city_name)
+      `)
+      .eq('city_id', currentCity.id)
+      .not('slug', 'eq', currentNeighborhoodSlug)
+      .eq('is_active', true)
+      .order('neighborhood_name', { ascending: true });
+
+    if (error) {
+      dataLogger.warn('Error fetching related neighborhoods', { error: error.message });
+      return [];
+    }
+
+    if (!otherNeighborhoods || otherNeighborhoods.length === 0) {
+      dataLogger.info(`No other neighborhoods found in ${currentCity.city_name}`);
+      return [];
+    }
+
+    // Calculate distances and sort by proximity
+    const neighborhoodsWithDistance = otherNeighborhoods
+      .map(neighborhood => {
+        const lat = parseFloat(neighborhood.latitude || '0');
+        const lng = parseFloat(neighborhood.longitude || '0');
+
+        // Haversine formula for distance
+        const R = 6371; // Earth's radius in km
+        const dLat = (lat - currentLat) * Math.PI / 180;
+        const dLng = (lng - currentLng) * Math.PI / 180;
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(currentLat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) *
+          Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c;
+
+        const cityData = neighborhood.service_locations && Array.isArray(neighborhood.service_locations)
+          ? neighborhood.service_locations[0]
+          : null;
+
+        return {
+          neighborhood: neighborhood.neighborhood_name,
+          neighborhoodSlug: neighborhood.slug.toLowerCase().replace(/\s+/g, '-'),
+          city: cityData?.city_name || currentCity.city_name,
+          citySlug: citySlug,
+          latitude: lat,
+          longitude: lng,
+          distance: distance
+        };
+      })
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 4) // Return top 4 closest neighborhoods
+      .map(({ distance, ...rest }) => rest); // Remove distance from final output
+
+    dataLogger.info(`Found ${neighborhoodsWithDistance.length} related neighborhoods for ${currentNeighborhoodSlug}`);
+
+    return neighborhoodsWithDistance;
+  } catch (error) {
+    dataLogger.error(`Unexpected error fetching related neighborhoods`, {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    return [];
+  }
 }
 
 /**
