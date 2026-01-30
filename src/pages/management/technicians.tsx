@@ -1,47 +1,36 @@
 import { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
-import { supabase } from '@/utils/supabaseClient';
 import Link from 'next/link';
 import { 
-  FaUser, 
   FaUsers, 
   FaPlus,
-  FaEdit,
-  FaTrash,
-  FaPhone,
-  FaEnvelope,
+  FaWhatsapp,
+  FaStar,
+  FaBriefcase,
   FaCheckCircle,
   FaTimesCircle,
-  FaTools,
+  FaClock,
+  FaMoneyBillWave,
   FaMapMarkerAlt
 } from 'react-icons/fa';
+import { TechnicianRecord } from '@/types/admin';
 
-interface Technician {
-  id: string;
-  full_name: string;
-  email: string;
-  phone: string;
-  specializations: string[];
-  active_service_areas: string[];
-  is_active: boolean;
-  hourly_rate: number;
-  max_daily_bookings: number;
-  created_at: string;
+interface TechnicianWithZones extends TechnicianRecord {
+  service_zones?: any[];
 }
 
 export default function AdminTechnicians() {
-  const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const [technicians, setTechnicians] = useState<TechnicianWithZones[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showServiceZones, setShowServiceZones] = useState<string | null>(null);
   const [newTechnician, setNewTechnician] = useState({
     full_name: '',
+    whatsapp_number: '',
     email: '',
-    phone: '',
-    specializations: [],
-    active_service_areas: [],
-    hourly_rate: 0,
-    max_daily_bookings: 5
+    hourly_rate: 25.00,
+    max_daily_appointments: 100
   });
 
   useEffect(() => {
@@ -51,16 +40,15 @@ export default function AdminTechnicians() {
   const fetchTechnicians = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('technicians')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        setError(error.message);
-      } else {
-        setTechnicians(data || []);
+      const response = await fetch('/api/technicians');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
+      const data = await response.json();
+      setTechnicians(data || []);
+      setError(null);
     } catch (err) {
       setError('Failed to fetch technicians');
       console.error('Technician fetch error:', err);
@@ -71,13 +59,34 @@ export default function AdminTechnicians() {
 
   const toggleTechnicianStatus = async (id: string, currentStatus: boolean) => {
     try {
-      const { error } = await supabase
-        .from('technicians')
-        .update({ is_active: !currentStatus })
-        .eq('id', id);
+      const response = await fetch(`/api/technicians?id=${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: !currentStatus })
+      });
 
-      if (error) {
-        alert('Error updating technician status: ' + error.message);
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert('Error updating technician status: ' + errorData.error);
+      } else {
+        await fetchTechnicians();
+      }
+    } catch (err) {
+      alert('Failed to update technician status');
+    }
+  };
+
+  const updateTechnicianStatus = async (id: string, status: 'available' | 'busy' | 'offline') => {
+    try {
+      const response = await fetch(`/api/technicians?id=${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current_status: status })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert('Error updating technician status: ' + errorData.error);
       } else {
         await fetchTechnicians();
       }
@@ -88,30 +97,55 @@ export default function AdminTechnicians() {
 
   const addTechnician = async () => {
     try {
-      const { error } = await supabase
-        .from('technicians')
-        .insert([{
+      const response = await fetch('/api/technicians', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           ...newTechnician,
-          is_active: true
-        }]);
+          whatsapp_capable: true,
+          current_status: 'available',
+          is_active: true,
+          specializations: ['mobile', 'laptop'],
+          experience_years: 1,
+          rating: 5.00,
+          total_bookings_completed: 0
+        })
+      });
 
-      if (error) {
-        alert('Error adding technician: ' + error.message);
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert('Error adding technician: ' + errorData.error);
       } else {
         setShowAddForm(false);
         setNewTechnician({
           full_name: '',
+          whatsapp_number: '',
           email: '',
-          phone: '',
-          specializations: [],
-          active_service_areas: [],
-          hourly_rate: 0,
-          max_daily_bookings: 5
+          hourly_rate: 25.00,
+          max_daily_appointments: 100
         });
         await fetchTechnicians();
       }
     } catch (err) {
       alert('Failed to add technician');
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'available': return 'bg-green-100 text-green-800';
+      case 'busy': return 'bg-yellow-100 text-yellow-800';
+      case 'offline': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'available': return 'Available';
+      case 'busy': return 'Busy';
+      case 'offline': return 'Offline';
+      default: return status;
     }
   };
 
@@ -162,7 +196,7 @@ export default function AdminTechnicians() {
                   <FaUsers className="mr-3" />
                   Technician Management
                 </h1>
-                <p className="mt-2 text-gray-600">Manage your team of technicians (Future Feature)</p>
+                <p className="mt-2 text-gray-600">Manage your team of repair technicians</p>
               </div>
               <div className="flex space-x-3">
                 <Link
@@ -182,22 +216,8 @@ export default function AdminTechnicians() {
             </div>
           </div>
 
-          {/* Current Setup Message */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
-            <div className="flex items-center">
-              <FaUser className="h-8 w-8 text-blue-600 mr-4" />
-              <div>
-                <h3 className="text-lg font-medium text-blue-900">Solo Operation Mode</h3>
-                <p className="text-blue-700 mt-1">
-                  You're currently operating solo. This section will be useful when you're ready to hire additional technicians. 
-                  For now, all repairs are assigned to you by default.
-                </p>
-              </div>
-            </div>
-          </div>
-
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="bg-white overflow-hidden shadow rounded-lg">
               <div className="p-5">
                 <div className="flex items-center">
@@ -207,14 +227,14 @@ export default function AdminTechnicians() {
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 truncate">Total Technicians</dt>
-                      <dd className="text-lg font-medium text-gray-900">{technicians.length || 1}</dd>
+                      <dd className="text-lg font-medium text-gray-900">{technicians.length}</dd>
                     </dl>
                   </div>
                 </div>
               </div>
               <div className="bg-gray-50 px-5 py-3">
                 <div className="text-sm text-gray-500">
-                  {technicians.length === 0 ? 'You (Solo)' : `${technicians.filter(t => t.is_active).length} active`}
+                  {technicians.filter(t => t.is_active).length} active
                 </div>
               </div>
             </div>
@@ -227,9 +247,9 @@ export default function AdminTechnicians() {
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Active</dt>
+                      <dt className="text-sm font-medium text-gray-500 truncate">Available Now</dt>
                       <dd className="text-lg font-medium text-gray-900">
-                        {technicians.filter(t => t.is_active).length || 1}
+                        {technicians.filter(t => t.current_status === 'available').length}
                       </dd>
                     </dl>
                   </div>
@@ -241,13 +261,34 @@ export default function AdminTechnicians() {
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <FaTools className="h-6 w-6 text-purple-600" />
+                    <FaStar className="h-6 w-6 text-yellow-600" />
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Specializations</dt>
+                      <dt className="text-sm font-medium text-gray-500 truncate">Avg Rating</dt>
                       <dd className="text-lg font-medium text-gray-900">
-                        {technicians.length > 0 ? 'Mobile & Laptop' : 'All Services'}
+                        {technicians.length > 0 
+                          ? (technicians.reduce((sum, t) => sum + t.rating, 0) / technicians.length).toFixed(1)
+                          : '5.0'
+                        }
+                      </dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <FaBriefcase className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">Total Bookings</dt>
+                      <dd className="text-lg font-medium text-gray-900">
+                        {technicians.reduce((sum, t) => sum + t.total_bookings_completed, 0)}
                       </dd>
                     </dl>
                   </div>
@@ -265,7 +306,7 @@ export default function AdminTechnicians() {
               <div className="px-6 py-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
                     <input
                       type="text"
                       value={newTechnician.full_name}
@@ -275,7 +316,22 @@ export default function AdminTechnicians() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">WhatsApp Number *</label>
+                    <div className="flex">
+                      <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
+                        <FaWhatsapp className="h-4 w-4" />
+                      </span>
+                      <input
+                        type="tel"
+                        value={newTechnician.whatsapp_number}
+                        onChange={(e) => setNewTechnician({ ...newTechnician, whatsapp_number: e.target.value })}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-r-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="+1 234 567 8900"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email (Optional)</label>
                     <input
                       type="email"
                       value={newTechnician.email}
@@ -285,37 +341,37 @@ export default function AdminTechnicians() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                    <input
-                      type="tel"
-                      value={newTechnician.phone}
-                      onChange={(e) => setNewTechnician({ ...newTechnician, phone: e.target.value })}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
-                      placeholder="Enter phone number"
-                    />
-                  </div>
-                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Hourly Rate ($)</label>
                     <input
                       type="number"
+                      step="0.01"
                       value={newTechnician.hourly_rate}
                       onChange={(e) => setNewTechnician({ ...newTechnician, hourly_rate: parseFloat(e.target.value) })}
                       className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
-                      placeholder="0"
+                      placeholder="25.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Max Daily Appointments</label>
+                    <input
+                      type="number"
+                      value={newTechnician.max_daily_appointments}
+                      onChange={(e) => setNewTechnician({ ...newTechnician, max_daily_appointments: parseInt(e.target.value) })}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="100"
                     />
                   </div>
                 </div>
                 <div className="mt-6 flex justify-end space-x-3">
                   <button
                     onClick={() => setShowAddForm(false)}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={addTechnician}
-                    disabled={!newTechnician.full_name || !newTechnician.email}
-                    className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 disabled:opacity-50"
+                    className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
                   >
                     Add Technician
                   </button>
@@ -324,130 +380,155 @@ export default function AdminTechnicians() {
             </div>
           )}
 
-          {/* Technicians List */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-md">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Technician Team</h3>
+          {/* Technicians Table */}
+          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div className="px-4 py-5 sm:px-6">
+              <h3 className="text-lg leading-6 font-medium text-gray-900">
+                Technician List ({technicians.length})
+              </h3>
             </div>
-            <ul className="divide-y divide-gray-200">
+            <div className="border-t border-gray-200">
               {technicians.length === 0 ? (
-                <li className="px-6 py-8 text-center">
-                  <div className="text-center">
-                    <FaUser className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Solo Operation</h3>
-                    <p className="text-gray-500 mb-4">
-                      You're currently the only technician. When you're ready to scale, you can add team members here.
-                    </p>
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <div className="flex items-center">
-                        <FaUser className="h-6 w-6 text-blue-600 mr-3" />
-                        <div className="text-left">
-                          <h4 className="font-medium text-blue-900">You (Owner/Technician)</h4>
-                          <p className="text-sm text-blue-700">Handling all repairs and customer service</p>
-                          <p className="text-sm text-blue-600">Status: Active • Specialization: All Services</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </li>
+                <div className="text-center py-12">
+                  <p className="text-gray-500">No technicians found. Add your first technician!</p>
+                </div>
               ) : (
-                technicians.map((technician) => (
-                  <li key={technician.id} className="px-6 py-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <div>
-                            <h4 className="text-lg font-medium text-gray-900 flex items-center">
-                              <FaUser className="mr-2 text-primary-600" />
-                              {technician.full_name}
-                            </h4>
-                            <p className="text-sm text-gray-500">{technician.email}</p>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
-                              technician.is_active 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {technician.is_active ? 'Active' : 'Inactive'}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-600 mb-3">
-                          <div className="flex items-center">
-                            <FaPhone className="mr-1" />
-                            <a href={`tel:${technician.phone}`} className="text-blue-600 hover:text-blue-800">
-                              {technician.phone}
-                            </a>
-                          </div>
-                          <div className="flex items-center">
-                            <FaEnvelope className="mr-1" />
-                            <a href={`mailto:${technician.email}`} className="text-blue-600 hover:text-blue-800">
-                              {technician.email}
-                            </a>
-                          </div>
-                          <div>
-                            <strong>Rate:</strong> ${technician.hourly_rate}/hour
-                          </div>
-                          <div>
-                            <strong>Max Daily Bookings:</strong> {technician.max_daily_bookings}
-                          </div>
-                          <div>
-                            <strong>Joined:</strong> {new Date(technician.created_at).toLocaleDateString()}
-                          </div>
-                        </div>
-
-                        {technician.specializations && technician.specializations.length > 0 && (
-                          <div className="mb-2">
-                            <strong className="text-sm text-gray-600">Specializations:</strong>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {technician.specializations.map((spec, index) => (
-                                <span key={index} className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
-                                  {spec}
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Technician
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Contact
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Performance
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {technicians.map((technician) => (
+                        <tr key={technician.id}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-10 w-10 bg-primary-100 rounded-full flex items-center justify-center">
+                                <span className="text-primary-600 font-medium">
+                                  {technician.full_name.charAt(0)}
                                 </span>
-                              ))}
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {technician.full_name}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {technician.experience_years} years experience
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        )}
-
-                        {technician.active_service_areas && technician.active_service_areas.length > 0 && (
-                          <div className="mb-2">
-                            <strong className="text-sm text-gray-600">Service Areas:</strong>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {technician.active_service_areas.map((area, index) => (
-                                <span key={index} className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
-                                  {area}
-                                </span>
-                              ))}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              <div className="flex items-center">
+                                <FaWhatsapp className="h-4 w-4 text-green-500 mr-2" />
+                                {technician.whatsapp_number}
+                              </div>
+                              {technician.email && (
+                                <div className="text-sm text-gray-500 mt-1">
+                                  {technician.email}
+                                </div>
+                              )}
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 flex space-x-2">
-                      <button
-                        onClick={() => toggleTechnicianStatus(technician.id, technician.is_active)}
-                        className={`px-3 py-1 text-sm rounded ${
-                          technician.is_active
-                            ? 'bg-red-600 text-white hover:bg-red-700'
-                            : 'bg-green-600 text-white hover:bg-green-700'
-                        }`}
-                      >
-                        {technician.is_active ? 'Deactivate' : 'Activate'}
-                      </button>
-                      <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
-                        Edit
-                      </button>
-                    </div>
-                  </li>
-                ))
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex flex-col space-y-2">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(technician.current_status)}`}>
+                                {getStatusText(technician.current_status)}
+                              </span>
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => updateTechnicianStatus(technician.id, 'available')}
+                                  className={`text-xs px-2 py-1 rounded ${technician.current_status === 'available' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}
+                                >
+                                  Available
+                                </button>
+                                <button
+                                  onClick={() => updateTechnicianStatus(technician.id, 'busy')}
+                                  className={`text-xs px-2 py-1 rounded ${technician.current_status === 'busy' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}`}
+                                >
+                                  Busy
+                                </button>
+                                <button
+                                  onClick={() => updateTechnicianStatus(technician.id, 'offline')}
+                                  className={`text-xs px-2 py-1 rounded ${technician.current_status === 'offline' ? 'bg-gray-100 text-gray-800' : 'bg-gray-100 text-gray-800'}`}
+                                >
+                                  Offline
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              <div className="flex items-center">
+                                <FaStar className="h-4 w-4 text-yellow-500 mr-2" />
+                                {technician.rating.toFixed(1)} / 5.0
+                              </div>
+                              <div className="text-sm text-gray-500 mt-1">
+                                <FaBriefcase className="h-4 w-4 inline mr-1" />
+                                {technician.total_bookings_completed} bookings
+                              </div>
+                              <div className="text-sm text-gray-500 mt-1">
+                                <FaMoneyBillWave className="h-4 w-4 inline mr-1" />
+                                ${technician.hourly_rate}/hour
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => toggleTechnicianStatus(technician.id, technician.is_active)}
+                                className={`px-3 py-1 rounded text-sm ${technician.is_active ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
+                              >
+                                {technician.is_active ? 'Deactivate' : 'Activate'}
+                              </button>
+                              <button
+                                onClick={() => setShowServiceZones(technician.id === showServiceZones ? null : technician.id)}
+                                className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200"
+                              >
+                                <FaMapMarkerAlt className="h-4 w-4 inline mr-1" />
+                                Zones
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
-            </ul>
+            </div>
           </div>
+
+          {/* Service Zones Panel */}
+          {showServiceZones && (
+            <div className="bg-white shadow rounded-lg mt-8">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900">Service Zones</h3>
+              </div>
+              <div className="px-6 py-4">
+                <p className="text-gray-600 mb-4">Service zones management coming soon...</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </Layout>
   );
-} 
+}

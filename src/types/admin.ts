@@ -117,39 +117,77 @@ export interface DynamicPricingRecord {
 }
 
 /**
- * Audit Log Record
- * Tracks admin actions for compliance
+ * Technician Record (repair technicians)
+ * Aligned with actual database schema after migration
  */
-export interface AuditLogRecord {
+export interface TechnicianRecord {
   id: string;  // UUID
-  action: string;  // e.g., "created", "updated", "deleted"
-  table_name: string;  // e.g., "dynamic_pricing"
-  record_id: string;  // UUID of affected record
-  admin_username: string;
-  old_values?: Record<string, any>;  // JSON before change
-  new_values?: Record<string, any>;  // JSON after change
-  created_at: string;
+  full_name: string;
+  whatsapp_number: string;  // Primary contact (unique)
+  whatsapp_capable: boolean;
+  current_status: 'available' | 'busy' | 'offline';
+  is_active: boolean;
+  email?: string;  // Optional email for notifications
+  phone?: string;  // Optional regular phone number
+  specializations: string[];  // JSONB array of device types/services
+  hourly_rate: number;  // Default: 25.00
+  max_daily_appointments: number;  // Default: 100
+  notes?: string;  // Administrative notes
+  experience_years: number;  // Default: 1
+  rating: number;  // Average customer rating (1.00-5.00)
+  total_bookings_completed: number;  // Total bookings completed
+  created_at?: string;
+  
+  // Joined data from relationships
+  service_zones?: TechnicianServiceZoneRecord[];
 }
 
 /**
- * Review Queue Item
- * Quality control workflow
+ * Technician Service Zone Record
+ * Links technicians to service locations with priority
  */
-export interface ReviewQueueRecord {
+export interface TechnicianServiceZoneRecord {
   id: string;  // UUID
-  table_name: string;  // e.g., "device_models"
-  record_id: string;  // UUID of record to review
-  review_type: string;  // e.g., "quality_check", "approval"
-  priority: 'low' | 'normal' | 'high' | 'urgent';
-  status: 'pending' | 'in_review' | 'approved' | 'rejected';
-  assigned_to?: string;  // Admin username
-  created_by: string;
-  review_notes?: string;
-  review_data?: Record<string, any>;  // JSON context
-  deadline?: string;
-  created_at: string;
-  updated_at?: string;
+  technician_id: string;  // FK to technicians (UUID)
+  location_id: string;  // FK to service_locations (UUID)
+  priority: number;  // Default: 1
+  is_primary: boolean;  // Default: false
+  travel_time_minutes?: number;  // Estimated travel time
+  service_fee_adjustment: number;  // Default: 0.00
+  created_at?: string;
+  
+  // Joined data from relationships
+  technician?: TechnicianRecord;
+  location?: ServiceLocationRecord;
 }
+
+/**
+ * Service Location Record (cities/areas served)
+ */
+export interface ServiceLocationRecord {
+  id: string;  // UUID
+  city_name: string;
+  slug: string;
+  base_travel_fee: number;
+  travel_fee_rules: Record<string, any>;  // JSONB
+  is_active: boolean;
+  created_at?: string;
+}
+
+/**
+ * Technician Availability Record
+ * Weekly availability schedule for technicians
+ */
+export interface TechnicianAvailabilityRecord {
+  id: string;  // UUID
+  technician_id: string;  // FK to technicians (UUID)
+  day_of_week: number;  // 0=Sunday, 6=Saturday
+  start_time: string;  // Time format
+  end_time: string;  // Time format
+  is_available: boolean;
+  created_at?: string;
+}
+
 
 // ============================================================================
 // API REQUEST/RESPONSE TYPES
