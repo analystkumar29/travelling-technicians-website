@@ -233,7 +233,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     }
     setShowBrandWarning(false);
     return true;
-  }, [deviceBrand, methods]);
+  }, [methods]);
   
   // Apply conditional validation for customBrand
   useEffect(() => {
@@ -248,7 +248,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       // Unregister to remove validation when not needed
       unregister('customBrand');
     }
-  }, [deviceBrand]); // Remove methods from dependency array to prevent infinite loop
+  }, [deviceBrand, methods]);
 
   // Check localStorage for saved address data when component mounts
   useEffect(() => {

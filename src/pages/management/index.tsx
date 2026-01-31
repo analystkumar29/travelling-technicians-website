@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Layout from '@/components/layout/Layout';
@@ -142,7 +142,7 @@ export default withAuth(function AdminManagement() {
     };
     
     checkAndFetch();
-  }, []);
+  }, [fetchManagementData]);
 
   // Logout function
   const handleLogout = async () => {
@@ -181,7 +181,7 @@ export default withAuth(function AdminManagement() {
     }
   };
 
-  const fetchManagementData = async () => {
+  const fetchManagementData = useCallback(async () => {
     try {
       setLoading(true);
       await Promise.all([
@@ -195,7 +195,7 @@ export default withAuth(function AdminManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const fetchStats = async () => {
     const response = await authFetch('/api/bookings');

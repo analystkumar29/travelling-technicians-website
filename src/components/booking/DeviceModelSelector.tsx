@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 // Define types for device models
 type DeviceType = 'mobile' | 'laptop' | 'tablet';
@@ -102,16 +102,7 @@ export default function DeviceModelSelector({
   const normalizedBrand = brand?.toLowerCase();
 
   // Fetch models from API when brand or device type changes
-  useEffect(() => {
-    if (!deviceType || !brand || brand.toLowerCase() === 'other') {
-      setModels([]);
-      return;
-    }
-
-    fetchModels();
-  }, [deviceType, brand]);
-
-  const fetchModels = async () => {
+  const fetchModels = useCallback(async () => {
     setLoading(true);
     setError(null);
     
@@ -148,7 +139,16 @@ export default function DeviceModelSelector({
     } finally {
       setLoading(false);
     }
-  };
+  }, [normalizedBrand, normalizedDeviceType]);
+
+  useEffect(() => {
+    if (!deviceType || !brand || brand.toLowerCase() === 'other') {
+      setModels([]);
+      return;
+    }
+
+    fetchModels();
+  }, [deviceType, brand, fetchModels]);
 
   // Fallback static data (temporary until API is fully implemented)
   const getFallbackModels = (): Model[] => {

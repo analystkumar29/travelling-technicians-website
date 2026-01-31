@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 interface PriceCalculation {
   service: {
@@ -66,7 +66,10 @@ export function usePriceCalculation({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const servicesList = Array.isArray(services) ? services : services ? [services] : [];
+  const servicesList = useMemo(
+    () => (Array.isArray(services) ? services : services ? [services] : []),
+    [services]
+  );
 
   const fetchPricing = useCallback(async () => {
     if (!enabled || !deviceType || !brand || !model || servicesList.length === 0) {

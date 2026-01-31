@@ -155,7 +155,7 @@ export default function Home({
     }, 5000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [testimonials.length]);
 
   // Smart FAB scroll behavior
   useEffect(() => {
