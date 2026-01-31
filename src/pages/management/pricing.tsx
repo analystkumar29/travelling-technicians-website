@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
 import { authFetch } from '@/utils/auth';
@@ -68,12 +68,7 @@ export default function PricingAdmin() {
   const [editingRows, setEditingRows] = useState<{[key: string]: {base_price: string}}>({}); 
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  // Load all data on mount
-  useEffect(() => {
-    loadAllData();
-  }, []);
-
-  const loadAllData = async () => {
+  const loadAllData = useCallback(async () => {
     setLoading(true);
     try {
       await Promise.all([
@@ -86,7 +81,12 @@ export default function PricingAdmin() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Load all data on mount
+  useEffect(() => {
+    loadAllData();
+  }, [loadAllData]);
 
   const loadDeviceTypes = async () => {
     try {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Layout from '@/components/layout/Layout';
 import { authFetch, handleAuthError } from '@/utils/auth';
 import Link from 'next/link';
@@ -69,14 +69,6 @@ export default function AdminWarranties() {
     search: ''
   });
 
-  useEffect(() => {
-    fetchWarranties();
-  }, []);
-
-  useEffect(() => {
-    applyFilters();
-  }, [warranties, filters]);
-
   const fetchWarranties = async () => {
     try {
       setLoading(true);
@@ -95,7 +87,7 @@ export default function AdminWarranties() {
     }
   };
 
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...warranties];
 
     // Status filter
@@ -127,7 +119,15 @@ export default function AdminWarranties() {
     }
 
     setFilteredWarranties(filtered);
-  };
+  }, [warranties, filters]);
+
+  useEffect(() => {
+    fetchWarranties();
+  }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [warranties, filters, applyFilters]);
 
   const updateWarrantyStatus = async (id: string, newStatus: string) => {
     try {

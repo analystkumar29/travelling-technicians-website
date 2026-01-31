@@ -248,7 +248,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       // Unregister to remove validation when not needed
       unregister('customBrand');
     }
-  }, [deviceBrand, methods.register, methods.unregister]);
+  }, [deviceBrand, methods]);
 
   // Check localStorage for saved address data when component mounts
   useEffect(() => {
@@ -282,7 +282,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     } catch (error) {
       console.error('Error parsing saved location data:', error);
     }
-  }, []); // Empty dependency array - only run on mount
+  }, [methods]); // Empty dependency array - only run on mount
 
   // Placeholder step titles
   const steps = [
@@ -679,13 +679,15 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         <div className="flex items-center p-3 cursor-pointer">
                           <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center mr-3">
                             {logo ? (
-                              <Image
-                                src={logo}
-                                alt={`${brand.name} logo`}
-                                width={32}
-                                height={32}
-                                className="w-8 h-8 object-contain"
-                              />
+                              <div className="relative w-8 h-8 flex items-center justify-center">
+                                <Image
+                                  src={logo}
+                                  alt={`${brand.name} logo`}
+                                  fill
+                                  className="object-contain"
+                                  sizes="32px"
+                                />
+                              </div>
                             ) : (
                               <div className="w-8 h-8 flex items-center justify-center text-lg font-medium rounded-full bg-gray-100 text-gray-700">
                                 ...
@@ -750,13 +752,15 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         <div className="flex items-center p-3 cursor-pointer">
                           <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center mr-3">
                             {logo ? (
-                              <Image
-                                src={logo}
-                                alt={`${brand.name} logo`}
-                                width={32}
-                                height={32}
-                                className="w-8 h-8 object-contain"
-                              />
+                              <div className="relative w-8 h-8 flex items-center justify-center">
+                                <Image
+                                  src={logo}
+                                  alt={`${brand.name} logo`}
+                                  fill
+                                  className="object-contain"
+                                  sizes="32px"
+                                />
+                              </div>
                             ) : (
                               <div className="w-8 h-8 flex items-center justify-center text-lg font-medium rounded-full bg-gray-100 text-gray-700">
                                 {brand.name.charAt(0)}

@@ -43,18 +43,6 @@ const blogPosts = [
     featured: false
   },
   {
-    id: 'worth-repair-replace',
-    slug: 'repair-or-replace-making-the-right-decision',
-    title: 'Why Choose Doorstep Repair Services',
-    excerpt: 'Discover the benefits of professional doorstep repair services.',
-    date: '2024-03-01',
-    author: 'Jamie Garcia',
-    category: 'Services',
-    readTime: '8 min read',
-    image: '/images/blog/doorstep-service.jpg',
-    featured: false
-  },
-  {
     id: 'screen-protection',
     slug: 'ultimate-guide-to-screen-protection',
     title: 'The Ultimate Guide to Screen Protection',
@@ -64,18 +52,6 @@ const blogPosts = [
     category: 'Mobile Accessories',
     readTime: '6 min read',
     image: '/images/blog/screen-protection.jpg',
-    featured: false
-  },
-  {
-    id: 'laptop-cleaning',
-    slug: 'data-recovery-services-explained',
-    title: 'Data Recovery Services Explained',
-    excerpt: 'Understanding professional data recovery services and when you need them.',
-    date: '2024-02-20',
-    author: 'Emma Wright',
-    category: 'Services',
-    readTime: '9 min read',
-    image: '/images/blog/data-recovery.jpg',
     featured: false
   }
 ];

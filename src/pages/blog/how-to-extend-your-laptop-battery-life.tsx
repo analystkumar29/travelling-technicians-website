@@ -448,97 +448,97 @@ export default function ExtendLaptopBatteryLifePost() {
       <section className="py-12 bg-gray-50">
         <div className="container-custom">
           <h2 className="text-2xl font-bold mb-8">Related Articles</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="card hover:shadow-custom-lg transition-shadow">
-              <div className="relative h-48 w-full">
-                <Image 
-                  src="https://images.unsplash.com/photo-1588872657578-7efd1f1555ed" 
-                  alt="Laptop Cleaning" 
-                  layout="fill"
-                  className="object-cover"
-                />
-              </div>
-              <div className="p-5">
-                <h3 className="text-lg font-bold mb-2">
-                  <Link href="/blog/properly-cleaning-your-laptop-inside-and-out" className="text-gray-900 hover:text-primary-600 transition-colors">
-                    Properly Cleaning Your Laptop Inside and Out
-                  </Link>
-                </h3>
-                <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                  Step-by-step guide to safely clean your laptop, including keyboard, screen, vents and internals for better performance.
-                </p>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="text-gray-500">
-                    <FaCalendarAlt className="inline-block mr-1" /> 
-                    <span>June 12, 2023</span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="card hover:shadow-custom-lg transition-shadow">
+                  <div className="relative h-48 w-full">
+                    <Image 
+                      src="https://images.unsplash.com/photo-1592899677977-9c10ca588bbd" 
+                      alt="Phone Repair Signs" 
+                      layout="fill"
+                      className="object-cover"
+                    />
                   </div>
-                  <Link href="/blog/properly-cleaning-your-laptop-inside-and-out" className="text-primary-600 font-medium hover:text-primary-700 transition-colors">
-                    Read More
-                  </Link>
+                  <div className="p-5">
+                    <h3 className="text-lg font-bold mb-2">
+                      <Link href="/blog/signs-your-phone-needs-repair" className="text-gray-900 hover:text-primary-600 transition-colors">
+                        5 Warning Signs Your Phone Needs Repair
+                      </Link>
+                    </h3>
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                      Learn to recognize the warning signs that indicate your phone needs professional repair.
+                    </p>
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="text-gray-500">
+                        <FaCalendarAlt className="inline-block mr-1" /> 
+                        <span>March 15, 2023</span>
+                      </div>
+                      <Link href="/blog/signs-your-phone-needs-repair" className="text-primary-600 font-medium hover:text-primary-700 transition-colors">
+                        Read More
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="card hover:shadow-custom-lg transition-shadow">
+                  <div className="relative h-48 w-full">
+                    <Image 
+                      src="https://images.unsplash.com/photo-1608503396060-0322b3e88af7" 
+                      alt="Screen Protection" 
+                      layout="fill"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="p-5">
+                    <h3 className="text-lg font-bold mb-2">
+                      <Link href="/blog/ultimate-guide-to-screen-protection" className="text-gray-900 hover:text-primary-600 transition-colors">
+                        The Ultimate Guide to Screen Protection
+                      </Link>
+                    </h3>
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                      Everything you need to know about protecting your device screens from scratches, cracks, and damage.
+                    </p>
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="text-gray-500">
+                        <FaCalendarAlt className="inline-block mr-1" /> 
+                        <span>February 25, 2023</span>
+                      </div>
+                      <Link href="/blog/ultimate-guide-to-screen-protection" className="text-primary-600 font-medium hover:text-primary-700 transition-colors">
+                        Read More
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="card hover:shadow-custom-lg transition-shadow">
+                  <div className="relative h-48 w-full">
+                    <Image 
+                      src="https://images.unsplash.com/photo-1563884072595-24fccfa2c5c2" 
+                      alt="Water Damage" 
+                      layout="fill"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="p-5">
+                    <h3 className="text-lg font-bold mb-2">
+                      <Link href="/blog/water-damage-first-aid-for-devices" className="text-gray-900 hover:text-primary-600 transition-colors">
+                        Water Damage First Aid for Your Devices
+                      </Link>
+                    </h3>
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                      The critical first steps to take when your phone or laptop gets wet that can save your device from permanent damage.
+                    </p>
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="text-gray-500">
+                        <FaCalendarAlt className="inline-block mr-1" /> 
+                        <span>February 10, 2023</span>
+                      </div>
+                      <Link href="/blog/water-damage-first-aid-for-devices" className="text-primary-600 font-medium hover:text-primary-700 transition-colors">
+                        Read More
+                      </Link>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            <div className="card hover:shadow-custom-lg transition-shadow">
-              <div className="relative h-48 w-full">
-                <Image 
-                  src="https://images.unsplash.com/photo-1585399000684-d2f72660f092" 
-                  alt="Repair or Replace" 
-                  layout="fill"
-                  className="object-cover"
-                />
-              </div>
-              <div className="p-5">
-                <h3 className="text-lg font-bold mb-2">
-                  <Link href="/blog/repair-or-replace-making-the-right-decision" className="text-gray-900 hover:text-primary-600 transition-colors">
-                    Repair or Replace? Making the Right Decision
-                  </Link>
-                </h3>
-                <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                  How to determine whether it's more cost-effective to repair your existing device or invest in a new one.
-                </p>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="text-gray-500">
-                    <FaCalendarAlt className="inline-block mr-1" /> 
-                    <span>May 5, 2023</span>
-                  </div>
-                  <Link href="/blog/repair-or-replace-making-the-right-decision" className="text-primary-600 font-medium hover:text-primary-700 transition-colors">
-                    Read More
-                  </Link>
-                </div>
-              </div>
-            </div>
-            
-            <div className="card hover:shadow-custom-lg transition-shadow">
-              <div className="relative h-48 w-full">
-                <Image 
-                  src="https://images.unsplash.com/photo-1563884072595-24fccfa2c5c2" 
-                  alt="Water Damage" 
-                  layout="fill"
-                  className="object-cover"
-                />
-              </div>
-              <div className="p-5">
-                <h3 className="text-lg font-bold mb-2">
-                  <Link href="/blog/water-damage-first-aid-for-devices" className="text-gray-900 hover:text-primary-600 transition-colors">
-                    Water Damage First Aid for Your Devices
-                  </Link>
-                </h3>
-                <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                  The critical first steps to take when your phone or laptop gets wet that can save your device from permanent damage.
-                </p>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="text-gray-500">
-                    <FaCalendarAlt className="inline-block mr-1" /> 
-                    <span>February 10, 2023</span>
-                  </div>
-                  <Link href="/blog/water-damage-first-aid-for-devices" className="text-primary-600 font-medium hover:text-primary-700 transition-colors">
-                    Read More
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 

@@ -814,68 +814,84 @@ export const getPostalCodePrefix = (postalCode: string): string => {
  * @returns Service area information or null if not serviced
  */
 export const checkServiceArea = (postalCode: string): ServiceAreaType | null => {
-  console.log('Checking service area for postal code:', postalCode);
+  debugLog('LOCATION_UTILS', 'Checking service area for postal code:', { postalCode });
   
   if (!postalCode) {
-    console.error('No postal code provided');
+    debugError('LOCATION_UTILS', 'No postal code provided');
     return null;
   }
   
   const isValid = isValidPostalCodeFormat(postalCode);
   if (!isValid) {
-    console.error('Invalid postal code format:', postalCode);
+    debugError('LOCATION_UTILS', 'Invalid postal code format:', postalCode);
     return null;
   }
   
   const normalizedPostalCode = normalizePostalCode(postalCode);
-  console.log('Normalized postal code:', normalizedPostalCode);
+  debugLog('LOCATION_UTILS', 'Normalized postal code:', normalizedPostalCode);
   
   // Debug: Dump first 10 keys from POSTAL_CODE_MAP
   const keys = Object.keys(POSTAL_CODE_MAP).slice(0, 10);
-  console.log('Some postal code map keys:', keys);
-  console.log('Looking for FSA V5A in map:', 'V5A' in POSTAL_CODE_MAP);
+  debugLog('LOCATION_UTILS', 'First 10 keys from POSTAL_CODE_MAP:', keys);
+  debugLog('LOCATION_UTILS', 'Looking for FSA V5A in map:', { found: 'V5A' in POSTAL_CODE_MAP });
   
   // Try exact match for all 6 characters
   if (POSTAL_CODE_MAP[normalizedPostalCode]) {
-    console.log('Found exact match for full postal code:', normalizedPostalCode);
+    debugSuccess('LOCATION_UTILS', 'Found exact match for full postal code:', { 
+      postalCode: normalizedPostalCode,
+      result: POSTAL_CODE_MAP[normalizedPostalCode]
+    });
     return POSTAL_CODE_MAP[normalizedPostalCode];
   }
   
   // Try the first 5 characters
   const fiveCharCode = normalizedPostalCode.substring(0, 5);
   if (POSTAL_CODE_MAP[fiveCharCode]) {
-    console.log('Found match for 5-character prefix:', fiveCharCode);
+    debugSuccess('LOCATION_UTILS', 'Found match for 5-character prefix:', { 
+      prefix: fiveCharCode,
+      result: POSTAL_CODE_MAP[fiveCharCode]
+    });
     return POSTAL_CODE_MAP[fiveCharCode];
   }
   
   // Try the first 4 characters
   const fourCharCode = normalizedPostalCode.substring(0, 4);
   if (POSTAL_CODE_MAP[fourCharCode]) {
-    console.log('Found match for 4-character prefix:', fourCharCode);
+    debugSuccess('LOCATION_UTILS', 'Found match for 4-character prefix:', { 
+      prefix: fourCharCode,
+      result: POSTAL_CODE_MAP[fourCharCode]
+    });
     return POSTAL_CODE_MAP[fourCharCode];
   }
   
   // Try the first 3 characters (FSA)
   const prefix = normalizedPostalCode.substring(0, 3);
-  console.log('Looking for prefix match:', prefix);
+  debugLog('LOCATION_UTILS', 'Looking for prefix match for 3-character FSA:', prefix);
+  
   if (POSTAL_CODE_MAP[prefix]) {
-    console.log('Found match for 3-character FSA:', prefix);
+    debugSuccess('LOCATION_UTILS', 'Found match for 3-character FSA:', { 
+      prefix,
+      result: POSTAL_CODE_MAP[prefix]
+    });
     return POSTAL_CODE_MAP[prefix];
   }
   
   // Try general area codes (first 2 characters)
   const areaCode = normalizedPostalCode.substring(0, 2);
-  console.log('Looking for area code match:', areaCode);
+  debugLog('LOCATION_UTILS', 'Looking for area code match for 2-character code:', areaCode);
   
   // Handle Vancouver (V5, V6)
   if (areaCode === 'V5' || areaCode === 'V6') {
-    console.log('Found match for Vancouver area code:', areaCode);
+    debugSuccess('LOCATION_UTILS', 'Found match for Vancouver area code:', { 
+      areaCode,
+      result: POSTAL_CODE_MAP[areaCode]
+    });
     return POSTAL_CODE_MAP[areaCode];
   }
   
   // Handle V7J specifically (temporary fix for North Vancouver)
   if (prefix === 'V7J') {
-    console.log('Special case: V7J for North Vancouver');
+    debugSuccess('LOCATION_UTILS', 'Special case: V7J for North Vancouver');
     return {
       city: 'North Vancouver',
       serviceable: true,
@@ -884,9 +900,33 @@ export const checkServiceArea = (postalCode: string): ServiceAreaType | null => 
     };
   }
   
-  console.log('No service area match found for postal code:', postalCode);
-  console.log('Tried:', normalizedPostalCode, fiveCharCode, fourCharCode, prefix, areaCode);
+  debugWarn('LOCATION_UTILS', 'No service area match found for postal code:', { 
+    postalCode,
+    normalizedPostalCode,
+    tried: [normalizedPostalCode, fiveCharCode, fourCharCode, prefix, areaCode]
+  });
   return null;
+};
+
+// Debug utility for consistent logging
+const debugLog = (component: string, message: string, data?: any) => {
+  const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+  console.log(`[${timestamp}] [${component}] ${message}`, data || '');
+};
+
+const debugError = (component: string, message: string, error?: any) => {
+  const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+  console.error(`[${timestamp}] [${component}] ❌ ${message}`, error || '');
+};
+
+const debugWarn = (component: string, message: string, data?: any) => {
+  const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+  console.warn(`[${timestamp}] [${component}] ⚠️ ${message}`, data || '');
+};
+
+const debugSuccess = (component: string, message: string, data?: any) => {
+  const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+  console.log(`[${timestamp}] [${component}] ✅ ${message}`, data || '');
 };
 
 /**
@@ -895,89 +935,129 @@ export const checkServiceArea = (postalCode: string): ServiceAreaType | null => 
  */
 export const getCurrentLocationPostalCode = async (): Promise<string> => {
   return new Promise((resolve, reject) => {
-    console.log('[GEO_UTILS] Starting getCurrentLocationPostalCode');
+    debugLog('LOCATION_UTILS', 'Starting getCurrentLocationPostalCode');
     
     if (!navigator.geolocation) {
-      console.log('[GEO_UTILS] Geolocation is not supported by browser');
+      debugWarn('LOCATION_UTILS', 'Geolocation is not supported by browser');
       resolve('V5C 6R9'); // Fallback for unsupported browsers
       return;
     }
     
     // Always provide a default catchall timeout
     const overallTimeout = setTimeout(() => {
-      console.log('[GEO_UTILS] Location detection overall timeout reached');
+      debugWarn('LOCATION_UTILS', 'Location detection overall timeout reached (15s)');
       resolve('V5C 6R9'); // Fallback after timeout
-    }, 8000); // Shorter overall timeout (8 seconds)
+    }, 15000); // Increased timeout to 15 seconds for better reliability
     
-    // Check for environments that commonly have geolocation issues
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    const isMacOS = /Mac|MacIntel/.test(navigator.platform);
-    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || 
-                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    
-    // Immediately use fallback for known problematic environments
-    if (isDevelopment || isMacOS || isIOS || isSafari) {
-      console.log(`[GEO_UTILS] Special environment detected: ${
-        isDevelopment ? 'Development' : 
-        isMacOS ? 'macOS' : 
-        isIOS ? 'iOS' : 'Safari'
-      }. Using fallback postal code V5C 6R9`);
-      
-      clearTimeout(overallTimeout);
-      // Use setTimeout to simulate an async operation and avoid UI glitches
-      setTimeout(() => resolve('V5C 6R9'), 500);
-      return;
-    }
-    
-    // For all other browsers, attempt to use geolocation but with robust error handling
     try {
-      // Add defensive wrapper around geolocation to prevent crashes
-      console.log('[GEO_UTILS] Requesting browser geolocation');
+      debugLog('LOCATION_UTILS', 'Requesting browser geolocation with options:', {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 10000
+      });
       
-      // We'll use a more conservative approach with geolocation
+      // Use OpenStreetMap's Nominatim API for reverse geocoding
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           try {
             clearTimeout(overallTimeout);
             const { latitude, longitude } = position.coords;
-            console.log('[GEO_UTILS] Detected coordinates:', latitude, longitude);
+            debugSuccess('LOCATION_UTILS', 'Browser geolocation successful', { latitude, longitude });
             
-            // For simplicity and reliability, use our fallback approximation directly
-            // which is more dependable than third-party APIs
-            const roughLocation = getRoughLocationFromCoordinates(latitude, longitude);
-            if (roughLocation) {
-              console.log('[GEO_UTILS] Using rough location approximation:', roughLocation);
-              resolve(roughLocation);
-              return;
+            // Use OpenStreetMap's Nominatim API for reverse geocoding
+            const geocodeUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18`;
+            debugLog('LOCATION_UTILS', 'Calling OpenStreetMap API', { url: geocodeUrl });
+            
+            try {
+              const response = await fetch(geocodeUrl, {
+                headers: {
+                  'Accept': 'application/json',
+                  'User-Agent': 'TheTravellingTechnicians/1.0'
+                }
+              });
+              
+              if (!response.ok) {
+                throw new Error(`OpenStreetMap API error: ${response.status}`);
+              }
+              
+              const data = await response.json();
+              debugLog('LOCATION_UTILS', 'OpenStreetMap API response received', data);
+              
+              if (data && data.address && data.address.postcode) {
+                const postalCode = data.address.postcode.trim();
+                // Format postal code if necessary
+                if (postalCode.length === 6 && !postalCode.includes(' ')) {
+                  const formattedPostalCode = `${postalCode.slice(0, 3)} ${postalCode.slice(3)}`;
+                  debugSuccess('LOCATION_UTILS', 'Successfully got postal code from OpenStreetMap', { 
+                    original: postalCode, 
+                    formatted: formattedPostalCode,
+                    address: data.display_name 
+                  });
+                  resolve(formattedPostalCode);
+                } else {
+                  debugSuccess('LOCATION_UTILS', 'Successfully got postal code from OpenStreetMap', { 
+                    postalCode,
+                    address: data.display_name 
+                  });
+                  resolve(postalCode);
+                }
+              } else {
+                debugWarn('LOCATION_UTILS', 'No postal code found in OpenStreetMap response', data);
+                // Try rough location approximation as fallback
+                const roughLocation = getRoughLocationFromCoordinates(latitude, longitude);
+                if (roughLocation) {
+                  debugLog('LOCATION_UTILS', 'Using rough location approximation', { roughLocation });
+                  resolve(roughLocation);
+                } else {
+                  debugWarn('LOCATION_UTILS', 'Using default fallback postal code (V5C 6R9)');
+                  resolve('V5C 6R9');
+                }
+              }
+            } catch (apiError) {
+              debugError('LOCATION_UTILS', 'OpenStreetMap API error', apiError);
+              // Try rough location approximation as fallback
+              const roughLocation = getRoughLocationFromCoordinates(latitude, longitude);
+              if (roughLocation) {
+                debugLog('LOCATION_UTILS', 'Using rough location approximation after API error', { roughLocation });
+                resolve(roughLocation);
+              } else {
+                debugWarn('LOCATION_UTILS', 'Using default fallback postal code after API error (V5C 6R9)');
+                resolve('V5C 6R9');
+              }
             }
-            
-            // If rough location fails, default to a known good value
-            console.log('[GEO_UTILS] Rough location failed, using default area code');
-            resolve('V5C 6R9');
           } catch (error) {
             clearTimeout(overallTimeout);
-            console.error('[GEO_UTILS] Error in geolocation success handler:', error);
+            debugError('LOCATION_UTILS', 'Error in geolocation success handler', error);
             resolve('V5C 6R9');
           }
         },
         (error) => {
           clearTimeout(overallTimeout);
-          console.error('[GEO_UTILS] Geolocation error:', error);
+          debugError('LOCATION_UTILS', 'Browser geolocation error', error);
           
-          // Always default to a reliable fallback
-          resolve('V5C 6R9');
+          // Provide helpful error messages based on error code
+          let errorMessage = 'Failed to get your location.';
+          if (error.code === 1) {
+            errorMessage = 'Location access denied. Please grant permission or enter your postal code manually.';
+          } else if (error.code === 2) {
+            errorMessage = 'Location unavailable. Please enter your postal code manually.';
+          } else if (error.code === 3) {
+            errorMessage = 'Location request timed out. Please enter your postal code manually.';
+          }
+          
+          debugWarn('LOCATION_UTILS', errorMessage);
+          resolve('V5C 6R9'); // Fallback to default
         },
         { 
-          enableHighAccuracy: false,  // Lower accuracy requirements
-          maximumAge: 300000,         // Accept positions up to 5 minutes old
-          timeout: 5000               // Quick timeout (5 seconds)
+          enableHighAccuracy: true,  // Try for better accuracy
+          maximumAge: 0,             // Don't use cached position
+          timeout: 10000             // 10 second timeout
         }
       );
     } catch (e) {
       // Catch any unexpected exceptions
       clearTimeout(overallTimeout);
-      console.error('[GEO_UTILS] Critical error in geolocation API:', e);
+      debugError('LOCATION_UTILS', 'Critical error in geolocation API', e);
       resolve('V5C 6R9');
     }
   });

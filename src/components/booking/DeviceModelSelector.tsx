@@ -101,6 +101,17 @@ export default function DeviceModelSelector({
   const normalizedDeviceType = deviceType?.toLowerCase() as DeviceType;
   const normalizedBrand = brand?.toLowerCase();
 
+  // Fallback static data (temporary until API is fully implemented)
+  const getFallbackModels = useCallback((): Model[] => {
+    const staticModels = getStaticModels();
+    return staticModels.map((name, index) => ({
+      id: index + 1,
+      name,
+      brandId: 1,
+      isActive: true
+    }));
+  }, []);
+
   // Fetch models from API when brand or device type changes
   const fetchModels = useCallback(async () => {
     setLoading(true);
@@ -139,7 +150,7 @@ export default function DeviceModelSelector({
     } finally {
       setLoading(false);
     }
-  }, [normalizedBrand, normalizedDeviceType]);
+  }, [normalizedBrand, normalizedDeviceType, getFallbackModels]);
 
   useEffect(() => {
     if (!deviceType || !brand || brand.toLowerCase() === 'other') {
@@ -149,17 +160,6 @@ export default function DeviceModelSelector({
 
     fetchModels();
   }, [deviceType, brand, fetchModels]);
-
-  // Fallback static data (temporary until API is fully implemented)
-  const getFallbackModels = (): Model[] => {
-    const staticModels = getStaticModels();
-    return staticModels.map((name, index) => ({
-      id: index + 1,
-      name,
-      brandId: 1,
-      isActive: true
-    }));
-  };
 
   // Static models as fallback (keeping the original logic temporarily)
   const getStaticModels = (): string[] => {
