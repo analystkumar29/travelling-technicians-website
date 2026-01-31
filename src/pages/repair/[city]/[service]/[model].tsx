@@ -69,12 +69,19 @@ export const getStaticPaths: GetStaticPaths = async () => {
     
     // Generate all combinations
     const paths = [];
+
+    const serviceSlugMapping: Record<string, string> = {
+      'screen-replacement-mobile': 'screen-repair',
+      'screen-replacement-laptop': 'laptop-screen-repair',
+      'battery-replacement-mobile': 'battery-replacement',
+      'battery-replacement-laptop': 'battery-replacement'
+    };
     
     for (const city of activeCities) {
       const citySlug = city.slug;
       
       for (const service of activeServices) {
-        const serviceSlug = service.slug;
+        const serviceSlug = serviceSlugMapping[service.slug] || service.slug;
         
         // Get models for this specific service
         const models = await getModelsForService(serviceSlug);
@@ -146,44 +153,31 @@ export const getStaticProps: GetStaticProps<CityServiceModelPageProps> = async (
   try {
     const cityData = await getCityData(citySlug);
     
-    const serviceDisplayNames: Record<string, string> = {
-      'screen-repair': 'Screen Repair',
-      'battery-replacement': 'Battery Replacement',
-      'charging-port-repair': 'Charging Port Repair',
-      'laptop-screen-repair': 'Laptop Screen Repair',
-      'water-damage-repair': 'Water Damage Repair',
-      'software-repair': 'Software Repair',
-      'camera-repair': 'Camera Repair'
-    };
+    const { getServiceBySlug, getModelBySlug } = await import('@/lib/data-service');
 
-    const modelDisplayNames: Record<string, { displayName: string; brand: string; deviceType: string }> = {
-      'iphone-14': { displayName: 'iPhone 14', brand: 'Apple', deviceType: 'mobile' },
-      'iphone-15': { displayName: 'iPhone 15', brand: 'Apple', deviceType: 'mobile' },
-      'iphone-13': { displayName: 'iPhone 13', brand: 'Apple', deviceType: 'mobile' },
-      'samsung-galaxy-s23': { displayName: 'Samsung Galaxy S23', brand: 'Samsung', deviceType: 'mobile' },
-      'samsung-galaxy-s22': { displayName: 'Samsung Galaxy S22', brand: 'Samsung', deviceType: 'mobile' },
-      'google-pixel-7': { displayName: 'Google Pixel 7', brand: 'Google', deviceType: 'mobile' },
-      'macbook-pro-2023': { displayName: 'MacBook Pro 2023', brand: 'Apple', deviceType: 'laptop' }
-    };
+    const [serviceFromDb, modelFromDb] = await Promise.all([
+      getServiceBySlug(serviceSlug),
+      getModelBySlug(modelSlug)
+    ]);
+
+    const serviceDisplayName = serviceFromDb?.display_name
+      || serviceSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 
     const serviceData = {
       name: serviceSlug,
-      displayName: serviceDisplayNames[serviceSlug] || serviceSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
-      description: `Professional ${serviceDisplayNames[serviceSlug]?.toLowerCase() || serviceSlug} service in ${cityData?.city || citySlug.replace('-', ' ')}.`,
-      estimatedDurationMinutes: serviceSlug.includes('screen') ? 45 : serviceSlug.includes('battery') ? 60 : 90
-    };
-
-    const modelInfo = modelDisplayNames[modelSlug] || {
-      displayName: modelSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
-      brand: 'Various',
-      deviceType: 'mobile'
+      displayName: serviceDisplayName,
+      description: serviceFromDb?.description
+        || `Professional ${serviceDisplayName.toLowerCase()} service in ${cityData?.city_name || citySlug.replace('-', ' ')}.`,
+      estimatedDurationMinutes: serviceFromDb?.estimated_duration_minutes
+        || (serviceSlug.includes('screen') ? 45 : serviceSlug.includes('battery') ? 60 : 90)
     };
 
     const modelData = {
       name: modelSlug,
-      displayName: modelInfo.displayName,
-      brand: modelInfo.brand,
-      deviceType: modelInfo.deviceType,
+      displayName: modelFromDb?.display_name
+        || modelSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+      brand: modelFromDb?.brand_name || 'Various',
+      deviceType: modelFromDb?.device_type || 'mobile',
       imageUrl: `/images/devices/${modelSlug}.webp`
     };
 
@@ -217,7 +211,7 @@ export const getStaticProps: GetStaticProps<CityServiceModelPageProps> = async (
         service: serviceSlug,
         model: modelSlug,
         cityData: {
-          name: cityData?.city || citySlug.replace('-', ' '),
+          name: cityData?.city_name || citySlug.replace('-', ' '),
           slug: citySlug
         },
         serviceData,
