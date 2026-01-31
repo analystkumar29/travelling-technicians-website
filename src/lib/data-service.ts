@@ -465,7 +465,7 @@ export async function getPricingData(): Promise<typeof STATIC_PRICING_DATA> {
       return STATIC_PRICING_DATA;
     }
     
-    // Fetch device models with their device types (using type_id, not device_type_id)
+    // Fetch device models with their device types (use type_id)
     const { data: deviceModels, error: modelsError } = await supabase
       .from('device_models')
       .select('id, type_id')
@@ -499,14 +499,18 @@ export async function getPricingData(): Promise<typeof STATIC_PRICING_DATA> {
     }
     
     // Create mapping dictionaries (using type_id from models)
-    const modelToDeviceTypeId: Record<number, number> = {};
+    const modelToDeviceTypeId: Record<string, string> = {};
     for (const model of deviceModels) {
-      modelToDeviceTypeId[model.id] = model.type_id;
+      if (model.id && model.type_id) {
+        modelToDeviceTypeId[model.id] = model.type_id;
+      }
     }
     
-    const deviceTypeIdToName: Record<number, string> = {};
+    const deviceTypeIdToName: Record<string, string> = {};
     for (const type of deviceTypes) {
-      deviceTypeIdToName[type.id] = type.name;
+      if (type.id && type.name) {
+        deviceTypeIdToName[type.id] = type.name;
+      }
     }
     
     // Group by device type and calculate min/max
@@ -639,8 +643,9 @@ export async function getPopularServices(): Promise<typeof STATIC_SERVICES> {
     // Query services table for popular services
     const { data, error } = await supabase
       .from('services')
-      .select('name, display_name, estimated_duration_minutes')
+      .select('name, display_name, base_price, estimated_duration_minutes')
       .eq('is_active', true)
+      .eq('is_popular', true)
       .order('sort_order', { ascending: true })
       .limit(4);
 
@@ -689,16 +694,18 @@ export async function getPopularServices(): Promise<typeof STATIC_SERVICES> {
         }
       }
       
-      // Generate price label based on service type
-      let priceLabel = 'From $89';
-      if (serviceName.toLowerCase().includes('battery')) {
-        priceLabel = 'From $79';
-      } else if (serviceName.toLowerCase().includes('laptop')) {
-        priceLabel = 'From $99';
-      } else if (serviceName.toLowerCase().includes('charging')) {
-        priceLabel = 'From $69';
-      } else if (serviceName.toLowerCase().includes('software')) {
-        priceLabel = 'From $49';
+      // Generate price label based on service base price or fallback heuristics
+      let priceLabel = service.base_price ? `From $${service.base_price}` : 'From $89';
+      if (!service.base_price) {
+        if (serviceName.toLowerCase().includes('battery')) {
+          priceLabel = 'From $79';
+        } else if (serviceName.toLowerCase().includes('laptop')) {
+          priceLabel = 'From $99';
+        } else if (serviceName.toLowerCase().includes('charging')) {
+          priceLabel = 'From $69';
+        } else if (serviceName.toLowerCase().includes('software')) {
+          priceLabel = 'From $49';
+        }
       }
       
       return {
@@ -766,11 +773,12 @@ export async function getTestimonials(): Promise<typeof STATIC_TESTIMONIALS> {
       return STATIC_TESTIMONIALS;
     }
 
-    // If table exists, fetch testimonials (using is_featured instead of visible)
+    // If table exists, fetch testimonials (using is_featured)
     const { data, error: fetchError } = await supabase
       .from('testimonials')
       .select('*')
       .eq('is_featured', true)
+      .order('featured_order', { ascending: true })
       .order('created_at', { ascending: false })
       .limit(4);
 
@@ -796,10 +804,10 @@ export async function getTestimonials(): Promise<typeof STATIC_TESTIMONIALS> {
     const mappedTestimonials = data.map((testimonial, index) => ({
       id: testimonial.id || index + 1,
       name: testimonial.customer_name || 'Anonymous',
-      location: testimonial.location || 'Vancouver',
+      location: testimonial.city || 'Vancouver',
       rating: testimonial.rating || 5,
-      comment: testimonial.comment || 'Great service!',
-      device: testimonial.device || 'Device'
+      comment: testimonial.review || 'Great service!',
+      device: testimonial.device_model || 'Device'
     }));
 
     // Ensure we have at least 4 testimonials
@@ -978,13 +986,14 @@ export async function getBrandsByDeviceType(deviceType: 'laptop' | 'mobile' | 't
       return staticData;
     }
 
-    // Query brands table for this device type
+    // Query brands via device_models relationship (brands don't have device_type_id)
     const { data, error } = await supabase
       .from('brands')
-      .select('display_name')
-      .eq('device_type_id', deviceTypeData.id)
+      .select('display_name, name, device_models!inner(type_id, is_active)')
+      .eq('device_models.type_id', deviceTypeData.id)
+      .eq('device_models.is_active', true)
       .eq('is_active', true)
-      .order('sort_order', { ascending: true });
+      .order('name', { ascending: true });
 
     if (error) {
       dataLogger.warn(`Database error fetching ${deviceType} brands, using static fallback`, { error: error.message });
@@ -1008,8 +1017,10 @@ export async function getBrandsByDeviceType(deviceType: 'laptop' | 'mobile' | 't
 
     dataLogger.info(`Found ${data.length} ${deviceType} brands in database`);
     
-    // Extract display names
-    const dynamicBrands = data.map(brand => brand.display_name).filter(Boolean);
+    // Extract display names (fallback to name)
+    const dynamicBrands = Array.from(
+      new Set(data.map(brand => brand.display_name || brand.name).filter(Boolean))
+    );
 
     dataLogger.info(`Using dynamic ${deviceType} brands data`, {
       brands: dynamicBrands.slice(0, 5) // Log first 5 brands
@@ -1207,7 +1218,7 @@ export async function getNearbyLocations(
     // Get all other active service locations
     const { data: allLocations, error: locationsError } = await supabase
       .from('service_locations')
-      .select('id, city, latitude, longitude')
+      .select('id, city_name, latitude, longitude')
       .eq('is_active', true)
       .neq('id', currentCityData.id);
     
@@ -1246,8 +1257,8 @@ export async function getNearbyLocations(
         
         return {
           id: location.id,
-          city: location.city,
-          slug: location.city.toLowerCase().replace(/\s+/g, '-'),
+          city: location.city_name,
+          slug: location.city_name.toLowerCase().replace(/\s+/g, '-'),
           distanceKm: parseFloat(distanceKm.toFixed(1))
         };
       })
@@ -1287,24 +1298,23 @@ export async function getDynamicPricing(
     
     // Map URL slugs to database names - only include currently active services
     const serviceMapping: Record<string, string> = {
-      'screen-repair': 'screen-replacement', // Generic - will match both mobile/laptop
-      'battery-replacement': 'battery-replacement', // Generic - will match both mobile/laptop
-      'laptop-screen-repair': 'screen-replacement-laptop', // Active laptop service
-      // Note: Other services are currently inactive
+      'screen-repair': 'screen-replacement-mobile',
+      'battery-replacement': 'battery-replacement-mobile',
+      'laptop-screen-repair': 'screen-replacement-laptop'
     };
     
     const modelMapping: Record<string, string> = {
-      'iphone-14': 'iPhone 14',
-      'iphone-15': 'iPhone 15',
-      'iphone-13': 'iPhone 13',
-      'samsung-galaxy-s23': 'Samsung Galaxy S23',
-      'samsung-galaxy-s22': 'Samsung Galaxy S22',
-      'google-pixel-7': 'Google Pixel 7',
-      'macbook-pro-2023': 'MacBook Pro 14-inch' // Approximate mapping
+      'iphone-14': 'iphone-14',
+      'iphone-15': 'iphone-15',
+      'iphone-13': 'iphone-13',
+      'samsung-galaxy-s23': 'samsung-galaxy-s23',
+      'samsung-galaxy-s22': 'samsung-galaxy-s22',
+      'google-pixel-7': 'google-pixel-7',
+      'macbook-pro-2023': 'macbook-pro-2023'
     };
     
     const serviceName = serviceMapping[serviceSlug] || serviceSlug;
-    const modelName = modelMapping[modelSlug] || modelSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    const modelName = modelMapping[modelSlug] || modelSlug;
     
     // First, get city price adjustment percentage
     let priceAdjustmentPercentage = 0;
@@ -1331,13 +1341,13 @@ export async function getDynamicPricing(
       .select(`
         base_price,
         discounted_price,
-        services!inner(name),
-        device_models!inner(name),
-        brands!inner(name)
+        compare_at_price,
+        services!inner(name, slug),
+        device_models!inner(name, slug)
       `)
       .eq('is_active', true)
-      .ilike('services.name', `%${serviceName}%`)
-      .ilike('device_models.name', `%${modelName}%`)
+      .eq('services.slug', serviceName)
+      .eq('device_models.slug', modelName)
       .order('base_price', { ascending: true })
       .limit(1);
     
@@ -1353,7 +1363,16 @@ export async function getDynamicPricing(
     
     const pricing = pricingData[0];
     let basePrice = parseFloat(pricing.base_price as string);
-    let discountedPrice = pricing.discounted_price ? parseFloat(pricing.discounted_price as string) : undefined;
+    let discountedPrice = pricing.discounted_price
+      ? parseFloat(pricing.discounted_price as string)
+      : pricing.compare_at_price
+        ? parseFloat(pricing.compare_at_price as string)
+        : undefined;
+
+    // If discountedPrice is higher than basePrice, treat basePrice as the discount
+    if (discountedPrice && discountedPrice > basePrice) {
+      [basePrice, discountedPrice] = [discountedPrice, basePrice];
+    }
     
     // Apply city price adjustment
     if (priceAdjustmentPercentage !== 0) {
@@ -1450,6 +1469,7 @@ export async function getAllActiveServices(): Promise<Array<{
         id,
         name,
         display_name,
+        slug,
         device_type_id,
         is_doorstep_eligible,
         is_popular,
@@ -1475,8 +1495,8 @@ export async function getAllActiveServices(): Promise<Array<{
 
     // Map database results to our expected format
     const services = data.map(service => {
-      // Convert service name to URL slug format
-      const slug = service.name.toLowerCase().replace(/\s+/g, '-');
+      // Convert service name to URL slug format (use stored slug if available)
+      const slug = service.slug || service.name.toLowerCase().replace(/\s+/g, '-');
       
       // device_types is an array, get the first one
       const deviceTypeName = service.device_types && service.device_types.length > 0
@@ -1534,10 +1554,10 @@ export async function getModelsForService(serviceSlug: string): Promise<Array<{
     // First, get the service ID from the service slug
     // Need to map URL slug to database service name
     const serviceMapping: Record<string, string> = {
-      'screen-repair': 'screen-replacement',
-      'battery-replacement': 'battery-replacement',
+      'screen-repair': 'screen-replacement-mobile',
+      'battery-replacement': 'battery-replacement-mobile',
       'charging-port-repair': 'charging-port-repair',
-      'laptop-screen-repair': 'laptop-screen-replacement',
+      'laptop-screen-repair': 'screen-replacement-laptop',
       'water-damage-repair': 'water-damage-repair',
       'software-repair': 'software-repair',
       'camera-repair': 'camera-repair'
@@ -1549,7 +1569,7 @@ export async function getModelsForService(serviceSlug: string): Promise<Array<{
     const { data: serviceData, error: serviceError } = await supabase
       .from('services')
       .select('id, name, device_type_id')
-      .ilike('name', `%${serviceName}%`)
+      .eq('slug', serviceName)
       .eq('is_active', true)
       .single();
 
@@ -1569,9 +1589,10 @@ export async function getModelsForService(serviceSlug: string): Promise<Array<{
         device_models!inner(
           id,
           name,
+          slug,
           display_name,
           brand_id,
-          device_type_id,
+          type_id,
           is_active
         )
       `)
@@ -1603,9 +1624,10 @@ export async function getModelsForService(serviceSlug: string): Promise<Array<{
       .select(`
         id,
         name,
+        slug,
         display_name,
         brand_id,
-        device_type_id,
+        type_id,
         is_active,
         brands(name),
         device_types(name)
@@ -1637,8 +1659,8 @@ export async function getModelsForService(serviceSlug: string): Promise<Array<{
     // Map models to our expected format
     const models = modelsData.map(model => {
       const pricing = pricingMap.get(model.id);
-      // Convert model name to URL slug format
-      const slug = model.name.toLowerCase().replace(/\s+/g, '-');
+      // Convert model name to URL slug format (use stored slug if available)
+      const slug = model.slug || model.name.toLowerCase().replace(/\s+/g, '-');
       
       // Handle nested arrays for brands and device_types
       const brandName = model.brands && Array.isArray(model.brands) && model.brands.length > 0
@@ -1656,7 +1678,7 @@ export async function getModelsForService(serviceSlug: string): Promise<Array<{
         slug: slug,
         brand_id: model.brand_id,
         brand_name: brandName,
-        device_type_id: model.device_type_id,
+        device_type_id: model.type_id,
         device_type: deviceTypeName,
         is_active: model.is_active,
         base_price: pricing?.base_price ? parseFloat(pricing.base_price as string) : undefined,
@@ -1762,6 +1784,7 @@ export async function getServiceBySlug(serviceSlug: string): Promise<{
   id: number;
   name: string;
   display_name: string;
+  description?: string;
   slug: string;
   device_type_id: number;
   device_type: string;
@@ -1776,10 +1799,9 @@ export async function getServiceBySlug(serviceSlug: string): Promise<{
     
     // Map URL slug to database service name - only include currently active services
     const serviceMapping: Record<string, string> = {
-      'screen-repair': 'screen-replacement', // Generic - will match both mobile/laptop
-      'battery-replacement': 'battery-replacement', // Generic - will match both mobile/laptop
-      'laptop-screen-repair': 'screen-replacement-laptop', // Active laptop service
-      // Note: Other services are currently inactive
+      'screen-repair': 'screen-replacement-mobile',
+      'battery-replacement': 'battery-replacement-mobile',
+      'laptop-screen-repair': 'screen-replacement-laptop'
     };
     
     const serviceName = serviceMapping[serviceSlug] || serviceSlug;
@@ -1791,6 +1813,8 @@ export async function getServiceBySlug(serviceSlug: string): Promise<{
         id,
         name,
         display_name,
+        description,
+        slug,
         device_type_id,
         is_doorstep_eligible,
         is_popular,
@@ -1799,7 +1823,7 @@ export async function getServiceBySlug(serviceSlug: string): Promise<{
         estimated_duration_minutes,
         device_types!inner(name)
       `)
-      .ilike('name', `%${serviceName}%`)
+      .eq('slug', serviceName)
       .eq('is_active', true)
       .single();
 
@@ -1822,7 +1846,8 @@ export async function getServiceBySlug(serviceSlug: string): Promise<{
       id: data.id,
       name: data.name,
       display_name: data.display_name || data.name,
-      slug: serviceSlug,
+      slug: data.slug || serviceSlug,
+      description: data.description || undefined,
       device_type_id: data.device_type_id,
       device_type: deviceTypeName,
       is_doorstep_eligible: data.is_doorstep_eligible || false,
@@ -1858,32 +1883,20 @@ export async function getModelBySlug(modelSlug: string): Promise<{
     const supabase = getServiceSupabase();
     
     // Map URL slug to database model name
-    const modelMapping: Record<string, string> = {
-      'iphone-14': 'iPhone 14',
-      'iphone-15': 'iPhone 15',
-      'iphone-13': 'iPhone 13',
-      'samsung-galaxy-s23': 'Samsung Galaxy S23',
-      'samsung-galaxy-s22': 'Samsung Galaxy S22',
-      'google-pixel-7': 'Google Pixel 7',
-      'macbook-pro-2023': 'MacBook Pro 14-inch'
-    };
-    
-    const modelName = modelMapping[modelSlug] || modelSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-    
-    // Fetch model from database
     const { data, error } = await supabase
       .from('device_models')
       .select(`
         id,
         name,
+        slug,
         display_name,
         brand_id,
-        device_type_id,
+        type_id,
         is_active,
         brands(name),
         device_types(name)
       `)
-      .ilike('name', `%${modelName}%`)
+      .eq('slug', modelSlug)
       .eq('is_active', true)
       .single();
 
@@ -1910,10 +1923,10 @@ export async function getModelBySlug(modelSlug: string): Promise<{
       id: data.id,
       name: data.name,
       display_name: data.display_name || data.name,
-      slug: modelSlug,
+      slug: data.slug || modelSlug,
       brand_id: data.brand_id,
       brand_name: brandName,
-      device_type_id: data.device_type_id,
+      device_type_id: data.type_id,
       device_type: deviceTypeName,
       is_active: data.is_active
     };

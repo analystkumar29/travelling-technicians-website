@@ -6,7 +6,7 @@ import { LocalBusinessSchema, ServiceSchema } from '@/components/seo/StructuredD
 import Breadcrumbs from '@/components/seo/Breadcrumbs';
 import NearbyCities, { NearbyCity } from '@/components/seo/NearbyCities';
 import { GetStaticPaths, GetStaticProps } from 'next';
-import { getCityData, getNearbyLocations, getAllActiveServices, getModelsForService } from '@/lib/data-service';
+import { getCityData, getNearbyLocations, getAllActiveServices, getModelsForService, getServiceBySlug } from '@/lib/data-service';
 import { createBreadcrumbs } from '@/utils/seoHelpers';
 import { getSiteUrl } from '@/utils/supabaseClient';
 import { useSimplePhoneNumber } from '@/hooks/useBusinessSettings';
@@ -51,28 +51,6 @@ const WIKIDATA_MAP: Record<string, string> = {
   'maple-ridge': 'Q1014063' // Added Maple Ridge
 };
 
-// Model slugs and display names from repair page
-const MODEL_DISPLAY_NAMES: Record<string, { displayName: string; brand: string; deviceType: string }> = {
-  'iphone-14': { displayName: 'iPhone 14', brand: 'Apple', deviceType: 'mobile' },
-  'iphone-15': { displayName: 'iPhone 15', brand: 'Apple', deviceType: 'mobile' },
-  'iphone-13': { displayName: 'iPhone 13', brand: 'Apple', deviceType: 'mobile' },
-  'samsung-galaxy-s23': { displayName: 'Samsung Galaxy S23', brand: 'Samsung', deviceType: 'mobile' },
-  'samsung-galaxy-s22': { displayName: 'Samsung Galaxy S22', brand: 'Samsung', deviceType: 'mobile' },
-  'google-pixel-7': { displayName: 'Google Pixel 7', brand: 'Google', deviceType: 'mobile' },
-  'macbook-pro-2023': { displayName: 'MacBook Pro 2023', brand: 'Apple', deviceType: 'laptop' }
-};
-
-// Service slugs and display names from repair page
-const SERVICE_DISPLAY_NAMES: Record<string, string> = {
-  'screen-repair': 'Screen Repair',
-  'battery-replacement': 'Battery Replacement',
-  'charging-port-repair': 'Charging Port Repair',
-  'laptop-screen-repair': 'Laptop Screen Repair',
-  'water-damage-repair': 'Water Damage Repair',
-  'software-repair': 'Software Repair',
-  'camera-repair': 'Camera Repair'
-};
-
 export const getStaticPaths: GetStaticPaths = async () => {
   console.log('🔄 Starting getStaticPaths for repair/[city]/[service]...');
   
@@ -109,11 +87,11 @@ export const getStaticPaths: GetStaticPaths = async () => {
       const citySlug = city.slug;
       
       for (const service of activeServices) {
-        // Map database service name to URL slug
-        const urlSlug = serviceSlugMapping[service.name] || service.name;
+        // Map database service slug to URL slug
+        const urlSlug = serviceSlugMapping[service.slug] || service.slug;
         
         // Only generate paths for services that have URL slug mapping
-        if (serviceSlugMapping[service.name]) {
+        if (serviceSlugMapping[service.slug]) {
           paths.push({
             params: {
               city: citySlug,
@@ -237,24 +215,16 @@ export const getStaticProps: GetStaticProps<CityServicePageProps> = async ({ par
   try {
     const cityData = await getCityData(citySlug);
     
-    // Get all active services to find the service data
-    const allServices = await getAllActiveServices();
-    
-    // Find the service by slug (serviceSlug from URL)
-    const service = allServices.find(s => s.name === serviceSlug);
-    
-    // If service not found, try to map using service mapping logic
-    let serviceDisplayName = service?.display_name || serviceSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-    // Note: service object from getAllActiveServices() doesn't have a description property
-    // We'll use a generic description based on the service name
-    let serviceDescription = `Professional ${serviceDisplayName.toLowerCase()} services in ${cityData?.city || citySlug.replace('-', ' ')}.`;
-    
-    // Use the service mapping logic from data-service.ts to get the correct service name
-    // The serviceSlug from URL might need to be mapped to the database service name
+    const serviceFromDb = await getServiceBySlug(serviceSlug);
+
+    const serviceDisplayName = serviceFromDb?.display_name
+      || serviceSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+
     const serviceData = {
       name: serviceSlug,
       displayName: serviceDisplayName,
-      description: serviceDescription
+      description: serviceFromDb?.description
+        || `Professional ${serviceDisplayName.toLowerCase()} services in ${cityData?.city_name || citySlug.replace('-', ' ')}.`
     };
 
     // Get all models for this service from database
@@ -263,7 +233,8 @@ export const getStaticProps: GetStaticProps<CityServicePageProps> = async ({ par
     // Transform database models to the format expected by the page
     const models = modelsFromDb.map(model => ({
       slug: model.slug,
-      displayName: model.display_name || model.slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+      displayName: model.display_name
+        || model.slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
       brand: model.brand_name || 'Various',
       deviceType: model.device_type || 'mobile',
       imageUrl: `/images/devices/${model.slug}.webp`
@@ -289,7 +260,7 @@ export const getStaticProps: GetStaticProps<CityServicePageProps> = async ({ par
         city: citySlug,
         service: serviceSlug,
         cityData: {
-          name: cityData?.city || citySlug.replace('-', ' '),
+          name: cityData?.city_name || citySlug.replace('-', ' '),
           slug: citySlug
         },
         serviceData,
