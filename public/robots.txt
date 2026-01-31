@@ -28,10 +28,10 @@ Disallow: /_next/
 Disallow: /debug
 Disallow: /minimal
 
-# Primary Sitemap (dynamic, preferred)
+# Primary Sitemap - Dynamic API (generates 2000+ URLs with real lastmod dates)
 Sitemap: https://www.travelling-technicians.ca/api/sitemap.xml
 
-# Static Backup Sitemap 
+# Static Fallback Sitemap (minimal URLs - use only if API fails)
 Sitemap: https://www.travelling-technicians.ca/sitemap.xml
 
 # Image Sitemap

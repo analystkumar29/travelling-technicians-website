@@ -2,6 +2,17 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { getServiceSupabase } from '@/utils/supabaseClient';
 import { getSiteUrl } from '@/utils/supabaseClient';
 import { logger } from '@/utils/logger';
+import {
+  serviceNameToUrlSlug,
+  cityNameToUrlSlug,
+  modelNameToUrlSlug,
+  generateRepairPagePath,
+  generateLocationPagePath,
+  generateNeighborhoodPagePath,
+  generateServicePagePath,
+  isValidUrlSlug,
+  logSlugTransformation
+} from '@/utils/slug-utils';
 
 // Create a module logger
 const sitemapLogger = logger.createModuleLogger('sitemap');
@@ -147,19 +158,33 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
     // Fetch services from database
     const { data: servicesData } = await supabase
       .from('services')
-      .select('name, updated_at, device_type_id')
+      .select('name, slug, updated_at, device_type_id')
       .eq('is_active', true)
       .order('sort_order');
     
-    // Map services to expected format
-    const services = servicesData?.map(service => ({
-      slug: service.name.toLowerCase().replace(/\s+/g, '-'),
-      updated_at: service.updated_at || new Date().toISOString(),
-      device_type: service.device_type_id === 1 ? 'mobile' : service.device_type_id === 2 ? 'laptop' : 'tablet'
-    })) || [
-      { slug: 'mobile-repair', updated_at: '2024-12-01T10:00:00Z', device_type: 'mobile' },
-      { slug: 'laptop-repair', updated_at: '2024-12-01T10:00:00Z', device_type: 'laptop' },
-      { slug: 'tablet-repair', updated_at: '2024-12-01T10:00:00Z', device_type: 'tablet' }
+    // Map services to expected format using centralized slug utilities
+    const services = servicesData?.map(service => {
+      // Use stored slug if available, otherwise generate from name
+      const serviceSlug = service.slug || serviceNameToUrlSlug(service.name);
+      logSlugTransformation(service.name, serviceSlug, 'service-fetch');
+      
+      // Standardized lastmod fallback
+      const lastmod = service.updated_at || new Date().toISOString();
+      
+      // Map device_type_id to string (1=mobile, 2=laptop, 3=tablet)
+      let deviceType = 'mobile';
+      if (service.device_type_id === 2) deviceType = 'laptop';
+      if (service.device_type_id === 3) deviceType = 'tablet';
+      
+      return {
+        slug: serviceSlug,
+        updated_at: lastmod,
+        device_type: deviceType
+      };
+    }).filter(service => isValidUrlSlug(service.slug)) || [
+      { slug: 'mobile-repair', updated_at: new Date().toISOString(), device_type: 'mobile' },
+      { slug: 'laptop-repair', updated_at: new Date().toISOString(), device_type: 'laptop' },
+      { slug: 'tablet-repair', updated_at: new Date().toISOString(), device_type: 'tablet' }
     ];
     
     // Fetch popular city-service-model combinations (limited to top 50 for sitemap)
@@ -169,17 +194,28 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
     const neighborhoods = await getNeighborhoodPagesFromDB();
     
     // Fetch city locations for /locations/{city} pages
-    const cityLocations = serviceLocations?.map(loc => ({
+    const cityLocations = serviceLocations?.map(loc => {
+      const citySlug = cityNameToUrlSlug(loc.city);
+      logSlugTransformation(loc.city, citySlug, 'city-location');
+      
+      // Standardized lastmod fallback
+      const lastmod = loc.updated_at || new Date().toISOString();
+      
+      return {
+        city: loc.city,
+        citySlug: citySlug,
+        updated_at: lastmod
+      };
+    }).filter(loc => isValidUrlSlug(loc.citySlug)) || [];
+    
+    // Map service areas with standardized lastmod
+    const serviceAreas = serviceLocations?.map(loc => ({
       city: loc.city,
-      citySlug: loc.city.toLowerCase().replace(/\s+/g, '-'),
       updated_at: loc.updated_at || new Date().toISOString()
     })) || [];
     
     return {
-      serviceAreas: serviceLocations?.map(loc => ({
-        city: loc.city,
-        updated_at: loc.updated_at || new Date().toISOString()
-      })) || [],
+      serviceAreas,
       blogPosts,
       services,
       cityServiceModels,
@@ -256,7 +292,7 @@ async function getNeighborhoodPagesFromDB(): Promise<Array<{
 
 /**
  * Get popular city-service-model combinations for sitemap
- * Queries database to get top 1,000 combinations of cities, services, and models
+ * Queries database with safety limits to prevent Vercel timeout (10s)
  * Focuses on combinations with actual price data in dynamic_pricing table
  */
 async function getPopularCityServiceModels(): Promise<Array<{
@@ -266,11 +302,39 @@ async function getPopularCityServiceModels(): Promise<Array<{
   updated_at: string;
 }>> {
   const supabase = getServiceSupabase();
+  const startTime = Date.now();
+  const MAX_EXECUTION_TIME = 8000; // 8 seconds (leaving 2s buffer for Vercel 10s timeout)
+  const MAX_COMBINATIONS = 2000; // Limit total URL count to prevent sitemap bloat
+  const MAX_COMBINATIONS_PER_SERVICE = 100; // Limit per service to ensure diversity
   
   try {
-    // Query to get city-service-model combinations with actual price data
-    // We join dynamic_pricing with device_models and services, then cross-join with service_locations
-    // Since dynamic_pricing is location-agnostic, we generate city-specific URLs for all active locations
+    // Start timeout protection
+    const checkTimeout = () => {
+      if (Date.now() - startTime > MAX_EXECUTION_TIME) {
+        throw new Error('Sitemap generation timeout - exceeded 8 second limit');
+      }
+    };
+    
+    checkTimeout();
+    
+    // Get active service locations first (cities)
+    const { data: locations, error: locationsError } = await supabase
+      .from('service_locations')
+      .select('city, updated_at')
+      .eq('is_active', true)
+      .order('city')
+      .limit(20); // Limit to top 20 cities for safety
+
+    if (locationsError || !locations || locations.length === 0) {
+      sitemapLogger.error('Error fetching service locations:', locationsError);
+      return getFallbackCombinations();
+    }
+
+    sitemapLogger.info(`Found ${locations.length} active service locations`);
+    checkTimeout();
+    
+    // Query dynamic pricing with proper join handling and limits
+    // Use a more efficient query with explicit limits
     const { data: combinations, error } = await supabase
       .from('dynamic_pricing')
       .select(`
@@ -279,11 +343,13 @@ async function getPopularCityServiceModels(): Promise<Array<{
         updated_at,
         services!inner (
           name,
+          slug,
           is_active,
           updated_at
         ),
         device_models!inner (
           name,
+          slug,
           popularity_score,
           is_active,
           updated_at
@@ -292,120 +358,137 @@ async function getPopularCityServiceModels(): Promise<Array<{
       .eq('is_active', true)
       .eq('services.is_active', true)
       .eq('device_models.is_active', true)
-      .limit(1000);
+      .order('device_models.popularity_score', { ascending: false })
+      .limit(500); // Limit initial query to prevent overwhelming response
+
+    checkTimeout();
 
     if (error || !combinations) {
       sitemapLogger.error('Error fetching dynamic pricing combinations:', error);
       return getFallbackCombinations();
     }
 
-    // Get active service locations
-    const { data: locations, error: locationsError } = await supabase
-      .from('service_locations')
-      .select('city, updated_at')
-      .eq('is_active', true)
-      .order('city');
-
-    if (locationsError || !locations) {
-      sitemapLogger.error('Error fetching service locations:', locationsError);
+    if (combinations.length === 0) {
+      sitemapLogger.warn('No dynamic pricing combinations found, using fallback');
       return getFallbackCombinations();
     }
 
-    // If we have no combinations or locations, return fallback
-    if (combinations.length === 0 || locations.length === 0) {
-      sitemapLogger.warn('No dynamic pricing combinations or service locations found, using fallback');
-      return getFallbackCombinations();
-    }
-
-    // Debug: Log first combination structure
-    if (combinations.length > 0) {
-      sitemapLogger.debug('First combination structure:', JSON.stringify({
-        service_id: combinations[0].service_id,
-        model_id: combinations[0].model_id,
-        services: combinations[0].services,
-        device_models: combinations[0].device_models,
-        services_length: combinations[0].services?.length,
-        device_models_length: combinations[0].device_models?.length
-      }, null, 2));
-    }
-
-    // Sort combinations by popularity_score in descending order for SEO prioritization
-    const sortedCombinations = [...combinations].sort((a, b) => {
-      // Handle both array and object cases for joined data
-      const modelDataA = Array.isArray(a.device_models) ? a.device_models[0] : a.device_models;
-      const modelDataB = Array.isArray(b.device_models) ? b.device_models[0] : b.device_models;
+    sitemapLogger.info(`Found ${combinations.length} dynamic pricing combinations`);
+    
+    // Group combinations by service to ensure diversity
+    const combinationsByService = new Map<string, typeof combinations>();
+    
+    for (const combo of combinations) {
+      checkTimeout();
       
-      const scoreA = modelDataA?.popularity_score || 0;
-      const scoreB = modelDataB?.popularity_score || 0;
-      return scoreB - scoreA; // Descending order
-    });
-
-    sitemapLogger.info(`Sorted ${sortedCombinations.length} combinations by popularity_score`);
-
-    // Generate city-service-model combinations
+      // Robust join handling with null checks
+      const serviceData = Array.isArray(combo.services) ? combo.services[0] : combo.services;
+      const modelData = Array.isArray(combo.device_models) ? combo.device_models[0] : combo.device_models;
+      
+      if (!serviceData?.name || !modelData?.name) {
+        sitemapLogger.debug('Skipping combination with missing service or model data');
+        continue;
+      }
+      
+      const serviceName = serviceData.name;
+      if (!combinationsByService.has(serviceName)) {
+        combinationsByService.set(serviceName, []);
+      }
+      combinationsByService.get(serviceName)!.push(combo);
+    }
+    
+    checkTimeout();
+    
+    // Generate city-service-model combinations with limits
     const result: Array<{
       city: string;
       service: string;
       model: string;
       updated_at: string;
     }> = [];
-
-    // For each combination, create entries for all active locations
-    // Limit to 1000 total combinations to avoid overwhelming the sitemap
-    const maxCombinations = 1000;
-    let combinationCount = 0;
-
-    for (const combo of sortedCombinations) {
-      if (combinationCount >= maxCombinations) break;
-
-      // Handle both array and object cases for joined data
-      // Supabase returns objects for single matches, arrays for multiple matches
-      const serviceData = Array.isArray(combo.services) ? combo.services[0] : combo.services;
-      const modelData = Array.isArray(combo.device_models) ? combo.device_models[0] : combo.device_models;
+    
+    let totalCombinationCount = 0;
+    
+    // Process each service type with limits
+    for (const [serviceName, serviceCombinations] of combinationsByService) {
+      if (totalCombinationCount >= MAX_COMBINATIONS) break;
       
-      const serviceName = serviceData?.name;
-      const modelName = modelData?.name;
+      // Take top N models for this service
+      const topModels = serviceCombinations
+        .slice(0, MAX_COMBINATIONS_PER_SERVICE)
+        .map(combo => {
+          const serviceData = Array.isArray(combo.services) ? combo.services[0] : combo.services;
+          const modelData = Array.isArray(combo.device_models) ? combo.device_models[0] : combo.device_models;
+          
+          return {
+            serviceName: serviceData?.name || '',
+            serviceSlug: serviceData?.slug || '',
+            modelName: modelData?.name || '',
+            modelSlug: modelData?.slug || '',
+            updated_at: combo.updated_at || 
+                       serviceData?.updated_at || 
+                       modelData?.updated_at || 
+                       new Date().toISOString(),
+            popularity: modelData?.popularity_score || 0
+          };
+        })
+        .filter(item => item.serviceName && item.modelName);
       
-      if (!serviceName || !modelName) {
-        sitemapLogger.debug(`Skipping combo - missing serviceName: ${serviceName}, modelName: ${modelName}`);
-        continue;
-      }
-
-      // Generate slugs
-      const serviceSlug = serviceName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-      const modelSlug = modelName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-
-      // Use the most recent updated_at from the combination
-      const comboUpdatedAt = combo.updated_at ||
-                            serviceData?.updated_at ||
-                            modelData?.updated_at ||
-                            new Date().toISOString();
-
-      // Create entries for each location
+      // Generate URLs for each city
       for (const location of locations) {
-        if (combinationCount >= maxCombinations) break;
-
-        const citySlug = location.city.toLowerCase().replace(/\s+/g, '-');
-
-        result.push({
-          city: citySlug,
-          service: serviceSlug,
-          model: modelSlug,
-          updated_at: comboUpdatedAt
-        });
-
-        combinationCount++;
+        if (totalCombinationCount >= MAX_COMBINATIONS) break;
+        
+        const citySlug = cityNameToUrlSlug(location.city);
+        if (!isValidUrlSlug(citySlug)) {
+          sitemapLogger.warn(`Invalid city slug generated: ${citySlug} from ${location.city}`);
+          continue;
+        }
+        
+        for (const model of topModels) {
+          if (totalCombinationCount >= MAX_COMBINATIONS) break;
+          
+          // Use centralized slug utilities for consistency
+          const serviceSlug = serviceNameToUrlSlug(model.serviceName);
+          const modelSlug = modelNameToUrlSlug(model.modelName);
+          
+          if (!isValidUrlSlug(serviceSlug) || !isValidUrlSlug(modelSlug)) {
+            sitemapLogger.warn(`Invalid slug generated: service=${serviceSlug}, model=${modelSlug}`);
+            continue;
+          }
+          
+          // Log slug transformations for debugging
+          logSlugTransformation(model.serviceName, serviceSlug, 'service');
+          logSlugTransformation(model.modelName, modelSlug, 'model');
+          
+          result.push({
+            city: citySlug,
+            service: serviceSlug,
+            model: modelSlug,
+            updated_at: model.updated_at
+          });
+          
+          totalCombinationCount++;
+        }
       }
+      
+      checkTimeout();
     }
-
-    sitemapLogger.info(`Generated ${result.length} city-service-model combinations from dynamic pricing data`);
-    sitemapLogger.debug(`Processed ${combinationCount} total entries from ${sortedCombinations.length} combinations across ${locations.length} locations`);
+    
+    sitemapLogger.info(`Generated ${result.length} city-service-model combinations (limited to ${MAX_COMBINATIONS})`);
+    sitemapLogger.debug(`Execution time: ${Date.now() - startTime}ms`);
+    
+    // If we have no results, return fallback
+    if (result.length === 0) {
+      sitemapLogger.warn('No valid combinations generated, using fallback');
+      return getFallbackCombinations();
+    }
+    
     return result;
     
   } catch (error) {
     sitemapLogger.error('Error fetching city-service-model combinations:', error);
     
-    // Return fallback combinations on error
+    // Return fallback combinations on error or timeout
     return getFallbackCombinations();
   }
 }
