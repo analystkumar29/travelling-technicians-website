@@ -1290,7 +1290,7 @@ export async function getDynamicPricing(
   modelSlug: string
 ): Promise<{
   basePrice: number;
-  discountedPrice?: number;
+  discountedPrice: number | null;
   priceRange: string;
 }> {
   try {
@@ -1367,7 +1367,7 @@ export async function getDynamicPricing(
       ? parseFloat(pricing.discounted_price as string)
       : pricing.compare_at_price
         ? parseFloat(pricing.compare_at_price as string)
-        : undefined;
+        : null;
 
     // If discountedPrice is higher than basePrice, treat basePrice as the discount
     if (discountedPrice && discountedPrice > basePrice) {
@@ -1378,7 +1378,7 @@ export async function getDynamicPricing(
     if (priceAdjustmentPercentage !== 0) {
       const adjustmentFactor = 1 + (priceAdjustmentPercentage / 100);
       basePrice = Math.round(basePrice * adjustmentFactor);
-      if (discountedPrice) {
+      if (discountedPrice !== null) {
         discountedPrice = Math.round(discountedPrice * adjustmentFactor);
       }
     }
@@ -1409,7 +1409,7 @@ export async function getDynamicPricing(
  */
 function getFallbackPricing(serviceSlug: string): {
   basePrice: number;
-  discountedPrice?: number;
+  discountedPrice: number | null;
   priceRange: string;
 } {
   // Current hardcoded logic from repair page

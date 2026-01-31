@@ -1,8 +1,11 @@
 import Link from 'next/link';
 import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaMobileAlt, FaLaptop, FaTabletAlt } from 'react-icons/fa';
 import { LogoImage } from '@/components/common/OptimizedImage';
+import { useSimplePhoneNumber } from '@/hooks/useBusinessSettings';
 
 export default function Footer() {
+  const { display: phoneDisplay, href: phoneHref, loading: phoneLoading } = useSimplePhoneNumber();
+  
   return (
     <footer className="bg-gray-900 text-white">
       {/* Main Footer Content */}
@@ -29,8 +32,8 @@ export default function Footer() {
             <div className="space-y-2">
               <div className="flex items-center group">
                 <FaPhone className="text-primary-400 mr-2 group-hover:text-primary-300 transition-colors duration-300" />
-                <a href="tel:7783899251" className="group-hover:text-primary-300 transition-colors duration-300">
-                  (778) 389-9251
+                <a href={phoneLoading ? "#" : phoneHref} className="group-hover:text-primary-300 transition-colors duration-300">
+                  {phoneLoading ? "Loading..." : phoneDisplay}
                 </a>
               </div>
               <div className="flex items-center group">

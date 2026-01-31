@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 
 interface Brand {
@@ -85,7 +85,7 @@ const BrandModelPricingDisplay: React.FC<BrandModelPricingDisplayProps> = ({
   const [loading, setLoading] = useState(false);
 
   // Mock brand data with enhanced metadata
-  const mockBrands: Brand[] = [
+  const mockBrands: Brand[] = useMemo(() => [
     {
       id: 1,
       name: 'apple',
@@ -110,10 +110,10 @@ const BrandModelPricingDisplay: React.FC<BrandModelPricingDisplayProps> = ({
       model_count: 26,
       brand_colors: { primary: '#4285F4', secondary: '#34A853' }
     }
-  ];
+  ], []);
 
   // Mock models data with enhanced metadata
-  const mockModels: Model[] = [
+  const mockModels: Model[] = useMemo(() => [
     {
       id: 1,
       name: 'iPhone 15 Pro Max',
@@ -147,18 +147,18 @@ const BrandModelPricingDisplay: React.FC<BrandModelPricingDisplayProps> = ({
       popularity_score: 0.88,
       price_range: { min: 140, max: 320 }
     }
-  ];
+  ], []);
 
   useEffect(() => {
     setBrands(mockBrands);
-  }, [deviceType]);
+  }, [deviceType, mockBrands]);
 
   useEffect(() => {
     if (selectedBrand) {
       const brandModels = mockModels.filter(model => model.brand === selectedBrand.name);
       setModels(brandModels);
     }
-  }, [selectedBrand]);
+  }, [selectedBrand, mockModels]);
 
   const BrandCard: React.FC<{ brand: Brand }> = ({ brand }) => (
     <div 

@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { FaPhone, FaClock, FaShieldAlt, FaMapMarkerAlt, FaStar, FaCheckCircle, FaMobile, FaLaptop, FaTabletAlt, FaTools } from 'react-icons/fa';
 import { LocalBusinessSchema } from '@/components/seo/StructuredData';
+import { useSimplePhoneNumber } from '@/hooks/useBusinessSettings';
 
 // Burnaby-specific testimonials
 const burnabyTestimonials = [
@@ -72,6 +73,8 @@ const commonRepairs = [
 ];
 
 export default function BurnabyRepairPage() {
+  const { display: phoneDisplay, href: phoneHref, loading: phoneLoading } = useSimplePhoneNumber('burnaby');
+  
   return (
     <>
       <Head>
@@ -122,9 +125,9 @@ export default function BurnabyRepairPage() {
               <Link href="/book-online" className="btn-accent text-lg px-8 py-4">
                 Book Repair in Burnaby
               </Link>
-              <a href="tel:+16045551234" className="btn-outline border-white text-white hover:bg-primary-600 text-lg px-8 py-4 flex items-center justify-center">
+              <a href={phoneLoading ? "#" : phoneHref} className="btn-outline border-white text-white hover:bg-primary-600 text-lg px-8 py-4 flex items-center justify-center">
                 <FaPhone className="mr-2" />
-                (604) 555-1234
+                {phoneLoading ? "Loading..." : phoneDisplay}
               </a>
             </div>
             <div className="flex flex-wrap justify-center gap-6 text-sm">
@@ -451,9 +454,9 @@ export default function BurnabyRepairPage() {
               <Link href="/book-online" className="btn-accent text-lg px-8 py-4">
                 Book Burnaby Repair
               </Link>
-              <a href="tel:+16045551234" className="btn-outline border-white text-white hover:bg-primary-700 text-lg px-8 py-4 flex items-center justify-center">
+              <a href={phoneLoading ? "#" : phoneHref} className="btn-outline border-white text-white hover:bg-primary-700 text-lg px-8 py-4 flex items-center justify-center">
                 <FaPhone className="mr-2" />
-                Call (604) 555-1234
+                {phoneLoading ? "Loading..." : phoneDisplay}
               </a>
             </div>
           </div>
@@ -469,7 +472,7 @@ export default function BurnabyRepairPage() {
             "@type": "LocalBusiness",
             "name": "The Travelling Technicians - Burnaby",
             "image": "https://travellingtechnicians.ca/images/logo/logo-orange-optimized.webp",
-            "telephone": "(604) 555-1234",
+            "telephone": phoneLoading ? "(604) 555-1234" : phoneDisplay.replace(/[^\d+]/g, ''),
             "address": {
               "@type": "PostalAddress",
               "addressLocality": "Burnaby",

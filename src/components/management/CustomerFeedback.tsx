@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   FaExclamationTriangle, 
   FaCheckCircle, 
@@ -73,11 +73,7 @@ export default function CustomerFeedback() {
     notes: string;
   } | null>(null);
 
-  useEffect(() => {
-    loadFeedback();
-  }, [filter, sortBy]);
-
-  const loadFeedback = async () => {
+  const loadFeedback = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -100,7 +96,11 @@ export default function CustomerFeedback() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter, sortBy]);
+
+  useEffect(() => {
+    loadFeedback();
+  }, [filter, sortBy, loadFeedback]);
 
   const calculateStats = (feedbackList: CustomerFeedback[]) => {
     const stats: FeedbackStats = {

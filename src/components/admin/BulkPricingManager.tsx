@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 
 interface DeviceType {
@@ -58,35 +58,7 @@ export default function BulkPricingManager() {
     matrix: PricingMatrixCell[][];
   } | null>(null);
 
-  // Load initial data
-  useEffect(() => {
-    loadDeviceTypes();
-  }, []);
-
-  // Load brands when device type changes
-  useEffect(() => {
-    if (selectedDeviceType) {
-      loadBrands();
-      setSelectedBrand('');
-      setSelectedModels(new Set());
-    }
-  }, [selectedDeviceType]);
-
-  // Load models when brand changes
-  useEffect(() => {
-    if (selectedDeviceType && selectedBrand) {
-      loadModels();
-    }
-  }, [selectedDeviceType, selectedBrand]);
-
-  // Load services when device type changes
-  useEffect(() => {
-    if (selectedDeviceType) {
-      loadServices();
-    }
-  }, [selectedDeviceType]);
-
-  const loadDeviceTypes = async () => {
+  const loadDeviceTypes = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/devices/types');
@@ -100,9 +72,9 @@ export default function BulkPricingManager() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadBrands = async () => {
+  const loadBrands = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(
@@ -118,9 +90,9 @@ export default function BulkPricingManager() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedDeviceType]);
 
-  const loadModels = async () => {
+  const loadModels = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(
@@ -136,9 +108,9 @@ export default function BulkPricingManager() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedBrand]);
 
-  const loadServices = async () => {
+  const loadServices = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(
@@ -154,9 +126,9 @@ export default function BulkPricingManager() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [deviceTypes, selectedDeviceType]);
 
-  const loadPricingMatrix = async () => {
+  const loadPricingMatrix = useCallback(async () => {
     try {
       setLoading(true);
       const modelIds = Array.from(selectedModels).join(',');
@@ -179,7 +151,35 @@ export default function BulkPricingManager() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedBrand, selectedDeviceType, selectedModels, selectedServices]);
+
+  // Load initial data
+  useEffect(() => {
+    loadDeviceTypes();
+  }, [loadDeviceTypes]);
+
+  // Load brands when device type changes
+  useEffect(() => {
+    if (selectedDeviceType) {
+      loadBrands();
+      setSelectedBrand('');
+      setSelectedModels(new Set());
+    }
+  }, [selectedDeviceType, loadBrands]);
+
+  // Load models when brand changes
+  useEffect(() => {
+    if (selectedDeviceType && selectedBrand) {
+      loadModels();
+    }
+  }, [selectedDeviceType, selectedBrand, loadModels]);
+
+  // Load services when device type changes
+  useEffect(() => {
+    if (selectedDeviceType) {
+      loadServices();
+    }
+  }, [selectedDeviceType, loadServices]);
 
   const handleSavePricing = async () => {
     try {

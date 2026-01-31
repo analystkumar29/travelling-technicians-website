@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FaPhone, FaClock, FaShieldAlt, FaMapMarkerAlt, FaStar, FaCheckCircle, FaMobile, FaLaptop, FaTabletAlt, FaTools } from 'react-icons/fa';
 import { LocalBusinessSchema, ReviewSchema } from '@/components/seo/StructuredData';
 import { getSameAsUrls } from '@/utils/wikidata';
+import { useSimplePhoneNumber } from '@/hooks/useBusinessSettings';
 
 // Vancouver-specific testimonials
 const vancouverTestimonials = [
@@ -75,6 +76,7 @@ const commonRepairs = [
 
 export default function VancouverRepairPage() {
   const sameAsUrls = getSameAsUrls('vancouver');
+  const { display: phoneDisplay, href: phoneHref, loading: phoneLoading } = useSimplePhoneNumber('vancouver');
   
   return (
     <>
@@ -143,9 +145,9 @@ export default function VancouverRepairPage() {
               <Link href="/book-online" className="btn-accent text-lg px-8 py-4">
                 Book Repair in Vancouver
               </Link>
-              <a href="tel:+16045551234" className="btn-outline border-white text-white hover:bg-primary-600 text-lg px-8 py-4 flex items-center justify-center">
+              <a href={phoneLoading ? "#" : phoneHref} className="btn-outline border-white text-white hover:bg-primary-600 text-lg px-8 py-4 flex items-center justify-center">
                 <FaPhone className="mr-2" />
-                (604) 555-1234
+                {phoneLoading ? "Loading..." : phoneDisplay}
               </a>
             </div>
             <div className="flex flex-wrap justify-center gap-6 text-sm">
@@ -472,9 +474,9 @@ export default function VancouverRepairPage() {
               <Link href="/book-online" className="btn-accent text-lg px-8 py-4">
                 Book Vancouver Repair
               </Link>
-              <a href="tel:+16045551234" className="btn-outline border-white text-white hover:bg-primary-700 text-lg px-8 py-4 flex items-center justify-center">
+              <a href={phoneLoading ? "#" : phoneHref} className="btn-outline border-white text-white hover:bg-primary-700 text-lg px-8 py-4 flex items-center justify-center">
                 <FaPhone className="mr-2" />
-                Call (604) 555-1234
+                {phoneLoading ? "Loading..." : phoneDisplay}
               </a>
             </div>
           </div>
@@ -490,7 +492,7 @@ export default function VancouverRepairPage() {
             "@type": "LocalBusiness",
             "name": "The Travelling Technicians - Vancouver",
             "image": "https://travellingtechnicians.ca/images/logo/logo-orange-optimized.webp",
-            "telephone": "(604) 555-1234",
+            "telephone": phoneLoading ? "(604) 555-1234" : phoneDisplay.replace(/[^\d+]/g, ''),
             "address": {
               "@type": "PostalAddress",
               "addressLocality": "Vancouver",

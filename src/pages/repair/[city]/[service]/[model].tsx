@@ -33,7 +33,7 @@ interface CityServiceModelPageProps {
   };
   pricingData: {
     basePrice: number;
-    discountedPrice?: number;
+    discountedPrice: number | null;
     priceRange: string;
   };
   wikidataId?: string;
@@ -186,7 +186,7 @@ export const getStaticProps: GetStaticProps<CityServiceModelPageProps> = async (
     
     const pricingData = {
       basePrice: dynamicPricing.basePrice,
-      discountedPrice: dynamicPricing.discountedPrice,
+      discountedPrice: dynamicPricing.discountedPrice ?? null,
       priceRange: dynamicPricing.priceRange
     };
 
