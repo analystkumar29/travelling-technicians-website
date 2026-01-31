@@ -127,9 +127,9 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
     // Fetch service locations (using service_locations table instead of service_areas)
     const { data: serviceLocations } = await supabase
       .from('service_locations')
-      .select('city, updated_at')
+      .select('city_name, created_at')
       .eq('is_active', true)
-      .order('city');
+      .order('city_name');
     
     // Fetch blog posts (simulated - you can add a blog table later)
     const blogPosts = [
@@ -168,7 +168,7 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       const serviceSlug = service.slug || serviceNameToUrlSlug(service.name);
       logSlugTransformation(service.name, serviceSlug, 'service-fetch');
       
-      // Standardized lastmod fallback
+      // Standardized lastmod fallback - use updated_at now that it exists
       const lastmod = service.updated_at || new Date().toISOString();
       
       // Map device_type_id to string (1=mobile, 2=laptop, 3=tablet)
@@ -189,20 +189,21 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
     
     // Fetch popular city-service-model combinations (limited to top 50 for sitemap)
     const cityServiceModels = await getPopularCityServiceModels();
+    sitemapLogger.info(`Fetched ${cityServiceModels.length} city-service-model combinations`);
     
     // Fetch neighborhood pages (Phase 8)
     const neighborhoods = await getNeighborhoodPagesFromDB();
     
     // Fetch city locations for /locations/{city} pages
     const cityLocations = serviceLocations?.map(loc => {
-      const citySlug = cityNameToUrlSlug(loc.city);
-      logSlugTransformation(loc.city, citySlug, 'city-location');
+      const citySlug = cityNameToUrlSlug(loc.city_name);
+      logSlugTransformation(loc.city_name, citySlug, 'city-location');
       
       // Standardized lastmod fallback
-      const lastmod = loc.updated_at || new Date().toISOString();
+      const lastmod = loc.created_at || new Date().toISOString();
       
       return {
-        city: loc.city,
+        city: loc.city_name,
         citySlug: citySlug,
         updated_at: lastmod
       };
@@ -210,8 +211,8 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
     
     // Map service areas with standardized lastmod
     const serviceAreas = serviceLocations?.map(loc => ({
-      city: loc.city,
-      updated_at: loc.updated_at || new Date().toISOString()
+      city: loc.city_name,
+      updated_at: loc.created_at || new Date().toISOString()
     })) || [];
     
     return {
@@ -261,7 +262,6 @@ async function getNeighborhoodPagesFromDB(): Promise<Array<{
           city_name
         )
       `)
-      .eq('is_active', true)
       .order('neighborhood_name');
 
     if (error || !neighborhoods) {
@@ -320,9 +320,9 @@ async function getPopularCityServiceModels(): Promise<Array<{
     // Get active service locations first (cities)
     const { data: locations, error: locationsError } = await supabase
       .from('service_locations')
-      .select('city, updated_at')
+      .select('city_name, created_at')
       .eq('is_active', true)
-      .order('city')
+      .order('city_name')
       .limit(20); // Limit to top 20 cities for safety
 
     if (locationsError || !locations || locations.length === 0) {
@@ -340,7 +340,7 @@ async function getPopularCityServiceModels(): Promise<Array<{
       .select(`
         service_id,
         model_id,
-        updated_at,
+        created_at,
         services!inner (
           name,
           slug,
@@ -350,15 +350,15 @@ async function getPopularCityServiceModels(): Promise<Array<{
         device_models!inner (
           name,
           slug,
-          popularity_score,
           is_active,
-          updated_at
+          updated_at,
+          popularity_score
         )
       `)
       .eq('is_active', true)
       .eq('services.is_active', true)
       .eq('device_models.is_active', true)
-      .order('device_models.popularity_score', { ascending: false })
+      .order('popularity_score', { ascending: false, foreignTable: 'device_models' })
       .limit(500); // Limit initial query to prevent overwhelming response
 
     checkTimeout();
@@ -374,6 +374,7 @@ async function getPopularCityServiceModels(): Promise<Array<{
     }
 
     sitemapLogger.info(`Found ${combinations.length} dynamic pricing combinations`);
+    sitemapLogger.debug('Sample combination:', combinations[0]);
     
     // Group combinations by service to ensure diversity
     const combinationsByService = new Map<string, typeof combinations>();
@@ -425,7 +426,7 @@ async function getPopularCityServiceModels(): Promise<Array<{
             serviceSlug: serviceData?.slug || '',
             modelName: modelData?.name || '',
             modelSlug: modelData?.slug || '',
-            updated_at: combo.updated_at || 
+            updated_at: combo.created_at || 
                        serviceData?.updated_at || 
                        modelData?.updated_at || 
                        new Date().toISOString(),
@@ -438,9 +439,9 @@ async function getPopularCityServiceModels(): Promise<Array<{
       for (const location of locations) {
         if (totalCombinationCount >= MAX_COMBINATIONS) break;
         
-        const citySlug = cityNameToUrlSlug(location.city);
+        const citySlug = cityNameToUrlSlug(location.city_name);
         if (!isValidUrlSlug(citySlug)) {
-          sitemapLogger.warn(`Invalid city slug generated: ${citySlug} from ${location.city}`);
+          sitemapLogger.warn(`Invalid city slug generated: ${citySlug} from ${location.city_name}`);
           continue;
         }
         

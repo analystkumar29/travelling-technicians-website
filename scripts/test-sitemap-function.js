@@ -1,5 +1,5 @@
 /**
- * Test sitemap generation with fixed column names
+ * Test the getPopularCityServiceModels() function directly
  */
 
 const { createClient } = require('@supabase/supabase-js');
@@ -16,7 +16,7 @@ if (!supabaseUrl || !supabaseServiceKey) {
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Helper functions
+// Helper functions from slug-utils
 function toUrlSlug(input) {
   if (!input || typeof input !== 'string') return '';
   return input.toLowerCase()
@@ -72,17 +72,22 @@ function isValidUrlSlug(slug) {
   return slugPattern.test(slug);
 }
 
-async function testSitemapGeneration() {
-  console.log('🧪 Testing sitemap generation with fixed column names...\n');
+async function testGetPopularCityServiceModels() {
+  console.log('🧪 Testing getPopularCityServiceModels() function...\n');
+  
+  const startTime = Date.now();
+  const MAX_EXECUTION_TIME = 8000;
+  const MAX_COMBINATIONS = 2000;
+  const MAX_COMBINATIONS_PER_SERVICE = 100;
   
   try {
-    // 1. Get active service locations
+    // Get active service locations first (cities)
     console.log('1. Fetching active service locations...');
     const { data: locations, error: locationsError } = await supabase
       .from('service_locations')
-      .select('city_name, updated_at')
+      .select('city, updated_at')
       .eq('is_active', true)
-      .order('city_name')
+      .order('city')
       .limit(20);
 
     if (locationsError || !locations || locations.length === 0) {
@@ -91,10 +96,9 @@ async function testSitemapGeneration() {
     }
 
     console.log(`✅ Found ${locations.length} active service locations`);
-    console.log('Sample:', locations.slice(0, 3).map(l => l.city_name));
     
-    // 2. Get dynamic pricing combinations
-    console.log('\n2. Fetching dynamic pricing combinations...');
+    // Query dynamic pricing with joins
+    console.log('\n2. Querying dynamic_pricing with joins...');
     const { data: combinations, error } = await supabase
       .from('dynamic_pricing')
       .select(`
@@ -120,7 +124,7 @@ async function testSitemapGeneration() {
       .eq('services.is_active', true)
       .eq('device_models.is_active', true)
       .order('popularity_score', { foreignTable: 'device_models', ascending: false })
-      .limit(100);
+      .limit(500);
 
     if (error || !combinations) {
       console.error('Error fetching combinations:', error);
@@ -129,61 +133,103 @@ async function testSitemapGeneration() {
 
     console.log(`✅ Found ${combinations.length} dynamic pricing combinations`);
     
-    // 3. Group by service
-    console.log('\n3. Grouping by service...');
-    const serviceMap = new Map();
+    // Group combinations by service
+    console.log('\n3. Grouping combinations by service...');
+    const combinationsByService = new Map();
     
     for (const combo of combinations) {
       const serviceData = Array.isArray(combo.services) ? combo.services[0] : combo.services;
       const modelData = Array.isArray(combo.device_models) ? combo.device_models[0] : combo.device_models;
       
       if (!serviceData?.name || !modelData?.name) {
+        console.log(`   Skipping combo ${combo.id}: missing service or model data`);
         continue;
       }
       
       const serviceName = serviceData.name;
-      if (!serviceMap.has(serviceName)) {
-        serviceMap.set(serviceName, []);
+      if (!combinationsByService.has(serviceName)) {
+        combinationsByService.set(serviceName, []);
       }
-      serviceMap.get(serviceName).push({
-        serviceName: serviceData.name,
-        modelName: modelData.name,
-        updated_at: combo.created_at || new Date().toISOString()
-      });
+      combinationsByService.get(serviceName).push(combo);
     }
     
-    console.log(`✅ Grouped into ${serviceMap.size} service groups`);
+    console.log(`✅ Grouped into ${combinationsByService.size} service groups`);
     
-    // 4. Generate URLs
-    console.log('\n4. Generating URLs...');
-    const urls = [];
+    // Generate city-service-model combinations
+    console.log('\n4. Generating city-service-model combinations...');
+    const result = [];
+    let totalCombinationCount = 0;
     
-    for (const [serviceName, models] of serviceMap) {
-      const serviceSlug = serviceNameToUrlSlug(serviceName);
+    for (const [serviceName, serviceCombinations] of combinationsByService) {
+      if (totalCombinationCount >= MAX_COMBINATIONS) break;
       
+      const topModels = serviceCombinations
+        .slice(0, MAX_COMBINATIONS_PER_SERVICE)
+        .map(combo => {
+          const serviceData = Array.isArray(combo.services) ? combo.services[0] : combo.services;
+          const modelData = Array.isArray(combo.device_models) ? combo.device_models[0] : combo.device_models;
+          
+          return {
+            serviceName: serviceData?.name || '',
+            serviceSlug: serviceData?.slug || '',
+            modelName: modelData?.name || '',
+            modelSlug: modelData?.slug || '',
+            updated_at: combo.created_at || 
+                       serviceData?.updated_at || 
+                       modelData?.updated_at || 
+                       new Date().toISOString(),
+            popularity: modelData?.popularity_score || 0
+          };
+        })
+        .filter(item => item.serviceName && item.modelName);
+      
+      console.log(`   • ${serviceName}: ${topModels.length} models`);
+      
+      // Generate URLs for each city
       for (const location of locations) {
-        const citySlug = toUrlSlug(location.city_name);
+        if (totalCombinationCount >= MAX_COMBINATIONS) break;
         
-        for (const model of models.slice(0, 10)) { // Limit to 10 models per service
+        const citySlug = toUrlSlug(location.city);
+        if (!isValidUrlSlug(citySlug)) {
+          console.log(`     Skipping city "${location.city}" (invalid slug: ${citySlug})`);
+          continue;
+        }
+        
+        for (const model of topModels) {
+          if (totalCombinationCount >= MAX_COMBINATIONS) break;
+          
+          const serviceSlug = serviceNameToUrlSlug(model.serviceName);
           const modelSlug = toUrlSlug(model.modelName);
           
-          if (isValidUrlSlug(citySlug) && isValidUrlSlug(serviceSlug) && isValidUrlSlug(modelSlug)) {
-            urls.push(`/repair/${citySlug}/${serviceSlug}/${modelSlug}`);
+          if (!isValidUrlSlug(serviceSlug) || !isValidUrlSlug(modelSlug)) {
+            console.log(`     Skipping combination: service="${serviceSlug}", model="${modelSlug}"`);
+            continue;
           }
+          
+          result.push({
+            city: citySlug,
+            service: serviceSlug,
+            model: modelSlug,
+            updated_at: model.updated_at
+          });
+          
+          totalCombinationCount++;
         }
       }
     }
     
-    console.log(`🎯 Generated ${urls.length} URLs`);
+    console.log(`\n🎯 Generated ${result.length} city-service-model combinations`);
+    console.log(`⏱️  Execution time: ${Date.now() - startTime}ms`);
     
-    if (urls.length > 0) {
-      console.log('\n📄 Sample URLs (first 10):');
-      urls.slice(0, 10).forEach((url, i) => {
-        console.log(`  ${i + 1}. ${url}`);
+    // Show sample results
+    if (result.length > 0) {
+      console.log('\n📄 Sample combinations (first 10):');
+      result.slice(0, 10).forEach((item, i) => {
+        console.log(`   ${i + 1}. /repair/${item.city}/${item.service}/${item.model}`);
       });
     }
     
-    return urls;
+    return result;
     
   } catch (error) {
     console.error('Error in test:', error);
@@ -192,30 +238,9 @@ async function testSitemapGeneration() {
 }
 
 // Run the test
-testSitemapGeneration().then(urls => {
-  console.log(`\n📋 Final URL count: ${urls.length}`);
-  
-  // Also test the actual sitemap endpoint
-  console.log('\n🌐 Testing actual sitemap endpoint...');
-  const { exec } = require('child_process');
-  exec('curl -s "http://localhost:3000/api/sitemap.xml" | grep -c "<loc>"', (error, stdout, stderr) => {
-    if (!error) {
-      console.log(`Current sitemap URL count: ${stdout.trim()}`);
-    } else {
-      console.log('Could not fetch sitemap (server may not be running)');
-    }
-    
-    // Compare
-    if (urls.length > 0 && stdout) {
-      const currentCount = parseInt(stdout.trim());
-      console.log(`\n📊 Comparison:`);
-      console.log(`  • Expected (from database): ${urls.length}`);
-      console.log(`  • Actual (from sitemap): ${currentCount}`);
-      console.log(`  • Difference: ${urls.length - currentCount}`);
-    }
-    
-    process.exit(0);
-  });
+testGetPopularCityServiceModels().then(result => {
+  console.log(`\n📋 Final count: ${result.length} combinations`);
+  process.exit(0);
 }).catch(error => {
   console.error('Test failed:', error);
   process.exit(1);
