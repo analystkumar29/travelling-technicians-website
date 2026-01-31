@@ -289,6 +289,7 @@ export default function CityServiceModelPage({
       <Head>
         <title>{pageTitle}</title>
         <meta name="description" content={metaDescription} />
+        <link rel="canonical" href={`https://www.travelling-technicians.ca/repair/${city}/${service}/${model}`} />
         
         <LocalBusinessSchema
           name={`The Travelling Technicians - ${cityData.name}`}
