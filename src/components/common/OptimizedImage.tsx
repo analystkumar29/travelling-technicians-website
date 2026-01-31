@@ -96,7 +96,7 @@ export default function OptimizedImage({
     } : {};
     
     return (
-      <div style={!fill ? { position: 'relative', width: '100%' } : {}}>
+      <div style={fill ? { position: 'relative', width: '100%', height: '100%' } : { position: 'relative', width: '100%' }}>
         <Image
           src={src}
           alt={imageAlt}
@@ -124,7 +124,7 @@ export default function OptimizedImage({
   } : {};
 
   return (
-    <div style={!fill ? { position: 'relative', width: '100%' } : {}}>
+    <div style={fill ? { position: 'relative', width: '100%', height: '100%' } : { position: 'relative', width: '100%' }}>
       <Image
         src={src}
         alt={imageAlt}

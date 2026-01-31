@@ -107,7 +107,7 @@ class MyDocument extends Document {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.mapbox.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: https: blob:",
-      "connect-src 'self' https://www.google-analytics.com https://api.mapbox.com https://*.supabase.co wss://*.supabase.co",
+      "connect-src 'self' https://www.google-analytics.com https://api.mapbox.com https://*.supabase.co wss://*.supabase.co https://nominatim.openstreetmap.org https://maps.googleapis.com",
       "frame-src 'self' https://www.google.com",
       "object-src 'none'",
       "base-uri 'self'",
@@ -255,8 +255,8 @@ class MyDocument extends Document {
             }}
           />
           {/* Preload critical resources */}
-          <link rel="preload" href={`/images/logo/logo-orange-optimized.webp?v=${assetVersion}`} as="image" type="image/png" />
-          <link rel="preload" href={`/favicons/android-chrome-512x512.png?v=${assetVersion}`} as="image" type="image/png" />
+          <link rel="preload" href={`/images/logo/logo-orange-optimized.webp?v=${assetVersion}`} as="image" type="image/webp" />
+          {/* Removed favicon preload as it might not be used as an image on the page */}
           
           {/* Force search engines to update favicon */}
           <meta property="og:image" content={`${siteUrl}/favicons/android-chrome-512x512.png?v=${assetVersion}`} />

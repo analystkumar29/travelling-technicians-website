@@ -2,6 +2,27 @@ import React, { useState, useEffect, useRef, FormEvent, useCallback } from 'reac
 import { FaMapMarkerAlt, FaSpinner } from 'react-icons/fa';
 import { checkServiceArea } from '@/utils/locationUtils';
 
+// Debug utility for consistent logging
+const debugLog = (component: string, message: string, data?: any) => {
+  const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+  console.log(`[${timestamp}] [${component}] ${message}`, data || '');
+};
+
+const debugError = (component: string, message: string, error?: any) => {
+  const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+  console.error(`[${timestamp}] [${component}] ❌ ${message}`, error || '');
+};
+
+const debugWarn = (component: string, message: string, data?: any) => {
+  const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+  console.warn(`[${timestamp}] [${component}] ⚠️ ${message}`, data || '');
+};
+
+const debugSuccess = (component: string, message: string, data?: any) => {
+  const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+  console.log(`[${timestamp}] [${component}] ✅ ${message}`, data || '');
+};
+
 // Function to extract postal code from an address string
 function extractPostalCode(address: string): string {
   if (!address) return '';
@@ -65,30 +86,70 @@ export default function AddressAutocomplete({
   const debouncedFetchSuggestions = useRef<((input: string) => void) | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  // Component mount debug
+  useEffect(() => {
+    debugLog('ADDRESS_AUTOCOMPLETE', 'Component mounted', {
+      hasApiKey: !!apiKey,
+      apiKeyIsPlaceholder: apiKey === 'your-google-maps-api-key' || apiKey.includes('your-'),
+      initialValue: initialValue || 'none'
+    });
+    
+    // Log that we're using OpenStreetMap only
+    if (!apiKey || apiKey === 'your-google-maps-api-key' || apiKey.includes('your-')) {
+      debugLog('ADDRESS_AUTOCOMPLETE', 'No valid Google Maps API key provided, using OpenStreetMap only');
+    }
+  }, [apiKey, initialValue]);
+
   const fetchSuggestions = useCallback(async (input: string) => {
     if (!input) {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
     }
-    if (autocompleteServiceRef.current && (window as any).google && (window as any).google.maps && (window as any).google.maps.places) {
-      autocompleteServiceRef.current.getPlacePredictions(
-        { input },
-        (predictions: any[] | null, status: any) => {
-          if (status !== (window as any).google.maps.places.PlacesServiceStatus.OK || !predictions) {
-            setSuggestions([]);
-            setShowSuggestions(false);
-            console.warn('Autocomplete prediction failed:', status);
-            return;
+    
+    // Always use OpenStreetMap Nominatim API for address suggestions
+    try {
+      setLoading(true);
+      debugLog('ADDRESS_AUTOCOMPLETE', 'Using OpenStreetMap API for suggestions');
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(input)}&addressdetails=1&limit=5&countrycodes=ca`,
+        {
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'TheTravellingTechnicians/1.0'
           }
-          setSuggestions(predictions);
-          setShowSuggestions(true);
-          setActiveSuggestionIndex(-1);
         }
       );
-    } else {
-      // This case might happen if the script hasn't loaded yet or failed
-      // console.warn('Google Autocomplete service not available.');
+      
+      if (!response.ok) {
+        throw new Error(`OpenStreetMap API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      debugLog('ADDRESS_AUTOCOMPLETE', 'OpenStreetMap API response:', {
+        count: Array.isArray(data) ? data.length : 0,
+        data: data
+      });
+      
+      if (data && Array.isArray(data)) {
+        debugSuccess('ADDRESS_AUTOCOMPLETE', 'OpenStreetMap returned suggestions:', {
+          count: data.length,
+          firstSuggestion: data[0]?.display_name
+        });
+        setSuggestions(data);
+        setShowSuggestions(data.length > 0);
+        setActiveSuggestionIndex(-1);
+      } else {
+        debugWarn('ADDRESS_AUTOCOMPLETE', 'OpenStreetMap returned invalid data format');
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    } catch (error) {
+      debugError('ADDRESS_AUTOCOMPLETE', 'Error fetching OpenStreetMap suggestions:', error);
+      setSuggestions([]);
+      setShowSuggestions(false);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -211,86 +272,40 @@ export default function AddressAutocomplete({
     };
   }, [inputValue, fetchSuggestions, initialValue]); // Added fetchSuggestions, initialValue
 
+  // Set scriptLoaded to true immediately since we're only using OpenStreetMap
   useEffect(() => {
-    const loadGoogleScript = () => {
-      if (typeof (window as any).google === 'undefined' || typeof (window as any).google.maps === 'undefined') {
-        const currentCallbackName = callbackName.current;
-        (window as any)[currentCallbackName] = () => {
-          setScriptLoaded(true);
-          if ((window as any).google && (window as any).google.maps && (window as any).google.maps.places) {
-            placesServiceRef.current = new (window as any).google.maps.places.PlacesService(document.createElement('div'));
-            autocompleteServiceRef.current = new (window as any).google.maps.places.AutocompleteService();
-          }
-        };
+    setScriptLoaded(true);
+  }, []);
 
-        if (!document.querySelector(`script[src*="maps.googleapis.com/maps/api/js?key=${apiKey}"]`)){
-            const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=${currentCallbackName}`;
-            script.async = true;
-            script.defer = true;
-            document.head.appendChild(script);
-
-            return () => {
-              // Clean up script and callback
-              try {
-                if (document.head.contains(script)) {
-                  document.head.removeChild(script);
-                }
-                delete (window as any)[currentCallbackName];
-              } catch (e) {
-                console.warn("Error cleaning up Google Maps script:", e);
-              }
-            };
-        }
-      } else {
-        // Script already loaded
-        setScriptLoaded(true);
-        if ((window as any).google && (window as any).google.maps && (window as any).google.maps.places) {
-            placesServiceRef.current = new (window as any).google.maps.places.PlacesService(document.createElement('div'));
-            autocompleteServiceRef.current = new (window as any).google.maps.places.AutocompleteService();
-        }
-      }
+  // Setup debounced fetch function for OpenStreetMap suggestions
+  useEffect(() => {
+    const DEBOUNCE_DELAY = 300;
+    let timeoutId: NodeJS.Timeout;
+    
+    debouncedFetchSuggestions.current = (input: string) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        fetchSuggestions(input);
+      }, DEBOUNCE_DELAY);
     };
     
-    const cleanup = loadGoogleScript();
-    return cleanup;
-
-  }, [apiKey]); // apiKey is a dependency for loading the script
-
-  // This useEffect depends on scriptLoaded and fetchSuggestions
-  // This replaces the problematic one at line 545 from previous logs
-  useEffect(() => {
-    if (scriptLoaded && typeof (window as any).google !== 'undefined' && (window as any).google.maps && (window as any).google.maps.places) {
-      if (debouncedFetchSuggestions.current) {
-        // Initial fetch if inputValue exists and is not the same as initialValue (to avoid fetch on load with prefill)
-        if (inputValue && inputValue !== initialValue) {
-            debouncedFetchSuggestions.current(inputValue);
-        }
-      } else {
-        // Setup debounced fetch function once script is loaded
-        const DEBOUNCE_DELAY = 300;
-        let timeoutId: NodeJS.Timeout;
-        debouncedFetchSuggestions.current = (input: string) => {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
-                fetchSuggestions(input);
-            }, DEBOUNCE_DELAY);
-        };
-        // Initial fetch if inputValue exists and is not the same as initialValue
-        if (inputValue && inputValue !== initialValue) {
-            debouncedFetchSuggestions.current(inputValue);
-        }
-      }
+    // Initial fetch if inputValue exists and is not the same as initialValue
+    if (inputValue && inputValue !== initialValue) {
+      debouncedFetchSuggestions.current(inputValue);
     }
-  }, [scriptLoaded, inputValue, fetchSuggestions, initialValue]);
+    
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [inputValue, fetchSuggestions, initialValue]);
 
   const handleSuggestionClick = (e: any) => {
-    console.log("DEBUG - handleSuggestionClick - Suggestion clicked:", e);
+    debugLog('ADDRESS_AUTOCOMPLETE', 'Suggestion clicked:', e);
     
     try {
       // Handle case when e doesn't have an address property
       if (!e || typeof e !== 'object') {
-        console.error("DEBUG - handleSuggestionClick - Invalid suggestion object");
+        debugError('ADDRESS_AUTOCOMPLETE', 'Invalid suggestion object');
         return;
       }
       
@@ -309,7 +324,11 @@ export default function AddressAutocomplete({
           }
         }
         
-        console.log(`DEBUG - handleSuggestionClick - Using Nominatim format. Display name: ${displayName}, Postal code: ${postalCode}`);
+        debugSuccess('ADDRESS_AUTOCOMPLETE', 'Using Nominatim format suggestion', {
+          displayName,
+          postalCode: postalCode || 'none',
+          hasAddressObject: !!(e.address && typeof e.address === 'object')
+        });
         
         // Set the input value
         setInputValue(displayName);
@@ -321,12 +340,17 @@ export default function AddressAutocomplete({
         // Call the onAddressSelect callback
         if (onAddressSelect && displayName) {
           if (!postalCode) {
-            console.log("DEBUG - handleSuggestionClick - No postal code found in Nominatim suggestion");
+            debugWarn('ADDRESS_AUTOCOMPLETE', 'No postal code found in Nominatim suggestion');
           }
           
           const result = checkServiceArea(postalCode);
           const isValid = !!(result && result.serviceable);
-          console.log(`DEBUG - handleSuggestionClick - Calling onAddressSelect with: Address=${displayName}, PostalCode=${postalCode}, Valid=${isValid}`);
+          debugSuccess('ADDRESS_AUTOCOMPLETE', 'Calling onAddressSelect with Nominatim suggestion', {
+            address: displayName,
+            postalCode: postalCode || 'none',
+            isValid,
+            serviceAreaResult: result
+          });
           onAddressSelect(displayName, postalCode, isValid);
         }
         return;
@@ -342,7 +366,11 @@ export default function AddressAutocomplete({
         const addressStr = `${combinedAddress},${restOfAddress}`;
         const postalCode = e.postalCode || '';
         
-        console.log(`DEBUG - handleSuggestionClick - Using string address format. Address: ${addressStr}, Postal code: ${postalCode}`);
+        debugSuccess('ADDRESS_AUTOCOMPLETE', 'Using string address format suggestion', {
+          address: addressStr,
+          postalCode: postalCode || 'none',
+          originalAddress: e.address
+        });
         
         // Set the input value
         setInputValue(addressStr);
@@ -355,7 +383,12 @@ export default function AddressAutocomplete({
         if (onAddressSelect && addressStr) {
           const result = checkServiceArea(postalCode);
           const isValid = !!(result && result.serviceable);
-          console.log(`DEBUG - handleSuggestionClick - Calling onAddressSelect with: Address=${addressStr}, PostalCode=${postalCode}, Valid=${isValid}`);
+          debugSuccess('ADDRESS_AUTOCOMPLETE', 'Calling onAddressSelect with string address', {
+            address: addressStr,
+            postalCode: postalCode || 'none',
+            isValid,
+            serviceAreaResult: result
+          });
           onAddressSelect(addressStr, postalCode, isValid);
         }
         return;
@@ -365,7 +398,11 @@ export default function AddressAutocomplete({
       const addressStr = e.name || e.formatted_address || e.description || JSON.stringify(e);
       const postalCode = e.postal_code || e.postalCode || '';
       
-      console.log(`DEBUG - handleSuggestionClick - Using fallback format. Address: ${addressStr}, Postal code: ${postalCode}`);
+      debugLog('ADDRESS_AUTOCOMPLETE', 'Using fallback format suggestion', {
+        address: addressStr,
+        postalCode: postalCode || 'none',
+        suggestionType: 'fallback'
+      });
       
       // Set the input value
       setInputValue(addressStr);
@@ -378,11 +415,16 @@ export default function AddressAutocomplete({
       if (onAddressSelect && addressStr) {
         const result = checkServiceArea(postalCode);
         const isValid = !!(result && result.serviceable);
-        console.log(`DEBUG - handleSuggestionClick - Calling onAddressSelect with: Address=${addressStr}, PostalCode=${postalCode}, Valid=${isValid}`);
+        debugSuccess('ADDRESS_AUTOCOMPLETE', 'Calling onAddressSelect with fallback format', {
+          address: addressStr,
+          postalCode: postalCode || 'none',
+          isValid,
+          serviceAreaResult: result
+        });
         onAddressSelect(addressStr, postalCode, isValid);
       }
     } catch (error) {
-      console.error("DEBUG - handleSuggestionClick - Error processing address selection:", error);
+      debugError('ADDRESS_AUTOCOMPLETE', 'Error processing address selection:', error);
       setError('Error processing selected address. Please try another or enter manually.');
     }
   };
@@ -604,13 +646,7 @@ export default function AddressAutocomplete({
   };
 
   return (
-    <form 
-      className="relative w-full" 
-      onSubmit={(e: FormEvent) => {
-        e.preventDefault();
-        validateManualInput();
-      }}
-    >
+    <div className="relative w-full">
       <div className="relative">
         <input
           ref={inputRef}
@@ -689,6 +725,6 @@ export default function AddressAutocomplete({
       <div className="mt-2 text-xs text-gray-500">
         Enter your street number first, then select a suggestion to combine them automatically.
       </div>
-    </form>
+    </div>
   );
 } 
