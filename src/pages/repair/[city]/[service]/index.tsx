@@ -88,7 +88,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
       
       for (const service of activeServices) {
         // Map database service slug to URL slug
-        const urlSlug = serviceSlugMapping[service.slug] || service.slug;
+        const urlSlug = serviceSlugMapping[service.slug] ?? service.slug;
         
         // Only generate paths for services that have URL slug mapping
         if (serviceSlugMapping[service.slug]) {
@@ -218,13 +218,13 @@ export const getStaticProps: GetStaticProps<CityServicePageProps> = async ({ par
     const serviceFromDb = await getServiceBySlug(serviceSlug);
 
     const serviceDisplayName = serviceFromDb?.display_name
-      || serviceSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+      ?? serviceSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 
     const serviceData = {
       name: serviceSlug,
       displayName: serviceDisplayName,
       description: serviceFromDb?.description
-        || `Professional ${serviceDisplayName.toLowerCase()} services in ${cityData?.city_name || citySlug.replace('-', ' ')}.`
+        ?? `Professional ${serviceDisplayName.toLowerCase()} services in ${cityData?.city_name ?? citySlug.replace('-', ' ')}.`
     };
 
     // Get all models for this service from database
@@ -234,13 +234,13 @@ export const getStaticProps: GetStaticProps<CityServicePageProps> = async ({ par
     const models = modelsFromDb.map(model => ({
       slug: model.slug,
       displayName: model.display_name
-        || model.slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
-      brand: model.brand_name || 'Various',
-      deviceType: model.device_type || 'mobile',
+        ?? model.slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+      brand: model.brand_name ?? 'Various',
+      deviceType: model.device_type ?? 'mobile',
       imageUrl: `/images/devices/${model.slug}.webp`
     }));
 
-    const wikidataId = WIKIDATA_MAP[citySlug];
+    const wikidataId = WIKIDATA_MAP[citySlug] ?? null;
 
     // Fetch nearby cities for internal linking
     let nearbyCities: NearbyCity[] = [];
@@ -260,7 +260,7 @@ export const getStaticProps: GetStaticProps<CityServicePageProps> = async ({ par
         city: citySlug,
         service: serviceSlug,
         cityData: {
-          name: cityData?.city_name || citySlug.replace('-', ' '),
+          name: cityData?.city_name ?? citySlug.replace('-', ' '),
           slug: citySlug
         },
         serviceData,
@@ -296,7 +296,7 @@ export const getStaticProps: GetStaticProps<CityServicePageProps> = async ({ par
           description: `Professional repair service in ${citySlug.replace('-', ' ')}.`
         },
         models,
-        wikidataId: WIKIDATA_MAP[citySlug],
+        wikidataId: WIKIDATA_MAP[citySlug] ?? null,
         nearbyCities: [] // Empty array for fallback
       },
       revalidate: 3600
