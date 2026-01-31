@@ -132,6 +132,22 @@ export default withAuth(function AdminManagement() {
   const [error, setError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+  const fetchManagementData = useCallback(async () => {
+    try {
+      setLoading(true);
+      await Promise.all([
+        fetchStats(),
+        fetchRecentBookings(),
+        fetchUpcomingAppointments()
+      ]);
+    } catch (err) {
+      setError('Failed to load management data');
+      console.error('Management fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     // Only fetch data if authenticated (after withAuth HOC check completes)
     const checkAndFetch = async () => {
@@ -180,22 +196,6 @@ export default withAuth(function AdminManagement() {
       setIsLoggingOut(false);
     }
   };
-
-  const fetchManagementData = useCallback(async () => {
-    try {
-      setLoading(true);
-      await Promise.all([
-        fetchStats(),
-        fetchRecentBookings(),
-        fetchUpcomingAppointments()
-      ]);
-    } catch (err) {
-      setError('Failed to load management data');
-      console.error('Management fetch error:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   const fetchStats = async () => {
     const response = await authFetch('/api/bookings');

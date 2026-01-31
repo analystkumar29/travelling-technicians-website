@@ -248,7 +248,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       // Unregister to remove validation when not needed
       unregister('customBrand');
     }
-  }, [deviceBrand, methods]);
+  }, [deviceBrand, methods.register, methods.unregister]);
 
   // Check localStorage for saved address data when component mounts
   useEffect(() => {
