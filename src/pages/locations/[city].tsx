@@ -276,6 +276,8 @@ export default function CityRepairPage({ cityData }: CityRepairPageProps) {
   return (
     <>
       <Head>
+        <link rel="canonical" href={`https://www.travelling-technicians.ca/locations/${cityData.slug}`} />
+        
         {/* Place Schema for Map Pack visibility with precise geo-coordinates */}
         {latitude && longitude && (
           <PlaceSchema

@@ -304,8 +304,8 @@ async function getPopularCityServiceModels(): Promise<Array<{
   const supabase = getServiceSupabase();
   const startTime = Date.now();
   const MAX_EXECUTION_TIME = 8000; // 8 seconds (leaving 2s buffer for Vercel 10s timeout)
-  const MAX_COMBINATIONS = 2000; // Limit total URL count to prevent sitemap bloat
-  const MAX_COMBINATIONS_PER_SERVICE = 100; // Limit per service to ensure diversity
+  const MAX_COMBINATIONS = 10000; // Increased from 2000 to allow full coverage (still under 50k sitemap limit)
+  const MAX_COMBINATIONS_PER_SERVICE = 500; // Increased from 100 to allow more model coverage per service
   
   try {
     // Start timeout protection
@@ -475,14 +475,18 @@ async function getPopularCityServiceModels(): Promise<Array<{
       checkTimeout();
     }
     
-    sitemapLogger.info(`Generated ${result.length} city-service-model combinations (limited to ${MAX_COMBINATIONS})`);
-    sitemapLogger.debug(`Execution time: ${Date.now() - startTime}ms`);
+    const executionTime = Date.now() - startTime;
+    sitemapLogger.info(`Generated ${result.length} city-service-model combinations (cap: ${MAX_COMBINATIONS}, time: ${executionTime}ms)`);
     
     // If we have no results, return fallback
     if (result.length === 0) {
       sitemapLogger.warn('No valid combinations generated, using fallback');
       return getFallbackCombinations();
     }
+    
+    // Log coverage statistics
+    const coverage = ((result.length / MAX_COMBINATIONS) * 100).toFixed(1);
+    sitemapLogger.info(`Sitemap coverage: ${result.length}/${MAX_COMBINATIONS} URLs (${coverage}%)`);
     
     return result;
     
