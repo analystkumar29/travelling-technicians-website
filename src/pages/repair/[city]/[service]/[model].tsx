@@ -167,17 +167,17 @@ export const getStaticProps: GetStaticProps<CityServiceModelPageProps> = async (
       name: serviceSlug,
       displayName: serviceDisplayName,
       description: serviceFromDb?.description
-        || `Professional ${serviceDisplayName.toLowerCase()} service in ${cityData?.city_name || citySlug.replace('-', ' ')}.`,
+        ?? `Professional ${serviceDisplayName.toLowerCase()} service in ${cityData?.city_name ?? citySlug.replace('-', ' ')}.`,
       estimatedDurationMinutes: serviceFromDb?.estimated_duration_minutes
-        || (serviceSlug.includes('screen') ? 45 : serviceSlug.includes('battery') ? 60 : 90)
+        ?? (serviceSlug.includes('screen') ? 45 : serviceSlug.includes('battery') ? 60 : 90)
     };
 
     const modelData = {
       name: modelSlug,
       displayName: modelFromDb?.display_name
-        || modelSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
-      brand: modelFromDb?.brand_name || 'Various',
-      deviceType: modelFromDb?.device_type || 'mobile',
+        ?? modelSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+      brand: modelFromDb?.brand_name ?? 'Various',
+      deviceType: modelFromDb?.device_type ?? 'mobile',
       imageUrl: `/images/devices/${modelSlug}.webp`
     };
 
@@ -190,7 +190,7 @@ export const getStaticProps: GetStaticProps<CityServiceModelPageProps> = async (
       priceRange: dynamicPricing.priceRange
     };
 
-    const wikidataId = WIKIDATA_MAP[citySlug];
+    const wikidataId = WIKIDATA_MAP[citySlug] ?? null;
 
     // Fetch nearby cities for internal linking
     let nearbyCities: NearbyCity[] = [];
@@ -211,7 +211,7 @@ export const getStaticProps: GetStaticProps<CityServiceModelPageProps> = async (
         service: serviceSlug,
         model: modelSlug,
         cityData: {
-          name: cityData?.city_name || citySlug.replace('-', ' '),
+          name: cityData?.city_name ?? citySlug.replace('-', ' '),
           slug: citySlug
         },
         serviceData,
@@ -257,7 +257,7 @@ export const getStaticProps: GetStaticProps<CityServiceModelPageProps> = async (
           discountedPrice: fallbackDiscountedPrice,
           priceRange: fallbackPriceRange
         },
-        wikidataId: WIKIDATA_MAP[citySlug],
+        wikidataId: WIKIDATA_MAP[citySlug] ?? null,
         nearbyCities: [] // Empty array for fallback
       },
       revalidate: 3600
