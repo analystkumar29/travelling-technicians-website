@@ -9,6 +9,7 @@ import { GetStaticPaths, GetStaticProps } from 'next';
 import { getCityData, getNearbyLocations, getAllActiveServices, getModelsForService } from '@/lib/data-service';
 import { createBreadcrumbs } from '@/utils/seoHelpers';
 import { getSiteUrl } from '@/utils/supabaseClient';
+import { useSimplePhoneNumber } from '@/hooks/useBusinessSettings';
 
 interface CityServicePageProps {
   city: string;
@@ -346,6 +347,9 @@ export default function CityServicePage({
   
   const sameAs = wikidataId ? [`https://www.wikidata.org/wiki/${wikidataId}`] : [];
   const siteUrl = getSiteUrl();
+  
+  // Use city-specific phone number
+  const { display: phoneDisplay, href: phoneHref, loading: phoneLoading } = useSimplePhoneNumber(city);
 
   // Generate breadcrumb items for the current page
   const breadcrumbItems = createBreadcrumbs(`/repair/${city}/${service}`);
@@ -426,11 +430,11 @@ export default function CityServicePage({
                   Book {serviceData.displayName} in {cityData.name}
                 </Link>
                 <a 
-                  href="tel:+17783899251" 
-                  className="btn-outline border-white text-white hover:bg-primary-600 text-lg px-8 py-4 flex items-center justify-center"
+                  href={phoneLoading ? "#" : phoneHref} 
+                  className={`btn-outline border-white text-white hover:bg-primary-600 text-lg px-8 py-4 flex items-center justify-center ${phoneLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <FaPhone className="mr-2" />
-                  (778) 389-9251
+                  {phoneLoading ? "Loading..." : phoneDisplay}
                 </a>
               </div>
               

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FaMapMarkerAlt, FaPhone, FaClock, FaShieldAlt, FaCheckCircle } from 'react-icons/fa';
 import { LocalBusinessSchema } from '@/components/seo/StructuredData';
 import { getSiteUrl } from '@/utils/supabaseClient';
+import { useSimplePhoneNumber } from '@/hooks/useBusinessSettings';
 
 // All cities we serve
 const cities = [
@@ -20,6 +21,7 @@ const cities = [
 
 export default function RepairIndexPage() {
   const siteUrl = getSiteUrl();
+  const { display: phoneDisplay, href: phoneHref, loading: phoneLoading } = useSimplePhoneNumber();
   
   return (
     <>
@@ -78,9 +80,12 @@ export default function RepairIndexPage() {
                 <Link href="/book-online" className="btn-accent text-lg px-8 py-4">
                   Book Repair Service
                 </Link>
-                <a href="tel:+16045551234" className="btn-outline border-white text-white hover:bg-primary-600 text-lg px-8 py-4 flex items-center justify-center">
+                <a 
+                  href={phoneLoading ? "#" : phoneHref} 
+                  className={`btn-outline border-white text-white hover:bg-primary-600 text-lg px-8 py-4 flex items-center justify-center ${phoneLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
                   <FaPhone className="mr-2" />
-                  (604) 555-1234
+                  {phoneLoading ? "Loading..." : phoneDisplay}
                 </a>
               </div>
               <div className="flex flex-wrap justify-center gap-6 text-sm">
@@ -199,9 +204,12 @@ export default function RepairIndexPage() {
                 <Link href="/book-online" className="btn-accent text-lg px-8 py-4">
                   Book Repair Service
                 </Link>
-                <a href="tel:+16045551234" className="btn-outline border-white text-white hover:bg-primary-700 text-lg px-8 py-4 flex items-center justify-center">
+                <a 
+                  href={phoneLoading ? "#" : phoneHref} 
+                  className={`btn-outline border-white text-white hover:bg-primary-700 text-lg px-8 py-4 flex items-center justify-center ${phoneLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
                   <FaPhone className="mr-2" />
-                  Call (604) 555-1234
+                  {phoneLoading ? "Loading..." : `Call ${phoneDisplay}`}
                 </a>
               </div>
             </div>
@@ -217,7 +225,7 @@ export default function RepairIndexPage() {
               "@type": "LocalBusiness",
               "name": "The Travelling Technicians - Mobile & Laptop Repair Services",
               "image": `${siteUrl}/images/logo/logo-orange-optimized.webp`,
-              "telephone": "(604) 555-1234",
+              "telephone": phoneDisplay,
               "address": {
                 "@type": "PostalAddress",
                 "addressLocality": "Vancouver",
