@@ -65,17 +65,22 @@ export function generateTimeSlotsForDate(
   slotDuration: number = 120
 ): TimeSlot[] {
   // Parse date correctly - handle both Date objects and date strings
-  let localDate: Date;
+  // Always extract the date components safely to avoid timezone issues
+  let year: number, month: number, day: number;
   
   if (typeof date === 'string') {
-    // Parse date string in local timezone (not UTC)
-    const [year, month, day] = date.split('-').map(Number);
-    localDate = new Date(year, month - 1, day, 12, 0, 0); // Month is 0-indexed, set to noon
+    // Parse date string (YYYY-MM-DD format)
+    [year, month, day] = date.split('-').map(Number);
   } else {
-    // Already a Date object, create a copy and set to noon to avoid timezone issues
-    localDate = new Date(date);
-    localDate.setHours(12, 0, 0, 0); // Set to noon to avoid crossing day boundaries
+    // For Date objects, use UTC methods to get the correct date
+    // This handles the case where date is in UTC midnight (e.g., from date picker)
+    year = date.getUTCFullYear();
+    month = date.getUTCMonth() + 1; // getUTCMonth() returns 0-11
+    day = date.getUTCDate();
   }
+  
+  // Create date in local timezone at noon to avoid day boundary issues
+  const localDate = new Date(year, month - 1, day, 12, 0, 0);
   
   const dayOfWeek = localDate.getDay(); // 0 = Sunday, 6 = Saturday
   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
