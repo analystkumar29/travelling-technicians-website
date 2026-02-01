@@ -856,7 +856,7 @@ export async function getServicesByDeviceType(deviceType: 'laptop' | 'mobile' | 
       .select('id')
       .eq('name', deviceType)
       .eq('is_active', true)
-      .single();
+      .maybeSingle();
 
     if (deviceTypeError || !deviceTypeData) {
       dataLogger.warn(`Device type ${deviceType} not found in database, using static fallback`, { error: deviceTypeError?.message });
@@ -974,7 +974,7 @@ export async function getBrandsByDeviceType(deviceType: 'laptop' | 'mobile' | 't
       .select('id')
       .eq('name', deviceType)
       .eq('is_active', true)
-      .single();
+      .maybeSingle();
 
     if (deviceTypeError || !deviceTypeData) {
       dataLogger.warn(`Device type ${deviceType} not found in database, using static fallback`, { error: deviceTypeError?.message });

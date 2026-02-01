@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Head from 'next/head';
 import Layout from '@/components/layout/Layout';
-import { FaTools, FaClock, FaShieldAlt, FaCheckCircle, FaMapMarkerAlt, FaStar, FaArrowRight, FaMobile, FaLaptop, FaTabletAlt, FaPhone } from 'react-icons/fa';
+import { FaCheckCircle, FaMapMarkerAlt, FaStar, FaArrowRight, FaPhone } from 'react-icons/fa';
 import PostalCodeChecker from '@/components/PostalCodeChecker';
 import { initUIEnhancements } from '@/utils/ui-enhancements';
 import { testSupabaseConnection, supabase } from '@/utils/supabaseClient';
@@ -137,11 +137,7 @@ export default function Home({
   testimonials = staticTestimonials,
   popularServices = staticPopularServices
 }: HomePageProps) {
-  const [deviceType, setDeviceType] = useState<'mobile' | 'laptop' | 'tablet'>('mobile');
-  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
-  const [selectedIssue, setSelectedIssue] = useState<string | null>(null);
   const [selectedTestimonial, setSelectedTestimonial] = useState(0);
-  const [showPricingPreview, setShowPricingPreview] = useState(false);
   const [showFAB, setShowFAB] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const testimonialsRef = useRef<HTMLDivElement>(null);
@@ -250,7 +246,7 @@ export default function Home({
       <section className="py-6 md:py-12 bg-gradient-to-br from-primary-50 to-primary-100">
         <div className="container-custom px-4 sm:px-6">
           {/* Add bottom padding for mobile FAB */}
-          <div className="pb-20 md:pb-0">
+          <div className="pb-12 md:pb-0">
             {/* Urgency Banner */}
             <div className="bg-accent-500 text-white text-center py-3 px-4 rounded-lg mb-6 text-sm md:text-base">
               🚨 <strong>Limited Time:</strong> Same-day repair slots available today in your area!
@@ -274,7 +270,7 @@ export default function Home({
                     <h3 className="font-bold text-base sm:text-lg text-gray-900">Quick Pricing Preview</h3>
                     <span className="text-green-600 font-bold text-xs sm:text-sm">✓ No Hidden Fees</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
                     <div className="text-center">
                       <div className="text-lg sm:text-xl mb-1">📱</div>
                       <div className="font-bold text-xs sm:text-sm text-accent-600">Mobile</div>
@@ -287,48 +283,6 @@ export default function Home({
                       <div className="text-sm sm:text-base font-semibold text-gray-800">{pricingData.laptop.range}</div>
                       <div className="text-xs text-gray-500">{pricingData.laptop.time}</div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-lg sm:text-xl mb-1">📲</div>
-                      <div className="font-bold text-xs sm:text-sm text-accent-600">Tablet</div>
-                      <div className="text-sm sm:text-base font-semibold text-gray-800">{pricingData.tablet.range}</div>
-                      <div className="text-xs text-gray-500">{pricingData.tablet.time}</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Mobile-Optimized Device Selection */}
-                <div>
-                  <h3 className="text-base sm:text-lg font-bold mb-4 text-center md:text-left">What needs fixing?</h3>
-                  <div className="grid grid-cols-3 gap-3 sm:gap-4">
-                    {[
-                      { type: 'mobile', icon: FaMobile, label: 'Mobile', price: pricingData.mobile.common },
-                      { type: 'laptop', icon: FaLaptop, label: 'Laptop', price: pricingData.laptop.common },
-                      { type: 'tablet', icon: FaTabletAlt, label: 'Tablet', price: pricingData.tablet.common }
-                    ].map(({ type, icon: Icon, label, price }) => (
-                      <button 
-                        key={type}
-                        onClick={() => {
-                          setDeviceType(type as 'mobile' | 'laptop' | 'tablet');
-                          setShowPricingPreview(true);
-                        }}
-                        className={`group relative overflow-hidden p-4 sm:p-6 md:p-6 rounded-xl border-2 transition-all duration-300 min-h-[80px] sm:min-h-[100px] active:scale-95 ${
-                          deviceType === type 
-                            ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white border-primary-600 shadow-xl transform scale-105' 
-                            : 'bg-white text-gray-800 border-gray-200 hover:border-primary-400 hover:shadow-lg hover:scale-102'
-                        }`}
-                      >
-                        <div className="relative z-10 h-full flex flex-col items-center justify-center">
-                          <Icon className="mb-2 text-xl sm:text-2xl md:text-3xl" />
-                          <div className="font-bold text-xs sm:text-sm md:text-base">{label}</div>
-                          <div className={`text-xs sm:text-xs md:text-sm ${deviceType === type ? 'text-primary-100' : 'text-gray-500'}`}>
-                            from {price}
-                          </div>
-                        </div>
-                        {deviceType === type && (
-                          <div className="absolute inset-0 bg-gradient-to-r from-primary-600/20 to-primary-700/20 rounded-xl"></div>
-                        )}
-                      </button>
-                    ))}
                   </div>
                 </div>
 
@@ -357,7 +311,7 @@ export default function Home({
                 {/* Mobile-Optimized CTAs */}
                 <div className="space-y-4 hero-cta-section">
                   <Link 
-                    href={`/book-online?deviceType=${deviceType}`} 
+                    href="/book-online" 
                     className="group relative w-full bg-gradient-to-r from-accent-500 to-accent-600 text-white text-center py-4 px-6 rounded-xl font-bold text-base sm:text-lg hover:from-accent-600 hover:to-accent-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 flex items-center justify-center min-h-[48px]"
                   >
                     <span className="mr-2">🚀 Get Fixed Today - Free Quote</span>
@@ -373,7 +327,7 @@ export default function Home({
                       <span className="text-sm sm:text-base">Emergency Call</span>
                     </a>
                     <Link 
-                      href={`/services/${deviceType}-repair`} 
+                      href="/services" 
                       className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-center py-3 px-4 rounded-lg font-semibold transition-colors min-h-[48px] flex items-center justify-center active:scale-95"
                     >
                       <span className="text-sm sm:text-base">See All Services</span>
