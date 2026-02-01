@@ -2,10 +2,19 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import sgMail from '@sendgrid/mail';
 import { logger } from '@/utils/logger';
 import crypto from 'crypto';
+import https from 'https';
 
-// Initialize SendGrid
+// Configure Node.js to handle certificate validation properly
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: true,
+  minVersion: 'TLSv1.2'
+});
+
+// Initialize SendGrid with proper configuration
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  // Set request client to use proper HTTPS settings
+  sgMail.setClient(require('@sendgrid/client').default.request);
 }
 
 // Create a module logger
@@ -219,19 +228,36 @@ export default async function handler(
         rescheduleUrl
       });
     } catch (sendGridError: any) {
-      emailLogger.error('SendGrid Error:', {
+      // Log full error details
+      emailLogger.error('SendGrid Email Send Error:', {
         error: sendGridError.message,
-        reference: bookingReference
+        code: sendGridError.code,
+        status: sendGridError.status,
+        reference: bookingReference,
+        errorType: sendGridError.name,
+        stack: sendGridError.stack
       });
       
       if (sendGridError.response) {
-        emailLogger.error('SendGrid Error Body:', sendGridError.response.body);
+        emailLogger.error('SendGrid Response Error Body:', {
+          status: sendGridError.response.status,
+          body: sendGridError.response.body,
+          headers: sendGridError.response.headers
+        });
       }
+      
+      // Return appropriate error message without exposing SendGrid details
+      const isNetworkError = sendGridError.code === 'CERT_HAS_EXPIRED' || 
+                              sendGridError.message?.includes('certificate') ||
+                              sendGridError.message?.includes('ECONNREFUSED') ||
+                              sendGridError.message?.includes('ERR_');
       
       return res.status(500).json({ 
         success: false,
-        message: 'Failed to send email via SendGrid',
-        error: sendGridError.message
+        message: isNetworkError 
+          ? 'Email service temporarily unavailable. Please try again in a few moments.'
+          : 'Failed to send reschedule confirmation. Please contact support.',
+        reference: bookingReference
       });
     }
     
