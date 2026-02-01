@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
-import { formatDate } from '@/utils/formatters';
-import { format } from 'date-fns';
+import { formatDate, formatTimeSlot } from '@/utils/formatters';
 
 interface Booking {
   id: string;
@@ -381,7 +380,8 @@ const RescheduleBooking: React.FC = () => {
           <div className="grid gap-4">
             {bookings.map((booking) => {
               const statusInfo = formatBookingStatus(booking.status);
-              const isOriginalBooking = booking.reference_number === reference;
+              const bookingRef = booking.booking_ref || booking.reference_number;
+              const isOriginalBooking = bookingRef === reference;
               const canReschedule = booking.status === 'pending' || booking.status === 'confirmed';
               
               return (
