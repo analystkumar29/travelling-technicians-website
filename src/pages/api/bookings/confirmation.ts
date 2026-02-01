@@ -105,8 +105,40 @@ export default async function handler(
     // Create verification token
     const verificationToken = generateVerificationToken(customerEmail, bookingReference);
     
-    // Construct verification URL
-    const baseUrl = process.env.NEXT_PUBLIC_WEBSITE_URL || 'http://localhost:3000';
+    // 🔧 ROBUST URL GENERATION - Fix for production domain issue
+    function getBaseUrl(): string {
+      // In production, always use the custom domain
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production') {
+        return 'https://www.travelling-technicians.ca';
+      }
+      
+      // Try multiple environment variables in order of preference
+      const possibleUrls = [
+        process.env.NEXT_PUBLIC_WEBSITE_URL,
+        process.env.NEXT_PUBLIC_FRONTEND_URL,
+        process.env.NEXT_PUBLIC_SITE_URL,
+        // If on Vercel but not production (preview/deployment)
+        process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+        // Fallback for local development
+        'http://localhost:3000'
+      ];
+      
+      // Find the first valid URL
+      const validUrl = possibleUrls.find(url => url && !url.includes('url6811'));
+      return validUrl || 'http://localhost:3000';
+    }
+    
+    const baseUrl = getBaseUrl();
+    emailLogger.info('🔗 URL Generation Debug', {
+      baseUrl,
+      nodeEnv: process.env.NODE_ENV,
+      vercelEnv: process.env.VERCEL_ENV,
+      vercelUrl: process.env.VERCEL_URL,
+      nextPublicWebsiteUrl: process.env.NEXT_PUBLIC_WEBSITE_URL,
+      nextPublicFrontendUrl: process.env.NEXT_PUBLIC_FRONTEND_URL,
+      nextPublicSiteUrl: process.env.NEXT_PUBLIC_SITE_URL
+    });
+    
     const verificationUrl = `${baseUrl}/verify-booking?token=${verificationToken}`;
     const rescheduleUrl = `${baseUrl}/reschedule-booking?reference=${bookingReference}&token=${verificationToken}`;
 
