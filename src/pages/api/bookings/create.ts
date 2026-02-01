@@ -318,22 +318,26 @@ export default async function handler(
       location_id: locationId,
       
       // Appointment information
-      // Convert date + time slot to ISO timestamp
-      // Time slots: morning (9AM), afternoon (1PM), evening (5PM)
+      // Store the booking date separately
+      booking_date: finalBookingData.booking_date || null,
+      
+      // Store the original time slot for display purposes
+      booking_time: finalBookingData.booking_time || null,
+      
+      // Convert date + time slot to ISO timestamp for scheduled_at
+      // New time slots: "8:00", "10:00", "12:00", "14:00", "16:00", "18:00" (2-hour windows)
       scheduled_at: finalBookingData.booking_date ? (() => {
         const date = new Date(finalBookingData.booking_date);
-        const timeSlot = finalBookingData.booking_time?.toLowerCase() || 'afternoon';
+        const timeSlot = finalBookingData.booking_time || '12:00'; // Default to noon
         
-        // Set time based on slot
-        if (timeSlot.includes('morning')) {
-          date.setHours(9, 0, 0, 0);
-        } else if (timeSlot.includes('afternoon')) {
-          date.setHours(13, 0, 0, 0);
-        } else if (timeSlot.includes('evening')) {
-          date.setHours(17, 0, 0, 0);
-        } else {
-          date.setHours(13, 0, 0, 0); // Default to afternoon
-        }
+        // Parse the time slot (e.g., "8:00", "10:00", "12:00", "14:00", "16:00", "18:00")
+        // These represent 2-hour windows: 8:00-10:00, 10:00-12:00, etc.
+        const [hoursStr, minutesStr] = timeSlot.split(':');
+        const hours = parseInt(hoursStr, 10);
+        const minutes = minutesStr ? parseInt(minutesStr, 10) : 0;
+        
+        // Set the time to the start of the window
+        date.setHours(hours, minutes, 0, 0);
         
         return date.toISOString();
       })() : null,

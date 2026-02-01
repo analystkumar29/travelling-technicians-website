@@ -22,6 +22,13 @@ import PriceDisplay from './PriceDisplay';
 import TierPriceComparison from './TierPriceComparison';
 // V2 Schema - Dynamic data hooks
 import { useBrands, useModels, useServices, useCalculatePrice } from '@/hooks/useBookingData';
+// Time slot utilities
+import { 
+  getTimeSlotsForDate, 
+  getNextAvailableDate, 
+  getMaxBookingDate,
+  type TimeSlot 
+} from '@/utils/bookingTimeSlots';
 
 interface BookingFormProps {
   onSubmit: (data: CreateBookingRequest) => void;
@@ -61,6 +68,10 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   const [selectedLocationId, setSelectedLocationId] = useState<string>('');
   // Quoted price state
   const [quotedPrice, setQuotedPrice] = useState<number | undefined>();
+  
+  // State for time slots
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [isLoadingTimeSlots, setIsLoadingTimeSlots] = useState(false);
   
   // Function to reveal sections progressively
   const revealSection = useCallback((sectionName: string) => {
@@ -283,6 +294,46 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       console.error('Error parsing saved location data:', error);
     }
   }, [methods]); // Empty dependency array - only run on mount
+
+  // Fetch time slots when appointment date changes
+  useEffect(() => {
+    const appointmentDate = methods.watch('appointmentDate');
+    
+    if (appointmentDate) {
+      const fetchTimeSlots = async () => {
+        setIsLoadingTimeSlots(true);
+        try {
+          const date = new Date(appointmentDate);
+          const slots = await getTimeSlotsForDate(date);
+          setTimeSlots(slots);
+          
+          // If current appointmentTime is not in the new slots, clear it
+          const currentTime = methods.watch('appointmentTime');
+          if (currentTime && !slots.some(slot => slot.value === currentTime)) {
+            methods.setValue('appointmentTime', '');
+          }
+        } catch (error) {
+          console.error('Error fetching time slots:', error);
+          // Set default time slots as fallback
+          setTimeSlots([
+            { value: '8:00', label: '8:00 AM - 10:00 AM', startHour: 8, endHour: 10 },
+            { value: '10:00', label: '10:00 AM - 12:00 PM', startHour: 10, endHour: 12 },
+            { value: '12:00', label: '12:00 PM - 2:00 PM', startHour: 12, endHour: 14 },
+            { value: '14:00', label: '2:00 PM - 4:00 PM', startHour: 14, endHour: 16 },
+            { value: '16:00', label: '4:00 PM - 6:00 PM', startHour: 16, endHour: 18 },
+            { value: '18:00', label: '6:00 PM - 8:00 PM', startHour: 18, endHour: 20 }
+          ]);
+        } finally {
+          setIsLoadingTimeSlots(false);
+        }
+      };
+      
+      fetchTimeSlots();
+    } else {
+      // Clear time slots if no date selected
+      setTimeSlots([]);
+    }
+  }, [methods.watch('appointmentDate'), methods]);
 
   // Placeholder step titles
   const steps = [
@@ -2382,11 +2433,22 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       className={`block w-full pl-10 pr-10 py-2 border ${fieldState.error ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm appearance-none`}
                   {...field}
                   value={field.value || ''}
+                  disabled={isLoadingTimeSlots || !methods.watch('appointmentDate')}
                 >
-                      <option value="">Select a time slot...</option>
-                      <option value="morning">Morning (9AM - 12PM)</option>
-                      <option value="afternoon">Afternoon (12PM - 4PM)</option>
-                      <option value="evening">Evening (4PM - 7PM)</option>
+                      <option value="">
+                        {!methods.watch('appointmentDate') 
+                          ? 'Select a date first' 
+                          : isLoadingTimeSlots 
+                            ? 'Loading available slots...' 
+                            : timeSlots.length === 0
+                              ? 'No slots available for this date'
+                              : 'Select a time slot...'}
+                      </option>
+                      {timeSlots.map((slot) => (
+                        <option key={slot.value} value={slot.value}>
+                          {slot.label}
+                        </option>
+                      ))}
                 </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
