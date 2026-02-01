@@ -6,19 +6,33 @@ import { format } from 'date-fns';
 
 interface Booking {
   id: string;
-  reference_number: string;
-  device_type: string;
-  device_brand: string;
-  device_model: string;
-  service_type: string;
-  booking_date: string;
-  booking_time: string;
+  booking_ref: string;
+  reference_number?: string; // Legacy field for backward compatibility
+  quoted_price?: number;
+  scheduled_at?: string; // ISO timestamp
+  booking_date?: string; // Legacy field for backward compatibility
+  booking_time?: string; // Legacy field for backward compatibility
   customer_name: string;
   customer_email: string;
-  address: string;
+  customer_address?: string;
+  address?: string; // Legacy field for backward compatibility
   status: string;
   created_at: string;
   issue_description?: string;
+  technician?: {
+    assigned: boolean;
+    name?: string;
+    phone?: string; // WhatsApp number
+    whatsapp?: string; // Legacy field
+  };
+  service?: {
+    name: string;
+    description?: string;
+  };
+  device?: {
+    model: string;
+    brand: string;
+  };
 }
 
 const RescheduleBooking: React.FC = () => {
@@ -76,8 +90,8 @@ const RescheduleBooking: React.FC = () => {
       setStatus('loading');
       console.log('[RescheduleBooking] Loading booking:', ref);
 
-      // Fetch the specific booking first
-      const bookingResponse = await fetch(`/api/bookings/${ref}`, {
+      // Fetch the specific booking first - use the updated API endpoint
+      const bookingResponse = await fetch(`/api/bookings/reference/${ref}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -90,11 +104,11 @@ const RescheduleBooking: React.FC = () => {
       }
 
       const booking = bookingResult.booking;
-      setEmail(booking.customer_email);
+      setEmail(booking.customer_email || booking.email || '');
       setSelectedBooking(booking);
       
       // Now fetch all bookings for this email
-      await fetchAllBookingsForEmail(booking.customer_email, tok, ref);
+      await fetchAllBookingsForEmail(booking.customer_email || booking.email || '', tok, ref);
       
     } catch (error) {
       console.error('[RescheduleBooking] Error loading booking:', error);
@@ -231,16 +245,32 @@ const RescheduleBooking: React.FC = () => {
       const emailData = {
         to: selectedBooking.customer_email,
         name: selectedBooking.customer_name,
-        bookingReference: selectedBooking.reference_number,
-        deviceType: selectedBooking.device_type,
-        brand: selectedBooking.device_brand,
-        model: selectedBooking.device_model,
-        service: selectedBooking.service_type,
-        oldDate: formatDate(selectedBooking.booking_date),
-        oldTime: formatTimeDisplay(selectedBooking.booking_time),
+        bookingReference: selectedBooking.booking_ref || selectedBooking.reference_number || 'N/A',
+        deviceType: selectedBooking.device?.brand || '',
+        brand: selectedBooking.device?.brand || '',
+        model: selectedBooking.device?.model || '',
+        service: selectedBooking.service?.name || '',
+        oldDate: selectedBooking.scheduled_at ? 
+          new Date(selectedBooking.scheduled_at).toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            month: 'long', 
+            day: 'numeric' 
+          }) : 
+          selectedBooking.booking_date ? 
+            formatDate(selectedBooking.booking_date) : 
+            'To be scheduled',
+        oldTime: selectedBooking.scheduled_at ? 
+          new Date(selectedBooking.scheduled_at).toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit',
+            hour12: true 
+          }) : 
+          selectedBooking.booking_time ? 
+            formatTimeDisplay(selectedBooking.booking_time) : 
+            'To be scheduled',
         bookingDate: formatDate(selectedDate),
         bookingTime: formatTimeDisplay(selectedTime),
-        address: selectedBooking.address
+        address: selectedBooking.customer_address || selectedBooking.address || 'Address not provided'
       };
 
       console.log('[RescheduleBooking] Sending email confirmation for:', selectedBooking.reference_number);
@@ -390,25 +420,69 @@ const RescheduleBooking: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-gray-500">Device:</span>
-                      <span className="ml-2 font-medium">{booking.device_brand} {booking.device_model}</span>
+                      <span className="ml-2 font-medium">
+                        {booking.device?.brand || ''} {booking.device?.model || 'N/A'}
+                      </span>
                     </div>
                     <div>
                       <span className="text-gray-500">Service:</span>
-                      <span className="ml-2 font-medium">{booking.service_type}</span>
+                      <span className="ml-2 font-medium">{booking.service?.name || 'N/A'}</span>
                     </div>
                     <div>
                       <span className="text-gray-500">Date:</span>
-                      <span className="ml-2 font-medium">{formatDate(booking.booking_date)}</span>
+                      <span className="ml-2 font-medium">
+                        {booking.scheduled_at ? 
+                          new Date(booking.scheduled_at).toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          }) : 
+                          booking.booking_date ? 
+                            formatDate(booking.booking_date) : 
+                            'To be scheduled'
+                        }
+                      </span>
                     </div>
                     <div>
                       <span className="text-gray-500">Time:</span>
-                      <span className="ml-2 font-medium">{formatTimeDisplay(booking.booking_time)}</span>
+                      <span className="ml-2 font-medium">
+                        {booking.scheduled_at ? 
+                          new Date(booking.scheduled_at).toLocaleTimeString('en-US', { 
+                            hour: 'numeric', 
+                            minute: '2-digit',
+                            hour12: true 
+                          }) : 
+                          booking.booking_time ? 
+                            formatTimeDisplay(booking.booking_time) : 
+                            'To be scheduled'
+                        }
+                      </span>
                     </div>
                   </div>
                   
                   <div className="mt-3 text-sm">
                     <span className="text-gray-500">Address:</span>
-                    <span className="ml-2">{booking.address}</span>
+                    <span className="ml-2">{booking.customer_address || booking.address || 'Address not provided'}</span>
+                  </div>
+                  
+                  <div className="mt-2 text-sm">
+                    <span className="text-gray-500">Quoted Price:</span>
+                    <span className="ml-2 font-medium">
+                      {booking.quoted_price ? 
+                        `$${parseFloat(booking.quoted_price.toString()).toFixed(2)}` : 
+                        'Price to be confirmed'
+                      }
+                    </span>
+                  </div>
+                  
+                  <div className="mt-2 text-sm">
+                    <span className="text-gray-500">Technician:</span>
+                    <span className="ml-2">
+                      {booking.technician?.assigned ? 
+                        `${booking.technician.name || 'Technician'} (${booking.technician.phone || booking.technician.whatsapp || 'Contact info pending'})` : 
+                        'To be assigned'
+                      }
+                    </span>
                   </div>
                   
                   {!canReschedule && (
@@ -450,19 +524,61 @@ const RescheduleBooking: React.FC = () => {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-gray-500">Reference:</span>
-                <span className="ml-2 font-medium">{selectedBooking.reference_number}</span>
+                <span className="ml-2 font-medium">{selectedBooking.booking_ref || selectedBooking.reference_number || 'N/A'}</span>
               </div>
               <div>
                 <span className="text-gray-500">Device:</span>
-                <span className="ml-2 font-medium">{selectedBooking.device_brand} {selectedBooking.device_model}</span>
+                <span className="ml-2 font-medium">
+                  {selectedBooking.device?.brand || ''} {selectedBooking.device?.model || 'N/A'}
+                </span>
               </div>
               <div>
                 <span className="text-gray-500">Current Date:</span>
-                <span className="ml-2 font-medium">{formatDate(selectedBooking.booking_date)}</span>
+                <span className="ml-2 font-medium">
+                  {selectedBooking.scheduled_at ? 
+                    new Date(selectedBooking.scheduled_at).toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    }) : 
+                    selectedBooking.booking_date ? 
+                      formatDate(selectedBooking.booking_date) : 
+                      'To be scheduled'
+                  }
+                </span>
               </div>
               <div>
                 <span className="text-gray-500">Current Time:</span>
-                <span className="ml-2 font-medium">{formatTimeDisplay(selectedBooking.booking_time)}</span>
+                <span className="ml-2 font-medium">
+                  {selectedBooking.scheduled_at ? 
+                    new Date(selectedBooking.scheduled_at).toLocaleTimeString('en-US', { 
+                      hour: 'numeric', 
+                      minute: '2-digit',
+                      hour12: true 
+                    }) : 
+                    selectedBooking.booking_time ? 
+                      formatTimeDisplay(selectedBooking.booking_time) : 
+                      'To be scheduled'
+                  }
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-500">Quoted Price:</span>
+                <span className="ml-2 font-medium">
+                  {selectedBooking.quoted_price ? 
+                    `$${parseFloat(selectedBooking.quoted_price.toString()).toFixed(2)}` : 
+                    'Price to be confirmed'
+                  }
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-500">Technician:</span>
+                <span className="ml-2">
+                  {selectedBooking.technician?.assigned ? 
+                    `${selectedBooking.technician.name || 'Technician'} (${selectedBooking.technician.phone || selectedBooking.technician.whatsapp || 'Contact info pending'})` : 
+                    'To be assigned'
+                  }
+                </span>
               </div>
             </div>
           </div>
