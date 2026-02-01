@@ -201,9 +201,9 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
       // First try exact match
       let modelMatch = modelName === searchModel;
       
-      // If no exact match, try smarter matching for iPhone models
+      // If no exact match, try smarter matching
       if (!modelMatch) {
-        // Special handling for iPhone models to prevent "iPhone 16" matching "iPhone 16 Pro Max"
+        // Special handling for Apple iPhone models to prevent "iPhone 16" matching "iPhone 16 Pro Max"
         if (brand_info?.name?.toLowerCase() === 'apple' && modelName.includes('iphone')) {
           // For Apple iPhone models, we need stricter matching
           // Check if it's a Pro/Pro Max model mismatch
@@ -224,13 +224,77 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
             modelMatch = modelName.includes(searchModel) || searchModel.includes(modelName);
           }
         } else {
-          // For non-Apple devices, use the original logic
-          const lengthDiff = Math.abs(modelName.length - searchModel.length);
-          if (lengthDiff > 5) {
-            if (searchModel.length < modelName.length) {
-              modelMatch = modelName.includes(searchModel);
-            } else {
-              modelMatch = searchModel.includes(modelName);
+          // UNIVERSAL MODEL MATCHING ALGORITHM for all brands
+          // 1. Normalize both model names (remove spaces, special chars, convert to lowercase)
+          const normalizeModel = (name: string) => {
+            return name.toLowerCase()
+              .replace(/\s+/g, '')
+              .replace(/[^a-z0-9]/g, '');
+          };
+          
+          const normalizedDbModel = normalizeModel(modelName);
+          const normalizedSearchModel = normalizeModel(searchModel);
+          
+          // 2. Try normalized exact match
+          modelMatch = normalizedDbModel === normalizedSearchModel;
+          
+          // 3. If still no match, try smart partial matching
+          if (!modelMatch) {
+            // Remove common prefixes/suffixes for better matching
+            const removeCommonTerms = (name: string) => {
+              return name
+                .replace(/galaxy/g, '')
+                .replace(/iphone/g, '')
+                .replace(/pixel/g, '')
+                .replace(/macbook/g, '')
+                .replace(/ipad/g, '')
+                .replace(/pro/g, '')
+                .replace(/max/g, '')
+                .replace(/ultra/g, '')
+                .replace(/plus/g, '')
+                .replace(/fe/g, '')
+                .replace(/se/g, '')
+                .trim();
+            };
+            
+            const coreDbModel = removeCommonTerms(normalizedDbModel);
+            const coreSearchModel = removeCommonTerms(normalizedSearchModel);
+            
+            // 4. Match if one contains the other (after removing common terms)
+            modelMatch = coreDbModel.includes(coreSearchModel) || 
+                        coreSearchModel.includes(coreDbModel) ||
+                        normalizedDbModel.includes(normalizedSearchModel) ||
+                        normalizedSearchModel.includes(normalizedDbModel);
+            
+            // 5. Special handling for Samsung Galaxy models
+            if (brand_info?.name?.toLowerCase() === 'samsung' && 
+                (modelName.includes('galaxy') || searchModel.includes('galaxy'))) {
+              // Extract model numbers (e.g., "S24", "S23 Ultra")
+              const extractModelNumber = (name: string) => {
+                const match = name.match(/(s|z|a|m|note)(\d+)/i);
+                return match ? match[0].toLowerCase() : '';
+              };
+              
+              const dbModelNumber = extractModelNumber(modelName);
+              const searchModelNumber = extractModelNumber(searchModel);
+              
+              // Don't allow S24 to match S24 Ultra if Ultra is specified
+              if (dbModelNumber && searchModelNumber && dbModelNumber === searchModelNumber) {
+                // Same base model number, check for variant mismatches
+                const hasUltraInSearch = searchModel.includes('ultra');
+                const hasUltraInDb = modelName.includes('ultra');
+                const hasPlusInSearch = searchModel.includes('plus');
+                const hasPlusInDb = modelName.includes('plus');
+                const hasFeInSearch = searchModel.includes('fe');
+                const hasFeInDb = modelName.includes('fe');
+                
+                // Don't allow cross-variant matching
+                if ((hasUltraInSearch && !hasUltraInDb) ||
+                    (hasPlusInSearch && !hasPlusInDb) ||
+                    (hasFeInSearch && !hasFeInDb)) {
+                  modelMatch = false;
+                }
+              }
             }
           }
         }
