@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
 import { formatDate, formatTimeSlot } from '@/utils/formatters';
+import { getTimeSlotsForDate, type TimeSlot } from '@/utils/bookingTimeSlots';
 
 interface Booking {
   id: string;
@@ -49,6 +50,8 @@ const RescheduleBooking: React.FC = () => {
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
   const [countdown, setCountdown] = useState(0);
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [isLoadingTimeSlots, setIsLoadingTimeSlots] = useState(false);
 
   console.log('[RescheduleBooking] Component loaded with params:', { reference, token });
 
@@ -123,6 +126,43 @@ const RescheduleBooking: React.FC = () => {
       loadBookingFromParams(reference, token);
     }
   }, [reference, token, loadBookingFromParams]);
+
+  // Fetch time slots when appointment date changes
+  useEffect(() => {
+    if (selectedDate) {
+      const fetchTimeSlots = async () => {
+        setIsLoadingTimeSlots(true);
+        try {
+          const date = new Date(selectedDate);
+          const slots = await getTimeSlotsForDate(date);
+          setTimeSlots(slots);
+          
+          // If current appointmentTime is not in the new slots, clear it
+          if (selectedTime && !slots.some(slot => slot.value === selectedTime)) {
+            setSelectedTime('');
+          }
+        } catch (error) {
+          console.error('[RescheduleBooking] Error fetching time slots:', error);
+          // Set default time slots as fallback
+          setTimeSlots([
+            { value: '8:00', label: '8:00 AM - 10:00 AM', startHour: 8, endHour: 10 },
+            { value: '10:00', label: '10:00 AM - 12:00 PM', startHour: 10, endHour: 12 },
+            { value: '12:00', label: '12:00 PM - 2:00 PM', startHour: 12, endHour: 14 },
+            { value: '14:00', label: '2:00 PM - 4:00 PM', startHour: 14, endHour: 16 },
+            { value: '16:00', label: '4:00 PM - 6:00 PM', startHour: 16, endHour: 18 },
+            { value: '18:00', label: '6:00 PM - 8:00 PM', startHour: 18, endHour: 20 }
+          ]);
+        } finally {
+          setIsLoadingTimeSlots(false);
+        }
+      };
+      
+      fetchTimeSlots();
+    } else {
+      // Clear time slots if no date selected
+      setTimeSlots([]);
+    }
+  }, [selectedDate]);
 
 
 
@@ -604,17 +644,41 @@ const RescheduleBooking: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 New Time <span className="text-red-500">*</span>
               </label>
-              <select
-                value={selectedTime}
-                onChange={(e) => setSelectedTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              >
-                <option value="">Select a time slot...</option>
-                <option value="morning">Morning (9AM - 12PM)</option>
-                <option value="afternoon">Afternoon (12PM - 4PM)</option>
-                <option value="evening">Evening (4PM - 7PM)</option>
-              </select>
-              <p className="mt-1 text-xs text-gray-500">Our technicians work 7 days a week.</p>
+              
+              {isLoadingTimeSlots ? (
+                <div className="flex items-center justify-center py-8 bg-gray-50 rounded-md border border-gray-300">
+                  <svg className="animate-spin h-5 w-5 text-primary-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span className="text-sm text-gray-600">Loading available time slots...</span>
+                </div>
+              ) : !selectedDate ? (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-700">
+                  Please select a date first to see available time slots.
+                </div>
+              ) : timeSlots.length === 0 ? (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+                  No time slots available for this date. Please select a different date.
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {timeSlots.map((slot) => (
+                    <button
+                      key={slot.value}
+                      onClick={() => setSelectedTime(slot.value)}
+                      className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                        selectedTime === slot.value
+                          ? 'bg-primary-600 text-white border-primary-600 shadow-md'
+                          : 'bg-white border-2 border-gray-300 text-gray-700 hover:border-primary-500 hover:bg-primary-50'
+                      }`}
+                    >
+                      {slot.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <p className="mt-2 text-xs text-gray-500">Our technicians work 7 days a week. Select a 2-hour window that works best for you.</p>
             </div>
           </div>
 
