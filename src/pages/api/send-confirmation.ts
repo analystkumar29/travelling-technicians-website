@@ -13,8 +13,6 @@ const httpsAgent = new https.Agent({
 // Initialize SendGrid with proper configuration
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-  // Set request client to use proper HTTPS settings
-  sgMail.setClient(require('@sendgrid/client').default.request);
 }
 
 // Create a module logger
@@ -339,4 +337,4 @@ export default async function handler(
       error: error.message
     });
   }
-} 
+}
