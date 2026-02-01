@@ -42,17 +42,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       Object.assign(updateData, otherUpdates);
     } else if (reference) {
       // Update by reference (reschedule style)
-      // Handle both reference_number and booking_ref columns
       whereClause = { 
         booking_ref: reference 
       };
       
-      // Also try reference_number if booking_ref doesn't work
-      // This handles legacy data or mixed schema
-      apiLogger.info('Looking up booking by reference', { 
-        reference,
-        whereClause 
-      });
+      apiLogger.info('Looking up booking by booking_ref', { reference });
       
       if (appointmentDate) updateData.booking_date = appointmentDate;
       if (appointmentTime) updateData.booking_time = appointmentTime;
@@ -80,52 +74,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     apiLogger.info('Attempting to update booking', { whereClause, updateData });
 
-    // Update the booking in the database
-    apiLogger.info('Executing database update query');
+    // Update the booking in the database using booking_ref
+    apiLogger.info('Executing database update query with booking_ref');
     
-    // First, try to find the booking by booking_ref
-    let { data, error } = await supabase
+    const { data, error } = await supabase
       .from('bookings')
       .update(updateData)
       .match(whereClause)
       .select();
-
-    // If no rows updated, try reference_number as fallback
-    if (error || !data || data.length === 0) {
-      apiLogger.warn('First update attempt failed, trying reference_number', {
-        error: error?.message,
-        dataLength: data?.length || 0,
-        whereClause
-      });
-      
-      // Try with reference_number if we're using reference
-      if (reference) {
-        const fallbackWhereClause = { reference_number: reference };
-        apiLogger.info('Trying fallback with reference_number', { fallbackWhereClause });
-        
-        const fallbackResult = await supabase
-          .from('bookings')
-          .update(updateData)
-          .match(fallbackWhereClause)
-          .select();
-          
-        data = fallbackResult.data;
-        error = fallbackResult.error;
-        
-        if (fallbackResult.error || !fallbackResult.data || fallbackResult.data.length === 0) {
-          apiLogger.error('Fallback update also failed', {
-            error: fallbackResult.error?.message,
-            dataLength: fallbackResult.data?.length || 0,
-            fallbackWhereClause
-          });
-        } else {
-          apiLogger.info('Fallback update succeeded', { 
-            reference,
-            updatedFields: Object.keys(updateData)
-          });
-        }
-      }
-    }
 
     if (error) {
       apiLogger.error('Error updating booking', {

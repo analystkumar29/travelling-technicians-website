@@ -108,18 +108,51 @@ export default async function handler(
       nodeEnv: process.env.NODE_ENV
     });
     
-    // Get booking from database
+    // Get booking from database with full details including technician info
     verifyLogger.info('Getting Supabase service client');
     const supabase = getServiceSupabase();
     
-    verifyLogger.info('Executing database query for verification', { reference });
-    const { data: booking, error: findError } = await supabase
+    verifyLogger.info('Executing database query for verification with full details', { reference });
+    
+    // Use SQL query to get full booking details with LEFT JOINs
+    const { data: bookingData, error: findError } = await supabase
       .from('bookings')
-      .select('*')
+      .select(`
+        *,
+        technicians:technician_id (
+          id,
+          full_name,
+          whatsapp_number,
+          phone,
+          email,
+          current_status
+        ),
+        services:service_id (
+          id,
+          name,
+          display_name,
+          description
+        ),
+        device_models:model_id (
+          id,
+          name,
+          display_name,
+          brands!inner (
+            id,
+            name,
+            display_name
+          )
+        ),
+        service_locations:location_id (
+          id,
+          city_name,
+          local_phone
+        )
+      `)
       .eq('booking_ref', reference)
       .single();
       
-    if (findError || !booking) {
+    if (findError || !bookingData) {
       verifyLogger.warn('Booking not found', {
         reference,
         error: findError?.message,
@@ -133,6 +166,45 @@ export default async function handler(
         message: 'Booking not found. Please check your reference number.'
       });
     }
+    
+    // Transform the data for cleaner response - remove final_price to avoid confusion
+    const booking = {
+      ...bookingData,
+      // Remove final_price to avoid confusion with quoted_price
+      final_price: undefined,
+      technician: bookingData.technicians ? {
+        assigned: true,
+        name: bookingData.technicians.full_name,
+        whatsapp: bookingData.technicians.whatsapp_number,
+        phone: bookingData.technicians.phone,
+        email: bookingData.technicians.email,
+        status: bookingData.technicians.current_status
+      } : {
+        assigned: false,
+        message: 'Your technician will be assigned soon. We\'ll notify you when assigned.',
+        next_steps: 'Our team will contact you to confirm technician assignment.'
+      },
+      service: bookingData.services ? {
+        name: bookingData.services.display_name || bookingData.services.name,
+        description: bookingData.services.description
+      } : null,
+      device: bookingData.device_models ? {
+        model: bookingData.device_models.display_name || bookingData.device_models.name,
+        brand: bookingData.device_models.brands?.display_name || bookingData.device_models.brands?.name || 'Unknown'
+      } : null,
+      location: bookingData.service_locations ? {
+        city: bookingData.service_locations.city_name,
+        local_phone: bookingData.service_locations.local_phone
+      } : null
+    };
+    
+    // Remove the nested objects to avoid duplication
+    delete booking.technicians;
+    delete booking.services;
+    delete booking.device_models;
+    delete booking.service_locations;
+    // Ensure final_price is not included in response
+    delete booking.final_price;
     
     // Verify the email matches
     if (booking.customer_email.toLowerCase() !== email.toLowerCase()) {
