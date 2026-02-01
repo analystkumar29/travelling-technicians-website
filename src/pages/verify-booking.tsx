@@ -211,31 +211,71 @@ export default function VerifyBooking() {
                       <div className="grid grid-cols-1 gap-2 text-sm text-left">
                         <div>
                           <span className="text-gray-500">Reference: </span>
-                          <span className="font-medium">{bookingInfo.reference_number}</span>
+                          <span className="font-medium">{bookingInfo.booking_ref || bookingInfo.reference_number || 'N/A'}</span>
                         </div>
                         <div>
                           <span className="text-gray-500">Device: </span>
-                          <span className="font-medium">{bookingInfo.device_type} {bookingInfo.device_brand && `- ${bookingInfo.device_brand}`} {bookingInfo.device_model && bookingInfo.device_model}</span>
+                          <span className="font-medium">
+                            {bookingInfo.device?.brand || ''} {bookingInfo.device?.model || bookingInfo.device_model || 'N/A'}
+                          </span>
                         </div>
                         <div>
                           <span className="text-gray-500">Service: </span>
-                          <span className="font-medium">{bookingInfo.service_type}</span>
+                          <span className="font-medium">{bookingInfo.service?.name || bookingInfo.service_type || 'N/A'}</span>
                         </div>
                         <div>
                           <span className="text-gray-500">Date: </span>
-                          <span className="font-medium">{new Date(bookingInfo.booking_date).toLocaleDateString('en-US', { 
-                            weekday: 'long', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          })}</span>
+                          <span className="font-medium">
+                            {bookingInfo.scheduled_at ? 
+                              new Date(bookingInfo.scheduled_at).toLocaleDateString('en-US', { 
+                                weekday: 'long', 
+                                month: 'long', 
+                                day: 'numeric' 
+                              }) : 
+                              bookingInfo.booking_date ? 
+                                new Date(bookingInfo.booking_date).toLocaleDateString('en-US', { 
+                                  weekday: 'long', 
+                                  month: 'long', 
+                                  day: 'numeric' 
+                                }) : 
+                                'To be scheduled'
+                            }
+                          </span>
                         </div>
                         <div>
                           <span className="text-gray-500">Time: </span>
-                          <span className="font-medium">{bookingInfo.booking_time}</span>
+                          <span className="font-medium">
+                            {bookingInfo.scheduled_at ? 
+                              new Date(bookingInfo.scheduled_at).toLocaleTimeString('en-US', { 
+                                hour: 'numeric', 
+                                minute: '2-digit',
+                                hour12: true 
+                              }) : 
+                              bookingInfo.booking_time || 'To be scheduled'
+                            }
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Quoted Price: </span>
+                          <span className="font-medium">
+                            {bookingInfo.quoted_price ? 
+                              `$${parseFloat(bookingInfo.quoted_price).toFixed(2)}` : 
+                              'Price to be confirmed'
+                            }
+                          </span>
                         </div>
                         <div>
                           <span className="text-gray-500">Status: </span>
                           <span className="font-medium text-green-600">Confirmed</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Technician: </span>
+                          <span className="font-medium">
+                            {bookingInfo.technician?.assigned ? 
+                              `${bookingInfo.technician.name} (${bookingInfo.technician.phone || bookingInfo.technician.whatsapp || 'Contact info pending'})` : 
+                              'Your technician will be assigned soon'
+                            }
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -251,32 +291,63 @@ export default function VerifyBooking() {
                               <div>
                                 <div className="mb-2">
                                   <span className="text-gray-500">Reference: </span>
-                                  <span className="font-medium">{booking.reference_number}</span>
-                                  {booking.reference_number === bookingInfo?.reference_number && (
+                                  <span className="font-medium">{booking.booking_ref || booking.reference_number || 'N/A'}</span>
+                                  {(booking.booking_ref === bookingInfo?.booking_ref || booking.reference_number === bookingInfo?.reference_number) && (
                                     <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">Just Verified</span>
                                   )}
                                 </div>
                                 <div className="mb-2">
                                   <span className="text-gray-500">Device: </span>
-                                  <span className="font-medium">{booking.device_type} {booking.device_brand && `- ${booking.device_brand}`} {booking.device_model && booking.device_model}</span>
+                                  <span className="font-medium">
+                                    {booking.device?.brand || ''} {booking.device?.model || booking.device_model || 'N/A'}
+                                  </span>
                                 </div>
                                 <div className="mb-2">
                                   <span className="text-gray-500">Service: </span>
-                                  <span className="font-medium">{booking.service_type}</span>
+                                  <span className="font-medium">{booking.service?.name || booking.service_type || 'N/A'}</span>
+                                </div>
+                                <div className="mb-2">
+                                  <span className="text-gray-500">Quoted Price: </span>
+                                  <span className="font-medium">
+                                    {booking.quoted_price ? 
+                                      `$${parseFloat(booking.quoted_price).toFixed(2)}` : 
+                                      'Price to be confirmed'
+                                    }
+                                  </span>
                                 </div>
                               </div>
                               <div>
                                 <div className="mb-2">
                                   <span className="text-gray-500">Date: </span>
-                                  <span className="font-medium">{new Date(booking.booking_date).toLocaleDateString('en-US', { 
-                                    weekday: 'long', 
-                                    month: 'long', 
-                                    day: 'numeric' 
-                                  })}</span>
+                                  <span className="font-medium">
+                                    {booking.scheduled_at ? 
+                                      new Date(booking.scheduled_at).toLocaleDateString('en-US', { 
+                                        weekday: 'long', 
+                                        month: 'long', 
+                                        day: 'numeric' 
+                                      }) : 
+                                      booking.booking_date ? 
+                                        new Date(booking.booking_date).toLocaleDateString('en-US', { 
+                                          weekday: 'long', 
+                                          month: 'long', 
+                                          day: 'numeric' 
+                                        }) : 
+                                        'To be scheduled'
+                                    }
+                                  </span>
                                 </div>
                                 <div className="mb-2">
                                   <span className="text-gray-500">Time: </span>
-                                  <span className="font-medium">{booking.booking_time}</span>
+                                  <span className="font-medium">
+                                    {booking.scheduled_at ? 
+                                      new Date(booking.scheduled_at).toLocaleTimeString('en-US', { 
+                                        hour: 'numeric', 
+                                        minute: '2-digit',
+                                        hour12: true 
+                                      }) : 
+                                      booking.booking_time || 'To be scheduled'
+                                    }
+                                  </span>
                                 </div>
                                 <div className="mb-2">
                                   <span className="text-gray-500">Status: </span>
@@ -286,7 +357,16 @@ export default function VerifyBooking() {
                                     booking.status === 'completed' ? 'text-blue-600' :
                                     'text-gray-600'
                                   }`}>
-                                    {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                                    {booking.status?.charAt(0).toUpperCase() + booking.status?.slice(1) || 'Pending'}
+                                  </span>
+                                </div>
+                                <div className="mb-2">
+                                  <span className="text-gray-500">Technician: </span>
+                                  <span className="font-medium">
+                                    {booking.technician?.assigned ? 
+                                      `${booking.technician.name} (${booking.technician.phone || booking.technician.whatsapp || 'Contact info pending'})` : 
+                                      'To be assigned'
+                                    }
                                   </span>
                                 </div>
                               </div>
