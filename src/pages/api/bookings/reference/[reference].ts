@@ -27,10 +27,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Get Supabase client with service role
     const supabase = getServiceSupabase();
     
-    // Fetch booking by reference number - return raw data without normalization
-    const { data: booking, error } = await supabase
+    // Fetch booking by reference number with full details including technician info
+    const { data: bookingData, error } = await supabase
       .from('bookings')
-      .select('*')
+      .select(`
+        *,
+        technicians:technician_id (
+          id,
+          full_name,
+          whatsapp_number,
+          phone,
+          email,
+          current_status
+        ),
+        services:service_id (
+          id,
+          name,
+          display_name,
+          description
+        ),
+        device_models:model_id (
+          id,
+          name,
+          display_name,
+          brands!inner (
+            id,
+            name,
+            display_name
+          )
+        ),
+        service_locations:location_id (
+          id,
+          city_name,
+          local_phone
+        )
+      `)
       .eq('booking_ref', reference)
       .single();
     
@@ -57,7 +88,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
     
-    if (!booking) {
+    if (!bookingData) {
       apiLogger.warn('Booking not found', { reference });
       return res.status(404).json({ 
         success: false,
@@ -65,14 +96,52 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
     
+    // Transform the data for cleaner response - remove final_price to avoid confusion
+    const booking = {
+      ...bookingData,
+      // Remove final_price to avoid confusion with quoted_price
+      final_price: undefined,
+      technician: bookingData.technicians ? {
+        assigned: true,
+        name: bookingData.technicians.full_name,
+        whatsapp: bookingData.technicians.whatsapp_number,
+        phone: bookingData.technicians.phone,
+        email: bookingData.technicians.email,
+        status: bookingData.technicians.current_status
+      } : {
+        assigned: false,
+        message: 'Your technician will be assigned soon. We\'ll notify you when assigned.',
+        next_steps: 'Our team will contact you to confirm technician assignment.'
+      },
+      service: bookingData.services ? {
+        name: bookingData.services.display_name || bookingData.services.name,
+        description: bookingData.services.description
+      } : null,
+      device: bookingData.device_models ? {
+        model: bookingData.device_models.display_name || bookingData.device_models.name,
+        brand: bookingData.device_models.brands?.display_name || bookingData.device_models.brands?.name || 'Unknown'
+      } : null,
+      location: bookingData.service_locations ? {
+        city: bookingData.service_locations.city_name,
+        local_phone: bookingData.service_locations.local_phone
+      } : null
+    };
+    
+    // Remove the nested objects to avoid duplication
+    delete booking.technicians;
+    delete booking.services;
+    delete booking.device_models;
+    delete booking.service_locations;
+    // Ensure final_price is not included in response
+    delete booking.final_price;
+    
     apiLogger.info('Found booking successfully', { 
       reference, 
       id: booking.id,
       customerName: booking.customer_name
     });
     
-    // Return the raw booking data without normalization
-    // This avoids any potential errors in the normalizeBookingData function
+    // Return the transformed booking data
     return res.status(200).json({
       success: true,
       booking
