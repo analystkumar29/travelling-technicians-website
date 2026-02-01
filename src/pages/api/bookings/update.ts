@@ -42,7 +42,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       Object.assign(updateData, otherUpdates);
     } else if (reference) {
       // Update by reference (reschedule style)
-      whereClause = { reference_number: reference };
+      whereClause = { booking_ref: reference };
       if (appointmentDate) updateData.booking_date = appointmentDate;
       if (appointmentTime) updateData.booking_time = appointmentTime;
       if (notes !== undefined) updateData.notes = notes;
@@ -194,7 +194,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     apiLogger.info('Successfully updated booking', { 
       id: updatedBooking.id, 
-      reference: updatedBooking.reference_number,
+      reference: updatedBooking.booking_ref,
       updatedFields: Object.keys(updateData)
     });
 

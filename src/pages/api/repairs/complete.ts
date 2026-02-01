@@ -102,7 +102,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       .select(`
         *,
         booking:booking_id (
-          reference_number,
+          booking_ref,
           customer_name,
           customer_email,
           customer_phone,

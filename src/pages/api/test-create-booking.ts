@@ -34,7 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       booking_date: new Date().toISOString().split('T')[0], // Today's date
       booking_time: '09-11',
       status: 'pending',
-      reference_number: reference,
+      booking_ref: reference,
     };
     
     console.log('Attempting to insert test booking:', bookingData);
