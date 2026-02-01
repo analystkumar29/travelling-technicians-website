@@ -42,7 +42,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       Object.assign(updateData, otherUpdates);
     } else if (reference) {
       // Update by reference (reschedule style)
-      whereClause = { booking_ref: reference };
+      // Handle both reference_number and booking_ref columns
+      whereClause = { 
+        booking_ref: reference 
+      };
+      
+      // Also try reference_number if booking_ref doesn't work
+      // This handles legacy data or mixed schema
+      apiLogger.info('Looking up booking by reference', { 
+        reference,
+        whereClause 
+      });
+      
       if (appointmentDate) updateData.booking_date = appointmentDate;
       if (appointmentTime) updateData.booking_time = appointmentTime;
       if (notes !== undefined) updateData.notes = notes;
@@ -71,11 +82,50 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Update the booking in the database
     apiLogger.info('Executing database update query');
-    const { data, error } = await supabase
+    
+    // First, try to find the booking by booking_ref
+    let { data, error } = await supabase
       .from('bookings')
       .update(updateData)
       .match(whereClause)
       .select();
+
+    // If no rows updated, try reference_number as fallback
+    if (error || !data || data.length === 0) {
+      apiLogger.warn('First update attempt failed, trying reference_number', {
+        error: error?.message,
+        dataLength: data?.length || 0,
+        whereClause
+      });
+      
+      // Try with reference_number if we're using reference
+      if (reference) {
+        const fallbackWhereClause = { reference_number: reference };
+        apiLogger.info('Trying fallback with reference_number', { fallbackWhereClause });
+        
+        const fallbackResult = await supabase
+          .from('bookings')
+          .update(updateData)
+          .match(fallbackWhereClause)
+          .select();
+          
+        data = fallbackResult.data;
+        error = fallbackResult.error;
+        
+        if (fallbackResult.error || !fallbackResult.data || fallbackResult.data.length === 0) {
+          apiLogger.error('Fallback update also failed', {
+            error: fallbackResult.error?.message,
+            dataLength: fallbackResult.data?.length || 0,
+            fallbackWhereClause
+          });
+        } else {
+          apiLogger.info('Fallback update succeeded', { 
+            reference,
+            updatedFields: Object.keys(updateData)
+          });
+        }
+      }
+    }
 
     if (error) {
       apiLogger.error('Error updating booking', {
@@ -84,21 +134,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         details: error.details,
         hint: error.hint,
         whereClause,
-        updateData
+        updateData,
+        reference
       });
+      
+      // Return user-friendly error message
+      const errorMessage = error.message?.includes('foreign key') 
+        ? 'Invalid booking data. Please contact support.'
+        : error.message?.includes('constraint') 
+          ? 'Invalid booking update. Please check your data.'
+          : 'Unable to update booking. Please try again or contact support.';
       
       return res.status(500).json({
         success: false,
-        message: 'Database error',
-        details: error.message
+        message: errorMessage,
+        reference
       });
     }
 
     if (!data || data.length === 0) {
-      apiLogger.warn('Booking not found', { whereClause });
+      apiLogger.warn('Booking not found', { whereClause, reference });
       return res.status(404).json({
         success: false,
-        message: 'Booking not found',
+        message: 'Booking not found. Please check your reference number.',
+        reference
       });
     }
 
