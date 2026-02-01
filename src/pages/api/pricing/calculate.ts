@@ -201,19 +201,39 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
       // First try exact match
       let modelMatch = modelName === searchModel;
       
-      // If no exact match, try partial match but be very careful
+      // If no exact match, try smarter matching for iPhone models
       if (!modelMatch) {
-        // Only allow partial match if the search term is significantly shorter
-        // This prevents "iPhone 15 Pro" from matching "iPhone 15 Pro Max"
-        const lengthDiff = Math.abs(modelName.length - searchModel.length);
-        if (lengthDiff > 5) { // Only allow partial match if lengths are very different
-          if (searchModel.length < modelName.length) {
-            modelMatch = modelName.includes(searchModel);
+        // Special handling for iPhone models to prevent "iPhone 16" matching "iPhone 16 Pro Max"
+        if (brand_info?.name?.toLowerCase() === 'apple' && modelName.includes('iphone')) {
+          // For Apple iPhone models, we need stricter matching
+          // Check if it's a Pro/Pro Max model mismatch
+          const isProMaxInSearch = searchModel.includes('pro max');
+          const isProMaxInDb = modelName.includes('pro max');
+          const isProInSearch = searchModel.includes('pro') && !searchModel.includes('pro max');
+          const isProInDb = modelName.includes('pro') && !modelName.includes('pro max');
+          const isPlusInSearch = searchModel.includes('plus');
+          const isPlusInDb = modelName.includes('plus');
+          
+          // Don't allow cross-category matching (Pro Max shouldn't match Pro, Pro shouldn't match regular, etc.)
+          if ((isProMaxInSearch && !isProMaxInDb) || 
+              (isProInSearch && !isProInDb) ||
+              (isPlusInSearch && !isPlusInDb)) {
+            modelMatch = false;
           } else {
-            modelMatch = searchModel.includes(modelName);
+            // For same category, allow partial match
+            modelMatch = modelName.includes(searchModel) || searchModel.includes(modelName);
+          }
+        } else {
+          // For non-Apple devices, use the original logic
+          const lengthDiff = Math.abs(modelName.length - searchModel.length);
+          if (lengthDiff > 5) {
+            if (searchModel.length < modelName.length) {
+              modelMatch = modelName.includes(searchModel);
+            } else {
+              modelMatch = searchModel.includes(modelName);
+            }
           }
         }
-        // For similar lengths, require exact match to avoid confusion
       }
       // Match service by slug pattern (services have device-type suffix like -mobile or -laptop)
       const serviceSlug = service.toLowerCase(); // e.g., 'screen-replacement'
