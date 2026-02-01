@@ -36,39 +36,70 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       nodeEnv: process.env.NODE_ENV
     });
     
-    // Fetch booking by reference number
+    // Fetch booking by reference number - try both booking_ref and reference_number
     apiLogger.info('Executing database query', { reference });
-    const { data: booking, error } = await supabase
+    
+    // First try booking_ref
+    let { data: booking, error } = await supabase
       .from('bookings')
       .select('*')
       .eq('booking_ref', reference)
       .single();
     
-    if (error) {
-      apiLogger.error('Error finding booking', {
+    // If not found, try reference_number as fallback
+    if (error || !booking) {
+      apiLogger.warn('Booking not found with booking_ref, trying reference_number', {
         reference,
-        error: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint
+        error: error?.message
       });
       
-      if (error.code === 'PGRST116') {
-        return res.status(404).json({ 
+      const fallbackResult = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('reference_number', reference)
+        .single();
+      
+      booking = fallbackResult.data;
+      error = fallbackResult.error;
+      
+      if (fallbackResult.error || !fallbackResult.data) {
+        apiLogger.error('Error finding booking with reference_number', {
+          reference,
+          error: fallbackResult.error?.message,
+          code: fallbackResult.error?.code,
+          details: fallbackResult.error?.details,
+          hint: fallbackResult.error?.hint
+        });
+        
+        if (fallbackResult.error?.code === 'PGRST116') {
+          return res.status(404).json({ 
+            success: false,
+            message: 'Booking not found'
+          });
+        }
+        
+        return res.status(500).json({
           success: false,
-          message: 'Booking not found'
+          message: 'Database error',
+          details: fallbackResult.error?.message
         });
       }
       
-      return res.status(500).json({
-        success: false,
-        message: 'Database error',
-        details: error.message
+      apiLogger.info('Found booking using reference_number fallback', { 
+        reference, 
+        id: booking.id,
+        customerName: booking.customer_name
+      });
+    } else {
+      apiLogger.info('Found booking using booking_ref', { 
+        reference, 
+        id: booking.id,
+        customerName: booking.customer_name
       });
     }
     
     if (!booking) {
-      apiLogger.warn('Booking not found', { reference });
+      apiLogger.warn('Booking not found after all attempts', { reference });
       return res.status(404).json({ 
         success: false,
         message: 'Booking not found'
