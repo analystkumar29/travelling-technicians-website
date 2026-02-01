@@ -88,7 +88,7 @@ export default function ServicePage({ slug, services, brands, config }: ServiceP
             }))
           }}
           doorstepService={true}
-          warranty="1 year"
+          warranty="up to 6 months"
         />
         <LocalBusinessSchema />
       </Head>

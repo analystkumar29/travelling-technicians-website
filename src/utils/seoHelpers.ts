@@ -1,6 +1,7 @@
 import { getSiteUrl } from './supabaseClient';
 import { logger } from './logger';
 import { isValidStructuredData } from './structuredDataValidation';
+import { getBusinessSettingsForSSG } from '@/lib/business-settings';
 
 // Create a module logger
 const seoLogger = logger.createModuleLogger('seoHelpers');
@@ -108,7 +109,7 @@ export function generatePageMetadata(context: PageContext): PageMetadata {
 function generateHomepageMetadata(canonical: string, defaultImage: string): PageMetadata {
   return {
     title: 'The Travelling Technicians | Mobile & Laptop Repair Vancouver BC',
-    description: 'Expert mobile phone and laptop repair with convenient doorstep service across Vancouver, Burnaby, Surrey, Richmond, and Lower Mainland. Same-day service with 1-year warranty.',
+    description: 'Expert mobile phone and laptop repair with convenient doorstep service across Vancouver, Burnaby, Surrey, Richmond, and Lower Mainland. Same-day service with up to 6-month warranty.',
     canonical,
     keywords: [
       'mobile repair vancouver',
@@ -121,7 +122,7 @@ function generateHomepageMetadata(canonical: string, defaultImage: string): Page
     ],
     openGraph: {
       title: 'The Travelling Technicians | Expert Device Repair At Your Door',
-      description: 'Professional mobile and laptop repair services with convenient doorstep service across the Lower Mainland. Same-day repairs with 1-year warranty.',
+      description: 'Professional mobile and laptop repair services with convenient doorstep service across the Lower Mainland. Same-day repairs with up to 6-month warranty.',
       image: defaultImage,
       type: 'website',
       url: canonical
@@ -138,7 +139,8 @@ function generateHomepageMetadata(canonical: string, defaultImage: string): Page
       name: 'The Travelling Technicians',
       description: 'Professional mobile phone and laptop repair services with same-day doorstep service',
       url: canonical,
-      telephone: '+1-778-389-9251',
+      // Phone will be injected server-side via getStaticProps
+      telephone: 'BUSINESS_PHONE_PLACEHOLDER',
       email: 'info@travelling-technicians.ca'
     }
   };
@@ -161,7 +163,7 @@ function generateServiceMetadata(context: PageContext, canonical: string, defaul
   const descriptions = {
     mobile: 'Professional mobile phone repair services including iPhone and Android screen replacement, battery replacement, and more. Same-day doorstep service across Vancouver and Lower Mainland.',
     laptop: 'Expert laptop repair services including MacBook and PC screen replacement, battery replacement, keyboard repair, and upgrades. Convenient doorstep service available.',
-    device: 'Comprehensive device repair services for mobile phones and laptops. Professional doorstep repair with same-day service and 1-year warranty.'
+    device: 'Comprehensive device repair services for mobile phones and laptops. Professional doorstep repair with same-day service and up to 6-month warranty.'
   };
   
   return {
@@ -212,7 +214,7 @@ function generateLocationMetadata(context: PageContext, canonical: string, defau
   
   return {
     title: `Mobile & Laptop Repair ${cityName} BC | Doorstep Service | The Travelling Technicians`,
-    description: `Professional mobile phone and laptop repair services in ${cityName}, BC. Same-day doorstep service for iPhone, Android, MacBook, and PC repairs. 1-year warranty included.`,
+    description: `Professional mobile phone and laptop repair services in ${cityName}, BC. Same-day doorstep service for iPhone, Android, MacBook, and PC repairs. Up to 6-month warranty included.`,
     canonical,
     keywords: [
       `mobile repair ${cityName.toLowerCase()}`,
@@ -224,7 +226,7 @@ function generateLocationMetadata(context: PageContext, canonical: string, defau
     ],
     openGraph: {
       title: `Mobile & Laptop Repair ${cityName} | Doorstep Service`,
-      description: `Expert device repair services in ${cityName}, BC. Same-day doorstep service with 1-year warranty.`,
+      description: `Expert device repair services in ${cityName}, BC. Same-day doorstep service with up to 6-month warranty.`,
       image: defaultImage,
       type: 'website',
       url: canonical

@@ -4,6 +4,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaClock, FaHeadset, FaComments } from 'react-icons/fa';
 import { OrganizationSchema, LocalBusinessSchema } from '@/components/seo/StructuredData';
+import { getBusinessSettingsForSSG } from '@/lib/business-settings';
 
 // Contact form field types
 type ContactFormData = {
@@ -14,7 +15,36 @@ type ContactFormData = {
   message: string;
 };
 
-export default function ContactPage() {
+interface ContactPageProps {
+  businessPhone: string;
+  businessPhoneHref: string;
+}
+
+export async function getStaticProps() {
+  try {
+    const businessSettings = await getBusinessSettingsForSSG();
+    return {
+      props: {
+        businessPhone: businessSettings.phone.display,
+        businessPhoneHref: businessSettings.phone.href
+      },
+      revalidate: 3600
+    };
+  } catch (error) {
+    return {
+      props: {
+        businessPhone: '(604) 849-5329',
+        businessPhoneHref: 'tel:+16048495329'
+      },
+      revalidate: 3600
+    };
+  }
+}
+
+export default function ContactPage({ 
+  businessPhone = '(604) 849-5329',
+  businessPhoneHref = 'tel:+16048495329'
+}: ContactPageProps) {
   // Contact form state
   const [formData, setFormData] = useState<ContactFormData>({
     name: '',
@@ -117,7 +147,7 @@ export default function ContactPage() {
         <LocalBusinessSchema
           name="The Travelling Technicians"
           description="Professional mobile phone and laptop repair services with doorstep service across Vancouver and Lower Mainland, BC. Contact us for fast, reliable tech repair solutions."
-          telephone="+1-778-389-9251"
+          telephone={businessPhoneHref}
           email="info@travellingtechnicians.ca"
         />
       </Head>
@@ -150,10 +180,10 @@ export default function ContactPage() {
                 Speak directly with our customer service team
               </p>
               <a 
-                href="tel:+17783899251" 
+                href={businessPhoneHref} 
                 className="text-xl font-bold text-primary-600 hover:text-primary-800 transition-colors block"
               >
-                (778) 389-9251
+                {businessPhone}
               </a>
               <p className="text-sm text-gray-500 mt-2">
                 Available during business hours
@@ -401,7 +431,7 @@ export default function ContactPage() {
                       </p>
                       <div className="flex items-center text-primary-600">
                         <FaPhone className="mr-2" />
-                        <span className="font-medium">(778) 389-9251 ext. 2</span>
+                        <span className="font-medium">{businessPhone} ext. 2</span>
                       </div>
                     </div>
                   </div>

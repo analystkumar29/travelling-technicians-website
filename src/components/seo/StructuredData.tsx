@@ -95,7 +95,7 @@ export function LocalBusinessSchema({
   name = "The Travelling Technicians",
   description = "Professional mobile phone, laptop, and tablet repair services with doorstep service across Vancouver, Burnaby, Surrey, Richmond, and the Lower Mainland, BC",
   url,
-  telephone = "+1-778-389-9251",
+  telephone,
   email = "info@travellingtechnicians.ca",
   address = {
     addressLocality: "Vancouver",
@@ -134,6 +134,12 @@ export function LocalBusinessSchema({
 }: LocalBusinessSchemaProps) {
   const siteUrl = getSiteUrl();
   const businessUrl = url || siteUrl;
+  
+  // If telephone is not provided, it should be passed from server-side props
+  if (!telephone) {
+    console.warn('LocalBusinessSchema: telephone prop is required');
+    return null;
+  }
   
   const schema = {
     "@context": "https://schema.org",
@@ -476,8 +482,18 @@ export function ArticleSchema({
 /**
  * Organization Schema Component
  */
-export function OrganizationSchema() {
+export interface OrganizationSchemaProps {
+  telephone?: string;
+}
+
+export function OrganizationSchema({ telephone }: OrganizationSchemaProps = {}) {
   const siteUrl = getSiteUrl();
+  
+  // If telephone is not provided, it should be passed from server-side props
+  if (!telephone) {
+    console.warn('OrganizationSchema: telephone prop is required');
+    return null;
+  }
   
   const schema = {
     "@context": "https://schema.org",
@@ -494,7 +510,7 @@ export function OrganizationSchema() {
     "description": "Professional mobile phone, laptop, and tablet repair services with doorstep service across Vancouver, Burnaby, Surrey, Richmond, and the Lower Mainland, BC",
     "contactPoint": {
       "@type": "ContactPoint",
-      "telephone": "+1-778-389-9251",
+      "telephone": telephone,
       "contactType": "customer service",
       "areaServed": "CA-BC",
       "availableLanguage": ["en", "fr"],
@@ -548,36 +564,38 @@ export interface StructuredDataProps {
   pageData?: any;
   includeLocalBusiness?: boolean;
   includeOrganization?: boolean;
+  telephone?: string;
 }
 
 export default function StructuredData({ 
   pageType, 
   pageData = {}, 
   includeLocalBusiness = false,
-  includeOrganization = false 
+  includeOrganization = false,
+  telephone
 }: StructuredDataProps) {
   return (
     <>
       {/* Always include Organization schema */}
-      {includeOrganization && <OrganizationSchema />}
+      {includeOrganization && <OrganizationSchema telephone={telephone} />}
       
       {/* Conditionally include LocalBusiness schema */}
       {includeLocalBusiness && (
-        <LocalBusinessSchema {...pageData.localBusiness} />
+        <LocalBusinessSchema telephone={telephone} {...pageData.localBusiness} />
       )}
       
       {/* Page-specific schemas */}
       {pageType === 'homepage' && (
         <>
-          <LocalBusinessSchema {...pageData.localBusiness} />
-          <OrganizationSchema />
+          <LocalBusinessSchema telephone={telephone} {...pageData.localBusiness} />
+          <OrganizationSchema telephone={telephone} />
         </>
       )}
       
       {pageType === 'service' && pageData.service && (
         <>
           <ServiceSchema {...pageData.service} />
-          <LocalBusinessSchema {...pageData.localBusiness} />
+          <LocalBusinessSchema telephone={telephone} {...pageData.localBusiness} />
         </>
       )}
       

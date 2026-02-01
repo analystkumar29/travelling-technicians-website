@@ -29,8 +29,8 @@ export const BookingBanner: React.FC = () => {
           <div className="bg-indigo-100 rounded-full p-3 mb-2">
             <FaCalendarCheck className="h-6 w-6 text-indigo-700" />
           </div>
-          <h3 className="font-medium text-indigo-800 mb-1">1-Year Warranty</h3>
-          <p className="text-sm text-gray-600">All parts and service guaranteed</p>
+          <h3 className="font-medium text-indigo-800 mb-1">Up to 6-Month Warranty</h3>
+          <p className="text-sm text-gray-600">Quality parts with warranty protection</p>
         </div>
       </div>
       

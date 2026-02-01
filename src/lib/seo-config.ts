@@ -6,7 +6,7 @@ import { DefaultSeoProps } from 'next-seo/pages';
  */
 export const defaultSeoConfig: DefaultSeoProps = {
   title: 'The Travelling Technicians | Mobile & Laptop Repair Vancouver BC',
-  description: 'Expert mobile phone and laptop repair with convenient doorstep service across Vancouver, Burnaby, Surrey, Richmond, and Lower Mainland. Same-day service with 1-year warranty.',
+  description: 'Expert mobile phone and laptop repair with convenient doorstep service across Vancouver, Burnaby, Surrey, Richmond, and Lower Mainland. Same-day service with up to 6-month warranty.',
   canonical: 'https://travelling-technicians.ca',
   openGraph: {
     type: 'website',
@@ -14,7 +14,7 @@ export const defaultSeoConfig: DefaultSeoProps = {
     url: 'https://travelling-technicians.ca',
     siteName: 'The Travelling Technicians',
     title: 'The Travelling Technicians | Expert Device Repair At Your Door',
-    description: 'Professional mobile and laptop repair services with convenient doorstep service across the Lower Mainland. Same-day repairs with 1-year warranty.',
+    description: 'Professional mobile and laptop repair services with convenient doorstep service across the Lower Mainland. Same-day repairs with up to 6-month warranty.',
     images: [
       {
         url: 'https://travelling-technicians.ca/images/logo/logo-orange-optimized.webp',
@@ -119,7 +119,7 @@ export function generatePageSeo(
 export const seoConfigs = {
   homepage: {
     title: 'The Travelling Technicians | Mobile & Laptop Repair Vancouver BC',
-    description: 'Expert mobile phone and laptop repair with convenient doorstep service across Vancouver, Burnaby, Surrey, Richmond, and Lower Mainland. Same-day service with 1-year warranty.',
+    description: 'Expert mobile phone and laptop repair with convenient doorstep service across Vancouver, Burnaby, Surrey, Richmond, and Lower Mainland. Same-day service with up to 6-month warranty.',
   },
   service: {
     mobile: {
@@ -133,7 +133,7 @@ export const seoConfigs = {
   },
   location: (city: string) => ({
     title: `Mobile & Laptop Repair ${city} BC | Doorstep Service | The Travelling Technicians`,
-    description: `Professional mobile phone and laptop repair services in ${city}, BC. Same-day doorstep service for iPhone, Android, MacBook, and PC repairs. 1-year warranty included.`,
+    description: `Professional mobile phone and laptop repair services in ${city}, BC. Same-day doorstep service for iPhone, Android, MacBook, and PC repairs. Up to 6-month warranty included.`,
   }),
   booking: {
     title: 'Book Online | Mobile & Laptop Repair Appointment | The Travelling Technicians',

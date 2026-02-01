@@ -12,6 +12,7 @@ import { TechnicianSchema } from '@/components/seo/TechnicianSchema';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import { HomePagePreloads } from '@/components/common/PreloadHints';
 import { getPricingData, getPopularServices, getTestimonials } from '@/lib/data-service';
+import { getBusinessSettingsForSSG } from '@/lib/business-settings';
 
 // Component to render device brand image with proper dimensions
 const BrandImage = ({ src, alt }: { src: string, alt: string }) => {
@@ -98,22 +99,27 @@ interface HomePageProps {
   pricingData: typeof staticPricingData;
   testimonials: typeof staticTestimonials;
   popularServices: typeof staticPopularServices;
+  businessPhone: string;
+  businessPhoneHref: string;
 }
 
 export async function getStaticProps() {
   try {
-    // Fetch data from our new data service
-    const [pricingData, testimonials, popularServices] = await Promise.all([
+    // Fetch data from our new data service and business settings
+    const [pricingData, testimonials, popularServices, businessSettings] = await Promise.all([
       getPricingData(),
       getTestimonials(),
-      getPopularServices()
+      getPopularServices(),
+      getBusinessSettingsForSSG()
     ]);
 
     return {
       props: {
         pricingData,
         testimonials,
-        popularServices
+        popularServices,
+        businessPhone: businessSettings.phone.display,
+        businessPhoneHref: businessSettings.phone.href
       },
       // Revalidate every hour (ISR)
       revalidate: 3600
@@ -125,7 +131,9 @@ export async function getStaticProps() {
       props: {
         pricingData: staticPricingData,
         testimonials: staticTestimonials,
-        popularServices: staticPopularServices
+        popularServices: staticPopularServices,
+        businessPhone: '(604) 849-5329',
+        businessPhoneHref: 'tel:+16048495329'
       },
       revalidate: 3600
     };
@@ -135,7 +143,9 @@ export async function getStaticProps() {
 export default function Home({
   pricingData = staticPricingData,
   testimonials = staticTestimonials,
-  popularServices = staticPopularServices
+  popularServices = staticPopularServices,
+  businessPhone = '(604) 849-5329',
+  businessPhoneHref = 'tel:+16048495329'
 }: HomePageProps) {
   const [selectedTestimonial, setSelectedTestimonial] = useState(0);
   const [showFAB, setShowFAB] = useState(true);
@@ -190,8 +200,8 @@ export default function Home({
         <HomePagePreloads />
         
         {/* Homepage Structured Data */}
-        <LocalBusinessSchema />
-        <OrganizationSchema />
+        <LocalBusinessSchema telephone={businessPhoneHref} />
+        <OrganizationSchema telephone={businessPhoneHref} />
         <ReviewSchema
           reviews={testimonials.map(testimonial => ({
             author: testimonial.name,
@@ -319,13 +329,13 @@ export default function Home({
                   </Link>
                   
                   <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                    <a 
-                      href="tel:+17783899251" 
-                      className="bg-green-600 hover:bg-green-700 text-white text-center py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center min-h-[48px] active:scale-95"
-                    >
-                      <FaPhone className="mr-1 sm:mr-2" />
-                      <span className="text-sm sm:text-base">Emergency Call</span>
-                    </a>
+                  <a 
+                    href={businessPhoneHref} 
+                    className="bg-green-600 hover:bg-green-700 text-white text-center py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center min-h-[48px] active:scale-95"
+                  >
+                    <FaPhone className="mr-1 sm:mr-2" />
+                    <span className="text-sm sm:text-base">Emergency Call</span>
+                  </a>
                     <Link 
                       href="/services" 
                       className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-center py-3 px-4 rounded-lg font-semibold transition-colors min-h-[48px] flex items-center justify-center active:scale-95"
@@ -600,11 +610,11 @@ export default function Home({
               
               <div className="flex items-center justify-center space-x-4 text-sm">
                 <a 
-                  href="tel:+17783899251" 
+                  href={businessPhoneHref} 
                   className="flex items-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
                 >
                   <FaPhone className="mr-2" />
-                  Call Now: (778) 389-9251
+                  Call Now: {businessPhone}
                 </a>
                 <span className="text-accent-100">or</span>
                 <span className="text-accent-100">2-minute online booking</span>
