@@ -116,7 +116,7 @@ export default async function handler(
     const { data: booking, error: findError } = await supabase
       .from('bookings')
       .select('*')
-      .eq('reference_number', reference)
+      .eq('booking_ref', reference)
       .single();
       
     if (findError || !booking) {
@@ -176,7 +176,7 @@ export default async function handler(
       .update({
         status: 'confirmed'
       })
-      .eq('reference_number', reference)
+      .eq('booking_ref', reference)
       .select()
       .single();
       

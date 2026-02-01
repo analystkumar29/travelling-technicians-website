@@ -22,7 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { data: booking, error } = await supabase
       .from('bookings')
       .select('*')
-      .eq('reference_number', reference)
+      .eq('booking_ref', reference)
       .single();
     
     if (error) {

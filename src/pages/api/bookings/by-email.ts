@@ -109,7 +109,7 @@ export default async function handler(
     // Return bookings with formatted data
     const formattedBookings = bookings.map(booking => ({
       id: booking.id,
-      reference_number: booking.reference_number,
+      reference_number: booking.booking_ref, // Changed from booking.reference_number
       device_type: booking.device_type,
       device_brand: booking.device_brand,
       device_model: booking.device_model,

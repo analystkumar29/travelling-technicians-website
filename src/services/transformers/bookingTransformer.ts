@@ -29,7 +29,7 @@ export function normalizeBookingData(apiData: any): BookingData {
   // Create the normalized booking data structure
   return {
     id: apiData.id,
-    referenceNumber: apiData.reference_number,
+    referenceNumber: apiData.booking_ref || apiData.reference_number,
     
     customer: {
       name: apiData.customer_name,
