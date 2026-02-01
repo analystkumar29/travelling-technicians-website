@@ -73,10 +73,10 @@ export default function BlogPage() {
       <Head>
         <title>Expert Tech Repair Guides & Tips | The Travelling Technicians Blog</title>
         <meta name="description" content="Get professional tech repair tips, guides, and insights from our expert technicians. Learn about mobile phone repair, laptop maintenance, and device troubleshooting." />
-        <link rel="canonical" href="https://travelling-technicians.ca/blog" />
+        <link rel="canonical" href="https://www.travelling-technicians.ca/blog" />
         <meta property="og:title" content="Expert Tech Repair Guides & Tips | The Travelling Technicians Blog" />
         <meta property="og:description" content="Professional tech repair tips, guides, and insights from our expert technicians. Mobile phone repair, laptop maintenance, and device troubleshooting." />
-        <meta property="og:url" content="https://travelling-technicians.ca/blog" />
+        <meta property="og:url" content="https://www.travelling-technicians.ca/blog" />
         <meta property="og:type" content="website" />
       </Head>
     <Layout>

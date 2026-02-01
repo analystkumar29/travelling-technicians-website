@@ -116,10 +116,10 @@ export default function DoorstepRepairPage() {
       <Head>
         <title>Doorstep Device Repair Service | The Travelling Technicians</title>
         <meta name="description" content="Professional doorstep mobile phone and laptop repair services across Vancouver and Lower Mainland. Expert technicians come to you with same-day service and 90-day warranty." />
-        <link rel="canonical" href="https://travelling-technicians.ca/doorstep-repair" />
+        <link rel="canonical" href="https://www.travelling-technicians.ca/doorstep-repair" />
         <meta property="og:title" content="Doorstep Device Repair Service | The Travelling Technicians" />
         <meta property="og:description" content="Expert mobile phone and laptop repair technicians come to your location across Vancouver and Lower Mainland. Same-day service with 90-day warranty." />
-        <meta property="og:url" content="https://travelling-technicians.ca/doorstep-repair" />
+        <meta property="og:url" content="https://www.travelling-technicians.ca/doorstep-repair" />
         <meta property="og:type" content="service" />
       </Head>
     <Layout>

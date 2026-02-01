@@ -261,7 +261,7 @@ export function getOptimizedImageSrc(imagePath: string): { webp?: string; fallba
 export function createImageSitemapData(images: string[]): ImageSEOData[] {
   return images.map(imagePath => {
     const alt = generateImageAlt(imagePath);
-    const url = `https://travelling-technicians.ca${imagePath}`;
+    const url = `https://www.travelling-technicians.ca${imagePath}`;
     
     // Extract location from service area images
     let location;

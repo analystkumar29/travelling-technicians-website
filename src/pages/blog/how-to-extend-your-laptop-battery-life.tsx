@@ -12,10 +12,10 @@ export default function ExtendLaptopBatteryLifePost() {
         <title>How to Extend Your Laptop Battery Life | Expert Tips & Guide | The Travelling Technicians</title>
         <meta name="description" content="Learn proven techniques to extend your laptop battery life and maximize performance. Expert tips on charging habits, power settings, and battery maintenance for longer laptop usage." />
         <meta name="keywords" content="laptop battery life, extend laptop battery, laptop battery tips, battery maintenance, laptop power settings, battery health, laptop battery replacement" />
-        <link rel="canonical" href="https://travelling-technicians.ca/blog/how-to-extend-your-laptop-battery-life" />
+        <link rel="canonical" href="https://www.travelling-technicians.ca/blog/how-to-extend-your-laptop-battery-life" />
         <meta property="og:title" content="How to Extend Your Laptop Battery Life | Expert Tips & Guide" />
         <meta property="og:description" content="Proven techniques to maximize your laptop battery life and performance. Learn proper charging habits, power optimization, and when to replace your battery." />
-        <meta property="og:url" content="https://travelling-technicians.ca/blog/how-to-extend-your-laptop-battery-life" />
+        <meta property="og:url" content="https://www.travelling-technicians.ca/blog/how-to-extend-your-laptop-battery-life" />
         <meta property="og:type" content="article" />
         <meta property="og:image" content="https://images.unsplash.com/photo-1588872657578-7efd1f1555ed" />
         <meta property="article:published_time" content="2023-04-02T00:00:00Z" />
@@ -54,14 +54,14 @@ export default function ExtendLaptopBatteryLifePost() {
               "name": "The Travelling Technicians",
               "logo": {
                 "@type": "ImageObject",
-                "url": "https://travelling-technicians.ca/images/logo/logo-orange.png"
+                "url": "https://www.travelling-technicians.ca/images/logo/logo-orange.png"
               }
             },
             "datePublished": "2023-04-02",
             "dateModified": "2023-04-02",
             "mainEntityOfPage": {
               "@type": "WebPage",
-              "@id": "https://travelling-technicians.ca/blog/how-to-extend-your-laptop-battery-life"
+              "@id": "https://www.travelling-technicians.ca/blog/how-to-extend-your-laptop-battery-life"
             },
             "articleSection": "Laptop Maintenance",
             "keywords": ["laptop battery", "battery maintenance", "power management", "laptop tips"]
