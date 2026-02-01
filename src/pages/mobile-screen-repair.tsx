@@ -14,7 +14,7 @@ export default function MobileScreenRepairPage() {
         <link rel="canonical" href="https://www.travelling-technicians.ca/mobile-screen-repair" />
         <meta property="og:title" content="Mobile Screen Repair Vancouver | Same-Day Service" />
         <meta property="og:description" content="Professional mobile screen repair with same-day doorstep service across Vancouver and Lower Mainland. 90-day warranty on all repairs." />
-        <meta property="og:url" content="https://travelling-technicians.ca/mobile-screen-repair" />
+        <meta property="og:url" content="https://www.travelling-technicians.ca/mobile-screen-repair" />
         <meta property="og:type" content="service" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{
           __html: JSON.stringify({

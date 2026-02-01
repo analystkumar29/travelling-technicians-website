@@ -7,17 +7,17 @@ import { DefaultSeoProps } from 'next-seo/pages';
 export const defaultSeoConfig: DefaultSeoProps = {
   title: 'The Travelling Technicians | Mobile & Laptop Repair Vancouver BC',
   description: 'Expert mobile phone and laptop repair with convenient doorstep service across Vancouver, Burnaby, Surrey, Richmond, and Lower Mainland. Same-day service with up to 6-month warranty.',
-  canonical: 'https://travelling-technicians.ca',
+  canonical: 'https://www.travelling-technicians.ca',
   openGraph: {
     type: 'website',
     locale: 'en_CA',
-    url: 'https://travelling-technicians.ca',
+    url: 'https://www.travelling-technicians.ca',
     siteName: 'The Travelling Technicians',
     title: 'The Travelling Technicians | Expert Device Repair At Your Door',
     description: 'Professional mobile and laptop repair services with convenient doorstep service across the Lower Mainland. Same-day repairs with up to 6-month warranty.',
     images: [
       {
-        url: 'https://travelling-technicians.ca/images/logo/logo-orange-optimized.webp',
+        url: 'https://www.travelling-technicians.ca/images/logo/logo-orange-optimized.webp',
         width: 1200,
         height: 630,
         alt: 'The Travelling Technicians Logo',

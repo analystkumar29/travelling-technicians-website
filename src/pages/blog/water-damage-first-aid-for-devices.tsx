@@ -12,12 +12,12 @@ export default function WaterDamageFirstAidPost() {
         <title>Water Damage First Aid for Devices | Emergency Repair Guide | The Travelling Technicians</title>
         <meta name="description" content="Emergency steps to save water-damaged phones and laptops. Learn immediate response protocols, what to do and avoid, and when to call professionals for device recovery." />
         <meta name="keywords" content="water damage repair, phone water damage, laptop water damage, emergency device repair, water damage first aid, spilled liquid on phone" />
-        <link rel="canonical" href="https://travelling-technicians.ca/blog/water-damage-first-aid-for-devices" />
+        <link rel="canonical" href="https://www.travelling-technicians.ca/blog/water-damage-first-aid-for-devices" />
         <meta property="og:title" content="Water Damage First Aid for Your Devices | Emergency Guide" />
         <meta property="og:description" content="Critical steps to take in the first minutes after water damage. Emergency protocols that could save your device and data." />
-        <meta property="og:url" content="https://travelling-technicians.ca/blog/water-damage-first-aid-for-devices" />
+        <meta property="og:url" content="https://www.travelling-technicians.ca/blog/water-damage-first-aid-for-devices" />
         <meta property="og:type" content="article" />
-        <meta property="og:image" content="https://travelling-technicians.ca/images/blog/water-damage-repair.jpg" />
+        <meta property="og:image" content="https://www.travelling-technicians.ca/images/blog/water-damage-repair.jpg" />
         <meta property="article:published_time" content="2024-03-05T00:00:00Z" />
         <meta property="article:author" content="Michael Tran" />
         <meta property="article:section" content="Emergency Repair" />
@@ -31,7 +31,7 @@ export default function WaterDamageFirstAidPost() {
           author="Michael Tran"
           datePublished="2024-03-05"
           dateModified="2024-03-05"
-          image="https://travelling-technicians.ca/images/blog/water-damage-repair.jpg"
+          image="https://www.travelling-technicians.ca/images/blog/water-damage-repair.jpg"
           url="https://travellingtechnicians.ca/blog/water-damage-first-aid-for-devices"
           category="Emergency Repair"
           tags={["water damage", "emergency repair", "device recovery"]}
@@ -44,7 +44,7 @@ export default function WaterDamageFirstAidPost() {
             "@type": "Article",
             "headline": "Water Damage First Aid for Your Devices",
             "description": "Emergency steps to save water-damaged phones and laptops. Learn immediate response protocols, what to do and avoid, and when to call professionals.",
-            "image": "https://travelling-technicians.ca/images/blog/water-damage-repair.jpg",
+            "image": "https://www.travelling-technicians.ca/images/blog/water-damage-repair.jpg",
             "author": {
               "@type": "Person",
               "name": "Michael Tran"
@@ -54,14 +54,14 @@ export default function WaterDamageFirstAidPost() {
               "name": "The Travelling Technicians",
               "logo": {
                 "@type": "ImageObject",
-                "url": "https://travelling-technicians.ca/images/logo/logo-orange.png"
+                "url": "https://www.travelling-technicians.ca/images/logo/logo-orange.png"
               }
             },
             "datePublished": "2024-03-05",
             "dateModified": "2024-03-05",
             "mainEntityOfPage": {
               "@type": "WebPage",
-              "@id": "https://travelling-technicians.ca/blog/water-damage-first-aid-for-devices"
+              "@id": "https://www.travelling-technicians.ca/blog/water-damage-first-aid-for-devices"
             },
             "articleSection": "Emergency Repair",
             "keywords": ["water damage", "emergency repair", "device recovery", "phone rescue"]

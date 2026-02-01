@@ -12,12 +12,12 @@ export default function ScreenProtectionGuidePost() {
         <title>Ultimate Guide to Screen Protection | Mobile & Laptop | The Travelling Technicians</title>
         <meta name="description" content="Complete guide to screen protectors for phones and laptops. Learn about tempered glass vs plastic film, 9H hardness, and how to choose the best protection for your device." />
         <meta name="keywords" content="screen protector guide, tempered glass protector, phone screen protection, laptop screen protector, mobile accessories, device protection" />
-        <link rel="canonical" href="https://travelling-technicians.ca/blog/ultimate-guide-to-screen-protection" />
+        <link rel="canonical" href="https://www.travelling-technicians.ca/blog/ultimate-guide-to-screen-protection" />
         <meta property="og:title" content="Ultimate Guide to Screen Protection | Mobile & Laptop" />
         <meta property="og:description" content="Everything you need to know about protecting your device screens. Expert advice on choosing the right screen protector." />
-        <meta property="og:url" content="https://travelling-technicians.ca/blog/ultimate-guide-to-screen-protection" />
+        <meta property="og:url" content="https://www.travelling-technicians.ca/blog/ultimate-guide-to-screen-protection" />
         <meta property="og:type" content="article" />
-        <meta property="og:image" content="https://travelling-technicians.ca/images/blog/screen-protection.jpg" />
+        <meta property="og:image" content="https://www.travelling-technicians.ca/images/blog/screen-protection.jpg" />
         <meta property="article:published_time" content="2024-02-25T00:00:00Z" />
         <meta property="article:author" content="Chris Lee" />
         <meta property="article:section" content="Mobile Accessories" />
@@ -31,7 +31,7 @@ export default function ScreenProtectionGuidePost() {
           author="Chris Lee"
           datePublished="2024-02-25"
           dateModified="2024-02-25"
-          image="https://travelling-technicians.ca/images/blog/screen-protection.jpg"
+          image="https://www.travelling-technicians.ca/images/blog/screen-protection.jpg"
           url="https://travellingtechnicians.ca/blog/ultimate-guide-to-screen-protection"
           category="Mobile Accessories"
           tags={["screen protector", "mobile accessories", "device protection"]}
@@ -44,7 +44,7 @@ export default function ScreenProtectionGuidePost() {
             "@type": "Article",
             "headline": "The Ultimate Guide to Screen Protection",
             "description": "Complete guide to screen protectors for phones and laptops. Learn about tempered glass vs plastic film, 9H hardness, and how to choose the best protection.",
-            "image": "https://travelling-technicians.ca/images/blog/screen-protection.jpg",
+            "image": "https://www.travelling-technicians.ca/images/blog/screen-protection.jpg",
             "author": {
               "@type": "Person",
               "name": "Chris Lee"
@@ -54,14 +54,14 @@ export default function ScreenProtectionGuidePost() {
               "name": "The Travelling Technicians",
               "logo": {
                 "@type": "ImageObject",
-                "url": "https://travelling-technicians.ca/images/logo/logo-orange.png"
+                "url": "https://www.travelling-technicians.ca/images/logo/logo-orange.png"
               }
             },
             "datePublished": "2024-02-25",
             "dateModified": "2024-02-25",
             "mainEntityOfPage": {
               "@type": "WebPage",
-              "@id": "https://travelling-technicians.ca/blog/ultimate-guide-to-screen-protection"
+              "@id": "https://www.travelling-technicians.ca/blog/ultimate-guide-to-screen-protection"
             },
             "articleSection": "Mobile Accessories",
             "keywords": ["screen protector", "tempered glass", "mobile accessories", "device protection"]
