@@ -168,7 +168,7 @@ const NeighborhoodPage: NextPage<NeighborhoodPageProps> = ({
               Same-day doorstep phone and laptop repair service in {neighborhoodData.neighborhoodName}, {neighborhoodData.cityName}
             </p>
             <p className="text-lg text-blue-50 mb-6">
-              Serving your neighborhood for years with expert technicians and 1-year warranty on all repairs
+              Serving your neighborhood for years with expert technicians and up to 6-month warranty on all repairs
             </p>
             <div className="flex flex-wrap gap-4">
               <button className="bg-white text-blue-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors">
