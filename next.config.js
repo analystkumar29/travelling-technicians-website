@@ -20,6 +20,22 @@ module.exports = (phase, { defaultConfig }) => {
           destination: 'https://www.travelling-technicians.ca/:path*',
           permanent: true,
         },
+        // Archive redirects - static pages to dynamic equivalents
+        {
+          source: '/mobile-screen-repair',
+          destination: '/services/mobile-repair',
+          permanent: true,
+        },
+        {
+          source: '/laptop-screen-repair',
+          destination: '/services/laptop-repair',
+          permanent: true,
+        },
+        {
+          source: '/mobile-repair-near-me',
+          destination: '/repair',
+          permanent: true,
+        },
       ];
     },
     async headers() {
