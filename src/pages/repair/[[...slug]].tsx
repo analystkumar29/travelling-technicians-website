@@ -39,45 +39,7 @@ interface RouteData {
   city_id: string;
   service_id: string;
   model_id: string;
-  payload: {
-    city: {
-      id: string;
-      name: string;
-      slug: string;
-      local_content?: string;
-      local_phone?: string;
-      local_email?: string;
-      operating_hours?: string;
-    };
-    service: {
-      id: string;
-      name: string;
-      slug: string;
-      description?: string;
-      display_name: string;
-      estimated_duration_minutes?: number;
-      is_doorstep_eligible: boolean;
-    };
-    model: {
-      id: string;
-      name: string;
-      slug: string;
-      display_name: string;
-      release_year?: number;
-      popularity_score?: number;
-    };
-    type: {
-      id: string;
-      name: string;
-      slug: string;
-    };
-    brand: {
-      id: string;
-      name: string;
-      slug: string;
-      display_name: string;
-    };
-  };
+  payload: any; // Use any for now since payload structure varies by route_type
 }
 
 interface PageProps {
@@ -189,44 +151,176 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
       return <ModelServicePage routeData={routeData} />;
 
     case 'CITY_PAGE':
-      // Render a "coming soon" page for city-level repair pages
-      // This allows Google to index the URL structure immediately,
-      // even before full content is ready
-      const routerSlug = router.query.slug as string[];
-      const citySlug = routerSlug?.[0] || 'your city';
+      // Render professional city page using database data
+      if (!routeData) {
+        return <NotFound />;
+      }
+      
+      const { city, popular_models, sample_services } = routeData.payload;
+      const cityName = city.name;
+      
       return (
         <>
           <Head>
-            <title>Repair Services in {citySlug} | The Travelling Technicians</title>
-            <meta name="description" content={`Doorstep repair services coming soon to ${citySlug}. Check back soon for mobile and laptop repair options.`} />
+            <title>Repair Services in {cityName} | The Travelling Technicians</title>
+            <meta name="description" content={`Professional doorstep repair services in ${cityName}. Screen replacement, battery replacement, and more for all major device brands.`} />
             <meta name="robots" content="index, follow" />
-            <link rel="canonical" href={`${siteUrl}/repair/${citySlug}`} />
+            <link rel="canonical" href={`${siteUrl}/repair/${city.slug}`} />
           </Head>
-          <div className="min-h-screen bg-gradient-to-r from-blue-50 to-blue-100 flex items-center justify-center px-4">
-            <div className="max-w-2xl text-center">
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">
-                Repair Services Coming Soon to {citySlug.charAt(0).toUpperCase() + citySlug.slice(1)}
-              </h1>
-              <p className="text-xl text-gray-600 mb-8">
-                We're preparing our complete repair service pages for this area. Check back soon to see all available mobile and laptop repair options.
-              </p>
-              <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Why Choose The Travelling Technicians?</h2>
-                <ul className="text-left space-y-3 text-gray-700">
-                  <li className="flex items-center"><span className="text-blue-600 mr-3">✓</span> Same-day doorstep repair service</li>
-                  <li className="flex items-center"><span className="text-blue-600 mr-3">✓</span> 1-year warranty on all repairs</li>
-                  <li className="flex items-center"><span className="text-blue-600 mr-3">✓</span> Professional certified technicians</li>
-                  <li className="flex items-center"><span className="text-blue-600 mr-3">✓</span> No hidden fees - transparent pricing</li>
-                </ul>
+          
+          {/* Professional Header - Inspired by legacy model-page.tsx */}
+          <section className="pt-8 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
+            <div className="container-custom">
+              <div className="text-center max-w-4xl mx-auto">
+                <div className="flex items-center justify-center mb-4">
+                  <svg className="h-6 w-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-primary-200">{cityName}, BC</span>
+                </div>
+                <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+                  Device Repair Services<br />
+                  <span className="text-2xl md:text-3xl">in {cityName}</span>
+                </h1>
+                <p className="text-xl md:text-2xl mb-8 text-primary-100">
+                  Doorstep repair service for all major device brands
+                </p>
+                
+                <div className="inline-block bg-accent-500 text-white text-lg px-6 py-3 rounded-full mb-8">
+                  <span className="font-bold">From $89</span>
+                  <span className="ml-2 text-primary-100">with 90-day warranty</span>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+                  <Link 
+                    href={`/book-online?city=${city.slug}`} 
+                    className="btn-accent text-lg px-8 py-4"
+                  >
+                    Book Repair in {cityName}
+                  </Link>
+                  <a 
+                    href="tel:+17783899251" 
+                    className="btn-outline border-white text-white hover:bg-primary-600 text-lg px-8 py-4 flex items-center justify-center"
+                  >
+                    <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                    </svg>
+                    (778) 389-9251
+                  </a>
+                </div>
+                
+                <div className="flex flex-wrap justify-center gap-6 text-sm">
+                  <div className="flex items-center">
+                    <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                    </svg>
+                    30-90 min service
+                  </div>
+                  <div className="flex items-center">
+                    <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    90-Day Warranty
+                  </div>
+                  <div className="flex items-center">
+                    <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                    </svg>
+                    Certified Technicians
+                  </div>
+                </div>
               </div>
-              <Link
-                href="/repair"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 inline-block"
-              >
-                View All Repair Services
-              </Link>
             </div>
-          </div>
+          </section>
+
+          {/* Services Section */}
+          <section className="py-16 bg-white">
+            <div className="container-custom">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl font-bold mb-4">Our Repair Services in {cityName}</h2>
+                <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                  Professional doorstep repair for all your devices. We come to you in {cityName} with all necessary tools and genuine parts.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {sample_services?.map((service: { id: string; slug: string; display_name: string }, index: number) => (
+                  <Link 
+                    key={service.id}
+                    href={`/repair/${city.slug}/${service.slug}`} 
+                    className="bg-white p-6 rounded-xl shadow-sm hover:shadow-lg transition-all border border-gray-100 group"
+                  >
+                    <div className="text-accent-600 text-2xl mb-4">
+                      {index === 0 ? '📱' : index === 1 ? '🔋' : index === 2 ? '💻' : '🛠️'}
+                    </div>
+                    <h3 className="font-bold text-lg text-gray-900 group-hover:text-primary-600 transition-colors">
+                      {service.display_name}
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Professional {service.display_name.toLowerCase()} for all major brands
+                    </p>
+                    <div className="mt-4 text-primary-500 font-bold">
+                      From $89
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Popular Models Section */}
+          {popular_models && popular_models.length > 0 && (
+            <section className="py-16 bg-gray-50">
+              <div className="container-custom">
+                <div className="text-center mb-12">
+                  <h2 className="text-3xl font-bold mb-4">Popular Devices We Repair</h2>
+                  <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                    We specialize in repairing the most popular devices in {cityName}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  {popular_models.map((model: { id: string; name: string; brand: string }) => (
+                    <div key={model.id} className="bg-white p-4 rounded-lg text-center">
+                      <div className="text-gray-800 font-medium text-sm">
+                        {model.name}
+                      </div>
+                      <div className="text-gray-500 text-xs mt-1">
+                        {model.brand}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* CTA Section */}
+          <section className="py-16 bg-primary-50">
+            <div className="container-custom text-center">
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                Ready to Repair Your Device in {cityName}?
+              </h2>
+              <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
+                Book your doorstep repair service today and get back to using your device.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link
+                  href={`/book-online?city=${city.slug}`}
+                  className="btn-accent text-lg px-8 py-4"
+                >
+                  Book Repair Now
+                </Link>
+                <a
+                  href="tel:+17783899251"
+                  className="btn-outline border-primary-600 text-primary-600 hover:bg-primary-50 text-lg px-8 py-4"
+                >
+                  Call (778) 389-9251
+                </a>
+              </div>
+            </div>
+          </section>
         </>
       );
 
@@ -290,11 +384,10 @@ export const getStaticPaths: GetStaticPaths = async () => {
     
     console.log('🚀 Starting pagination-based route generation...');
     
-    // First, get the total count of routes
+    // First, get the total count of ALL routes (not just model-service-page)
     const { count: totalCount, error: countError } = await supabase
       .from('dynamic_routes')
-      .select('*', { count: 'exact', head: true })
-      .eq('route_type', 'model-service-page');
+      .select('*', { count: 'exact', head: true });
     
     if (countError) {
       console.error('❌ Error getting route count:', countError);
@@ -306,7 +399,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
     const allRoutes: Array<{ slug_path: string }> = [];
     const totalBatches = Math.ceil((totalCount || 0) / BATCH_SIZE);
     
-    // Fetch routes in batches with pagination
+    // Fetch ALL routes in batches with pagination
     for (let batch = 0; batch < totalBatches; batch++) {
       // Check timeout
       if (Date.now() - startTime > MAX_BUILD_TIME) {
@@ -322,8 +415,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
       const { data: batchRoutes, error: batchError } = await supabase
         .from('dynamic_routes')
         .select('slug_path')
-        .eq('route_type', 'model-service-page')
-        .order('slug_path', { ascending: true }) // Use slug_path since popularity_score doesn't exist
+        .order('slug_path', { ascending: true })
         .range(start, end);
       
       if (batchError) {
