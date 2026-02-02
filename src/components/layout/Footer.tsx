@@ -208,9 +208,14 @@ export default function Footer() {
       <div className="bg-gray-950 py-4">
         <div className="container-custom">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-400 text-sm">
-              &copy; {new Date().getFullYear()} The Travelling Technicians. All rights reserved.
-            </p>
+            <div className="text-center md:text-left">
+              <p className="text-gray-400 text-sm">
+                &copy; {new Date().getFullYear()} The Travelling Technicians. All rights reserved.
+              </p>
+              <p className="text-gray-500 text-xs mt-1 max-w-2xl">
+                The Travelling Technicians is an independent service provider. We are not affiliated with, authorized by, or endorsed by Apple Inc., Samsung Electronics Co., Ltd., or Google LLC. All trademarks are the property of their respective owners. We provide out-of-warranty hardware repairs only.
+              </p>
+            </div>
             <div className="flex space-x-4 mt-2 md:mt-0">
               <Link href="/privacy-policy" className="text-gray-400 text-sm hover:text-primary-300 transition-colors duration-300">
                   Privacy Policy
