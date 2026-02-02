@@ -77,7 +77,7 @@ module.exports = (phase, { defaultConfig }) => {
     },
     // Optimize compilation
     compiler: {
-      // Suppress non-error logs
+      // Remove console.log in production for performance (debug completed)
       removeConsole: process.env.NODE_ENV === 'production',
     },
     images: {
@@ -143,7 +143,10 @@ module.exports = (phase, { defaultConfig }) => {
     },
     // Remove trailing slash to fix API routing
     trailingSlash: false,
-    output: 'standalone',
+    // NOTE: 'output: standalone' was removed to enable getStaticPaths
+    // to pre-generate all 3,224+ dynamic routes at build time.
+    // Standalone mode skips static generation when fallback: 'blocking' is used.
+    // If Docker deployment is needed later, use FORCE_STATIC_GENERATION env var.
     experimental: {
       // Only use experimental options that are supported in Next.js 12.3.4
       esmExternals: true

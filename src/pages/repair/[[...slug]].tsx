@@ -323,7 +323,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
         .from('dynamic_routes')
         .select('slug_path')
         .eq('route_type', 'model-service-page')
-        .order('popularity_score', { ascending: false })
+        .order('slug_path', { ascending: true }) // Use slug_path since popularity_score doesn't exist
         .range(start, end);
       
       if (batchError) {
