@@ -696,25 +696,11 @@ function getStaticPages(siteUrl: string, now: string): SitemapEntry[] {
       lastmod: now,
       changefreq: 'weekly',
       priority: '0.9'
-    },
-    {
-      loc: `${siteUrl}/mobile-screen-repair`,
-      lastmod: now,
-      changefreq: 'weekly',
-      priority: '0.9'
-    },
-    {
-      loc: `${siteUrl}/laptop-screen-repair`,
-      lastmod: now,
-      changefreq: 'weekly',
-      priority: '0.9'
-    },
-    {
-      loc: `${siteUrl}/mobile-repair-near-me`,
-      lastmod: now,
-      changefreq: 'weekly',
-      priority: '0.9'
     }
+    // Archived pages removed (redirected to dynamic equivalents):
+    // - /mobile-screen-repair → /services/mobile-repair
+    // - /laptop-screen-repair → /services/laptop-repair
+    // - /mobile-repair-near-me → /repair
   ];
 }
 
@@ -993,9 +979,6 @@ function generateFallbackSitemap(siteUrl: string): string {
     { loc: `${siteUrl}/`, lastmod: now, changefreq: 'daily', priority: '1.0' },
     { loc: `${siteUrl}/book-online`, lastmod: now, changefreq: 'weekly', priority: '0.95' },
     { loc: `${siteUrl}/doorstep-repair`, lastmod: now, changefreq: 'weekly', priority: '0.9' },
-    { loc: `${siteUrl}/mobile-screen-repair`, lastmod: now, changefreq: 'weekly', priority: '0.9' },
-    { loc: `${siteUrl}/laptop-screen-repair`, lastmod: now, changefreq: 'weekly', priority: '0.9' },
-    { loc: `${siteUrl}/mobile-repair-near-me`, lastmod: now, changefreq: 'weekly', priority: '0.9' },
     { loc: `${siteUrl}/about`, lastmod: now, changefreq: 'monthly', priority: '0.8' },
     { loc: `${siteUrl}/contact`, lastmod: now, changefreq: 'monthly', priority: '0.8' },
     { loc: `${siteUrl}/pricing`, lastmod: now, changefreq: 'weekly', priority: '0.8' },
