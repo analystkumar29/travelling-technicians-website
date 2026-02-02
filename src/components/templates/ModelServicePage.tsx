@@ -21,7 +21,7 @@ import { formatPhoneNumberForDisplay, formatPhoneNumberForHref } from '@/utils/p
 // Types
 interface RouteData {
   slug_path: string;
-  route_type: 'model-service-page' | 'city-service-page' | 'city-page';
+  route_type: 'model-service-page' | 'city-service-page' | 'city-page' | 'city-model-page';
   city_id: string;
   service_id: string;
   model_id: string;
