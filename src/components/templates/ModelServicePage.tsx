@@ -70,6 +70,22 @@ interface RouteData {
       pricing_tier?: string;
       part_warranty_months?: number;
     };
+    standard_pricing?: {
+      base_price: number;
+      compare_at_price: number;
+      pricing_tier: string;
+      part_quality: string;
+      part_warranty_months: number;
+      display_warranty_days?: number;
+    };
+    premium_pricing?: {
+      base_price: number;
+      compare_at_price: number;
+      pricing_tier: string;
+      part_quality: string;
+      part_warranty_months: number;
+      display_warranty_days?: number;
+    };
   };
 }
 
@@ -89,15 +105,31 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
   // Get formatted phone for schema and display
   const schemaPhone = city.local_phone || '+16048495329';
 
-  // Use pricing from payload (already calculated at build time)
-  const pricing = payloadPricing ? {
-    basePrice: payloadPricing.base_price || 129,
-    discountedPrice: payloadPricing.compare_at_price || null,
-    priceRange: `$${payloadPricing.base_price}-$${(payloadPricing.compare_at_price || payloadPricing.base_price) + 60}`
+  // Use pricing from payload - includes standard and premium tier data
+  // Standard tier shows as "discounted" with psychological pricing
+  // Premium tier shown as upgrade option
+  const standardPricing = (routeData.payload.standard_pricing || {}) as any;
+  const premiumPricing = (routeData.payload.premium_pricing || {}) as any;
+  
+  const hasStandardPricing = standardPricing && Object.keys(standardPricing).length > 0;
+  
+  const pricing = hasStandardPricing ? {
+    // Psychological pricing: compare_at_price is the anchor, base_price is the "discounted" price shown to user
+    compareAtPrice: standardPricing.compare_at_price || 194,
+    basePrice: standardPricing.base_price || 164, // This is the actual price shown prominently
+    premiumPrice: premiumPricing.base_price || 205,
+    savings: (standardPricing.compare_at_price || 194) - (standardPricing.base_price || 164),
+    priceRange: `$${standardPricing.base_price || 164}-$${premiumPricing.base_price || 205}`,
+    warrantyDays: standardPricing.display_warranty_days || (standardPricing.part_warranty_months * 30) || 90,
+    serviceTime: service.estimated_duration_minutes || 45
   } : {
-    basePrice: 129,
-    discountedPrice: null,
-    priceRange: '$99-$189'
+    compareAtPrice: 194,
+    basePrice: 164, // Changed from discountedPrice to basePrice for consistency
+    premiumPrice: 205,
+    savings: 30,
+    priceRange: '$164-$205',
+    warrantyDays: 90,
+    serviceTime: 45
   };
   
   // Generate Schema.org BreadcrumbList JSON-LD
@@ -301,13 +333,13 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
                         <span className="text-3xl font-bold text-gray-900">
                           ${pricing.basePrice}
                         </span>
-                        {pricing.discountedPrice && (
+                        {pricing.compareAtPrice && pricing.compareAtPrice > pricing.basePrice && (
                           <>
                             <span className="ml-2 text-xl line-through text-gray-500">
-                              ${pricing.discountedPrice}
+                              ${pricing.compareAtPrice}
                             </span>
                             <span className="ml-2 px-2 py-1 text-xs font-bold bg-red-100 text-red-800 rounded">
-                              SAVE ${pricing.discountedPrice - pricing.basePrice}
+                              SAVE ${pricing.savings}
                             </span>
                           </>
                         )}
