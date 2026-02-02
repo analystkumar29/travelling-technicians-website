@@ -162,7 +162,7 @@ const RescheduleBooking: React.FC = () => {
       // Clear time slots if no date selected
       setTimeSlots([]);
     }
-  }, [selectedDate]);
+  }, [selectedDate, selectedTime]);
 
 
 

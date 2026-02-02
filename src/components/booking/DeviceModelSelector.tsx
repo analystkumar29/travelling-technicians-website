@@ -101,68 +101,8 @@ export default function DeviceModelSelector({
   const normalizedDeviceType = deviceType?.toLowerCase() as DeviceType;
   const normalizedBrand = brand?.toLowerCase();
 
-  // Fallback static data (temporary until API is fully implemented)
-  const getFallbackModels = useCallback((): Model[] => {
-    const staticModels = getStaticModels();
-    return staticModels.map((name, index) => ({
-      id: index + 1,
-      name,
-      brandId: 1,
-      isActive: true
-    }));
-  }, []);
-
-  // Fetch models from API when brand or device type changes
-  const fetchModels = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Try dynamic API first, fall back to static data if API not available
-      const response = await fetch(`/api/devices/models?deviceType=${encodeURIComponent(normalizedDeviceType)}&brand=${encodeURIComponent(normalizedBrand)}`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        // Apply quality filtering to API models
-        const filteredModels = filterQualityModels(data.models || []);
-        
-        // If no quality models found from API, use static fallback
-        if (filteredModels.length === 0) {
-          console.log('No quality models found in API, using fallback static data');
-          const fallbackModels = getFallbackModels();
-          setModels(fallbackModels);
-        } else {
-          setModels(filteredModels);
-        }
-      } else {
-        // Fallback to static data if API endpoint doesn't exist yet
-        console.log('API endpoint not available, using fallback static data');
-        const fallbackModels = getFallbackModels();
-        setModels(fallbackModels);
-      }
-    } catch (err) {
-      console.error('Error fetching models:', err);
-      setError('Failed to load models');
-      
-      // Fallback to static data on error
-      const fallbackModels = getFallbackModels();
-      setModels(fallbackModels);
-    } finally {
-      setLoading(false);
-    }
-  }, [normalizedBrand, normalizedDeviceType, getFallbackModels]);
-
-  useEffect(() => {
-    if (!deviceType || !brand || brand.toLowerCase() === 'other') {
-      setModels([]);
-      return;
-    }
-
-    fetchModels();
-  }, [deviceType, brand, fetchModels]);
-
   // Static models as fallback (keeping the original logic temporarily)
-  const getStaticModels = (): string[] => {
+  const getStaticModels = useCallback((): string[] => {
     // Hardcoded fallback data structure (temporary)
     const deviceModels: Record<string, Record<string, string[]>> = {
       mobile: {
@@ -296,7 +236,67 @@ export default function DeviceModelSelector({
       console.error('Error getting fallback models:', error);
       return [];
     }
-  };
+  }, [normalizedDeviceType, normalizedBrand]);
+
+  // Fallback static data (temporary until API is fully implemented)
+  const getFallbackModels = useCallback((): Model[] => {
+    const staticModels = getStaticModels();
+    return staticModels.map((name, index) => ({
+      id: index + 1,
+      name,
+      brandId: 1,
+      isActive: true
+    }));
+  }, [getStaticModels]);
+
+  // Fetch models from API when brand or device type changes
+  const fetchModels = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Try dynamic API first, fall back to static data if API not available
+      const response = await fetch(`/api/devices/models?deviceType=${encodeURIComponent(normalizedDeviceType)}&brand=${encodeURIComponent(normalizedBrand)}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Apply quality filtering to API models
+        const filteredModels = filterQualityModels(data.models || []);
+        
+        // If no quality models found from API, use static fallback
+        if (filteredModels.length === 0) {
+          console.log('No quality models found in API, using fallback static data');
+          const fallbackModels = getFallbackModels();
+          setModels(fallbackModels);
+        } else {
+          setModels(filteredModels);
+        }
+      } else {
+        // Fallback to static data if API endpoint doesn't exist yet
+        console.log('API endpoint not available, using fallback static data');
+        const fallbackModels = getFallbackModels();
+        setModels(fallbackModels);
+      }
+    } catch (err) {
+      console.error('Error fetching models:', err);
+      setError('Failed to load models');
+      
+      // Fallback to static data on error
+      const fallbackModels = getFallbackModels();
+      setModels(fallbackModels);
+    } finally {
+      setLoading(false);
+    }
+  }, [normalizedBrand, normalizedDeviceType, getFallbackModels]);
+
+  useEffect(() => {
+    if (!deviceType || !brand || brand.toLowerCase() === 'other') {
+      setModels([]);
+      return;
+    }
+
+    fetchModels();
+  }, [deviceType, brand, fetchModels]);
 
   // Effect to reset when device type or brand changes
   useEffect(() => {
@@ -444,4 +444,4 @@ export default function DeviceModelSelector({
       )}
     </div>
   );
-} 
+}
