@@ -296,9 +296,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   }, [methods]); // Empty dependency array - only run on mount
 
   // Fetch time slots when appointment date changes
+  const appointmentDate = methods.watch('appointmentDate');
   useEffect(() => {
-    const appointmentDate = methods.watch('appointmentDate');
-    
     if (appointmentDate) {
       const fetchTimeSlots = async () => {
         setIsLoadingTimeSlots(true);
@@ -333,7 +332,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       // Clear time slots if no date selected
       setTimeSlots([]);
     }
-  }, [methods.watch('appointmentDate'), methods]);
+  }, [appointmentDate, methods]);
 
   // Placeholder step titles
   const steps = [
