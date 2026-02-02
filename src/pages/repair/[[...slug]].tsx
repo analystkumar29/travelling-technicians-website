@@ -27,6 +27,8 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { getSiteUrl } from '@/utils/supabaseClient';
+import { formatPhoneNumberForDisplay, formatPhoneNumberForHref, DEFAULT_PHONE_NUMBER } from '@/utils/phone-formatter';
+import Footer from '@/components/layout/Footer';
 
 // Dynamic imports for code splitting (reduces initial bundle size)
 const RepairIndex = dynamic(() => import('@/components/templates/RepairIndex'));
@@ -345,14 +347,35 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
                 </Link>
               </div>
             </div>
+            <Footer />
           </>
         );
       }
       
-      const { city: csCity, service: csService, type: csType, sample_models: csSampleModels } = routeData.payload;
+      // Extract all dynamic data from payload
+      const { 
+        city: csCity, 
+        service: csService, 
+        type: csType, 
+        sample_models: csSampleModels,
+        // New dynamic data
+        local_content: csLocalContent,
+        local_phone: csLocalPhone,
+        local_email: csLocalEmail,
+        neighborhoods: csNeighborhoods,
+        operating_hours: csOperatingHours,
+        testimonials: csTestimonials,
+        nearby_cities: csNearbyCities
+      } = routeData.payload;
+      
       const csServiceName = csService?.name || 'Repair Service';
       const csCityName = csCity?.name || 'Your City';
       const csDeviceType = csType?.name || 'Device';
+      
+      // Format phone number using utility
+      const csPhoneRaw = csLocalPhone || DEFAULT_PHONE_NUMBER;
+      const csPhoneDisplay = formatPhoneNumberForDisplay(csPhoneRaw);
+      const csPhoneHref = formatPhoneNumberForHref(csPhoneRaw);
       
       return (
         <>
@@ -401,13 +424,13 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
                     Book {csServiceName} Now
                   </Link>
                   <a 
-                    href="tel:+17783899251" 
+                    href={csPhoneHref}
                     className="btn-outline border-white text-white hover:bg-primary-600 text-lg px-8 py-4 flex items-center justify-center"
                   >
                     <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                     </svg>
-                    (778) 389-9251
+                    {csPhoneDisplay}
                   </a>
                 </div>
                 
@@ -514,6 +537,132 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
             </section>
           )}
 
+          {/* Local Testimonials Section */}
+          {csTestimonials && csTestimonials.length > 0 && (
+            <section className="py-16 bg-white">
+              <div className="container-custom">
+                <div className="text-center mb-12">
+                  <h2 className="text-3xl font-bold mb-4">What Our {csCityName} Customers Say</h2>
+                  <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Real reviews from satisfied customers in {csCityName} and surrounding areas
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {csTestimonials.slice(0, 3).map((testimonial: { id?: string; customer_name: string; review: string; rating: number; city?: string; service?: string }, index: number) => (
+                    <div 
+                      key={testimonial.id || index} 
+                      className="bg-gray-50 p-6 rounded-xl"
+                    >
+                      <div className="flex items-center mb-4">
+                        {[...Array(5)].map((_, i) => (
+                          <svg 
+                            key={i} 
+                            className={`h-5 w-5 ${i < testimonial.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                            fill="currentColor" 
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        ))}
+                      </div>
+                      <p className="text-gray-700 mb-4 italic">"{testimonial.review}"</p>
+                      <div className="border-t pt-4">
+                        <div className="font-semibold text-gray-900">{testimonial.customer_name}</div>
+                        {testimonial.city && (
+                          <div className="text-sm text-gray-500">{testimonial.city}</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* City-Specific Local Content Section */}
+          {csLocalContent && (
+            <section className="py-16 bg-gray-50">
+              <div className="container-custom">
+                <div className="max-w-4xl mx-auto">
+                  <h2 className="text-3xl font-bold mb-8 text-center">
+                    {csServiceName} Experts in {csCityName}
+                  </h2>
+                  <div 
+                    className="prose prose-lg max-w-none text-gray-700"
+                    dangerouslySetInnerHTML={{ __html: csLocalContent.replace(/\\n/g, '<br/>') }}
+                  />
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Neighborhoods We Serve Section */}
+          {csNeighborhoods && csNeighborhoods.length > 0 && (
+            <section className="py-16 bg-white">
+              <div className="container-custom">
+                <div className="text-center mb-12">
+                  <h2 className="text-3xl font-bold mb-4">{csCityName} Neighborhoods We Serve</h2>
+                  <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                    We provide doorstep {csServiceName.toLowerCase()} throughout {csCityName}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap justify-center gap-3">
+                  {csNeighborhoods.map((neighborhood: string, index: number) => (
+                    <div 
+                      key={index}
+                      className="bg-gray-50 px-4 py-2 rounded-full text-gray-700 hover:bg-primary-50 hover:text-primary-700 transition-colors"
+                    >
+                      <span className="flex items-center">
+                        <svg className="h-4 w-4 mr-2 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                        </svg>
+                        {neighborhood}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Nearby Cities Section (SEO Internal Linking) */}
+          {csNearbyCities && csNearbyCities.length > 0 && (
+            <section className="py-16 bg-gray-50">
+              <div className="container-custom">
+                <div className="text-center mb-12">
+                  <h2 className="text-3xl font-bold mb-4">Also Serving Nearby Cities</h2>
+                  <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Need {csServiceName.toLowerCase()} in a nearby city? We've got you covered!
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {csNearbyCities.map((nearbyCity: { slug: string; name: string; distance_km?: number }, index: number) => (
+                    <Link
+                      key={index}
+                      href={`/repair/${nearbyCity.slug}/${csService?.slug}`}
+                      className="bg-white p-4 rounded-lg text-center shadow-sm hover:shadow-md transition-all border border-gray-100 group"
+                    >
+                      <div className="text-gray-800 font-medium group-hover:text-primary-600 transition-colors">
+                        {nearbyCity.name}
+                      </div>
+                      {nearbyCity.distance_km && (
+                        <div className="text-sm text-gray-500 mt-1">
+                          {nearbyCity.distance_km.toFixed(1)} km away
+                        </div>
+                      )}
+                      <div className="text-sm text-primary-500 mt-2">
+                        {csServiceName} →
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* CTA Section */}
           <section className="py-16 bg-primary-50">
             <div className="container-custom text-center">
@@ -532,14 +681,17 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
                   Book Now
                 </Link>
                 <a
-                  href="tel:+17783899251"
+                  href={csPhoneHref}
                   className="btn-outline border-primary-600 text-primary-600 hover:bg-primary-50 text-lg px-8 py-4"
                 >
-                  Call (778) 389-9251
+                  Call {csPhoneDisplay}
                 </a>
               </div>
             </div>
           </section>
+
+          {/* Footer */}
+          <Footer />
         </>
       );
 
