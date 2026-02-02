@@ -269,51 +269,100 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
  * Generate static paths for ALL dynamic routes
  * This is called at build time to pre-generate all pages
  * 
- * Fetches all routes from the dynamic_routes table for complete pre-rendering.
- * This ensures all pages are indexed from day 1 for optimal SEO coverage.
+ * Uses pagination with batch processing to fetch all routes from database.
+ * This approach prevents timeouts and ensures all pages are pre-rendered.
  */
 export const getStaticPaths: GetStaticPaths = async () => {
+  const startTime = Date.now();
+  const BATCH_SIZE = 1000; // Fetch 1000 routes per batch
+  const MAX_BUILD_TIME = 45000; // 45 seconds max (safe for Vercel)
+  
   try {
     const supabase = getServiceSupabase();
     
-    // Fetch ALL dynamic routes for pre-rendering
-    // Complete coverage ensures all repair pages are available to search engines
-    const { data: routes, error } = await supabase
+    console.log('🚀 Starting pagination-based route generation...');
+    
+    // First, get the total count of routes
+    const { count: totalCount, error: countError } = await supabase
       .from('dynamic_routes')
-      .select('slug_path')
-      .order('popularity_score', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching top dynamic routes:', error);
-      // Fallback to empty paths - Next.js will use fallback: 'blocking'
-      return {
-        paths: [],
-        fallback: 'blocking',
-      };
+      .select('*', { count: 'exact', head: true })
+      .eq('route_type', 'model-service-page');
+    
+    if (countError) {
+      console.error('❌ Error getting route count:', countError);
+      return { paths: [], fallback: 'blocking' };
     }
-
+    
+    console.log(`📊 Total routes in database: ${totalCount}`);
+    
+    const allRoutes: Array<{ slug_path: string }> = [];
+    const totalBatches = Math.ceil((totalCount || 0) / BATCH_SIZE);
+    
+    // Fetch routes in batches with pagination
+    for (let batch = 0; batch < totalBatches; batch++) {
+      // Check timeout
+      if (Date.now() - startTime > MAX_BUILD_TIME) {
+        console.warn(`⚠️ Timeout approaching after ${batch} batches. Generated ${allRoutes.length} routes so far.`);
+        break;
+      }
+      
+      const start = batch * BATCH_SIZE;
+      const end = start + BATCH_SIZE - 1;
+      
+      console.log(`📦 Fetching batch ${batch + 1}/${totalBatches} (rows ${start}-${end})...`);
+      
+      const { data: batchRoutes, error: batchError } = await supabase
+        .from('dynamic_routes')
+        .select('slug_path')
+        .eq('route_type', 'model-service-page')
+        .order('popularity_score', { ascending: false })
+        .range(start, end);
+      
+      if (batchError) {
+        console.error(`❌ Error fetching batch ${batch + 1}:`, batchError);
+        continue; // Skip this batch but continue with others
+      }
+      
+      if (batchRoutes && batchRoutes.length > 0) {
+        allRoutes.push(...batchRoutes);
+        console.log(`✓ Batch ${batch + 1}: Added ${batchRoutes.length} routes (total: ${allRoutes.length})`);
+      }
+      
+      // If we got fewer routes than BATCH_SIZE, we've reached the end
+      if (!batchRoutes || batchRoutes.length < BATCH_SIZE) {
+        console.log(`✓ Reached end of data at batch ${batch + 1}`);
+        break;
+      }
+    }
+    
+    console.log(`✅ Fetched ${allRoutes.length}/${totalCount} routes in ${((Date.now() - startTime) / 1000).toFixed(2)}s`);
+    
     // Convert slug_path to Next.js params format
     // Example: "repair/vancouver/screen-replacement-mobile/iphone-14" 
     // becomes { params: { slug: ['vancouver', 'screen-replacement-mobile', 'iphone-14'] } }
-    const paths = routes?.map(route => ({
+    const paths = allRoutes.map(route => ({
       params: { 
         slug: route.slug_path.replace('repair/', '').split('/').filter(Boolean)
       }
-    })) || [];
-
+    }));
+    
     // Always include the root repair page
     paths.push({ params: { slug: [] } });
-
-    console.log(`✅ Generated ${paths.length} pre-rendered paths for complete SEO coverage. All repair pages are now available at build time.`);
+    
+    const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
+    const coverage = totalCount ? ((allRoutes.length / totalCount) * 100).toFixed(1) : '0';
+    
+    console.log(`🎉 Generated ${paths.length} pre-rendered paths (${coverage}% coverage) in ${totalTime}s`);
+    console.log(`📈 Build performance: ${(allRoutes.length / (Date.now() - startTime) * 1000).toFixed(0)} routes/sec`);
 
     return {
       paths,
       fallback: 'blocking', // Generate missing pages on-demand with ISR
     };
   } catch (error) {
-    console.error('Error in getStaticPaths:', error);
+    console.error('💥 Fatal error in getStaticPaths:', error);
     return {
-      paths: [],
+      paths: [{ params: { slug: [] } }], // At least include root page
       fallback: 'blocking',
     };
   }
