@@ -38,7 +38,7 @@ const ModelServicePage = dynamic(() => import('@/components/templates/ModelServi
 // Types for our route data
 interface RouteData {
   slug_path: string;
-  route_type: 'model-service-page' | 'city-service-page' | 'city-page';
+  route_type: 'model-service-page' | 'city-service-page' | 'city-page' | 'city-model-page';
   city_id: string;
   service_id: string;
   model_id: string;
@@ -46,7 +46,7 @@ interface RouteData {
 }
 
 interface PageProps {
-  routeType: 'REPAIR_INDEX' | 'MODEL_SERVICE_PAGE' | 'CITY_PAGE' | 'CITY_SERVICE_PAGE';
+  routeType: 'REPAIR_INDEX' | 'MODEL_SERVICE_PAGE' | 'CITY_PAGE' | 'CITY_SERVICE_PAGE' | 'CITY_MODEL_PAGE';
   routeData?: RouteData;
   cities?: Array<{ slug: string; city_name: string }>;
   services?: Array<{ slug: string; name: string; display_name: string }>;
@@ -159,8 +159,13 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
         return <NotFound />;
       }
       
-      const { city, popular_models, sample_services } = routeData.payload;
+      const { city, popular_models, sample_services, local_phone, local_email } = routeData.payload;
       const cityName = city.name;
+      
+      // Format phone number using utility
+      const cityPhoneRaw = local_phone || DEFAULT_PHONE_NUMBER;
+      const cityPhoneDisplay = formatPhoneNumberForDisplay(cityPhoneRaw);
+      const cityPhoneHref = formatPhoneNumberForHref(cityPhoneRaw);
       
       return (
         <>
@@ -170,6 +175,9 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
             <meta name="robots" content="index, follow" />
             <link rel="canonical" href={`${siteUrl}/repair/${city.slug}`} />
           </Head>
+          
+          {/* Navigation Header */}
+          <Header />
           
           {/* Professional Header - Inspired by legacy model-page.tsx */}
           <section className="pt-8 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
@@ -202,13 +210,13 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
                     Book Repair in {cityName}
                   </Link>
                   <a 
-                    href="tel:+17783899251" 
+                    href={cityPhoneHref}
                     className="btn-outline border-white text-white hover:bg-primary-600 text-lg px-8 py-4 flex items-center justify-center"
                   >
                     <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                     </svg>
-                    (778) 389-9251
+                    {cityPhoneDisplay}
                   </a>
                 </div>
                 
@@ -247,20 +255,20 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {sample_services?.map((service: { id: string; slug: string; display_name: string }, index: number) => (
+                {sample_services?.map((service: { id: string; slug: string; display_name: string; description?: string; icon?: string }) => (
                   <Link 
                     key={service.id}
                     href={`/repair/${city.slug}/${service.slug}`} 
                     className="bg-white p-6 rounded-xl shadow-sm hover:shadow-lg transition-all border border-gray-100 group"
                   >
                     <div className="text-accent-600 text-2xl mb-4">
-                      {index === 0 ? '📱' : index === 1 ? '🔋' : index === 2 ? '💻' : '🛠️'}
+                      {service.icon || '🛠️'}
                     </div>
                     <h3 className="font-bold text-lg text-gray-900 group-hover:text-primary-600 transition-colors">
                       {service.display_name}
                     </h3>
                     <p className="text-sm text-gray-500 mt-2">
-                      Professional {service.display_name.toLowerCase()} for all major brands
+                      {service.description || `Professional ${service.display_name.toLowerCase()} for all major brands`}
                     </p>
                     <div className="mt-4 text-primary-500 font-bold">
                       From $89
@@ -271,27 +279,34 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
             </div>
           </section>
 
-          {/* Popular Models Section */}
+          {/* Popular Models Section - NOW CLICKABLE */}
           {popular_models && popular_models.length > 0 && (
             <section className="py-16 bg-gray-50">
               <div className="container-custom">
                 <div className="text-center mb-12">
                   <h2 className="text-3xl font-bold mb-4">Popular Devices We Repair</h2>
                   <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                    We specialize in repairing the most popular devices in {cityName}
+                    We specialize in repairing the most popular devices in {cityName}. Click to see all available services.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  {popular_models.map((model: { id: string; name: string; brand: string }) => (
-                    <div key={model.id} className="bg-white p-4 rounded-lg text-center">
-                      <div className="text-gray-800 font-medium text-sm">
+                  {popular_models.map((model: { id: string; name: string; slug?: string; brand: string }) => (
+                    <Link
+                      key={model.id}
+                      href={`/repair/${city.slug}/${model.slug || model.name.toLowerCase().replace(/\s+/g, '-')}`}
+                      className="bg-white p-4 rounded-lg text-center shadow-sm hover:shadow-md transition-all border border-gray-100 group cursor-pointer"
+                    >
+                      <div className="text-gray-800 font-medium text-sm group-hover:text-primary-600 transition-colors">
                         {model.name}
                       </div>
                       <div className="text-gray-500 text-xs mt-1">
                         {model.brand}
                       </div>
-                    </div>
+                      <div className="text-xs text-primary-500 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        View Services →
+                      </div>
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -316,14 +331,255 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
                   Book Repair Now
                 </Link>
                 <a
-                  href="tel:+17783899251"
+                  href={cityPhoneHref}
                   className="btn-outline border-primary-600 text-primary-600 hover:bg-primary-50 text-lg px-8 py-4"
                 >
-                  Call (778) 389-9251
+                  Call {cityPhoneDisplay}
                 </a>
               </div>
             </div>
           </section>
+          
+          {/* Footer */}
+          <Footer />
+        </>
+      );
+
+    case 'CITY_MODEL_PAGE':
+      // Render city-model page showing all services for a specific device model in a city
+      // Example: /repair/vancouver/iphone-14 -> Shows all services for iPhone 14 in Vancouver
+      if (!routeData) {
+        return <NotFound />;
+      }
+      
+      const { 
+        city: cmpCity, 
+        model: cmpModel, 
+        available_services: cmpServices,
+        local_phone: cmpPhone,
+        local_email: cmpEmail
+      } = routeData.payload;
+      
+      const cmpCityName = cmpCity?.name || 'Your City';
+      const cmpModelName = cmpModel?.display_name || cmpModel?.name || 'Device';
+      const cmpBrandName = cmpModel?.brand || 'Brand';
+      const cmpDeviceType = cmpModel?.device_type || 'Device';
+      
+      // Format phone number
+      const cmpPhoneRaw = cmpPhone || DEFAULT_PHONE_NUMBER;
+      const cmpPhoneDisplay = formatPhoneNumberForDisplay(cmpPhoneRaw);
+      const cmpPhoneHref = formatPhoneNumberForHref(cmpPhoneRaw);
+      
+      return (
+        <>
+          <Head>
+            <title>{cmpModelName} Repair in {cmpCityName} | The Travelling Technicians</title>
+            <meta name="description" content={`Professional ${cmpModelName} repair services in ${cmpCityName}. Screen replacement, battery replacement, and more. Doorstep service with 90-day warranty.`} />
+            <meta name="keywords" content={`${cmpModelName} repair, ${cmpBrandName} repair, ${cmpCityName} phone repair, doorstep repair`} />
+            <meta name="robots" content="index, follow" />
+            <link rel="canonical" href={`${siteUrl}/${routeData.slug_path}`} />
+          </Head>
+          
+          {/* Navigation Header */}
+          <Header />
+          
+          {/* Hero Section */}
+          <section className="pt-8 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
+            <div className="container-custom">
+              <div className="text-center max-w-4xl mx-auto">
+                <div className="flex items-center justify-center mb-4">
+                  <svg className="h-6 w-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-primary-200">{cmpCityName}, BC</span>
+                </div>
+                <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+                  {cmpModelName} Repair<br />
+                  <span className="text-2xl md:text-3xl">in {cmpCityName}</span>
+                </h1>
+                <p className="text-xl md:text-2xl mb-8 text-primary-100">
+                  Professional {cmpBrandName} {cmpDeviceType} repair at your doorstep
+                </p>
+                
+                <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+                  <Link 
+                    href={`/book-online?city=${cmpCity?.slug}&model=${cmpModel?.slug}`} 
+                    className="btn-accent text-lg px-8 py-4"
+                  >
+                    Book Repair Now
+                  </Link>
+                  <a 
+                    href={cmpPhoneHref}
+                    className="btn-outline border-white text-white hover:bg-primary-600 text-lg px-8 py-4 flex items-center justify-center"
+                  >
+                    <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                    </svg>
+                    {cmpPhoneDisplay}
+                  </a>
+                </div>
+                
+                <div className="flex flex-wrap justify-center gap-6 text-sm">
+                  <div className="flex items-center">
+                    <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                    </svg>
+                    30-90 min service
+                  </div>
+                  <div className="flex items-center">
+                    <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    90-Day Warranty
+                  </div>
+                  <div className="flex items-center">
+                    <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                    </svg>
+                    Certified Technicians
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Available Services Section */}
+          <section className="py-16 bg-white">
+            <div className="container-custom">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl font-bold mb-4">Available Services for {cmpModelName}</h2>
+                <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                  Select a service to see pricing and book your doorstep repair in {cmpCityName}
+                </p>
+              </div>
+
+              {cmpServices && cmpServices.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {cmpServices.map((service: { 
+                    id: string; 
+                    slug: string; 
+                    display_name: string; 
+                    description?: string; 
+                    icon?: string;
+                    pricing_available?: boolean;
+                  }) => (
+                    <Link 
+                      key={service.id}
+                      href={`/repair/${cmpCity?.slug}/${service.slug}/${cmpModel?.slug}`} 
+                      className="bg-white p-6 rounded-xl shadow-sm hover:shadow-lg transition-all border border-gray-100 group"
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="text-3xl">
+                          {service.icon || '🛠️'}
+                        </div>
+                        {service.pricing_available && (
+                          <div className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                            Pricing Available
+                          </div>
+                        )}
+                      </div>
+                      <h3 className="font-bold text-xl text-gray-900 group-hover:text-primary-600 transition-colors mb-2">
+                        {service.display_name}
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        {service.description || `Professional ${service.display_name.toLowerCase()} for your ${cmpModelName}`}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-primary-500 font-bold">
+                          {service.pricing_available ? 'View Pricing' : 'Get Quote'}
+                        </span>
+                        <svg className="h-5 w-5 text-primary-500 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-600 mb-6">No services currently available for this device.</p>
+                  <Link
+                    href={`/book-online?city=${cmpCity?.slug}`}
+                    className="text-primary-600 hover:text-primary-700 font-semibold"
+                  >
+                    Contact us for a custom quote →
+                  </Link>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Why Choose Us Section */}
+          <section className="py-16 bg-gray-50">
+            <div className="container-custom">
+              <div className="max-w-4xl mx-auto">
+                <h2 className="text-3xl font-bold mb-8 text-center">
+                  Why Choose The Travelling Technicians for {cmpModelName} Repair?
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white p-6 rounded-xl">
+                    <div className="text-3xl mb-3">🏠</div>
+                    <h3 className="font-bold text-lg mb-2">Doorstep Convenience</h3>
+                    <p className="text-gray-600 text-sm">
+                      No need to travel. We come to your location in {cmpCityName} with all necessary tools and parts.
+                    </p>
+                  </div>
+                  <div className="bg-white p-6 rounded-xl">
+                    <div className="text-3xl mb-3">⚡</div>
+                    <h3 className="font-bold text-lg mb-2">Fast Service</h3>
+                    <p className="text-gray-600 text-sm">
+                      Most {cmpModelName} repairs completed in 30-90 minutes on the same day.
+                    </p>
+                  </div>
+                  <div className="bg-white p-6 rounded-xl">
+                    <div className="text-3xl mb-3">✅</div>
+                    <h3 className="font-bold text-lg mb-2">90-Day Warranty</h3>
+                    <p className="text-gray-600 text-sm">
+                      All {cmpModelName} repairs come with a comprehensive 90-day warranty on parts and labor.
+                    </p>
+                  </div>
+                  <div className="bg-white p-6 rounded-xl">
+                    <div className="text-3xl mb-3">🔧</div>
+                    <h3 className="font-bold text-lg mb-2">Certified Technicians</h3>
+                    <p className="text-gray-600 text-sm">
+                      Our technicians are certified and experienced in {cmpBrandName} {cmpDeviceType} repairs.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* CTA Section */}
+          <section className="py-16 bg-primary-50">
+            <div className="container-custom text-center">
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                Ready to Repair Your {cmpModelName}?
+              </h2>
+              <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
+                Book your doorstep repair in {cmpCityName} today and get your device working like new.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link
+                  href={`/book-online?city=${cmpCity?.slug}&model=${cmpModel?.slug}`}
+                  className="btn-accent text-lg px-8 py-4"
+                >
+                  Book Repair Now
+                </Link>
+                <a
+                  href={cmpPhoneHref}
+                  className="btn-outline border-primary-600 text-primary-600 hover:bg-primary-50 text-lg px-8 py-4"
+                >
+                  Call {cmpPhoneDisplay}
+                </a>
+              </div>
+            </div>
+          </section>
+          
+          {/* Footer */}
+          <Footer />
         </>
       );
 
@@ -949,6 +1205,15 @@ export const getStaticProps: GetStaticProps<PageProps> = async ({ params }) => {
         return {
           props: {
             routeType: 'CITY_SERVICE_PAGE',
+            routeData: route as RouteData,
+          },
+          revalidate: 86400,
+        };
+
+      case 'city-model-page':
+        return {
+          props: {
+            routeType: 'CITY_MODEL_PAGE',
             routeData: route as RouteData,
           },
           revalidate: 86400,
