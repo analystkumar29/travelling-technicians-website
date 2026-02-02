@@ -325,34 +325,221 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
       );
 
     case 'CITY_SERVICE_PAGE':
-      // Render a "coming soon" page for city+service-level repair pages
-      const routerSlugCS = router.query.slug as string[];
-      const citySlugCS = routerSlugCS?.[0] || 'your city';
-      const serviceSlug = routerSlugCS?.[1] || 'service';
+      // Render professional city-service page using database data
+      if (!routeData) {
+        // Fallback if no routeData (should not happen with proper database setup)
+        const routerSlugCS = router.query.slug as string[];
+        const citySlugCS = routerSlugCS?.[0] || 'your city';
+        const serviceSlugCS = routerSlugCS?.[1] || 'service';
+        return (
+          <>
+            <Head>
+              <title>Repair Services in {citySlugCS} | The Travelling Technicians</title>
+              <meta name="description" content={`Professional doorstep repair services in ${citySlugCS}.`} />
+            </Head>
+            <div className="min-h-screen flex items-center justify-center">
+              <div className="text-center">
+                <h1 className="text-2xl font-bold">Loading service information...</h1>
+                <Link href="/repair" className="mt-4 text-blue-600 hover:underline inline-block">
+                  View All Services
+                </Link>
+              </div>
+            </div>
+          </>
+        );
+      }
+      
+      const { city: csCity, service: csService, type: csType, sample_models: csSampleModels } = routeData.payload;
+      const csServiceName = csService?.name || 'Repair Service';
+      const csCityName = csCity?.name || 'Your City';
+      const csDeviceType = csType?.name || 'Device';
+      
       return (
         <>
           <Head>
-            <title>Repair Services in {citySlugCS} | The Travelling Technicians</title>
-            <meta name="description" content={`${serviceSlug} services coming soon to ${citySlugCS}. Professional doorstep repair by certified technicians.`} />
+            <title>{csServiceName} in {csCityName} | The Travelling Technicians</title>
+            <meta name="description" content={`Professional ${csServiceName.toLowerCase()} for ${csDeviceType.toLowerCase()}s in ${csCityName}. Doorstep service by expert technicians with 90-day warranty.`} />
+            <meta name="keywords" content={`${csServiceName}, ${csCityName} repair, ${csDeviceType} repair, doorstep repair, mobile repair ${csCityName}`} />
             <meta name="robots" content="index, follow" />
-            <link rel="canonical" href={`${siteUrl}/repair/${citySlugCS}/${serviceSlug}`} />
+            <link rel="canonical" href={`${siteUrl}/${routeData.slug_path}`} />
+            
+            {/* Open Graph */}
+            <meta property="og:title" content={`${csServiceName} in ${csCityName} | The Travelling Technicians`} />
+            <meta property="og:description" content={`Professional ${csServiceName.toLowerCase()} for ${csDeviceType.toLowerCase()}s in ${csCityName}. Doorstep service with 90-day warranty.`} />
+            <meta property="og:url" content={`${siteUrl}/${routeData.slug_path}`} />
+            <meta property="og:type" content="website" />
           </Head>
-          <div className="min-h-screen bg-gradient-to-r from-blue-50 to-blue-100 flex items-center justify-center px-4">
-            <div className="max-w-2xl text-center">
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">
-                {serviceSlug.replace(/-/g, ' ').charAt(0).toUpperCase() + serviceSlug.replace(/-/g, ' ').slice(1)} in {citySlugCS.charAt(0).toUpperCase() + citySlugCS.slice(1)}
-              </h1>
-              <p className="text-xl text-gray-600 mb-8">
-                This service page is coming soon! We're preparing detailed pricing and booking options for this location. In the meantime, explore our available services.
-              </p>
-              <Link
-                href="/repair"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 inline-block"
-              >
-                View All Services
-              </Link>
+          
+          {/* Professional Header */}
+          <section className="pt-8 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
+            <div className="container-custom">
+              <div className="text-center max-w-4xl mx-auto">
+                <div className="flex items-center justify-center mb-4">
+                  <svg className="h-6 w-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-primary-200">{csCityName}, BC</span>
+                </div>
+                <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+                  {csServiceName}<br />
+                  <span className="text-2xl md:text-3xl">in {csCityName}</span>
+                </h1>
+                <p className="text-xl md:text-2xl mb-8 text-primary-100">
+                  Professional {csDeviceType.toLowerCase()} {csServiceName.toLowerCase()} at your doorstep
+                </p>
+                
+                <div className="inline-block bg-accent-500 text-white text-lg px-6 py-3 rounded-full mb-8">
+                  <span className="font-bold">From $89</span>
+                  <span className="ml-2 text-primary-100">with 90-day warranty</span>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+                  <Link 
+                    href={`/book-online?city=${csCity?.slug}&service=${csService?.slug}`} 
+                    className="btn-accent text-lg px-8 py-4"
+                  >
+                    Book {csServiceName} Now
+                  </Link>
+                  <a 
+                    href="tel:+17783899251" 
+                    className="btn-outline border-white text-white hover:bg-primary-600 text-lg px-8 py-4 flex items-center justify-center"
+                  >
+                    <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                    </svg>
+                    (778) 389-9251
+                  </a>
+                </div>
+                
+                <div className="flex flex-wrap justify-center gap-6 text-sm">
+                  <div className="flex items-center">
+                    <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                    </svg>
+                    30-90 min service
+                  </div>
+                  <div className="flex items-center">
+                    <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    90-Day Warranty
+                  </div>
+                  <div className="flex items-center">
+                    <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                    </svg>
+                    Certified Technicians
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          </section>
+
+          {/* Service Description */}
+          <section className="py-16 bg-white">
+            <div className="container-custom">
+              <div className="max-w-4xl mx-auto">
+                <h2 className="text-3xl font-bold mb-6 text-center">
+                  Professional {csServiceName} Services
+                </h2>
+                <p className="text-lg text-gray-600 mb-8 text-center">
+                  {csService?.description || `Get professional ${csServiceName.toLowerCase()} for your ${csDeviceType.toLowerCase()} right at your doorstep in ${csCityName}. Our certified technicians bring all the necessary tools and genuine parts to complete your repair quickly and efficiently.`}
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+                  <div className="bg-gray-50 p-6 rounded-xl text-center">
+                    <div className="text-4xl mb-4">🏠</div>
+                    <h3 className="font-bold text-lg mb-2">Doorstep Service</h3>
+                    <p className="text-gray-600 text-sm">
+                      We come to your home or office in {csCityName} with all needed equipment
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 p-6 rounded-xl text-center">
+                    <div className="text-4xl mb-4">⚡</div>
+                    <h3 className="font-bold text-lg mb-2">Same-Day Service</h3>
+                    <p className="text-gray-600 text-sm">
+                      Most repairs completed in 30-90 minutes on the same day
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 p-6 rounded-xl text-center">
+                    <div className="text-4xl mb-4">✅</div>
+                    <h3 className="font-bold text-lg mb-2">Quality Guarantee</h3>
+                    <p className="text-gray-600 text-sm">
+                      90-day warranty on all parts and labor
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Select Your Model Section */}
+          {csSampleModels && csSampleModels.length > 0 && (
+            <section className="py-16 bg-gray-50">
+              <div className="container-custom">
+                <div className="text-center mb-12">
+                  <h2 className="text-3xl font-bold mb-4">Select Your {csDeviceType} Model</h2>
+                  <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Choose your device model to see pricing and book your {csServiceName.toLowerCase()} in {csCityName}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                  {csSampleModels.map((model: { id: string; name: string; slug: string; display_name: string }) => (
+                    <Link
+                      key={model.id}
+                      href={`/repair/${csCity?.slug}/${csService?.slug}/${model.slug}`}
+                      className="bg-white p-4 rounded-lg text-center shadow-sm hover:shadow-lg transition-all border border-gray-100 group"
+                    >
+                      <div className="text-gray-800 font-medium group-hover:text-primary-600 transition-colors">
+                        {model.display_name || model.name}
+                      </div>
+                      <div className="text-sm text-primary-500 mt-2">
+                        View Pricing →
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+                
+                <div className="text-center mt-8">
+                  <p className="text-gray-600 mb-4">Don't see your model?</p>
+                  <Link
+                    href={`/book-online?city=${csCity?.slug}&service=${csService?.slug}`}
+                    className="text-primary-600 hover:text-primary-700 font-semibold"
+                  >
+                    Contact us for a custom quote →
+                  </Link>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* CTA Section */}
+          <section className="py-16 bg-primary-50">
+            <div className="container-custom text-center">
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                Ready for {csServiceName} in {csCityName}?
+              </h2>
+              <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
+                Book your doorstep {csServiceName.toLowerCase()} today and get back to using your {csDeviceType.toLowerCase()}.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link
+                  href={`/book-online?city=${csCity?.slug}&service=${csService?.slug}`}
+                  className="btn-accent text-lg px-8 py-4"
+                >
+                  Book Now
+                </Link>
+                <a
+                  href="tel:+17783899251"
+                  className="btn-outline border-primary-600 text-primary-600 hover:bg-primary-50 text-lg px-8 py-4"
+                >
+                  Call (778) 389-9251
+                </a>
+              </div>
+            </div>
+          </section>
         </>
       );
 
