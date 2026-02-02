@@ -28,6 +28,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { getSiteUrl } from '@/utils/supabaseClient';
 import { formatPhoneNumberForDisplay, formatPhoneNumberForHref, DEFAULT_PHONE_NUMBER } from '@/utils/phone-formatter';
+import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 
 // Dynamic imports for code splitting (reduces initial bundle size)
@@ -393,7 +394,10 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
             <meta property="og:type" content="website" />
           </Head>
           
-          {/* Professional Header */}
+          {/* Navigation Header */}
+          <Header />
+          
+          {/* Hero Section */}
           <section className="pt-8 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
             <div className="container-custom">
               <div className="text-center max-w-4xl mx-auto">
