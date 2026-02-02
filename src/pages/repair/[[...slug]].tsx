@@ -273,12 +273,18 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
  * This approach prevents timeouts and ensures all pages are pre-rendered.
  */
 export const getStaticPaths: GetStaticPaths = async () => {
+  console.log('========================================');
+  console.log('🔥🔥🔥 getStaticPaths CALLED - ENTRY POINT');
+  console.log('========================================');
+  
   const startTime = Date.now();
   const BATCH_SIZE = 1000; // Fetch 1000 routes per batch
   const MAX_BUILD_TIME = 45000; // 45 seconds max (safe for Vercel)
   
   try {
+    console.log('🔧 Attempting to get Supabase client...');
     const supabase = getServiceSupabase();
+    console.log('✅ Supabase client obtained successfully');
     
     console.log('🚀 Starting pagination-based route generation...');
     
