@@ -64,5 +64,5 @@ WHERE city_name = 'Chilliwack';
 
 -- Add Squamish postal codes
 UPDATE service_locations 
-SET postal_code_prefixes = ARRAY['V8B']
+SET postal_code_prefixes = ARRAY['V8B',V0N"]
 WHERE city_name = 'Squamish';

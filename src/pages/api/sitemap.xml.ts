@@ -187,9 +187,11 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       { slug: 'tablet-repair', updated_at: new Date().toISOString(), device_type: 'tablet' }
     ];
     
-    // Fetch popular city-service-model combinations (limited to top 50 for sitemap)
-    const cityServiceModels = await getPopularCityServiceModels();
-    sitemapLogger.info(`Fetched ${cityServiceModels.length} city-service-model combinations`);
+    // Fetch dynamic routes from database (pre-computed routes)
+    sitemapLogger.info('DEBUG: Calling getDynamicRoutesForSitemap()...');
+    const cityServiceModels = await getDynamicRoutesForSitemap();
+    sitemapLogger.info(`DEBUG: Fetched ${cityServiceModels.length} dynamic routes for sitemap`);
+    sitemapLogger.info(`DEBUG: First few routes: ${JSON.stringify(cityServiceModels.slice(0, 3))}`);
     
     // Fetch neighborhood pages (Phase 8)
     const neighborhoods = await getNeighborhoodPagesFromDB();
@@ -287,6 +289,139 @@ async function getNeighborhoodPagesFromDB(): Promise<Array<{
   } catch (error) {
     sitemapLogger.error('Error in getNeighborhoodPagesFromDB:', error);
     return [];
+  }
+}
+
+/**
+ * Get dynamic routes from database for sitemap
+ * Uses pre-computed routes from dynamic_routes table for better performance
+ * Optimized for speed: removes timeout, uses batch processing with pagination
+ */
+async function getDynamicRoutesForSitemap(): Promise<Array<{
+  city: string;
+  service: string;
+  model: string;
+  updated_at: string;
+}>> {
+  const supabase = getServiceSupabase();
+  const startTime = Date.now();
+  
+  try {
+    // Query dynamic_routes table for ALL model-service-page routes
+    // Use pagination to get all rows (Supabase has limits)
+    let allRoutes: any[] = [];
+    const pageSize = 1000;
+    let page = 0;
+    let hasMore = true;
+    
+    while (hasMore) {
+      const start = page * pageSize;
+      const end = start + pageSize - 1;
+      
+      sitemapLogger.info(`Fetching page ${page + 1} (rows ${start}-${end})...`);
+      
+      const { data: routes, error, count } = await supabase
+        .from('dynamic_routes')
+        .select('slug_path, last_updated', { count: 'exact' })
+        .eq('route_type', 'model-service-page')
+        .range(start, end);
+      
+      if (error) {
+        sitemapLogger.error(`Error fetching page ${page + 1}:`, error);
+        break;
+      }
+      
+      if (routes && routes.length > 0) {
+        allRoutes = [...allRoutes, ...routes];
+        sitemapLogger.info(`Page ${page + 1}: Got ${routes.length} routes`);
+        
+        // If we got fewer routes than page size, we've reached the end
+        if (routes.length < pageSize) {
+          hasMore = false;
+          sitemapLogger.info(`Reached end of data at page ${page + 1}`);
+        } else {
+          page++;
+        }
+      } else {
+        hasMore = false;
+        sitemapLogger.info(`No more routes at page ${page + 1}`);
+      }
+      
+      // Safety limit: don't fetch more than 10 pages (10,000 routes)
+      if (page >= 10) {
+        sitemapLogger.warn(`Hit safety limit at 10 pages (${allRoutes.length} routes)`);
+        break;
+      }
+    }
+    
+    if (allRoutes.length === 0) {
+      sitemapLogger.warn('No dynamic routes found, using fallback');
+      return getFallbackCombinations();
+    }
+
+    sitemapLogger.info(`Found ${allRoutes.length} dynamic routes in database (after pagination)`);
+    
+    // Parse slug_path to extract city, service, model
+    const result: Array<{
+      city: string;
+      service: string;
+      model: string;
+      updated_at: string;
+    }> = [];
+    
+    // Use batch processing for better performance
+    const batchSize = 1000;
+    for (let i = 0; i < allRoutes.length; i += batchSize) {
+      const batch = allRoutes.slice(i, i + batchSize);
+      
+      for (const route of batch) {
+        // Parse slug_path format: "repair/{city}/{service}/{model}"
+        const parts = route.slug_path.split('/');
+        if (parts.length !== 4 || parts[0] !== 'repair') {
+          sitemapLogger.debug(`Skipping invalid slug_path: ${route.slug_path}`);
+          continue;
+        }
+        
+        const [, city, service, model] = parts;
+        
+        // Skip validation for speed - assume database has valid slugs
+        // We'll trust the database integrity
+        result.push({
+          city,
+          service,
+          model,
+          updated_at: route.last_updated || new Date().toISOString()
+        });
+      }
+      
+      // Log progress for large datasets
+      if (i % 1000 === 0) {
+        sitemapLogger.info(`Processed ${i} of ${allRoutes.length} routes...`);
+      }
+    }
+    
+    const executionTime = Date.now() - startTime;
+    sitemapLogger.info(`Processed ${result.length} dynamic routes for sitemap (time: ${executionTime}ms)`);
+    
+    // If we have no results, return fallback
+    if (result.length === 0) {
+      sitemapLogger.warn('No valid dynamic routes processed, using fallback');
+      return getFallbackCombinations();
+    }
+    
+    // Log what percentage of routes we included
+    const databaseCount = allRoutes.length;
+    const includedCount = result.length;
+    const percentage = ((includedCount / databaseCount) * 100).toFixed(1);
+    sitemapLogger.info(`Sitemap includes ${includedCount}/${databaseCount} routes (${percentage}%)`);
+    
+    return result;
+    
+  } catch (error) {
+    sitemapLogger.error('Error fetching dynamic routes for sitemap:', error);
+    
+    // Return fallback combinations on error
+    return getFallbackCombinations();
   }
 }
 

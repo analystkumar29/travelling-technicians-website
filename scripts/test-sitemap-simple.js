@@ -7,15 +7,18 @@
 
 console.log('🔍 Running Sitemap Core Logic Tests\n');
 
-// Test 1: XML escaping function
-console.log('🧪 Test 1: XML Special Character Escaping');
+// 🧪 Test 1: XML Special Character Escaping
 function escapeXml(unsafe) {
-  return unsafe
-    .replace(/&/g, '&')
-    .replace(/</g, '<')
-    .replace(/>/g, '>')
-    .replace(/"/g, '"')
-    .replace(/'/g, ''');
+  return unsafe.replace(/[<>&"']/g, function (m) {
+    switch (m) {
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '&': return '&amp;';
+      case '"': return '&quot;';
+      case "'": return '&apos;';
+      default: return m;
+    }
+  });
 }
 
 const testCases = [
@@ -23,7 +26,7 @@ const testCases = [
   { input: 'iPhone < 14 Pro', expected: 'iPhone < 14 Pro' },
   { input: 'MacBook > 2023', expected: 'MacBook > 2023' },
   { input: 'Repair "quoted" service', expected: 'Repair "quoted" service' },
-  { input: "O'Connor's iPhone", expected: 'O'Connor's iPhone' },
+  { input: "O'Connor's iPhone", expected: "'O'Connor's iPhone'" },
   { input: 'Normal text', expected: 'Normal text' },
 ];
 
