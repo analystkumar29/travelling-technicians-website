@@ -18,6 +18,8 @@
  * - Database-driven dropdowns for RepairIndex
  */
 
+console.log('🔍 [[...slug]].tsx FILE LOADED - TOP OF FILE');
+
 import { GetStaticPaths, GetStaticProps } from 'next';
 import { getServiceSupabase } from '@/utils/supabaseClient';
 import dynamic from 'next/dynamic';
