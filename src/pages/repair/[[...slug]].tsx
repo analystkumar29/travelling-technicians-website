@@ -269,22 +269,19 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
  * Generate static paths for ALL dynamic routes
  * This is called at build time to pre-generate all pages
  * 
- * OPTIMIZATION: We only fetch the top 100 most popular pages during build time.
- * This keeps build times fast (especially important for CI/CD pipelines).
- * All other pages use fallback: 'blocking' to generate on-demand.
+ * Fetches all routes from the dynamic_routes table for complete pre-rendering.
+ * This ensures all pages are indexed from day 1 for optimal SEO coverage.
  */
 export const getStaticPaths: GetStaticPaths = async () => {
   try {
     const supabase = getServiceSupabase();
     
-    // OPTIMIZATION: Fetch only top 100 POPULAR pages to keep builds fast
-    // Pages ranked by popularity_score (higher = more traffic expected)
-    // All other routes will use fallback: 'blocking' for on-demand generation
+    // Fetch ALL dynamic routes for pre-rendering
+    // Complete coverage ensures all repair pages are available to search engines
     const { data: routes, error } = await supabase
       .from('dynamic_routes')
       .select('slug_path')
-      .order('popularity_score', { ascending: false })
-      .limit(100);
+      .order('popularity_score', { ascending: false });
 
     if (error) {
       console.error('Error fetching top dynamic routes:', error);
@@ -307,7 +304,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
     // Always include the root repair page
     paths.push({ params: { slug: [] } });
 
-    console.log(`Generated ${paths.length} pre-rendered paths (top 100 popular routes). All other routes will be generated on-demand.`);
+    console.log(`✅ Generated ${paths.length} pre-rendered paths for complete SEO coverage. All repair pages are now available at build time.`);
 
     return {
       paths,
