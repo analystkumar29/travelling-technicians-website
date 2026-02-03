@@ -16,6 +16,8 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { formatPhoneNumberForDisplay, formatPhoneNumberForHref } from '@/utils/phone-formatter';
 import { getSiteUrl } from '@/utils/supabaseClient';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
 
 interface RepairIndexProps {
   cities: Array<{ slug: string; city_name: string }>;
@@ -23,9 +25,11 @@ interface RepairIndexProps {
   models: Array<{ id: string; name: string; type: string; brand: string; device_type_id?: string }>;
   routeCount?: number;
   testimonialCount?: number;
+  testimonials?: Array<{ id: string; customer_name: string; city: string; rating: number; review: string; device_model: string; service: string }>;
+  pricing?: Record<string, number>;
 }
 
-export default function RepairIndex({ cities = [], services = [], models = [], routeCount = 3289, testimonialCount = 25 }: RepairIndexProps) {
+export default function RepairIndex({ cities = [], services = [], models = [], routeCount = 3289, testimonialCount = 25, testimonials = [], pricing = {} }: RepairIndexProps) {
   const router = useRouter();
   const siteUrl = getSiteUrl();
   const [selectedCity, setSelectedCity] = useState('');
@@ -142,6 +146,7 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
 
   return (
     <>
+      <Header />
       <Head>
         <title>Doorstep Mobile & Laptop Repair Services | The Travelling Technicians</title>
         <meta name="description" content={`Find doorstep repair services for your mobile phone or laptop in ${cityCount} cities across the Lower Mainland. Professional technicians come to you with 90-day warranty. Screen replacement, battery replacement, and more.`} />
@@ -360,33 +365,83 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
               Popular Services
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {displayServices.map(service => (
-                <div
-                  key={service.id}
-                  className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow"
-                >
-                  <div className="text-blue-600 text-2xl mb-4">
-                    {service.type === 'mobile' ? '📱' : '💻'}
+              {displayServices.map(service => {
+                // Get dynamic pricing for this service
+                const minPrice = pricing[service.id] ? Math.round(Number(pricing[service.id])) : 129;
+                
+                return (
+                  <div
+                    key={service.id}
+                    className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow"
+                  >
+                    <div className="text-blue-600 text-2xl mb-4">
+                      {service.type === 'mobile' ? '📱' : '💻'}
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-3">
+                      {service.name}
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      Professional doorstep {service.name.toLowerCase()} for all major brands.
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-900 font-bold">From ${minPrice}</span>
+                      <Link
+                        href={`/repair/vancouver/${service.id}`}
+                        className="text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        View details →
+                      </Link>
+                    </div>
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">
-                    {service.name}
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    Professional doorstep {service.name.toLowerCase()} for all major brands.
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-900 font-bold">From $129</span>
-                    <Link
-                      href={`/repair/vancouver/${service.id}`}
-                      className="text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      View details →
-                    </Link>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
+
+          {/* Testimonials Section */}
+          {testimonials.length > 0 && (
+            <div className="mb-16">
+              <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">
+                What Our Customers Say
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {testimonials.map((testimonial) => (
+                  <div
+                    key={testimonial.id}
+                    className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow"
+                  >
+                    {/* Star Rating */}
+                    <div className="flex items-center mb-4">
+                      {[...Array(5)].map((_, i) => (
+                        <svg
+                          key={i}
+                          className={`h-5 w-5 ${i < testimonial.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                      ))}
+                    </div>
+                    
+                    {/* Review Text */}
+                    <p className="text-gray-700 mb-4 italic">"{testimonial.review}"</p>
+                    
+                    {/* Customer Details */}
+                    <div className="border-t pt-4">
+                      <div className="font-semibold text-gray-900">{testimonial.customer_name}</div>
+                      <div className="text-sm text-gray-500">{testimonial.city}</div>
+                      {testimonial.device_model && (
+                        <div className="text-sm text-gray-500 mt-1">
+                          {testimonial.device_model} • {testimonial.service}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* How It Works */}
           <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-8 mb-16">
@@ -463,6 +518,8 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
           </div>
         </div>
       </div>
+      
+      <Footer />
     </>
   );
 }
