@@ -1315,10 +1315,14 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                                     } else {
                                       // Add service
                                       field.onChange([...currentArray, service.id]);
+                                      // Auto-scroll to pricing tier after first service selection
+                                      scrollToElement('.border-t.pt-8', 500);
                                     }
                                   } else {
                                     // Handle single selection for other groups
                                     field.onChange(service.id);
+                                    // Auto-scroll to pricing tier
+                                    scrollToElement('.border-t.pt-8', 500);
                                   }
                                 }}
                               />
@@ -1638,7 +1642,11 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   postalCode={methods.watch('postalCode')}
                   enabled={!!(methods.watch('deviceType') && methods.watch('deviceBrand') && methods.watch('deviceModel') && methods.watch('serviceType'))}
                   selectedTier={field.value}
-                  onTierSelect={(tier: 'standard' | 'premium') => field.onChange(tier)}
+                  onTierSelect={(tier: 'standard' | 'premium') => {
+                    field.onChange(tier);
+                    // Auto-scroll to ensure Next button is visible after tier selection
+                    scrollToElement('.flex.flex-col.sm\\:flex-row.justify-between', 600);
+                  }}
                   className="mt-2"
                 />
                 
@@ -1696,6 +1704,13 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   }`}
                       placeholder="John Smith"
                   {...field}
+                  onBlur={(e) => {
+                    field.onBlur();
+                    // Auto-scroll to email after name is filled
+                    if (e.target.value.trim()) {
+                      scrollToElement('label[for="customerEmail"]', 300);
+                    }
+                  }}
                 />
                 {fieldState.error && showValidationErrors && (
                   <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
@@ -1741,6 +1756,13 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   }`}
                   placeholder="you@example.com"
                   {...field}
+                  onBlur={(e) => {
+                    field.onBlur();
+                    // Auto-scroll to phone after email is filled
+                    if (e.target.value.trim()) {
+                      scrollToElement('label[for="customerPhone"]', 300);
+                    }
+                  }}
                 />
                 {fieldState.error && showValidationErrors && (
                   <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
@@ -1790,6 +1812,13 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   }`}
                   placeholder="(555) 123-4567"
                   {...field}
+                  onBlur={(e) => {
+                    field.onBlur();
+                    // Auto-scroll to address section after phone is filled
+                    if (e.target.value.trim()) {
+                      scrollToElement('.border-t.pt-6', 300);
+                    }
+                  }}
                 />
                 {fieldState.error && showValidationErrors && (
                   <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
@@ -1960,8 +1989,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             message: `Unfortunately, we don't service ${postalCode} at this time.` 
           });
         }
+        // Auto-scroll to city/postal code fields after address autocomplete
+        scrollToElement('.grid.grid-cols-2.gap-4', 400);
       } else {
         setNeedsPostalCodeAttention(true); // No postal code detected, need user input
+        // Still scroll to city/postal so user can fill them manually
+        scrollToElement('.grid.grid-cols-2.gap-4', 400);
       }
     };
 
@@ -2240,7 +2273,14 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       className={`block w-full pl-10 pr-10 py-2 border ${fieldState.error ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm`}
                       min={getTomorrowDate()}
                       max={getMaxDate()}
-                  {...field}
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        // Auto-scroll to time slot after date is selected
+                        if (e.target.value) {
+                          scrollToElement('label:has(+ div select[name="appointmentTime"])', 400);
+                        }
+                      }}
                     />
                   </div>
                 {fieldState.error && showValidationErrors && (
@@ -2273,6 +2313,13 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   {...field}
                   value={field.value || ''}
                   disabled={isLoadingTimeSlots || !methods.watch('appointmentDate')}
+                  onChange={(e) => {
+                    field.onChange(e);
+                    // Auto-scroll to terms checkbox after time is selected
+                    if (e.target.value) {
+                      scrollToElement('.mt-6.border-t.border-gray-200.pt-6', 500);
+                    }
+                  }}
                 >
                       <option value="">
                         {!methods.watch('appointmentDate') 
