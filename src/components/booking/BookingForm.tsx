@@ -116,8 +116,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       
       // Calculate scroll position
       if (isMobile) {
-        // Mobile: position element at top 15% of viewport
-        const offset = window.innerHeight * 0.15;
+        // Mobile: position element at top 20% of viewport
+        const offset = window.innerHeight * 0.20;
         window.scrollTo({
           top: window.scrollY + rect.top - offset,
           behavior: 'smooth'
