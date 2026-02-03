@@ -2281,7 +2281,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         field.onChange(e);
                         // Auto-scroll to time slot after date is selected
                         if (e.target.value) {
-                          scrollToElement('#time-slot-section', 400);
+                          scrollToElement('#time-slot-selection', 400);
                         }
                       }}
                     />
@@ -2295,7 +2295,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             <p className="mt-1 text-xs text-gray-500">We accept bookings up to 60 days in advance.</p>
         </div>
         
-          <div id="time-slot-section">
+          <div id="time-slot-selection">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Preferred Time <span className="text-red-500">*</span>
           </label>
