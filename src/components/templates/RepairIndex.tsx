@@ -18,6 +18,8 @@ import { formatPhoneNumberForDisplay, formatPhoneNumberForHref } from '@/utils/p
 import { getSiteUrl } from '@/utils/supabaseClient';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import OptimizedImage from '@/components/common/OptimizedImage';
+import { FaTools, FaCheck, FaClock, FaMapMarkerAlt, FaShieldAlt, FaStar, FaArrowRight, FaMobile, FaLaptop } from 'react-icons/fa';
 
 interface RepairIndexProps {
   cities: Array<{ slug: string; city_name: string }>;
@@ -32,8 +34,9 @@ interface RepairIndexProps {
 export default function RepairIndex({ cities = [], services = [], models = [], routeCount = 3289, testimonialCount = 25, testimonials = [], pricing = {} }: RepairIndexProps) {
   const siteUrl = getSiteUrl();
   
-  // Calculate real statistics
-  const repairPageCount = routeCount || 3289;
+  // Calculate dynamic statistics
+  const cityCount = cities.length || 13;
+  const modelCount = models.length || 50;
   const totalTestimonials = testimonialCount || 25;
 
   // Transform database cities to match component format
@@ -78,6 +81,80 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
   // Use database data if available, otherwise fallback
   const displayCities = transformedCities.length > 0 ? transformedCities : fallbackCities;
   const displayServices = transformedServices.length > 0 ? transformedServices : fallbackServices;
+
+  // Benefits of doorstep repair (from doorstep-repair page)
+  const benefits = [
+    {
+      id: 'convenience',
+      title: 'Ultimate Convenience',
+      description: 'Skip the trip to a repair shop. Our technicians come to your home or office, saving you valuable time and hassle.',
+      icon: <FaClock className="h-8 w-8" />
+    },
+    {
+      id: 'no-wait',
+      title: 'No Wait Times',
+      description: 'No need to leave your device for days. Most repairs are completed on-site in 30-60 minutes while you watch.',
+      icon: <FaClock className="h-8 w-8" />
+    },
+    {
+      id: 'transparency',
+      title: 'Complete Transparency',
+      description: "Watch the entire repair process. Know exactly what's happening with your device at every step.",
+      icon: <FaCheck className="h-8 w-8" />
+    },
+    {
+      id: 'comfort',
+      title: 'Comfort & Safety',
+      description: 'Remain in the comfort of your own space. Especially valuable for those with busy schedules or limited mobility.',
+      icon: <FaMapMarkerAlt className="h-8 w-8" />
+    },
+    {
+      id: 'expertise',
+      title: 'Same Expertise',
+      description: 'Our mobile technicians are fully certified with the same skills and tools as in-shop technicians.',
+      icon: <FaTools className="h-8 w-8" />
+    },
+    {
+      id: 'warranty',
+      title: 'Full Warranty Coverage',
+      description: 'All doorstep repairs come with our standard 90-day warranty on parts and labor for your peace of mind.',
+      icon: <FaShieldAlt className="h-8 w-8" />
+    }
+  ];
+
+  // FAQ questions (from doorstep-repair page)
+  const faqQuestions = [
+    {
+      id: 1,
+      question: 'How does doorstep repair work?',
+      answer: 'After booking online, our certified technician arrives at your location with all the necessary tools and parts. They diagnose the issue, provide a final quote, and complete the repair right there while you watch.'
+    },
+    {
+      id: 2,
+      question: 'Is there an extra fee for doorstep service?',
+      answer: 'No, our prices include the convenience of doorstep service with no additional travel or convenience fees for locations within our standard service area in the Lower Mainland.'
+    },
+    {
+      id: 3,
+      question: 'What if my device can\'t be repaired on-site?',
+      answer: 'In rare cases where a repair can\'t be completed on-site, our technician will explain why and provide options including arranging repair at our service center with convenient pickup and delivery.'
+    },
+    {
+      id: 4,
+      question: 'Do I need to prepare anything before the technician arrives?',
+      answer: 'We recommend backing up your data if possible and ensuring there\'s a clean, well-lit space for the technician to work. You\'ll also need ID to verify device ownership.'
+    },
+    {
+      id: 5,
+      question: 'How quickly can you come to my location?',
+      answer: 'Depending on technician availability, we often offer same-day service for popular areas like Vancouver, Burnaby, and Richmond. Most locations can be serviced within 24-48 hours of booking.'
+    },
+    {
+      id: 6,
+      question: 'Are the parts and repairs the same quality as in-shop repairs?',
+      answer: 'Absolutely. We use the same high-quality parts for doorstep repairs as we do for our in-shop services. All repairs come with our standard 90-day warranty regardless of where they\'re performed.'
+    }
+  ];
 
   return (
     <>
@@ -176,35 +253,96 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
       </Head>
 
       <div className="min-h-screen bg-gray-50">
-        {/* Hero Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
-          <div className="container mx-auto px-4 py-16">
-            <div className="max-w-3xl mx-auto text-center">
-              <h1 className="text-4xl md:text-5xl font-bold mb-6">
-                Doorstep Repair Services in Your City
-              </h1>
-              <p className="text-xl mb-8 opacity-90">
-                Professional mobile & laptop repair technicians come to you.
-                Same-day service with up to 6 months warranty.
-              </p>
-              
-              {/* Statistics */}
-              <div className="grid grid-cols-2 gap-4 mt-6 text-sm">
-                <div className="text-center">
-                  <div className="text-2xl font-bold">{repairPageCount.toLocaleString()}</div>
-                  <div className="opacity-80">Repair Pages</div>
+        {/* Hero Section - Updated with doorstep-repair styling */}
+        <section className="pt-16 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
+          <div className="container-custom">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+                  Doorstep Device Repair Service
+                </h1>
+                <p className="text-xl mb-8 text-primary-100">
+                  Why travel to a repair shop when our certified technicians can come to you? Get your mobile phone or laptop repaired at your home, office, or anywhere in the Lower Mainland.
+                </p>
+                
+                {/* Dynamic Statistics */}
+                <div className="grid grid-cols-2 gap-6 mb-8">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold">{cityCount}+</div>
+                    <div className="text-primary-200 text-sm">Locations Served</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold">{modelCount}+</div>
+                    <div className="text-primary-200 text-sm">Device Models</div>
+                  </div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold">{totalTestimonials}+</div>
-                  <div className="opacity-80">Testimonials</div>
+                
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Link href="/book-online" className="btn-accent text-center">
+                    Book Your Doorstep Repair
+                  </Link>
+                  <Link href="/pricing" className="btn-outline border-white text-white hover:bg-primary-600 text-center">
+                    View Pricing
+                  </Link>
+                </div>
+              </div>
+              <div className="relative">
+                <div className="relative h-[350px] w-full rounded-lg overflow-hidden shadow-custom-lg">
+                  <OptimizedImage
+                    src="/images/services/doorstep-repair-tech.jpg"
+                    alt="Technician providing professional device repair services at customer location"
+                    fill
+                    className="object-cover"
+                    isCritical={true}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
+                    <div className="p-6">
+                      <div className="inline-block bg-accent-500 text-white text-sm px-3 py-1 rounded-full mb-3">
+                        Fast & Convenient
+                      </div>
+                      <p className="text-white text-xl font-bold">
+                        Most repairs completed in 30-60 minutes
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Main Content */}
         <main className="container mx-auto px-4 py-12">
+          {/* Benefits Section - Added from doorstep-repair */}
+          <section className="py-16 bg-white">
+            <div className="container-custom">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Benefits of Doorstep Repair</h2>
+                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                  Experience the convenience and advantages of having your device repaired at your location
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {benefits.map((benefit) => (
+                  <div key={benefit.id} className="card hover:shadow-custom-lg transition-shadow">
+                    <div className="p-6">
+                      <div className="rounded-full bg-primary-100 w-16 h-16 flex items-center justify-center mb-4">
+                        <div className="text-primary-600">
+                          {benefit.icon}
+                        </div>
+                      </div>
+                      <h3 className="text-xl font-bold mb-3">{benefit.title}</h3>
+                      <p className="text-gray-600">
+                        {benefit.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
           {/* How It Works - Moved to top */}
           <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-8 mb-16">
             <h2 className="text-3xl font-bold text-gray-900 text-center mb-10">
@@ -262,38 +400,149 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
             </div>
           </div>
 
-          {/* Popular Services */}
+          {/* Available Services - Enhanced UI */}
+          <section className="py-16 bg-white">
+            <div className="container-custom">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Services Available at Your Doorstep</h2>
+                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                  Most repairs can be completed on-site at your location
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Mobile Repairs */}
+                <div className="card hover:shadow-custom-lg transition-shadow">
+                  <div className="p-6">
+                    <h3 className="text-2xl font-bold mb-4 flex items-center">
+                      <span className="rounded-full bg-primary-100 p-2 mr-3">
+                        <FaMobile className="h-6 w-6 text-primary-600" />
+                      </span>
+                      Mobile Phone Repairs
+                    </h3>
+                    <ul className="space-y-3">
+                      <li className="flex items-start">
+                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <span>Screen replacements for all major brands</span>
+                      </li>
+                      <li className="flex items-start">
+                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <span>Battery replacements and optimization</span>
+                      </li>
+                      <li className="flex items-start">
+                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <span>Charging port and connector repairs</span>
+                      </li>
+                      <li className="flex items-start">
+                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <span>Camera, speaker, and microphone fixes</span>
+                      </li>
+                      <li className="flex items-start">
+                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <span>Software troubleshooting and updates</span>
+                      </li>
+                      <li className="flex items-start">
+                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <span>Data backup and transfer assistance</span>
+                      </li>
+                    </ul>
+                    <div className="mt-6">
+                      <Link href="/services/mobile-repair" className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
+                        View All Mobile Services
+                        <FaArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Laptop Repairs */}
+                <div className="card hover:shadow-custom-lg transition-shadow">
+                  <div className="p-6">
+                    <h3 className="text-2xl font-bold mb-4 flex items-center">
+                      <span className="rounded-full bg-primary-100 p-2 mr-3">
+                        <FaLaptop className="h-6 w-6 text-primary-600" />
+                      </span>
+                      Laptop Repairs
+                    </h3>
+                    <ul className="space-y-3">
+                      <li className="flex items-start">
+                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <span>Screen replacements and repairs</span>
+                      </li>
+                      <li className="flex items-start">
+                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <span>Battery replacements for extended life</span>
+                      </li>
+                      <li className="flex items-start">
+                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <span>Keyboard and trackpad repairs</span>
+                      </li>
+                      <li className="flex items-start">
+                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <span>Hard drive/SSD upgrades and replacements</span>
+                      </li>
+                      <li className="flex items-start">
+                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <span>RAM upgrades for improved performance</span>
+                      </li>
+                      <li className="flex items-start">
+                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <span>Operating system installation and troubleshooting</span>
+                      </li>
+                    </ul>
+                    <div className="mt-6">
+                      <Link href="/services/laptop-repair" className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
+                        View All Laptop Services
+                        <FaArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-10 bg-gray-50 rounded-lg p-6 max-w-3xl mx-auto">
+                <p className="text-center text-gray-700 mb-0">
+                  <span className="font-medium">Note:</span> While most repairs can be completed at your doorstep, some complex issues may require additional equipment. Our technician will diagnose on-site and provide options if more extensive work is needed.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Popular Services with Pricing */}
           <div className="mb-16">
             <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">
-              Popular Services
+              Popular Services with Pricing
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {displayServices.map(service => {
+              {displayServices.slice(0, 4).map(service => {
                 // Get dynamic pricing for this service
                 const minPrice = pricing[service.id] ? Math.round(Number(pricing[service.id])) : 129;
                 
                 return (
                   <div
                     key={service.id}
-                    className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow"
+                    className="card hover:shadow-custom-lg transition-shadow"
                   >
-                    <div className="text-blue-600 text-2xl mb-4">
-                      {service.type === 'mobile' ? '📱' : '💻'}
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-3">
-                      {service.name}
-                    </h3>
-                    <p className="text-gray-600 mb-4">
-                      Professional doorstep {service.name.toLowerCase()} for all major brands.
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-900 font-bold">From ${minPrice}</span>
-                      <Link
-                        href={`/repair/vancouver/${service.id}`}
-                        className="text-blue-600 hover:text-blue-800 font-medium"
-                      >
-                        View details →
-                      </Link>
+                    <div className="p-6">
+                      <div className="text-primary-600 text-2xl mb-4">
+                        {service.type === 'mobile' ? '📱' : '💻'}
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-3">
+                        {service.name}
+                      </h3>
+                      <p className="text-gray-600 mb-4">
+                        Professional doorstep {service.name.toLowerCase()} for all major brands.
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-900 font-bold text-lg">From ${minPrice}</span>
+                        <Link
+                          href={`/repair/vancouver/${service.id}`}
+                          className="text-primary-600 hover:text-primary-700 font-medium flex items-center"
+                        >
+                          View details
+                          <FaArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 );
@@ -346,6 +595,35 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
             </div>
           )}
 
+
+          {/* FAQ Section - Added at bottom */}
+          <section className="py-16 bg-gray-50">
+            <div className="container-custom">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Common Questions About Doorstep Repair</h2>
+                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                  Everything you need to know about our mobile repair service
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                {faqQuestions.map((faq) => (
+                  <div key={faq.id} className="bg-white rounded-lg shadow-sm p-6">
+                    <h3 className="text-xl font-bold mb-2">{faq.question}</h3>
+                    <p className="text-gray-600">
+                      {faq.answer}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="text-center mt-8">
+                <Link href="/faq" className="text-primary-600 hover:text-primary-700 font-medium">
+                  View All FAQs
+                </Link>
+              </div>
+            </div>
+          </section>
 
           {/* CTA Section */}
           <div className="text-center">
