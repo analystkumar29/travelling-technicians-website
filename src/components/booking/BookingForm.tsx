@@ -78,7 +78,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     setVisibleSections(prev => new Set([...Array.from(prev), sectionName]));
   }, []);
   
-  // Smart scroll function
+  // Smart scroll function for step transitions
   const smartScroll = useCallback(() => {
     // Scroll to the step content, but not all the way to the top
     const stepContent = document.querySelector('.step-content');
@@ -90,6 +90,44 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         behavior: 'smooth'
       });
     }
+  }, []);
+
+  // Progressive auto-scroll function for within-step navigation
+  const scrollToElement = useCallback((selector: string, delay: number = 350) => {
+    setTimeout(() => {
+      const element = document.querySelector(selector);
+      if (!element) return;
+      
+      // Check if element is already in view
+      const rect = element.getBoundingClientRect();
+      const isInView = (
+        rect.top >= 0 &&
+        rect.bottom <= window.innerHeight
+      );
+      
+      // Skip scroll if already fully visible
+      if (isInView) return;
+      
+      // Determine if mobile (viewport width < 768px)
+      const isMobile = window.innerWidth < 768;
+      
+      // Calculate scroll position
+      if (isMobile) {
+        // Mobile: position element at top 15% of viewport
+        const offset = window.innerHeight * 0.15;
+        window.scrollTo({
+          top: window.scrollY + rect.top - offset,
+          behavior: 'smooth'
+        });
+      } else {
+        // Desktop: use smooth scroll with 'center' alignment
+        element.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center',
+          inline: 'nearest'
+        });
+      }
+    }, delay);
   }, []);
 
   // Create a properly typed defaultValues object
@@ -556,6 +594,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         methods.setValue('deviceBrand', '');
                         methods.setValue('deviceModel', '');
                         revealSection('brandSelection');
+                        // Auto-scroll to brand selection
+                        scrollToElement('[data-section="brand-selection"]', 400);
                       }}
                   />
                 )}
@@ -598,6 +638,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         methods.setValue('deviceBrand', '');
                         methods.setValue('deviceModel', '');
                         revealSection('brandSelection');
+                        // Auto-scroll to brand selection
+                        scrollToElement('[data-section="brand-selection"]', 400);
                       }}
                   />
                 )}
@@ -680,6 +722,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                                 setShowBrandWarning(false);
                                 // Store brand UUID
                                 setSelectedBrandId(brand.id as string);
+                                // Auto-scroll to model selection
+                                scrollToElement('label[for="deviceModel"], .mb-4:has(label:contains("Model"))', 400);
                               }}
                             />
                           )}
@@ -753,6 +797,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                                 setShowBrandWarning(false);
                                 // Store brand UUID
                                 setSelectedBrandId(brand.id as string);
+                                // Auto-scroll to model selection
+                                scrollToElement('label[for="deviceModel"]', 400);
                               }}
                             />
                           )}
@@ -866,6 +912,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         if (selectedModel) {
                           setSelectedModelId(selectedModel.id);
                         }
+                        // Auto-scroll to service selection in the combined step
+                        scrollToElement('.border-t', 400);
                       }
                     }}
                     disabled={!deviceBrand || modelsLoading || (!modelsData?.length && !modelsLoading)}
