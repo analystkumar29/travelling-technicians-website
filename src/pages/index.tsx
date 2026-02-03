@@ -259,13 +259,13 @@ export default function Home({
         <div className="bg-accent-600 h-safe-area-inset-bottom"></div>
       </div>
 
-      {/* Redesigned Hero Section - Mobile-Optimized */}
+      {/* SIMPLIFIED MOBILE HERO SECTION */}
       <section className="py-6 md:py-12 bg-gradient-to-br from-primary-50 to-primary-100">
         <div className="container-custom px-4 sm:px-6">
           {/* Add bottom padding for mobile FAB */}
           <div className="pb-12 md:pb-0">
-            {/* Enhanced Urgency Banner with Countdown */}
-            <div className="bg-gradient-to-r from-red-500 to-accent-500 text-white text-center py-3 px-4 rounded-lg mb-6 shadow-lg">
+            {/* Enhanced Urgency Banner with Countdown - Hidden on Mobile */}
+            <div className="hidden md:block bg-gradient-to-r from-red-500 to-accent-500 text-white text-center py-3 px-4 rounded-lg mb-6 shadow-lg">
               <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
                 <div className="flex items-center">
                   <span className="text-xl mr-2">🚨</span>
@@ -276,7 +276,7 @@ export default function Home({
                     ⏱️ 3 SLOTS LEFT TODAY
                   </span>
                   <span className="hidden sm:inline">•</span>
-                  <span className="text-sm">Book before 2 PM for same-day service</span>
+                  <span className="text-sm">Book before 3 PM for same-day service</span>
                 </div>
               </div>
             </div>
@@ -293,8 +293,8 @@ export default function Home({
                   Professional repair technicians come to you. Most fixes completed in 30-90 minutes with 90-day warranty.
                 </p>
 
-                {/* Social Proof in Hero */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
+                {/* Social Proof in Hero - Hidden on Mobile */}
+                <div className="hidden md:block bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
                     <div className="flex items-center">
                       <FaUsers className="text-blue-600 mr-2" />
@@ -315,8 +315,8 @@ export default function Home({
                   </div>
                 </div>
 
-                {/* Mobile-Optimized Pricing Preview */}
-                <div className="bg-white rounded-xl p-4 sm:p-6 shadow-md border-l-4 border-green-500">
+                {/* Mobile-Optimized Pricing Preview - Hidden on Mobile */}
+                <div className="hidden md:block bg-white rounded-xl p-4 sm:p-6 shadow-md border-l-4 border-green-500">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-bold text-base sm:text-lg text-gray-900">Quick Pricing Preview</h3>
                     <span className="text-green-600 font-bold text-xs sm:text-sm">✓ No Hidden Fees</span>
@@ -337,7 +337,7 @@ export default function Home({
                   </div>
                 </div>
 
-                {/* Service Area Checker - Moved Above the Fold */}
+                {/* Service Area Checker - Keep Postal Code Checker */}
                 <div className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-xl p-4 sm:p-6 border border-teal-200">
                   <div className="flex items-center justify-center mb-4">
                     <FaMapMarkerAlt className="text-teal-600 mr-2" />
@@ -348,58 +348,62 @@ export default function Home({
                   <PostalCodeChecker 
                     variant="compact"
                     onSuccess={(result, postalCode) => {
-                      // Redirect to booking form with pre-filled location
                       setTimeout(() => {
                         window.location.href = '/book-online';
                       }, 1500);
-                      
-                      // Also show success message
-                      setTimeout(() => {
-                        const ctaSection = document.querySelector('.hero-cta-section');
-                        if (ctaSection) {
-                          ctaSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                        }
-                      }, 1000);
                     }}
                   />
                 </div>
 
-                {/* Enhanced Primary CTA */}
-                <div className="space-y-4 hero-cta-section">
+                {/* Quick Repair Options - Mobile Only: Screen & Battery */}
+                <div className="md:hidden grid grid-cols-2 gap-3">
+                  <Link 
+                    href="/book-online?service=screen-replacement"
+                    className="bg-white rounded-xl p-4 shadow-md hover:shadow-lg transition-shadow text-center border-2 border-accent-200"
+                  >
+                    <div className="text-3xl mb-2">📱</div>
+                    <h3 className="font-bold text-sm text-gray-900">Screen Repair</h3>
+                    <p className="text-xs text-gray-600 mt-1">From $89</p>
+                  </Link>
+                  <Link 
+                    href="/book-online?service=battery-replacement"
+                    className="bg-white rounded-xl p-4 shadow-md hover:shadow-lg transition-shadow text-center border-2 border-accent-200"
+                  >
+                    <div className="text-3xl mb-2">🔋</div>
+                    <h3 className="font-bold text-sm text-gray-900">Battery Replace</h3>
+                    <p className="text-xs text-gray-600 mt-1">From $79</p>
+                  </Link>
+                </div>
+
+                {/* Primary CTA - Simplified for Mobile */}
+                <div className="space-y-4">
                   <Link 
                     href="/book-online" 
-                    className="group relative w-full bg-gradient-to-r from-red-500 via-accent-500 to-accent-600 text-white text-center py-5 px-6 rounded-2xl font-bold text-lg sm:text-xl hover:from-red-600 hover:via-accent-600 hover:to-accent-700 transition-all duration-300 shadow-2xl hover:shadow-3xl transform hover:scale-105 active:scale-95 flex items-center justify-center min-h-[56px] animate-pulse-subtle"
+                    className="w-full bg-gradient-to-r from-accent-500 to-accent-600 text-white text-center py-4 px-6 rounded-xl font-bold text-base sm:text-lg hover:from-accent-600 hover:to-accent-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 flex items-center justify-center min-h-[56px]"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                    <span className="relative mr-3 flex items-center gap-2">
-                      <span className="text-xl">🚀</span>
-                      <span className="text-shadow-sm">GET FIXED TODAY - FREE QUOTE</span>
-                    </span>
-                    <FaArrowRight className="relative group-hover:translate-x-2 transition-transform duration-300" />
-                    <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs bg-green-500 text-white px-2 py-1 rounded-full animate-bounce">
-                      ⚡ 2-MINUTE BOOKING
-                    </div>
+                    <span className="mr-2">🚀</span>
+                    <span>Book Now - Free Quote</span>
                   </Link>
                   
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                  <a 
-                    href={businessPhoneHref} 
-                    className="bg-green-600 hover:bg-green-700 text-white text-center py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center min-h-[48px] active:scale-95"
-                  >
-                    <FaPhone className="mr-1 sm:mr-2" />
-                    <span className="text-sm sm:text-base">Emergency Call</span>
-                  </a>
+                  <div className="hidden md:grid grid-cols-2 gap-3 sm:gap-4">
+                    <a 
+                      href={businessPhoneHref} 
+                      className="bg-green-600 hover:bg-green-700 text-white text-center py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center min-h-[48px]"
+                    >
+                      <FaPhone className="mr-2" />
+                      <span>Call Now</span>
+                    </a>
                     <Link 
                       href="/services" 
-                      className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-center py-3 px-4 rounded-lg font-semibold transition-colors min-h-[48px] flex items-center justify-center active:scale-95"
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-center py-3 px-4 rounded-lg font-semibold transition-colors min-h-[48px] flex items-center justify-center"
                     >
-                      <span className="text-sm sm:text-base">See All Services</span>
+                      <span>All Services</span>
                     </Link>
                   </div>
                 </div>
 
-                {/* Mobile-Optimized Trust Indicators */}
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 sm:gap-4">
+                {/* Trust Indicators - Hidden on Mobile */}
+                <div className="hidden md:flex flex-wrap items-center justify-start gap-3 sm:gap-4">
                   <div className="flex items-center text-green-600 bg-green-50 px-3 py-2 rounded-lg">
                     <FaCheckCircle className="mr-1 text-sm" />
                     <span className="text-xs sm:text-sm font-medium">90-Day Warranty</span>
@@ -415,8 +419,8 @@ export default function Home({
                 </div>
               </div>
             
-              {/* Hero Image with Overlay */}
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl h-80 md:h-96">
+              {/* Hero Image with Overlay - Hidden on Mobile */}
+              <div className="hidden lg:block relative rounded-2xl overflow-hidden shadow-2xl h-96">
                 <OptimizedImage 
                   src="/images/services/doorstep-repair-tech-optimized.webp" 
                   alt="Professional technician providing doorstep device repair services at customer's location" 
