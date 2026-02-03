@@ -206,7 +206,7 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
         // Special handling for Apple iPhone models to prevent "iPhone 16" matching "iPhone 16 Pro Max"
         if (brand_info?.name?.toLowerCase() === 'apple' && modelName.includes('iphone')) {
           // For Apple iPhone models, we need stricter matching
-          // Check if it's a Pro/Pro Max model mismatch
+          // Check if it's a Pro/Pro Max/Plus model mismatch - MUST check BOTH directions!
           const isProMaxInSearch = searchModel.includes('pro max');
           const isProMaxInDb = modelName.includes('pro max');
           const isProInSearch = searchModel.includes('pro') && !searchModel.includes('pro max');
@@ -214,10 +214,14 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
           const isPlusInSearch = searchModel.includes('plus');
           const isPlusInDb = modelName.includes('plus');
           
-          // Don't allow cross-category matching (Pro Max shouldn't match Pro, Pro shouldn't match regular, etc.)
-          if ((isProMaxInSearch && !isProMaxInDb) || 
-              (isProInSearch && !isProInDb) ||
-              (isPlusInSearch && !isPlusInDb)) {
+          // Don't allow cross-category matching IN EITHER DIRECTION
+          // - Pro Max shouldn't match Pro or regular
+          // - Pro shouldn't match Pro Max or regular  
+          // - Regular shouldn't match Pro or Pro Max
+          // - Plus shouldn't match non-Plus and vice versa
+          if ((isProMaxInSearch !== isProMaxInDb) || 
+              (isProInSearch !== isProInDb) ||
+              (isPlusInSearch !== isPlusInDb)) {
             modelMatch = false;
           } else {
             // For same category, allow partial match
@@ -278,7 +282,7 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
               const dbModelNumber = extractModelNumber(modelName);
               const searchModelNumber = extractModelNumber(searchModel);
               
-              // Don't allow S24 to match S24 Ultra if Ultra is specified
+              // Check for variant matches - MUST work in BOTH directions
               if (dbModelNumber && searchModelNumber && dbModelNumber === searchModelNumber) {
                 // Same base model number, check for variant mismatches
                 const hasUltraInSearch = searchModel.includes('ultra');
@@ -288,10 +292,11 @@ async function findDynamicPricing(deviceType: string, brand: string, model: stri
                 const hasFeInSearch = searchModel.includes('fe');
                 const hasFeInDb = modelName.includes('fe');
                 
-                // Don't allow cross-variant matching
-                if ((hasUltraInSearch && !hasUltraInDb) ||
-                    (hasPlusInSearch && !hasPlusInDb) ||
-                    (hasFeInSearch && !hasFeInDb)) {
+                // Don't allow cross-variant matching IN EITHER DIRECTION
+                // S24 shouldn't match S24 Ultra and vice versa
+                if ((hasUltraInSearch !== hasUltraInDb) ||
+                    (hasPlusInSearch !== hasPlusInDb) ||
+                    (hasFeInSearch !== hasFeInDb)) {
                   modelMatch = false;
                 }
               }
