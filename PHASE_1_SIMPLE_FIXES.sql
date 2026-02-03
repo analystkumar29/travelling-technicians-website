@@ -391,4 +391,3 @@ If route counts are wrong:
 2. Check the view output:
    SELECT COUNT(*) FROM view_active_repair_routes;
    SELECT route_type, COUNT(*) FROM view_active_repair_routes GROUP BY route_type;
-*/

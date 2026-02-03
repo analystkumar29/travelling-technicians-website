@@ -83,7 +83,7 @@ const SitemapPage: NextPage = () => {
               >
                 <SitemapLink href="/" icon="🏠">Home Page</SitemapLink>
                 <SitemapLink href="/book-online" icon="📅">Book Online</SitemapLink>
-                <SitemapLink href="/doorstep-repair" icon="🚗">Doorstep Repair</SitemapLink>
+                <SitemapLink href="/repair" icon="🚗">Doorstep Repair</SitemapLink>
                 <SitemapLink href="/pricing" icon="💰">Pricing & Quotes</SitemapLink>
                 <SitemapLink href="/service-areas" icon="🗺️">Service Areas</SitemapLink>
                 <SitemapLink href="/about" icon="👨‍🔧">About Us</SitemapLink>
