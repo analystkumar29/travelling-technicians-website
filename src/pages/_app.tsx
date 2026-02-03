@@ -6,6 +6,7 @@ import '@/styles/leaflet-custom.css';
 import '@/styles/homepage-enhancements.css';
 import '@/styles/header-fix.css';
 import '@/styles/booking-form-enhancements.css';
+import '@/styles/booking-animations.css';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useEffect, useState, ReactNode } from 'react';

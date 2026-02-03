@@ -40,7 +40,8 @@ export function CityLocalBusinessSchema({
   priceRange = "$79-$299"
 }: CityLocalBusinessSchemaProps) {
   const siteUrl = getSiteUrl();
-  const businessUrl = url || `${siteUrl}/locations/${cityName.toLowerCase().replace(/\s+/g, '-')}`;
+  // Use /repair path for consolidated routing (Best of Both Worlds migration)
+  const businessUrl = url || `${siteUrl}/repair/${cityName.toLowerCase().replace(/\s+/g, '-')}`;
 
   // Convert opening hours to specification format
   const openingHoursSpec = [];
