@@ -110,7 +110,7 @@ export default function BookingConfirmation() {
 
   return (
     <Layout title="Booking Confirmation" metaDescription="Your booking has been confirmed with The Travelling Technicians.">
-      <section className="py-16 bg-gradient-to-b from-primary-50 to-white">
+      <section className="pt-24 pb-16 bg-gradient-to-b from-primary-50 to-white">
         <div className="container-custom">
           {isLoading ? (
             <div className="text-center py-12">
