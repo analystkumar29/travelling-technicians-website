@@ -7,25 +7,36 @@
  * - City/service/model search interface with database-driven data
  * - Service area map
  * - Popular services showcase
+ * - JSON-LD structured data for SEO
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { formatPhoneNumberForDisplay, formatPhoneNumberForHref } from '@/utils/phone-formatter';
+import { getSiteUrl } from '@/utils/supabaseClient';
 
 interface RepairIndexProps {
   cities: Array<{ slug: string; city_name: string }>;
   services: Array<{ slug: string; name: string; display_name: string }>;
   models: Array<{ id: string; name: string; type: string; brand: string; device_type_id?: string }>;
+  routeCount?: number;
+  testimonialCount?: number;
 }
 
-export default function RepairIndex({ cities = [], services = [], models = [] }: RepairIndexProps) {
+export default function RepairIndex({ cities = [], services = [], models = [], routeCount = 3289, testimonialCount = 25 }: RepairIndexProps) {
   const router = useRouter();
+  const siteUrl = getSiteUrl();
   const [selectedCity, setSelectedCity] = useState('');
   const [selectedService, setSelectedService] = useState('');
   const [selectedModel, setSelectedModel] = useState('');
+  
+  // Calculate real statistics
+  const cityCount = cities.length || 13;
+  const serviceCount = services.length || 4;
+  const repairPageCount = routeCount || 3289;
+  const totalTestimonials = testimonialCount || 25;
 
   // Fallback models if not passed from props
   const fallbackModels = [
@@ -132,9 +143,96 @@ export default function RepairIndex({ cities = [], services = [], models = [] }:
   return (
     <>
       <Head>
-        <title>Repair Services | The Travelling Technicians</title>
-        <meta name="description" content="Find doorstep repair services for your mobile phone or laptop in your city. Professional technicians come to you with 1-year warranty." />
-        <meta name="keywords" content="doorstep repair, mobile repair, laptop repair, screen replacement, battery replacement, same-day service" />
+        <title>Doorstep Mobile & Laptop Repair Services | The Travelling Technicians</title>
+        <meta name="description" content={`Find doorstep repair services for your mobile phone or laptop in ${cityCount} cities across the Lower Mainland. Professional technicians come to you with 90-day warranty. Screen replacement, battery replacement, and more.`} />
+        <meta name="keywords" content="doorstep repair, mobile repair, laptop repair, screen replacement, battery replacement, same-day service, Vancouver repair, Burnaby repair, Surrey repair" />
+        <link rel="canonical" href={`${siteUrl}/repair`} />
+        
+        {/* JSON-LD Structured Data for SEO */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "The Travelling Technicians",
+              "url": siteUrl,
+              "description": "Professional doorstep mobile and laptop repair services across the Lower Mainland, BC",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": `${siteUrl}/repair?city={search_term_string}`,
+                "query-input": "required name=search_term_string"
+              }
+            })
+          }}
+        />
+        
+        {/* Service Schema */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Service",
+              "serviceType": "Device Repair",
+              "provider": {
+                "@type": "LocalBusiness",
+                "name": "The Travelling Technicians",
+                "address": {
+                  "@type": "PostalAddress",
+                  "addressRegion": "BC",
+                  "addressCountry": "CA"
+                },
+                "areaServed": {
+                  "@type": "GeoCircle",
+                  "geoMidpoint": {
+                    "@type": "GeoCoordinates",
+                    "latitude": 49.2827,
+                    "longitude": -123.1207
+                  },
+                  "geoRadius": "50000"
+                }
+              },
+              "hasOfferCatalog": {
+                "@type": "OfferCatalog",
+                "name": "Repair Services",
+                "itemListElement": services.slice(0, 6).map(service => ({
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "name": service.display_name || service.name,
+                    "description": `Professional ${service.display_name || service.name} for mobile phones and laptops`
+                  }
+                }))
+              }
+            })
+          }}
+        />
+        
+        {/* Breadcrumb Schema */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "BreadcrumbList",
+              "itemListElement": [
+                {
+                  "@type": "ListItem",
+                  "position": 1,
+                  "name": "Home",
+                  "item": siteUrl
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 2,
+                  "name": "Repair Services",
+                  "item": `${siteUrl}/repair`
+                }
+              ]
+            })
+          }}
+        />
       </Head>
 
       <div className="min-h-screen bg-gray-50">
@@ -217,9 +315,20 @@ export default function RepairIndex({ cities = [], services = [], models = [] }:
                 </button>
               </div>
               
-              <p className="text-sm opacity-80">
-                Serving {displayCities.length} cities across the Lower Mainland • 3,000+ repair pages available
-              </p>
+                <div className="grid grid-cols-3 gap-4 mt-6 text-sm">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold">{cityCount}</div>
+                    <div className="opacity-80">Cities Served</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold">{repairPageCount.toLocaleString()}</div>
+                    <div className="opacity-80">Repair Pages</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold">{totalTestimonials}+</div>
+                    <div className="opacity-80">Testimonials</div>
+                  </div>
+                </div>
             </div>
           </div>
         </div>

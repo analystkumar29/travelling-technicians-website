@@ -1009,8 +1009,17 @@ export const getStaticProps: GetStaticProps<PageProps> = async ({ params }) => {
         .order('popularity_score', { ascending: false })
         .limit(100);
 
-      if (citiesError || servicesError || modelsError) {
-        console.warn('Error fetching dropdown data:', { citiesError, servicesError, modelsError });
+      // Fetch real statistics for the homepage
+      const { count: routeCount, error: routeCountError } = await supabase
+        .from('dynamic_routes')
+        .select('*', { count: 'exact', head: true });
+      
+      const { count: testimonialCount, error: testimonialCountError } = await supabase
+        .from('testimonials')
+        .select('*', { count: 'exact', head: true });
+
+      if (citiesError || servicesError || modelsError || routeCountError || testimonialCountError) {
+        console.warn('Error fetching dropdown data:', { citiesError, servicesError, modelsError, routeCountError, testimonialCountError });
         // Continue with empty arrays - component has fallback
       }
 
@@ -1040,7 +1049,9 @@ export const getStaticProps: GetStaticProps<PageProps> = async ({ params }) => {
           routeType: 'REPAIR_INDEX',
           cities: cities || [],
           services: services || [],
-          models: transformedModels
+          models: transformedModels,
+          routeCount: routeCount || 3289,
+          testimonialCount: testimonialCount || 25
         },
         revalidate: 3600, // Revalidate every hour
       };
