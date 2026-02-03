@@ -692,7 +692,7 @@ function getStaticPages(siteUrl: string, now: string): SitemapEntry[] {
       priority: '0.95'
     },
     {
-      loc: `${siteUrl}/doorstep-repair`,
+      loc: `${siteUrl}/repair`,
       lastmod: now,
       changefreq: 'weekly',
       priority: '0.9'
@@ -978,7 +978,7 @@ function generateFallbackSitemap(siteUrl: string): string {
   const fallbackUrls = [
     { loc: `${siteUrl}/`, lastmod: now, changefreq: 'daily', priority: '1.0' },
     { loc: `${siteUrl}/book-online`, lastmod: now, changefreq: 'weekly', priority: '0.95' },
-    { loc: `${siteUrl}/doorstep-repair`, lastmod: now, changefreq: 'weekly', priority: '0.9' },
+    { loc: `${siteUrl}/repair`, lastmod: now, changefreq: 'weekly', priority: '0.9' },
     { loc: `${siteUrl}/about`, lastmod: now, changefreq: 'monthly', priority: '0.8' },
     { loc: `${siteUrl}/contact`, lastmod: now, changefreq: 'monthly', priority: '0.8' },
     { loc: `${siteUrl}/pricing`, lastmod: now, changefreq: 'weekly', priority: '0.8' },

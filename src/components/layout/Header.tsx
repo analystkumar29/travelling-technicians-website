@@ -76,7 +76,7 @@ const Header = () => {
                     Tablet Repair
                   </Link>
                   <div className="border-t border-gray-100 my-1"></div>
-                  <Link href="/doorstep-repair" className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-700 transition-colors">
+                  <Link href="/repair" className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-700 transition-colors">
                     Doorstep Service
                   </Link>
                 </div>
@@ -229,7 +229,7 @@ const Header = () => {
                   Tablet Repair
                 </Link>
                 <Link
-                  href="/doorstep-repair"
+                  href="/repair"
                   className="block px-3 py-1 text-white hover:text-accent-400 transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >

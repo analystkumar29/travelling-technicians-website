@@ -240,11 +240,3 @@ If this approach still has issues:
    - Update file via scheduled job
 
 2. **Incremental Static Regeneration**
-   - Pre-render top 1000 routes
-   - Use ISR for remaining pages
-   - Revalidate every 24 hours
-
-3. **Edge Functions**
-   - Generate pages at request time
-   - Cache at edge for performance
-   - No build-time generation needed
