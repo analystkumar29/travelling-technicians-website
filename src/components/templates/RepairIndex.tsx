@@ -22,7 +22,7 @@ import Footer from '@/components/layout/Footer';
 interface RepairIndexProps {
   cities: Array<{ slug: string; city_name: string }>;
   services: Array<{ slug: string; name: string; display_name: string }>;
-  models: Array<{ id: string; name: string; type: string; brand: string; device_type_id?: string }>;
+  models: Array<{ id: string; slug?: string; name: string; display_name?: string; type: string; brand: string; device_type_id?: string }>;
   routeCount?: number;
   testimonialCount?: number;
   testimonials?: Array<{ id: string; customer_name: string; city: string; rating: number; review: string; device_model: string; service: string }>;
@@ -50,18 +50,29 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
     { id: 'macbook-pro-2023', name: 'MacBook Pro 2023', type: 'laptop', brand: 'apple' },
   ];
 
+  // Transform database models to use slugs and determine type from service compatibility
+  const transformedModels = models.map(model => ({
+    id: model.slug || model.id,
+    slug: model.slug || model.id,
+    name: model.display_name || model.name,
+    type: model.type || 'mobile', // Assume mobile if type not specified
+    brand: model.brand || 'unknown'
+  }));
+
   // Use database models if provided, otherwise use fallback
-  const displayModels = models.length > 0 ? models : fallbackModels;
+  const displayModels = transformedModels.length > 0 ? transformedModels : fallbackModels;
 
   // Transform database cities to match component format
   const transformedCities = cities.map(city => ({
     id: city.slug,
+    slug: city.slug,
     name: city.city_name
   }));
 
   // Transform database services to match component format
   const transformedServices = services.map(service => ({
     id: service.slug,
+    slug: service.slug,
     name: service.display_name || service.name,
     type: service.slug.includes('mobile') ? 'mobile' : 'laptop'
   }));

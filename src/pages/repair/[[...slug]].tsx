@@ -1003,10 +1003,10 @@ export const getStaticProps: GetStaticProps<PageProps> = async ({ params }) => {
         .eq('is_doorstep_eligible', true)
         .order('sort_order');
 
-      // Fetch models for dropdown (with type and brand info)
+      // Fetch models for dropdown (with slug, name, display_name)
       const { data: models, error: modelsError } = await supabase
         .from('device_models')
-        .select('id, name, device_type_id, brand_id')
+        .select('id, slug, name, display_name, device_type_id, brand_id')
         .eq('is_active', true)
         .order('popularity_score', { ascending: false })
         .limit(100);
@@ -1075,11 +1075,13 @@ export const getStaticProps: GetStaticProps<PageProps> = async ({ params }) => {
       const typeMap = new Map(types?.map(t => [t.id, t.name]) || []);
       const brandMap = new Map(brands?.map(b => [b.id, b.display_name]) || []);
 
-      // Transform models to match RepairIndexProps interface
+      // Transform models to match RepairIndexProps interface - include slug and display_name
       const transformedModels = models?.map(m => ({
         id: m.id,
+        slug: m.slug,
         name: m.name,
-        type: typeMap.get(m.device_type_id) || 'unknown',
+        display_name: m.display_name,
+        type: typeMap.get(m.device_type_id) || 'mobile',
         brand: brandMap.get(m.brand_id) || 'unknown'
       })) || [];
 
