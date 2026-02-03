@@ -52,6 +52,8 @@ interface PageProps {
   routeData?: RouteData;
   cities?: Array<{ slug: string; city_name: string }>;
   services?: Array<{ slug: string; name: string; display_name: string }>;
+  testimonials?: Array<{ id: string; customer_name: string; city: string; rating: number; review: string; device_model: string; service: string }>;
+  pricing?: Record<string, number>;
   error?: string;
 }
 
@@ -78,7 +80,7 @@ function NotFound() {
  * Main page component that renders the appropriate template
  * based on route type
  */
-export default function UniversalRepairPage({ routeType, routeData, cities, services, error }: PageProps) {
+export default function UniversalRepairPage({ routeType, routeData, cities, services, testimonials, pricing, error }: PageProps) {
   const router = useRouter();
   const siteUrl = getSiteUrl();
 
@@ -147,7 +149,7 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
   // Render appropriate template based on route type
   switch (routeType) {
     case 'REPAIR_INDEX':
-      return <RepairIndex cities={cities || []} services={services || []} models={[]} />;
+      return <RepairIndex cities={cities || []} services={services || []} models={[]} testimonials={testimonials || []} pricing={pricing || {}} />;
 
     case 'MODEL_SERVICE_PAGE':
       if (!routeData) {
@@ -1018,6 +1020,43 @@ export const getStaticProps: GetStaticProps<PageProps> = async ({ params }) => {
         .from('testimonials')
         .select('*', { count: 'exact', head: true });
 
+      // Fetch featured testimonials for homepage
+      const { data: testimonials, error: testimonialsError } = await supabase
+        .from('testimonials')
+        .select('id, customer_name, city, rating, review, device_model, service')
+        .eq('is_featured', true)
+        .order('featured_order')
+        .limit(3);
+
+      // Fetch minimum pricing for each service
+      const { data: pricingData, error: pricingError } = await supabase
+        .rpc('get_service_min_prices');
+
+      // If RPC doesn't exist, fall back to raw query
+      let servicePricing: Record<string, number> = {};
+      if (pricingError || !pricingData) {
+        const { data: rawPricing } = await supabase
+          .from('dynamic_pricing')
+          .select('service_id, base_price, services(slug)')
+          .eq('is_active', true)
+          .order('base_price', { ascending: true });
+
+        // Create pricing map: slug -> min price
+        if (rawPricing) {
+          rawPricing.forEach((item: any) => {
+            const slug = item.services?.slug;
+            if (slug && (!servicePricing[slug] || item.base_price < servicePricing[slug])) {
+              servicePricing[slug] = item.base_price;
+            }
+          });
+        }
+      } else {
+        // Use RPC result
+        pricingData.forEach((item: any) => {
+          servicePricing[item.service_slug] = item.min_price;
+        });
+      }
+
       if (citiesError || servicesError || modelsError || routeCountError || testimonialCountError) {
         console.warn('Error fetching dropdown data:', { citiesError, servicesError, modelsError, routeCountError, testimonialCountError });
         // Continue with empty arrays - component has fallback
@@ -1051,7 +1090,9 @@ export const getStaticProps: GetStaticProps<PageProps> = async ({ params }) => {
           services: services || [],
           models: transformedModels,
           routeCount: routeCount || 3289,
-          testimonialCount: testimonialCount || 25
+          testimonialCount: testimonialCount || 25,
+          testimonials: testimonials || [],
+          pricing: servicePricing || {}
         },
         revalidate: 3600, // Revalidate every hour
       };
