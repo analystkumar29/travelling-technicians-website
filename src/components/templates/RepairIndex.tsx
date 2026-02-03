@@ -447,8 +447,8 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
                       </li>
                     </ul>
                     <div className="mt-6">
-                      <Link href="/services/mobile-repair" className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
-                        View All Mobile Services
+                      <Link href="/repair" className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
+                        View All Repair Services
                         <FaArrowRight className="ml-2 h-4 w-4" />
                       </Link>
                     </div>
@@ -491,8 +491,8 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
                       </li>
                     </ul>
                     <div className="mt-6">
-                      <Link href="/services/laptop-repair" className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
-                        View All Laptop Services
+                      <Link href="/repair" className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
+                        View All Repair Services
                         <FaArrowRight className="ml-2 h-4 w-4" />
                       </Link>
                     </div>
