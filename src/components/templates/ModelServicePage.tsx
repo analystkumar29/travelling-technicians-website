@@ -11,14 +11,26 @@
  * - Booking CTA integration
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { getSiteUrl } from '@/utils/supabaseClient';
 import Link from 'next/link';
 import { formatPhoneNumberForDisplay, formatPhoneNumberForHref } from '@/utils/phone-formatter';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
 
-// Types
+// Types - Updated to match actual database payload structure
+interface PricingTier {
+  base_price: number;
+  compare_at_price: number;
+  pricing_tier: string;
+  part_quality: string;
+  part_warranty_months: number;
+  display_warranty_days?: number;
+  discounted_price?: number | null;
+}
+
 interface RouteData {
   slug_path: string;
   route_type: 'model-service-page' | 'city-service-page' | 'city-page' | 'city-model-page';
@@ -33,7 +45,11 @@ interface RouteData {
       local_content?: string;
       local_phone?: string;
       local_email?: string;
-      operating_hours?: string;
+      operating_hours?: string | {
+        weekday?: { open: string; close: string };
+        saturday?: { open: string; close: string };
+        sunday?: { open: string; close: string };
+      };
     };
     service: {
       id: string;
@@ -63,29 +79,11 @@ interface RouteData {
       slug: string;
       display_name: string;
     };
-    pricing?: {
-      base_price: number;
-      compare_at_price?: number;
-      part_quality?: string;
-      pricing_tier?: string;
-      part_warranty_months?: number;
-    };
-    standard_pricing?: {
-      base_price: number;
-      compare_at_price: number;
-      pricing_tier: string;
-      part_quality: string;
-      part_warranty_months: number;
-      display_warranty_days?: number;
-    };
-    premium_pricing?: {
-      base_price: number;
-      compare_at_price: number;
-      pricing_tier: string;
-      part_quality: string;
-      part_warranty_months: number;
-      display_warranty_days?: number;
-    };
+    // Legacy pricing structure (fallback)
+    pricing?: Partial<PricingTier>;
+    // New pricing structure
+    standard_pricing?: PricingTier;
+    premium_pricing?: PricingTier;
   };
 }
 
@@ -96,41 +94,83 @@ interface ModelServicePageProps {
 export default function ModelServicePage({ routeData }: ModelServicePageProps) {
   const router = useRouter();
   const siteUrl = getSiteUrl();
-  const [loading, setLoading] = useState(false);
 
   // Extract data from route payload
-  const { city, service, model, type, brand, pricing: payloadPricing } = routeData.payload;
+  const { city, service, model, type, brand } = routeData.payload;
   const fullUrl = `${siteUrl}/${routeData.slug_path}`;
 
-  // Get formatted phone for schema and display
-  const schemaPhone = city.local_phone || '+16048495329';
+  // Clean phone number - remove newline characters that exist in database
+  const cleanPhone = city.local_phone 
+    ? city.local_phone.replace(/\n/g, '').trim() 
+    : '+16048495329';
+  
+  // Get formatted phone for schema
+  const schemaPhone = cleanPhone;
 
-  // Use pricing from payload - includes standard and premium tier data
-  // Standard tier shows as "discounted" with psychological pricing
-  // Premium tier shown as upgrade option
-  const standardPricing = (routeData.payload.standard_pricing || {}) as any;
-  const premiumPricing = (routeData.payload.premium_pricing || {}) as any;
+  // Extract pricing from payload - simplified logic
+  // Priority: standard_pricing/premium_pricing (new) > pricing (legacy) > defaults
+  const standardPricing = routeData.payload.standard_pricing;
+  const premiumPricing = routeData.payload.premium_pricing;
+  const legacyPricing = routeData.payload.pricing;
+
+  // Build pricing object with proper fallbacks
+  const pricing = useMemo(() => {
+    // Standard tier pricing
+    const basePrice = standardPricing?.base_price 
+      ?? legacyPricing?.base_price 
+      ?? 159;
+    const compareAtPrice = standardPricing?.compare_at_price 
+      ?? legacyPricing?.compare_at_price 
+      ?? Math.round(basePrice * 1.02); // 2% markup if no compare price
+    const standardWarrantyMonths = standardPricing?.part_warranty_months 
+      ?? legacyPricing?.part_warranty_months 
+      ?? 3;
+
+    // Premium tier pricing
+    const premiumPrice = premiumPricing?.base_price 
+      ?? Math.round(basePrice * 1.19); // ~19% premium if not specified
+    const premiumComparePrice = premiumPricing?.compare_at_price 
+      ?? Math.round(premiumPrice * 1.07); // 7% markup if no compare price
+    const premiumWarrantyMonths = premiumPricing?.part_warranty_months ?? 6;
+
+    return {
+      basePrice,
+      compareAtPrice,
+      premiumPrice,
+      premiumComparePrice,
+      savings: compareAtPrice - basePrice,
+      priceRange: `$${basePrice}-$${premiumPrice}`,
+      warrantyRange: `${standardWarrantyMonths}-${premiumWarrantyMonths} months`,
+      standardWarrantyMonths,
+      premiumWarrantyMonths,
+      serviceTime: service.estimated_duration_minutes ?? 45
+    };
+  }, [standardPricing, premiumPricing, legacyPricing, service.estimated_duration_minutes]);
   
-  const hasStandardPricing = standardPricing && Object.keys(standardPricing).length > 0;
-  
-  const pricing = hasStandardPricing ? {
-    // Psychological pricing: compare_at_price is the anchor, base_price is the "discounted" price shown to user
-    compareAtPrice: standardPricing.compare_at_price || 194,
-    basePrice: standardPricing.base_price || 164, // This is the actual price shown prominently
-    premiumPrice: premiumPricing.base_price || 205,
-    savings: (standardPricing.compare_at_price || 194) - (standardPricing.base_price || 164),
-    priceRange: `$${standardPricing.base_price || 164}-$${premiumPricing.base_price || 205}`,
-    warrantyDays: standardPricing.display_warranty_days || (standardPricing.part_warranty_months * 30) || 90,
-    serviceTime: service.estimated_duration_minutes || 45
-  } : {
-    compareAtPrice: 194,
-    basePrice: 164, // Changed from discountedPrice to basePrice for consistency
-    premiumPrice: 205,
-    savings: 30,
-    priceRange: '$164-$205',
-    warrantyDays: 90,
-    serviceTime: 45
+  // Convert operating hours JSON to string for Schema.org
+  const formatOperatingHours = (hours: RouteData['payload']['city']['operating_hours']): string => {
+    if (!hours) return "Mo-Fr 09:00-18:00, Sa 10:00-16:00";
+    if (typeof hours === 'string') return hours;
+    
+    try {
+      const parts: string[] = [];
+      if (hours.weekday) {
+        parts.push(`Mo-Fr ${hours.weekday.open}-${hours.weekday.close}`);
+      }
+      if (hours.saturday) {
+        parts.push(`Sa ${hours.saturday.open}-${hours.saturday.close}`);
+      }
+      if (hours.sunday) {
+        parts.push(`Su ${hours.sunday.open}-${hours.sunday.close}`);
+      }
+      return parts.length > 0 ? parts.join(', ') : "Mo-Fr 09:00-18:00, Sa 10:00-16:00";
+    } catch (e) {
+      console.error('Error formatting operating hours:', e);
+      return "Mo-Fr 09:00-18:00, Sa 10:00-16:00";
+    }
   };
+  
+  const operatingHoursString = formatOperatingHours(city.operating_hours);
   
   // Generate Schema.org BreadcrumbList JSON-LD
   const breadcrumbLd = useMemo(() => ({
@@ -159,7 +199,6 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
   }), [siteUrl, city.name, city.slug, model.display_name, service.display_name, fullUrl]);
 
   // Generate enhanced Product/Service JSON-LD with dynamic pricing
-  // Uses useMemo to recalculate when pricing changes, ensuring Google sees accurate pricing
   const serviceLd = useMemo(() => ({
     "@context": "https://schema.org",
     "@type": "Service",
@@ -175,7 +214,7 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
         "addressCountry": "CA"
       },
       "telephone": schemaPhone,
-      "openingHours": city.operating_hours || "Mo-Fr 09:00-18:00, Sa 10:00-16:00"
+      "openingHours": operatingHoursString
     },
     "areaServed": {
       "@type": "City",
@@ -184,10 +223,10 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
     "offers": {
       "@type": "Offer",
       "priceCurrency": "CAD",
-      "price": pricing?.basePrice || 129,
+      "price": pricing.basePrice,
       "priceSpecification": {
         "@type": "PriceSpecification",
-        "price": pricing?.basePrice || 129,
+        "price": pricing.basePrice,
         "priceCurrency": "CAD",
         "valueAddedTaxIncluded": true
       },
@@ -218,12 +257,12 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
       {
         "@type": "PropertyValue",
         "name": "warranty",
-        "value": "1 year"
+        "value": pricing.warrantyRange
       },
       {
         "@type": "PropertyValue",
         "name": "estimatedDuration",
-        "value": `${service.estimated_duration_minutes || 45} minutes`
+        "value": `${pricing.serviceTime} minutes`
       },
       {
         "@type": "PropertyValue",
@@ -231,10 +270,7 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
         "value": city.name
       }
     ]
-  }), [pricing?.basePrice, city.name, city.operating_hours, service.display_name, model.display_name, brand.display_name, service.is_doorstep_eligible, service.estimated_duration_minutes, schemaPhone]);
-
-  // Pricing is now loaded from payload at build time
-  // No client-side API call needed - improves performance and avoids service name mismatches
+  }), [pricing, city.name, operatingHoursString, service.display_name, model.display_name, brand.display_name, service.is_doorstep_eligible, schemaPhone]);
 
   // Handle booking CTA
   const handleBookNow = () => {
@@ -251,42 +287,36 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
   };
 
   // Generate meta description
-  const metaDescription = `Get professional ${service.display_name} for your ${model.display_name} in ${city.name}. Doorstep repair service with 1-year warranty. Book online now!`;
+  const metaDescription = `Get professional ${service.display_name} for your ${model.display_name} in ${city.name}. Doorstep repair service with ${pricing.warrantyRange} warranty. Book online now!`;
 
   return (
     <>
       <Head>
-        {/* Only Schema.org JSON-LD here; parent (UniversalRepairPage) handles title, meta description, OG tags */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceLd) }}
-        />
+        <title>{model.display_name} {service.display_name} in {city.name} | The Travelling Technicians</title>
+        <meta name="description" content={metaDescription} />
+        <meta name="keywords" content={`${model.display_name} repair, ${service.display_name}, ${city.name}, doorstep repair, ${brand.display_name}`} />
+        <meta property="og:title" content={`${model.display_name} ${service.display_name} in ${city.name}`} />
+        <meta property="og:description" content={metaDescription} />
+        <meta property="og:url" content={fullUrl} />
+        <link rel="canonical" href={fullUrl} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceLd) }} />
       </Head>
+
+      <Header />
 
       <div className="min-h-screen bg-gray-50">
         {/* Breadcrumb Navigation */}
         <nav className="bg-white border-b border-gray-200">
           <div className="container mx-auto px-4 py-3">
             <div className="flex items-center space-x-2 text-sm">
-              <Link href="/" className="text-blue-600 hover:text-blue-800">
-                Home
-              </Link>
+              <Link href="/" className="text-blue-600 hover:text-blue-800">Home</Link>
               <span className="text-gray-400">/</span>
-              <Link href="/repair" className="text-blue-600 hover:text-blue-800">
-                Repair
-              </Link>
+              <Link href="/repair" className="text-blue-600 hover:text-blue-800">Repair</Link>
               <span className="text-gray-400">/</span>
-              <Link href={`/repair/${city.slug}`} className="text-blue-600 hover:text-blue-800">
-                {city.name}
-              </Link>
+              <Link href={`/repair/${city.slug}`} className="text-blue-600 hover:text-blue-800">{city.name}</Link>
               <span className="text-gray-400">/</span>
-              <span className="text-gray-600 font-medium">
-                {model.display_name} {service.display_name}
-              </span>
+              <span className="text-gray-600 font-medium">{model.display_name} {service.display_name}</span>
             </div>
           </div>
         </nav>
@@ -296,12 +326,8 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
           <div className="max-w-4xl mx-auto">
             {/* Header */}
             <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">
-                {model.display_name} {service.display_name} in {city.name}
-              </h1>
-              <p className="text-lg text-gray-600 mb-6">
-                Professional doorstep repair service for your {brand.display_name} {model.display_name}
-              </p>
+              <h1 className="text-4xl font-bold text-gray-900 mb-4">{model.display_name} {service.display_name} in {city.name}</h1>
+              <p className="text-lg text-gray-600 mb-6">Professional doorstep repair service for your {brand.display_name} {model.display_name}</p>
               
               {/* Service Badges */}
               <div className="flex flex-wrap justify-center gap-3 mb-6">
@@ -309,10 +335,10 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
                   ✓ Doorstep Service Available
                 </span>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                  ⏱️ {service.estimated_duration_minutes || 45} Minute Repair
+                  ⏱️ {pricing.serviceTime} Minute Repair
                 </span>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
-                  🛡️ 1-Year Warranty
+                  🛡️ {pricing.warrantyRange} Warranty
                 </span>
               </div>
             </div>
@@ -322,50 +348,28 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
               <div className="flex flex-col md:flex-row md:items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">Pricing</h2>
-                  {loading ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                      <span className="text-gray-600">Loading pricing...</span>
+                  <div className="space-y-2">
+                    <div className="flex items-baseline">
+                      <span className="text-3xl font-bold text-gray-900">${pricing.basePrice}</span>
+                      {pricing.savings > 0 && (
+                        <>
+                          <span className="ml-2 text-xl line-through text-gray-500">${pricing.compareAtPrice}</span>
+                          <span className="ml-2 px-2 py-1 text-xs font-bold bg-red-100 text-red-800 rounded">SAVE ${pricing.savings}</span>
+                        </>
+                      )}
                     </div>
-                  ) : pricing ? (
-                    <div className="space-y-2">
-                      <div className="flex items-baseline">
-                        <span className="text-3xl font-bold text-gray-900">
-                          ${pricing.basePrice}
-                        </span>
-                        {pricing.compareAtPrice && pricing.compareAtPrice > pricing.basePrice && (
-                          <>
-                            <span className="ml-2 text-xl line-through text-gray-500">
-                              ${pricing.compareAtPrice}
-                            </span>
-                            <span className="ml-2 px-2 py-1 text-xs font-bold bg-red-100 text-red-800 rounded">
-                              SAVE ${pricing.savings}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                      <p className="text-gray-600">
-                        Price range: {pricing.priceRange}
-                      </p>
-                    </div>
-                  ) : (
-                    <p className="text-gray-600">Starting from $129</p>
-                  )}
+                    <p className="text-gray-600">Price range: {pricing.priceRange} • Warranty: {pricing.warrantyRange}</p>
+                  </div>
                 </div>
                 
-                <button
-                  onClick={handleBookNow}
-                  disabled={loading}
-                  className="mt-4 md:mt-0 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Loading...' : 'Book Now'}
+                <button onClick={handleBookNow} className="mt-4 md:mt-0 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300">
+                  Book Now
                 </button>
               </div>
             </div>
 
             {/* Service Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-              {/* Service Information */}
               <div className="bg-white rounded-xl shadow p-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-4">Service Details</h3>
                 <ul className="space-y-3">
@@ -383,7 +387,7 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
                   </li>
                   <li className="flex items-start">
                     <span className="text-green-500 mr-2">✓</span>
-                    <span className="text-gray-700">1-year warranty on all repairs</span>
+                    <span className="text-gray-700">{pricing.warrantyRange} warranty on repairs</span>
                   </li>
                   <li className="flex items-start">
                     <span className="text-green-500 mr-2">✓</span>
@@ -392,7 +396,6 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
                 </ul>
               </div>
 
-              {/* Device Information */}
               <div className="bg-white rounded-xl shadow p-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-4">Device Information</h3>
                 <div className="space-y-4">
@@ -420,65 +423,38 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
 
             {/* Local Content */}
             <div className="bg-white rounded-xl shadow p-6 mb-8">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">
-                {service.display_name} Service in {city.name}
-              </h3>
-              <div className="prose max-w-none">
-                <p className="text-gray-700 mb-4">
-                  Looking for reliable {service.display_name} for your {model.display_name} in {city.name}?
-                  Our doorstep repair service brings professional technicians directly to your location,
-                  saving you time and hassle.
-                </p>
-                <p className="text-gray-700 mb-4">
-                  We specialize in {brand.display_name} {type.name} repairs and use only high-quality
-                  replacement parts backed by our 1-year warranty. Our technicians are trained to handle
-                  {model.display_name} devices with care and precision.
-                </p>
-                <p className="text-gray-700">
-                  Serving {city.name} and surrounding areas, we offer convenient appointment times
-                  and transparent pricing. Book online today for fast, professional repair service
-                  at your doorstep.
-                </p>
+              <h3 className="text-xl font-bold text-gray-900 mb-4">{service.display_name} Service in {city.name}</h3>
+              <div className="text-gray-700 space-y-4">
+                <p>Looking for reliable {service.display_name} for your {model.display_name} in {city.name}? Our doorstep repair service brings professional technicians directly to your location, saving you time and hassle.</p>
+                <p>We specialize in {brand.display_name} {type.name} repairs and use only high-quality replacement parts backed by our {pricing.warrantyRange} warranty. Our technicians are trained to handle {model.display_name} devices with care and precision.</p>
+                <p>Serving {city.name} and surrounding areas, we offer convenient appointment times and transparent pricing. Book online today for fast, professional repair service at your doorstep.</p>
               </div>
             </div>
 
             {/* CTA Section */}
-            <div className="text-center bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-8 text-white">
+            <div className="text-center bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-8 text-white mb-8">
               <h2 className="text-3xl font-bold mb-4">Ready to Repair Your {model.display_name}?</h2>
-              <p className="text-xl mb-6 opacity-90">
-                Book our doorstep service in {city.name} today!
-              </p>
+              <p className="text-xl mb-6 opacity-90">Book our doorstep service in {city.name} today!</p>
               <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <button
-                  onClick={handleBookNow}
-                  className="bg-white text-blue-600 hover:bg-gray-100 font-bold py-3 px-8 rounded-lg transition duration-300"
-                >
+                <button onClick={handleBookNow} className="bg-white text-blue-600 hover:bg-gray-100 font-bold py-3 px-8 rounded-lg transition duration-300">
                   Book Online Now
                 </button>
-                <a
-                  href={formatPhoneNumberForHref(city.local_phone || '+16048495329')}
-                  className="bg-transparent border-2 border-white hover:bg-white hover:text-blue-600 text-white font-bold py-3 px-8 rounded-lg transition duration-300"
-                >
-                  Call {formatPhoneNumberForDisplay(city.local_phone || '+16048495329')}
+                <a href={formatPhoneNumberForHref(cleanPhone)} className="bg-transparent border-2 border-white hover:bg-white hover:text-blue-600 text-white font-bold py-3 px-8 rounded-lg transition duration-300">
+                  Call {formatPhoneNumberForDisplay(cleanPhone)}
                 </a>
               </div>
-              <p className="mt-4 text-sm opacity-80">
-                Same-day appointments available • Free diagnosis • 1-year warranty
-              </p>
+              <p className="mt-4 text-sm opacity-80">Same-day appointments available • Free diagnosis • {pricing.warrantyRange} warranty</p>
             </div>
 
             {/* Disclaimer */}
-            <div className="mt-8 text-center textext-sm text-gray-500">
-              <p>
-                The Travelling Technicians is an independent service provider. We are not affiliated with,
-                authorized by, or endorsed by Apple Inc., Samsung Electronics Co., Ltd., or Google LLC.
-                All trademarks are the property of their respective owners. We provide out-of-warranty
-                hardware repairs only.
-              </p>
+            <div className="text-center text-sm text-gray-500 bg-white p-6 rounded-lg">
+              <p>The Travelling Technicians is an independent service provider. We are not affiliated with, authorized by, or endorsed by Apple Inc., Samsung Electronics Co., Ltd., or Google LLC. All trademarks are the property of their respective owners.</p>
             </div>
           </div>
         </main>
       </div>
+
+      <Footer />
     </>
   );
 }
