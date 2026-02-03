@@ -26,6 +26,7 @@ import dynamic from 'next/dynamic';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { useState } from 'react';
 import { getSiteUrl } from '@/utils/supabaseClient';
 import { formatPhoneNumberForDisplay, formatPhoneNumberForHref, DEFAULT_PHONE_NUMBER } from '@/utils/phone-formatter';
 import Header from '@/components/layout/Header';
@@ -34,6 +35,7 @@ import Footer from '@/components/layout/Footer';
 // Dynamic imports for code splitting (reduces initial bundle size)
 const RepairIndex = dynamic(() => import('@/components/templates/RepairIndex'));
 const ModelServicePage = dynamic(() => import('@/components/templates/ModelServicePage'));
+const CityPage = dynamic(() => import('@/components/templates/CityPage'));
 
 // Types for our route data
 interface RouteData {
@@ -158,192 +160,7 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
       if (!routeData) {
         return <NotFound />;
       }
-      
-      const { city, popular_models, sample_services, local_phone, local_email } = routeData.payload;
-      const cityName = city.name;
-      
-      // Format phone number using utility
-      const cityPhoneRaw = local_phone || DEFAULT_PHONE_NUMBER;
-      const cityPhoneDisplay = formatPhoneNumberForDisplay(cityPhoneRaw);
-      const cityPhoneHref = formatPhoneNumberForHref(cityPhoneRaw);
-      
-      return (
-        <>
-          <Head>
-            <title>Repair Services in {cityName} | The Travelling Technicians</title>
-            <meta name="description" content={`Professional doorstep repair services in ${cityName}. Screen replacement, battery replacement, and more for all major device brands.`} />
-            <meta name="robots" content="index, follow" />
-            <link rel="canonical" href={`${siteUrl}/repair/${city.slug}`} />
-          </Head>
-          
-          {/* Navigation Header */}
-          <Header />
-          
-          {/* Professional Header - Inspired by legacy model-page.tsx */}
-          <section className="pt-8 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
-            <div className="container-custom">
-              <div className="text-center max-w-4xl mx-auto">
-                <div className="flex items-center justify-center mb-4">
-                  <svg className="h-6 w-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                  </svg>
-                  <span className="text-primary-200">{cityName}, BC</span>
-                </div>
-                <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-                  Device Repair Services<br />
-                  <span className="text-2xl md:text-3xl">in {cityName}</span>
-                </h1>
-                <p className="text-xl md:text-2xl mb-8 text-primary-100">
-                  Doorstep repair service for all major device brands
-                </p>
-                
-                <div className="inline-block bg-accent-500 text-white text-lg px-6 py-3 rounded-full mb-8">
-                  <span className="font-bold">From $89</span>
-                  <span className="ml-2 text-primary-100">with 90-day warranty</span>
-                </div>
-                
-                <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-                  <Link 
-                    href={`/book-online?city=${city.slug}`} 
-                    className="btn-accent text-lg px-8 py-4"
-                  >
-                    Book Repair in {cityName}
-                  </Link>
-                  <a 
-                    href={cityPhoneHref}
-                    className="btn-outline border-white text-white hover:bg-primary-600 text-lg px-8 py-4 flex items-center justify-center"
-                  >
-                    <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                    </svg>
-                    {cityPhoneDisplay}
-                  </a>
-                </div>
-                
-                <div className="flex flex-wrap justify-center gap-6 text-sm">
-                  <div className="flex items-center">
-                    <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                    </svg>
-                    30-90 min service
-                  </div>
-                  <div className="flex items-center">
-                    <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    90-Day Warranty
-                  </div>
-                  <div className="flex items-center">
-                    <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
-                    </svg>
-                    Certified Technicians
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Services Section */}
-          <section className="py-16 bg-white">
-            <div className="container-custom">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold mb-4">Our Repair Services in {cityName}</h2>
-                <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                  Professional doorstep repair for all your devices. We come to you in {cityName} with all necessary tools and genuine parts.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {sample_services?.map((service: { id: string; slug: string; display_name: string; description?: string; icon?: string }) => (
-                  <Link 
-                    key={service.id}
-                    href={`/repair/${city.slug}/${service.slug}`} 
-                    className="bg-white p-6 rounded-xl shadow-sm hover:shadow-lg transition-all border border-gray-100 group"
-                  >
-                    <div className="text-accent-600 text-2xl mb-4">
-                      {service.icon || '🛠️'}
-                    </div>
-                    <h3 className="font-bold text-lg text-gray-900 group-hover:text-primary-600 transition-colors">
-                      {service.display_name}
-                    </h3>
-                    <p className="text-sm text-gray-500 mt-2">
-                      {service.description || `Professional ${service.display_name.toLowerCase()} for all major brands`}
-                    </p>
-                    <div className="mt-4 text-primary-500 font-bold">
-                      From $89
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Popular Models Section - NOW CLICKABLE */}
-          {popular_models && popular_models.length > 0 && (
-            <section className="py-16 bg-gray-50">
-              <div className="container-custom">
-                <div className="text-center mb-12">
-                  <h2 className="text-3xl font-bold mb-4">Popular Devices We Repair</h2>
-                  <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                    We specialize in repairing the most popular devices in {cityName}. Click to see all available services.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  {popular_models.map((model: { id: string; name: string; slug?: string; brand: string }) => (
-                    <Link
-                      key={model.id}
-                      href={`/repair/${city.slug}/${model.slug || model.name.toLowerCase().replace(/\s+/g, '-')}`}
-                      className="bg-white p-4 rounded-lg text-center shadow-sm hover:shadow-md transition-all border border-gray-100 group cursor-pointer"
-                    >
-                      <div className="text-gray-800 font-medium text-sm group-hover:text-primary-600 transition-colors">
-                        {model.name}
-                      </div>
-                      <div className="text-gray-500 text-xs mt-1">
-                        {model.brand}
-                      </div>
-                      <div className="text-xs text-primary-500 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        View Services →
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* CTA Section */}
-          <section className="py-16 bg-primary-50">
-            <div className="container-custom text-center">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                Ready to Repair Your Device in {cityName}?
-              </h2>
-              <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
-                Book your doorstep repair service today and get back to using your device.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  href={`/book-online?city=${city.slug}`}
-                  className="btn-accent text-lg px-8 py-4"
-                >
-                  Book Repair Now
-                </Link>
-                <a
-                  href={cityPhoneHref}
-                  className="btn-outline border-primary-600 text-primary-600 hover:bg-primary-50 text-lg px-8 py-4"
-                >
-                  Call {cityPhoneDisplay}
-                </a>
-              </div>
-            </div>
-          </section>
-          
-          {/* Footer */}
-          <Footer />
-        </>
-      );
+      return <CityPage routeData={routeData} />;
 
     case 'CITY_MODEL_PAGE':
       // Render city-model page showing all services for a specific device model in a city
