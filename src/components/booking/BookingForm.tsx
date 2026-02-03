@@ -2281,7 +2281,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         field.onChange(e);
                         // Auto-scroll to time slot after date is selected
                         if (e.target.value) {
-                          scrollToElement('label:has(+ div select[name="appointmentTime"])', 400);
+                          scrollToElement('#time-slot-section', 400);
                         }
                       }}
                     />
@@ -2295,7 +2295,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             <p className="mt-1 text-xs text-gray-500">We accept bookings up to 60 days in advance.</p>
         </div>
         
-          <div>
+          <div id="time-slot-section">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Preferred Time <span className="text-red-500">*</span>
           </label>
@@ -2320,7 +2320,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     field.onChange(e);
                     // Auto-scroll to terms checkbox after time is selected
                     if (e.target.value) {
-                      scrollToElement('.mt-6.border-t.border-gray-200.pt-6', 500);
+                      scrollToElement('#terms-section', 500);
                     }
                   }}
                 >
@@ -2406,7 +2406,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           </ul>
         </div>
         
-        <div className="mt-6 border-t border-gray-200 pt-6">
+        <div id="terms-section" className="mt-6 border-t border-gray-200 pt-6">
           <div className="flex items-start">
             <div className="flex-shrink-0 mt-0.5">
               <input
