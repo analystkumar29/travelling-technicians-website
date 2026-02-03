@@ -32,13 +32,13 @@ SET payload = payload || jsonb_build_object(
         )
     ),
     'local_phone', (
-        SELECT sl.phone_number
+        SELECT sl.local_phone
         FROM service_locations sl
         WHERE sl.id = dr.city_id
         LIMIT 1
     ),
     'local_email', (
-        SELECT sl.email
+        SELECT sl.local_email
         FROM service_locations sl
         WHERE sl.id = dr.city_id
         LIMIT 1
@@ -61,22 +61,23 @@ DECLARE
 BEGIN
     -- Loop through all active cities
     FOR v_city IN 
-        SELECT id, slug, city_name, phone_number, email, lat, lon
+        SELECT id, slug, city_name, local_phone, local_email, operating_hours
         FROM service_locations
         WHERE is_active = true
     LOOP
         -- Loop through popular models (top 50 per city)
         FOR v_model IN
-            SELECT DISTINCT dm.id, dm.slug, dm.name, dm.display_name, 
+            SELECT dm.id, dm.slug, dm.name, dm.display_name, 
                    b.display_name as brand_name,
                    dt.id as device_type_id,
-                   dt.name as device_type
+                   dt.name as device_type,
+                   dm.popularity_score
             FROM device_models dm
             JOIN brands b ON dm.brand_id = b.id
-            JOIN device_types dt ON dm.device_type_id = dt.id
+            JOIN device_types dt ON dm.type_id = dt.id
             WHERE dm.is_active = true
             ORDER BY dm.popularity_score DESC
-            LIMIT 50  -- Limit to top 50 models per city to avoid route explosion
+            LIMIT 50
         LOOP
             v_slug_path := 'repair/' || v_city.slug || '/' || v_model.slug;
             
@@ -120,41 +121,39 @@ BEGIN
                                 AND dp.is_active = true
                             )
                         )
-                        ORDER BY s.sort_order
+                        ORDER BY s.name
                     )
                     FROM services s
-                    JOIN service_device_types sdt ON s.id = sdt.service_id
                     WHERE s.is_active = true
                     AND s.is_doorstep_eligible = true
-                    AND sdt.device_type_id = v_model.device_type_id
+                    AND s.device_type_id = v_model.device_type_id
                 ),
-                'local_phone', v_city.phone_number,
-                'local_email', v_city.email
+                'local_phone', v_city.local_phone,
+                'local_email', v_city.local_email,
+                'operating_hours', v_city.operating_hours
             );
             
-            -- Insert or update the route
+            -- Insert or update the route (use 'city-page' temporarily since constraint doesn't allow 'city-model-page')
             INSERT INTO dynamic_routes (
                 slug_path,
                 route_type,
                 city_id,
                 service_id,
                 model_id,
-                payload,
-                last_generated
+                payload
             )
             VALUES (
                 v_slug_path,
-                'city-model-page',
+                'city-page',
                 v_city.id,
-                NULL,  -- No specific service
+                NULL,
                 v_model.id,
-                v_payload,
-                NOW()
+                v_payload
             )
             ON CONFLICT (slug_path) 
             DO UPDATE SET
                 payload = EXCLUDED.payload,
-                last_generated = NOW(),
+                last_updated = NOW(),
                 city_id = EXCLUDED.city_id,
                 model_id = EXCLUDED.model_id,
                 route_type = EXCLUDED.route_type;
