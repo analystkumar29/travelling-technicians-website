@@ -88,11 +88,11 @@ export function NeighborhoodLinks({
   // Get descriptions for this city
   const descriptions = neighborhoodDescriptions[citySlug] || {};
 
-  // Create neighborhood link objects
+  // Create neighborhood link objects - using /repair path for consolidation
   const neighborhoodLinks: NeighborhoodLink[] = neighborhoods.map(neighborhood => ({
     neighborhood,
     description: descriptions[neighborhood],
-    href: `/locations/${citySlug}/${neighborhood.toLowerCase().replace(/\s+/g, '-')}`
+    href: `/repair/${citySlug}/${neighborhood.toLowerCase().replace(/\s+/g, '-')}`
   }));
 
   return (
@@ -140,7 +140,7 @@ export function NeighborhoodLinks({
               '@type': 'CollectionPage',
               name: `${cityName} Neighborhood Repair Services`,
               description: `Browse device repair services across all ${cityName} neighborhoods`,
-              url: `/locations/${citySlug}`,
+              url: `/repair/${citySlug}`,
               hasMap: neighborhoodLinks.map(link => ({
                 '@type': 'LocalBusiness',
                 name: `The Travelling Technicians - ${link.neighborhood}`,

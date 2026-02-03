@@ -1,0 +1,243 @@
+/* Booking Form Animations */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-bounce-subtle {
+  animation: bounce 1s ease-in-out infinite;
+}
+
+/* Form field validation states */
+.input-field.valid {
+  border-color: #10b981;
+  background-color: #f0fdf4;
+}
+
+.input-field.invalid {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+/* Enhanced focus ring */
+.enhanced-focus-ring:focus {
+  ring-width: 2px;
+  ring-color: #3b82f6;
+  ring-offset-width: 2px;
+}
+
+/* Skeleton loader for brands/models */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton-loader {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 4px;
+}
+
+/* Form section reveal animation */
+.form-section-reveal {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.5s ease-out, opacity 0.3s ease-out;
+}
+
+.form-section-reveal.visible {
+  max-height: 2000px;
+  opacity: 1;
+}
+
+/* Button gradient effect */
+.enhanced-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.button-gradient {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.enhanced-button:hover .button-gradient {
+  left: 100%;
+}
+
+/* Icon rotation on hover */
+.button-icon {
+  transition: transform 0.3s ease;
+}
+
+.enhanced-button:hover .button-icon {
+  transform: translateX(3px);
+}
+
+/* Success checkmark animation */
+@keyframes checkmark {
+  0% {
+    stroke-dashoffset: 50;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.success-checkmark {
+  animation: checkmark 0.5s ease-out;
+  stroke-dasharray: 50;
+}
+
+/* Location success message slide-in */
+.location-success-message {
+  animation: slideInRight 0.5s ease-out;
+}
+
+/* Mobile swipe indicator */
+.swipe-indicator {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(59, 130, 246, 0.9);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 40;
+}
+
+.swipe-indicator.visible {
+  opacity: 1;
+}
+
+/* Card hover effects for device/brand selection */
+.device-card {
+  transition: all 0.2s ease;
+}
+
+.device-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.device-card.selected {
+  animation: pulse 0.5s ease-out;
+}
+
+/* Responsive touch targets for mobile */
+@media (max-width: 768px) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Larger inputs on mobile to prevent zoom */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Progress bar animation */
+@keyframes progressFill {
+  from {
+    width: 0;
+  }
+  to {
+    width: var(--progress-width);
+  }
+}
+
+.progress-bar-fill {
+  animation: progressFill 0.5s ease-out;
+}
+
+/* Tooltip animation */
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tooltip {
+  animation: tooltipFadeIn 0.2s ease-out;
+}
+
+/* Loading spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}

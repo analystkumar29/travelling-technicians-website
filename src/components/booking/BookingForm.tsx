@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useForm, FormProvider, Controller } from 'react-hook-form';
 import FloatingProgress from './FloatingProgress';
 import Image from 'next/image';
@@ -334,14 +334,11 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     }
   }, [appointmentDate, methods]);
 
-  // Placeholder step titles
+  // Streamlined step titles - combining related steps
   const steps = [
-    'Device Type',
-    'Service & Pricing', // Merged step for service details + tier selection
-    'Contact Info',
-    'Location',
-    'Appointment',
-    'Confirm',
+    'Device & Service', // Combined device type, brand, model, and service selection
+    'Contact & Location', // Combined contact info and location
+    'Schedule & Confirm', // Combined appointment and confirmation
   ];
 
   // Validate the current step's fields before moving to the next step
@@ -349,10 +346,10 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     // Get the current form values
     const data = methods.getValues();
     
-    // Define required fields for each step
+    // Define required fields for each step (now 3 steps instead of 6)
     switch (step) {
-      case 0: // Device Type
-        // Validate device type, brand, and model
+      case 0: // Device & Service (combined step)
+        // Validate device type, brand, model, service, and pricing tier
         if (!data.deviceType) {
           methods.setError('deviceType', { type: 'required', message: 'Please select a device type' });
           return false;
@@ -362,7 +359,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           return false;
         }
         // If brand is 'other', validate custom brand
-        if (data.deviceBrand === 'other' && data.customBrand) {
+        if (data.deviceBrand === 'other' && !data.customBrand) {
           methods.setError('customBrand', { type: 'required', message: 'Please enter a brand name' });
           return false;
         }
@@ -370,33 +367,37 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           methods.setError('deviceModel', { type: 'required', message: 'Please select or enter a model' });
           return false;
         }
-        return true;
         
-      case 1: // Service & Pricing (merged step)
-        // Validate service type (issue description is optional)
+        // Validate service type
         const serviceType = methods.watch('serviceType');
         if (!serviceType || (Array.isArray(serviceType) && serviceType.length === 0)) {
           methods.setError('serviceType', { type: 'required', message: 'Please select at least one service' });
           return false;
         }
+        
         // Validate pricing tier selection
         if (!data.pricingTier) {
           methods.setError('pricingTier', { type: 'required', message: 'Please select a service tier' });
           return false;
         }
-        return await methods.trigger(['serviceType']);
         
-      case 2: // Contact Info
-        // Validate name, email, and phone
-        return await methods.trigger(['customerName', 'customerEmail', 'customerPhone']);
+        return await methods.trigger(['deviceType', 'deviceBrand', 'deviceModel', 'serviceType', 'pricingTier']);
         
-      case 3: // Location
-        // Validate address, city, and postal code
-        return await methods.trigger(['address', 'city', 'postalCode']);
+      case 1: // Contact & Location (combined step)
+        // Validate contact info and location
+        const contactValid = await methods.trigger(['customerName', 'customerEmail', 'customerPhone']);
+        const locationValid = await methods.trigger(['address', 'city', 'postalCode']);
+        return contactValid && locationValid;
         
-      case 4: // Appointment
+      case 2: // Schedule & Confirm (combined step)
         // Validate appointment date and time
-        return await methods.trigger(['appointmentDate', 'appointmentTime']);
+        const appointmentValid = await methods.trigger(['appointmentDate', 'appointmentTime']);
+        // Also validate terms agreement
+        if (!agreeToTerms) {
+          setSubmitAttempted(true);
+          return false;
+        }
+        return appointmentValid;
         
       default:
         return true;
@@ -412,55 +413,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       setValidatedSteps([...validatedSteps, currentStep]);
     }
     
-    // Get current form values
-    const data = methods.getValues();
-    let isValid = true;
-    
-    // Validate fields based on current step
-    switch (currentStep) {
-      case 0: // Device Type
-        if (!data.deviceType) {
-          methods.setError('deviceType', { type: 'required', message: 'Please select a device type' });
-          isValid = false;
-        }
-        if (!data.deviceBrand) {
-          methods.setError('deviceBrand', { type: 'required', message: 'Please select a brand' });
-          isValid = false;
-        }
-        if (data.deviceBrand === 'other' && data.customBrand) {
-          methods.setError('customBrand', { type: 'required', message: 'Please enter a brand name' });
-          isValid = false;
-        }
-        if (!data.deviceModel) {
-          methods.setError('deviceModel', { type: 'required', message: 'Please select or enter a model' });
-          isValid = false;
-        }
-        break;
-        
-      case 1: // Service & Pricing (merged step)
-        isValid = await methods.trigger(['serviceType']);
-        if (!data.pricingTier) {
-          methods.setError('pricingTier', { type: 'required', message: 'Please select a service tier' });
-          isValid = false;
-        }
-        break;
-        
-      case 2: // Contact Info
-        isValid = await methods.trigger(['customerName', 'customerEmail', 'customerPhone']);
-        break;
-        
-      case 3: // Location
-        isValid = await methods.trigger(['address', 'city', 'postalCode']);
-        break;
-        
-      case 4: // Appointment
-        isValid = await methods.trigger(['appointmentDate', 'appointmentTime']);
-        break;
-    }
+    // Validate the current step
+    const isValid = await validateStep(currentStep);
     
     if (isValid) {
       // Increment the step
-    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+      setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
       
       // Add a small delay for the step transition animation, then scroll
       setTimeout(() => {
@@ -962,47 +920,6 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           />
             </div>
           )}
-        </div>
-        
-        <div className="bg-gradient-to-r from-primary-50 to-blue-50 p-5 rounded-lg border border-primary-100 shadow-sm">
-          <h3 className="text-lg font-semibold text-primary-800 mb-4 flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-primary-500" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clipRule="evenodd" />
-            </svg>
-            Why Choose Our Doorstep Repair?
-          </h3>
-          <div className="space-y-3">
-            <div className="flex items-start bg-white bg-opacity-70 p-3 rounded-md hover:shadow-sm transition-all duration-300">
-              <div className="flex-shrink-0 text-primary-500">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-gray-700"><strong className="text-primary-700">Convenience:</strong> We come to your home or office</p>
-              </div>
-            </div>
-            <div className="flex items-start bg-white bg-opacity-70 p-3 rounded-md hover:shadow-sm transition-all duration-300">
-              <div className="flex-shrink-0 text-primary-500">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-gray-700"><strong className="text-primary-700">Speed:</strong> Most repairs completed in 30-60 minutes</p>
-              </div>
-            </div>
-            <div className="flex items-start bg-white bg-opacity-70 p-3 rounded-md hover:shadow-sm transition-all duration-300">
-              <div className="flex-shrink-0 text-primary-500">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-gray-700"><strong className="text-primary-700">Quality:</strong> High-quality parts & certified technicians</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     );
@@ -1653,160 +1570,35 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           </div>
         </div>
 
-        {/* Service Tier Selection Section */}
-        <div className="space-y-6 border-t pt-8">
-          <h4 className="text-xl font-semibold text-gray-900">Choose Your Service Tier</h4>
+        {/* Service Tier Selection with Pricing - Condensed */}
+        <div className="space-y-4 border-t pt-8">
+          <h4 className="text-xl font-semibold text-gray-900 mb-2">Choose Your Service Tier</h4>
+          <p className="text-sm text-gray-600 mb-4">Click on a pricing card below to select your preferred service tier</p>
           
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
-              {/* Standard Tier */}
-              <Controller
-                name="pricingTier"
-                control={methods.control}
-                rules={{ required: "Please select a service tier" }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <div
-                      className={`relative rounded-lg border-2 transition cursor-pointer ${
-                        field.value === 'standard'
-                          ? 'border-primary-500 bg-primary-50'
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      <label className="flex p-6 cursor-pointer">
-                        <div className="flex items-center h-5 mt-0.5">
-                          <input
-                            type="radio"
-                            className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
-                            value="standard"
-                            checked={field.value === 'standard'}
-                            onChange={() => field.onChange('standard')}
-                          />
-                        </div>
-                        <div className="ml-4 flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <h5 className="text-lg font-medium text-gray-900">Standard Repair</h5>
-                            <div className="flex items-center space-x-2">
-                              <div className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                Most Popular
-                              </div>
-                            </div>
-                          </div>
-                          <p className="text-sm text-gray-600 mb-4">
-                            Quality repair with standard timeframe and 3-month warranty
-                          </p>
-                          
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div className="flex items-center">
-                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                              <span className="text-gray-700">3-Month Warranty</span>
-                            </div>
-                            <div className="flex items-center">
-                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                              <span className="text-gray-700">24-48 Hours</span>
-                            </div>
-                            <div className="flex items-center">
-                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                              <span className="text-gray-700">Quality Parts</span>
-                            </div>
-                            <div className="flex items-center">
-                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                              <span className="text-gray-700">Free Diagnostics</span>
-                            </div>
-                          </div>
-                        </div>
-                      </label>
-                    </div>
-
-                    {/* Premium Tier */}
-                    <div
-                      className={`relative rounded-lg border-2 transition cursor-pointer ${
-                        field.value === 'premium'
-                          ? 'border-primary-500 bg-primary-50'
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      <label className="flex p-6 cursor-pointer">
-                        <div className="flex items-center h-5 mt-0.5">
-                          <input
-                            type="radio"
-                            className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
-                            value="premium"
-                            checked={field.value === 'premium'}
-                            onChange={() => field.onChange('premium')}
-                          />
-                        </div>
-                        <div className="ml-4 flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <h5 className="text-lg font-medium text-gray-900">Premium Service</h5>
-                            <div className="flex items-center space-x-2">
-                              <div className="text-sm bg-orange-100 text-orange-800 px-2 py-1 rounded">
-                                Express Service
-                              </div>
-                            </div>
-                          </div>
-                          <p className="text-sm text-gray-600 mb-4">
-                            Priority service with premium parts and 6-month warranty
-                          </p>
-                          
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div className="flex items-center">
-                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                              <span className="text-gray-700">6-Month Warranty</span>
-                            </div>
-                            <div className="flex items-center">
-                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                              <span className="text-gray-700">12-24 Hours</span>
-                            </div>
-                            <div className="flex items-center">
-                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                              <span className="text-gray-700">Premium Parts</span>
-                            </div>
-                            <div className="flex items-center">
-                              <svg className="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                              <span className="text-gray-700">Express Handling</span>
-                            </div>
-                          </div>
-                        </div>
-                      </label>
-                    </div>
-
-                    {fieldState.error && showValidationErrors && (
-                      <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
-                    )}
-                  </>
+          <Controller
+            name="pricingTier"
+            control={methods.control}
+            rules={{ required: "Please select a service tier" }}
+            render={({ field, fieldState }) => (
+              <>
+                {/* Real-time Pricing Display - Now Clickable */}
+                <TierPriceComparison
+                  deviceType={methods.watch('deviceType')}
+                  brand={methods.watch('deviceBrand')}
+                  model={methods.watch('deviceModel')}
+                  services={methods.watch('serviceType')}
+                  postalCode={methods.watch('postalCode')}
+                  enabled={!!(methods.watch('deviceType') && methods.watch('deviceBrand') && methods.watch('deviceModel') && methods.watch('serviceType'))}
+                  selectedTier={field.value}
+                  onTierSelect={(tier: 'standard' | 'premium') => field.onChange(tier)}
+                  className="mt-2"
+                />
+                
+                {fieldState.error && showValidationErrors && (
+                  <p className="mt-2 text-sm text-red-600">{fieldState.error.message}</p>
                 )}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Real-time Pricing Display */}
-        <div className="mt-8">
-          <TierPriceComparison
-            deviceType={methods.watch('deviceType')}
-            brand={methods.watch('deviceBrand')}
-            model={methods.watch('deviceModel')}
-            services={methods.watch('serviceType')}
-            postalCode={methods.watch('postalCode')}
-            enabled={!!(methods.watch('deviceType') && methods.watch('deviceBrand') && methods.watch('deviceModel') && methods.watch('serviceType'))}
-            className="mt-6"
+              </>
+            )}
           />
         </div>
       </div>
@@ -2748,7 +2540,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     );
   };
 
-  // Helper to get all field errors for the current step
+  // Helper to get all field errors for the current step (updated for 3-step structure)
   const getCurrentStepErrors = () => {
     const errors = methods.formState.errors;
     const errorFields: string[] = [];
@@ -2758,39 +2550,67 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       return errorFields;
     }
     
-    // Check for specific fields based on current step
+    // Check for specific fields based on current step (3-step structure)
     switch (currentStep) {
-      case 0: // Device Type
+      case 0: // Device & Service
         if (errors.deviceType) errorFields.push('Device Type');
         if (errors.deviceBrand) errorFields.push('Brand');
         if (errors.customBrand) errorFields.push('Custom Brand');
         if (errors.deviceModel) errorFields.push('Model');
-        break;
-      case 1: // Service Details
         if (errors.serviceType) errorFields.push('Service Type');
-        // Remove issueDescription from the error fields since it's optional
-        break;
-      case 2: // Service Tier
         if (errors.pricingTier) errorFields.push('Service Tier');
-        // Remove name, email, and phone from the error fields since they're optional
         break;
-      case 3: // Contact Info
+      case 1: // Contact & Location
         if (errors.customerName) errorFields.push('Full Name');
         if (errors.customerEmail) errorFields.push('Email Address');
         if (errors.customerPhone) errorFields.push('Phone Number');
-        break;
-      case 4: // Location
         if (errors.address) errorFields.push('Address');
         if (errors.city) errorFields.push('City');
         if (errors.postalCode) errorFields.push('Postal Code');
         break;
-      case 5: // Appointment
+      case 2: // Schedule & Confirm
         if (errors.appointmentDate) errorFields.push('Appointment Date');
         if (errors.appointmentTime) errorFields.push('Appointment Time');
         break;
     }
     
     return errorFields;
+  };
+
+  // Combined Step 1: Device & Service (combines device selection, service selection, and pricing tier)
+  const renderDeviceAndServiceStep = () => {
+    return (
+      <div className="space-y-8">
+        {renderDeviceTypeStep()}
+        <div className="border-t pt-6">
+          {renderServiceDetailsAndTierStep()}
+        </div>
+      </div>
+    );
+  };
+
+  // Combined Step 2: Contact & Location  
+  const renderContactAndLocationStep = () => {
+    return (
+      <div className="space-y-8">
+        {renderCustomerInfoStep()}
+        <div className="border-t pt-6">
+          {renderLocationStep()}
+        </div>
+      </div>
+    );
+  };
+
+  // Combined Step 3: Schedule & Confirm
+  const renderScheduleAndConfirmStep = () => {
+    return (
+      <div className="space-y-8">
+        {renderAppointmentStep()}
+        <div className="border-t pt-6">
+          {renderConfirmationStep()}
+        </div>
+      </div>
+    );
   };
 
   // Render error summary for the current step if any errors
@@ -2840,33 +2660,27 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     );
   };
 
-  // Render the appropriate step based on currentStep
+  // Render the appropriate step based on currentStep (now 3 steps instead of 6)
   const renderStepContent = () => {
     return (
       <>
         {renderErrorSummary()}
         {(() => {
-    switch (currentStep) {
-      case 0:
-        return renderDeviceTypeStep();
-      case 1:
-        return renderServiceDetailsAndTierStep();
-      case 2:
-        return renderCustomerInfoStep();
-      case 3:
-        return renderLocationStep();
-      case 4:
-        return renderAppointmentStep();
-      case 5:
-        return renderConfirmationStep();
-      default:
-        return (
-          <div className="text-center text-gray-500">
-            <p className="mb-2">This is a placeholder for the {steps[currentStep]} step.</p>
-            <p>Future implementation will include all necessary fields for this step.</p>
-          </div>
-        );
-    }
+          switch (currentStep) {
+            case 0:
+              return renderDeviceAndServiceStep(); // Combined device type, brand, model, service, and pricing tier
+            case 1:
+              return renderContactAndLocationStep(); // Combined contact info and location
+            case 2:
+              return renderScheduleAndConfirmStep(); // Combined appointment and confirmation
+            default:
+              return (
+                <div className="text-center text-gray-500">
+                  <p className="mb-2">This is a placeholder for the {steps[currentStep]} step.</p>
+                  <p>Future implementation will include all necessary fields for this step.</p>
+                </div>
+              );
+          }
         })()}
       </>
     );
@@ -2949,12 +2763,50 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       />
       
       <div className="bg-white rounded-xl shadow-xl p-4 sm:p-6 md:p-8 max-w-3xl mx-auto border border-gray-100">
-      <h2 className="text-xl sm:text-2xl font-bold mb-6 sm:mb-8 text-center text-primary-600 relative">
+      <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center text-primary-600 relative">
         <span className="relative inline-block">
           Book Your Doorstep Repair
           <span className="absolute bottom-0 left-0 w-full h-1 bg-primary-300 opacity-40"></span>
         </span>
       </h2>
+      
+      {/* Why Choose Banner - Horizontal Layout with Animations */}
+      <div className="mb-6 sm:mb-8 bg-gradient-to-r from-primary-50 via-blue-50 to-primary-50 rounded-lg p-4 border border-primary-100 shadow-sm animate-fadeIn">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Convenience */}
+          <div className="flex flex-col items-center text-center p-3 bg-white bg-opacity-60 rounded-lg hover:bg-opacity-90 transition-all duration-300 hover:shadow-md hover:-translate-y-1 cursor-default group">
+            <div className="bg-primary-500 rounded-full p-3 mb-2 group-hover:scale-110 transition-transform duration-300">
+              <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+            </div>
+            <h4 className="font-bold text-primary-700 mb-1">Convenience</h4>
+            <p className="text-xs text-gray-600">We come to you</p>
+          </div>
+          
+          {/* Speed */}
+          <div className="flex flex-col items-center text-center p-3 bg-white bg-opacity-60 rounded-lg hover:bg-opacity-90 transition-all duration-300 hover:shadow-md hover:-translate-y-1 cursor-default group">
+            <div className="bg-primary-500 rounded-full p-3 mb-2 group-hover:scale-110 transition-transform duration-300">
+              <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <h4 className="font-bold text-primary-700 mb-1">Speed</h4>
+            <p className="text-xs text-gray-600">30-60 min repairs</p>
+          </div>
+          
+          {/* Quality */}
+          <div className="flex flex-col items-center text-center p-3 bg-white bg-opacity-60 rounded-lg hover:bg-opacity-90 transition-all duration-300 hover:shadow-md hover:-translate-y-1 cursor-default group">
+            <div className="bg-primary-500 rounded-full p-3 mb-2 group-hover:scale-110 transition-transform duration-300">
+              <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h4 className="font-bold text-primary-700 mb-1">Quality</h4>
+            <p className="text-xs text-gray-600">Certified techs</p>
+          </div>
+        </div>
+      </div>
       
       <FormProvider {...methods}>
         <form onSubmit={async (e) => {

@@ -50,6 +50,36 @@ export function middleware(request: NextRequest) {
     return NextResponse.json({ message: 'Middleware is working!' });
   }
   
+  // ========== LOCATION TO REPAIR REDIRECTS ==========
+  // "Best of Both Worlds" consolidation: /locations/* → /repair/*
+  // These are permanent 301 redirects for SEO authority consolidation
+  if (request.nextUrl.pathname.startsWith('/locations')) {
+    const pathname = request.nextUrl.pathname;
+    
+    // Handle root /locations
+    if (pathname === '/locations' || pathname === '/locations/') {
+      const url = new URL('/repair', request.url);
+      return NextResponse.redirect(url, 301);
+    }
+    
+    // Handle /locations/[city] → /repair/[city]
+    const cityMatch = pathname.match(/^\/locations\/([a-z0-9-]+)$/);
+    if (cityMatch) {
+      const citySlug = cityMatch[1];
+      const url = new URL(`/repair/${citySlug}`, request.url);
+      return NextResponse.redirect(url, 301);
+    }
+    
+    // Handle /locations/[city]/[neighborhood] → /repair/[city]/[neighborhood]
+    const neighborhoodMatch = pathname.match(/^\/locations\/([a-z0-9-]+)\/([a-z0-9-]+)$/);
+    if (neighborhoodMatch) {
+      const citySlug = neighborhoodMatch[1];
+      const neighborhoodSlug = neighborhoodMatch[2];
+      const url = new URL(`/repair/${citySlug}/${neighborhoodSlug}`, request.url);
+      return NextResponse.redirect(url, 301);
+    }
+  }
+  
   // Secure management routes with authentication check
   if (request.nextUrl.pathname.startsWith('/management')) {
     console.log('🔒 MANAGEMENT ROUTE DETECTED:', request.nextUrl.pathname);

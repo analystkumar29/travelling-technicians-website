@@ -8,6 +8,8 @@ interface TierPriceComparisonProps {
   services?: string | string[];
   postalCode?: string;
   enabled?: boolean;
+  selectedTier?: 'standard' | 'premium';
+  onTierSelect?: (tier: 'standard' | 'premium') => void;
   className?: string;
 }
 
@@ -18,6 +20,8 @@ export default function TierPriceComparison({
   services,
   postalCode,
   enabled = true,
+  selectedTier,
+  onTierSelect,
   className = ''
 }: TierPriceComparisonProps) {
   const standardPricing = usePriceCalculation({
@@ -88,8 +92,16 @@ export default function TierPriceComparison({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        {/* Standard Tier Pricing */}
-        <div className="bg-white rounded-lg border border-green-200 p-4">
+        {/* Standard Tier Pricing - Clickable */}
+        <button
+          type="button"
+          onClick={() => onTierSelect?.('standard')}
+          className={`bg-white rounded-lg border-2 p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${
+            selectedTier === 'standard' 
+              ? 'border-green-500 bg-green-50 shadow-md' 
+              : 'border-green-200 hover:border-green-300'
+          }`}
+        >
           <div className="flex items-center justify-between mb-3">
             <h5 className="font-semibold text-gray-900">Standard Repair</h5>
             <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">Most Popular</span>
@@ -106,10 +118,6 @@ export default function TierPriceComparison({
               <span className="font-medium text-gray-900">3 Months</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-gray-600">Turnaround:</span>
-              <span className="font-medium text-gray-900">24-48 Hours</span>
-            </div>
-            <div className="flex items-center justify-between">
               <span className="text-gray-600">Parts Quality:</span>
               <span className="font-medium text-gray-900">Quality</span>
             </div>
@@ -122,10 +130,28 @@ export default function TierPriceComparison({
               </div>
             </div>
           )}
-        </div>
+          
+          {/* Selected indicator */}
+          {selectedTier === 'standard' && (
+            <div className="mt-3 flex items-center justify-center text-green-600">
+              <svg className="h-5 w-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span className="text-sm font-medium">Selected</span>
+            </div>
+          )}
+        </button>
 
-        {/* Premium Tier Pricing */}
-        <div className="bg-white rounded-lg border border-orange-200 p-4 relative">
+        {/* Premium Tier Pricing - Clickable */}
+        <button
+          type="button"
+          onClick={() => onTierSelect?.('premium')}
+          className={`bg-white rounded-lg border-2 p-4 text-left relative transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${
+            selectedTier === 'premium' 
+              ? 'border-orange-500 bg-orange-50 shadow-md' 
+              : 'border-orange-200 hover:border-orange-300'
+          }`}
+        >
           <div className="flex items-center justify-between mb-3">
             <h5 className="font-semibold text-gray-900">Premium Service</h5>
             <span className="text-sm bg-orange-100 text-orange-800 px-2 py-1 rounded">Express</span>
@@ -140,10 +166,6 @@ export default function TierPriceComparison({
             <div className="flex items-center justify-between">
               <span className="text-gray-600">Warranty:</span>
               <span className="font-medium text-gray-900">6 Months</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">Turnaround:</span>
-              <span className="font-medium text-gray-900">12-24 Hours</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-gray-600">Parts Quality:</span>
@@ -163,7 +185,17 @@ export default function TierPriceComparison({
           <div className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
             +{formatPrice(savings)}
           </div>
-        </div>
+          
+          {/* Selected indicator */}
+          {selectedTier === 'premium' && (
+            <div className="mt-3 flex items-center justify-center text-orange-600">
+              <svg className="h-5 w-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span className="text-sm font-medium">Selected</span>
+            </div>
+          )}
+        </button>
       </div>
 
       {/* Summary comparison */}
