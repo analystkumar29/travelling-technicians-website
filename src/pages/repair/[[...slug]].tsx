@@ -648,6 +648,47 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
             <meta property="og:description" content={`Professional ${csServiceName.toLowerCase()} for ${csDeviceType.toLowerCase()}s in ${csCityName}. Doorstep service with 90-day warranty.`} />
             <meta property="og:url" content={`${siteUrl}/${routeData.slug_path}`} />
             <meta property="og:type" content="website" />
+            
+            {/* JSON-LD Structured Data for SEO */}
+            {routeData.payload.jsonLd && (
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                  __html: JSON.stringify(routeData.payload.jsonLd)
+                }}
+              />
+            )}
+            
+            {/* Breadcrumb Schema */}
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{
+                __html: JSON.stringify({
+                  "@context": "https://schema.org",
+                  "@type": "BreadcrumbList",
+                  "itemListElement": [
+                    {
+                      "@type": "ListItem",
+                      "position": 1,
+                      "name": "Repair Services",
+                      "item": `${siteUrl}/repair`
+                    },
+                    {
+                      "@type": "ListItem",
+                      "position": 2,
+                      "name": csCityName,
+                      "item": `${siteUrl}/repair/${csCity?.slug}`
+                    },
+                    {
+                      "@type": "ListItem",
+                      "position": 3,
+                      "name": csServiceName,
+                      "item": `${siteUrl}/${routeData.slug_path}`
+                    }
+                  ]
+                })
+              }}
+            />
           </Head>
           
           {/* Navigation Header */}
@@ -714,6 +755,16 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
                     Certified Technicians
                   </div>
                 </div>
+                
+                {/* Postal Codes Trust Signal */}
+                {routeData.payload.postal_codes && routeData.payload.postal_codes.length > 0 && (
+                  <div className="mt-6 text-sm text-primary-200 flex items-center justify-center">
+                    <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                    </svg>
+                    Serving postal codes: {routeData.payload.postal_codes.join(', ')}
+                  </div>
+                )}
               </div>
             </div>
           </section>
@@ -881,6 +932,45 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
                         {neighborhood}
                       </span>
                     </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Neighborhood Pages - Hyper-Local SEO Linking */}
+          {routeData.payload.neighborhood_pages && routeData.payload.neighborhood_pages.length > 0 && (
+            <section className="py-16 bg-gray-50">
+              <div className="container-custom">
+                <div className="text-center mb-12">
+                  <h2 className="text-3xl font-bold mb-4">{csServiceName} by Neighborhood</h2>
+                  <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Find repair services in your specific {csCityName} neighborhood
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {routeData.payload.neighborhood_pages.map((neighborhood: { id: number; neighborhood_name: string; slug: string; landmark_name?: string }) => (
+                    <Link
+                      key={neighborhood.id}
+                      href={`/repair/${csCity?.slug}/${neighborhood.slug}`}
+                      className="bg-white p-4 rounded-lg hover:shadow-md transition-all border border-gray-100 group"
+                    >
+                      <div className="font-bold text-gray-900 group-hover:text-primary-600 transition-colors mb-1">
+                        {neighborhood.neighborhood_name}
+                      </div>
+                      {neighborhood.landmark_name && (
+                        <div className="text-xs text-gray-500 mb-2">
+                          Near {neighborhood.landmark_name}
+                        </div>
+                      )}
+                      <div className="text-xs text-primary-600 flex items-center">
+                        <svg className="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                        View Services
+                      </div>
+                    </Link>
                   ))}
                 </div>
               </div>
