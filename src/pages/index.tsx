@@ -2,8 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Head from 'next/head';
 import Layout from '@/components/layout/Layout';
-import { FaCheckCircle, FaMapMarkerAlt, FaStar, FaArrowRight, FaPhone } from 'react-icons/fa';
+import { FaCheckCircle, FaMapMarkerAlt, FaStar, FaArrowRight, FaPhone, FaUsers, FaShieldAlt, FaClock } from 'react-icons/fa';
 import PostalCodeChecker from '@/components/PostalCodeChecker';
+import StickyBookingWidget from '@/components/common/StickyBookingWidget';
 import { initUIEnhancements } from '@/utils/ui-enhancements';
 import { testSupabaseConnection, supabase } from '@/utils/supabaseClient';
 import { trackLocationEvent } from '@/utils/analytics';
@@ -229,6 +230,12 @@ export default function Home({
         />
       </Head>
       <Layout>
+      {/* Desktop Sticky Booking Widget */}
+      <StickyBookingWidget 
+        businessPhone={businessPhone}
+        businessPhoneHref={businessPhoneHref}
+      />
+      
       {/* Smart Mobile Floating Action Button */}
       <div className={`fixed bottom-0 left-0 right-0 md:hidden z-50 transition-transform duration-300 ${
         showFAB ? 'translate-y-0' : 'translate-y-full'
@@ -257,9 +264,21 @@ export default function Home({
         <div className="container-custom px-4 sm:px-6">
           {/* Add bottom padding for mobile FAB */}
           <div className="pb-12 md:pb-0">
-            {/* Urgency Banner */}
-            <div className="bg-accent-500 text-white text-center py-3 px-4 rounded-lg mb-6 text-sm md:text-base">
-              🚨 <strong>Limited Time:</strong> Same-day repair slots available today in your area!
+            {/* Enhanced Urgency Banner with Countdown */}
+            <div className="bg-gradient-to-r from-red-500 to-accent-500 text-white text-center py-3 px-4 rounded-lg mb-6 shadow-lg">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
+                <div className="flex items-center">
+                  <span className="text-xl mr-2">🚨</span>
+                  <span className="font-bold">LIMITED SAME-DAY SLOTS:</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="bg-white text-red-600 font-bold px-3 py-1 rounded-lg animate-pulse">
+                    ⏱️ 3 SLOTS LEFT TODAY
+                  </span>
+                  <span className="hidden sm:inline">•</span>
+                  <span className="text-sm">Book before 2 PM for same-day service</span>
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
@@ -273,6 +292,28 @@ export default function Home({
                 <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed">
                   Professional repair technicians come to you. Most fixes completed in 30-90 minutes with 90-day warranty.
                 </p>
+
+                {/* Social Proof in Hero */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="flex items-center">
+                      <FaUsers className="text-blue-600 mr-2" />
+                      <div>
+                        <div className="font-bold text-gray-900">500+ Repairs This Month</div>
+                        <div className="text-sm text-gray-600">Join satisfied customers across the Lower Mainland</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex">
+                        {[...Array(5)].map((_, i) => (
+                          <FaStar key={i} className="h-4 w-4 text-yellow-400 fill-current" />
+                        ))}
+                      </div>
+                      <span className="font-bold text-gray-900">4.8/5</span>
+                      <span className="text-sm text-gray-600">(500+ reviews)</span>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Mobile-Optimized Pricing Preview */}
                 <div className="bg-white rounded-xl p-4 sm:p-6 shadow-md border-l-4 border-green-500">
@@ -307,7 +348,12 @@ export default function Home({
                   <PostalCodeChecker 
                     variant="compact"
                     onSuccess={(result, postalCode) => {
-                      // Auto-scroll to CTAs after successful validation
+                      // Redirect to booking form with pre-filled location
+                      setTimeout(() => {
+                        window.location.href = '/book-online';
+                      }, 1500);
+                      
+                      // Also show success message
                       setTimeout(() => {
                         const ctaSection = document.querySelector('.hero-cta-section');
                         if (ctaSection) {
@@ -318,14 +364,21 @@ export default function Home({
                   />
                 </div>
 
-                {/* Mobile-Optimized CTAs */}
+                {/* Enhanced Primary CTA */}
                 <div className="space-y-4 hero-cta-section">
                   <Link 
                     href="/book-online" 
-                    className="group relative w-full bg-gradient-to-r from-accent-500 to-accent-600 text-white text-center py-4 px-6 rounded-xl font-bold text-base sm:text-lg hover:from-accent-600 hover:to-accent-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 flex items-center justify-center min-h-[48px]"
+                    className="group relative w-full bg-gradient-to-r from-red-500 via-accent-500 to-accent-600 text-white text-center py-5 px-6 rounded-2xl font-bold text-lg sm:text-xl hover:from-red-600 hover:via-accent-600 hover:to-accent-700 transition-all duration-300 shadow-2xl hover:shadow-3xl transform hover:scale-105 active:scale-95 flex items-center justify-center min-h-[56px] animate-pulse-subtle"
                   >
-                    <span className="mr-2">🚀 Get Fixed Today - Free Quote</span>
-                    <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                    <span className="relative mr-3 flex items-center gap-2">
+                      <span className="text-xl">🚀</span>
+                      <span className="text-shadow-sm">GET FIXED TODAY - FREE QUOTE</span>
+                    </span>
+                    <FaArrowRight className="relative group-hover:translate-x-2 transition-transform duration-300" />
+                    <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs bg-green-500 text-white px-2 py-1 rounded-full animate-bounce">
+                      ⚡ 2-MINUTE BOOKING
+                    </div>
                   </Link>
                   
                   <div className="grid grid-cols-2 gap-3 sm:gap-4">
