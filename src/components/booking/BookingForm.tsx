@@ -96,7 +96,10 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
   const scrollToElement = useCallback((selector: string, delay: number = 350) => {
     setTimeout(() => {
       const element = document.querySelector(selector);
-      if (!element) return;
+      if (!element) {
+        console.warn(`[scrollToElement] Element not found for selector: "${selector}"`);
+        return;
+      }
       
       // Check if element is already in view
       const rect = element.getBoundingClientRect();
@@ -132,7 +135,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
 
   // Create a properly typed defaultValues object
   const defaultValues: Partial<CreateBookingRequest> = {
-      deviceType: initialData.deviceType || 'mobile',
+      deviceType: initialData.deviceType || undefined,
       deviceBrand: initialData.deviceBrand || '',
       deviceModel: initialData.deviceModel || '',
     customBrand: initialData.customBrand || '',
@@ -723,7 +726,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                                 // Store brand UUID
                                 setSelectedBrandId(brand.id as string);
                                 // Auto-scroll to model selection
-                                scrollToElement('label[for="deviceModel"], .mb-4:has(label:contains("Model"))', 400);
+                                scrollToElement('#model-selection-section', 400);
                               }}
                             />
                           )}
@@ -798,7 +801,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                                 // Store brand UUID
                                 setSelectedBrandId(brand.id as string);
                                 // Auto-scroll to model selection
-                                scrollToElement('label[for="deviceModel"]', 400);
+                                scrollToElement('#model-selection-section', 400);
                               }}
                             />
                           )}
@@ -870,8 +873,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           )}
           
           {deviceType && (
-            <div className="mb-4 transition-opacity duration-300" style={{ opacity: deviceType ? '1' : '0.5' }}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div id="model-selection-section" className="mb-4 transition-opacity duration-300" style={{ opacity: deviceType ? '1' : '0.5' }}>
+              <label htmlFor="deviceModel" className="block text-sm font-medium text-gray-700 mb-2">
                 Model <span className="text-red-500">*</span>
               </label>
               
@@ -913,7 +916,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                           setSelectedModelId(selectedModel.id);
                         }
                         // Auto-scroll to service selection in the combined step
-                        scrollToElement('.border-t', 400);
+                        scrollToElement('#services-section', 400);
                       }
                     }}
                     disabled={!deviceBrand || modelsLoading || (!modelsData?.length && !modelsLoading)}
@@ -1316,13 +1319,13 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                                       // Add service
                                       field.onChange([...currentArray, service.id]);
                                       // Auto-scroll to pricing tier after first service selection
-                                      scrollToElement('.border-t.pt-8', 500);
+                                      scrollToElement('#pricing-tier-section', 500);
                                     }
                                   } else {
                                     // Handle single selection for other groups
                                     field.onChange(service.id);
                                     // Auto-scroll to pricing tier
-                                    scrollToElement('.border-t.pt-8', 500);
+                                    scrollToElement('#pricing-tier-section', 500);
                                   }
                                 }}
                               />
@@ -1506,7 +1509,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         </div>
 
         {/* Service Selection Section */}
-        <div className="space-y-6">
+        <div id="services-section" className="space-y-6">
           <h4 className="text-xl font-semibold text-gray-900">What needs repair?</h4>
           
           {servicesLoading && (
@@ -1623,7 +1626,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         </div>
 
         {/* Service Tier Selection with Pricing - Condensed */}
-        <div className="space-y-4 border-t pt-8">
+        <div id="pricing-tier-section" className="space-y-4 border-t pt-8">
           <h4 className="text-xl font-semibold text-gray-900 mb-2">Choose Your Service Tier</h4>
           <p className="text-sm text-gray-600 mb-4">Click on a pricing card below to select your preferred service tier</p>
           
@@ -1645,7 +1648,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   onTierSelect={(tier: 'standard' | 'premium') => {
                     field.onChange(tier);
                     // Auto-scroll to ensure Next button is visible after tier selection
-                    scrollToElement('.flex.flex-col.sm\\:flex-row.justify-between', 600);
+                    scrollToElement('#form-navigation', 600);
                   }}
                   className="mt-2"
                 />
@@ -1816,7 +1819,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     field.onBlur();
                     // Auto-scroll to address section after phone is filled
                     if (e.target.value.trim()) {
-                      scrollToElement('.border-t.pt-6', 300);
+                      scrollToElement('#city-postal-section', 300);
                     }
                   }}
                 />
@@ -1990,11 +1993,11 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           });
         }
         // Auto-scroll to city/postal code fields after address autocomplete
-        scrollToElement('.grid.grid-cols-2.gap-4', 400);
+        scrollToElement('#city-postal-section', 400);
       } else {
         setNeedsPostalCodeAttention(true); // No postal code detected, need user input
         // Still scroll to city/postal so user can fill them manually
-        scrollToElement('.grid.grid-cols-2.gap-4', 400);
+        scrollToElement('#city-postal-section', 400);
       }
     };
 
@@ -2103,7 +2106,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           />
         </div>
         
-        <div className="grid grid-cols-2 gap-4">
+        <div id="city-postal-section" className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <label htmlFor="city" className="block text-sm font-medium text-gray-700">
               City
@@ -2920,7 +2923,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           </div>
           
           {/* Navigation buttons with improved styling */}
-          <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 mt-6 sm:mt-8">
+          <div id="form-navigation" className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 mt-6 sm:mt-8">
             {currentStep > 0 ? (
               <button
                 type="button"
