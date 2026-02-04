@@ -145,8 +145,8 @@ export default function CityPage({ routeData }: CityPageProps) {
   return (
     <>
       <Head>
-        <title>Device Repair Services in {cityName}, BC | The Travelling Technicians</title>
-        <meta name="description" content={`Professional doorstep phone and laptop repair services in ${cityName}, BC. Screen replacement, battery replacement, and more. Same-day service with 90-day warranty. Call ${cityPhoneDisplay}`} />
+        <title>{`Device Repair Services in ${cityName}, BC | The Travelling Technicians`}</title>
+        <meta name="description" content={`Professional doorstep phone and laptop repair in ${cityName}, BC. Screen replacement, battery replacement, and more. Same-day service with warranty.`} />
         <meta name="keywords" content={`${cityName} phone repair, ${cityName} laptop repair, mobile repair ${cityName} BC, doorstep repair ${cityName}, screen replacement ${cityName}`} />
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href={`${siteUrl}/repair/${citySlug}`} />

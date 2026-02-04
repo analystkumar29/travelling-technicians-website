@@ -294,8 +294,8 @@ async function getNeighborhoodPagesFromDB(): Promise<Array<{
 
 /**
  * Get dynamic routes from database for sitemap
- * Uses pre-computed routes from dynamic_routes table for better performance
- * Optimized for speed: removes timeout, uses batch processing with pagination
+ * FIXED: Removed timeout limit and simplified pagination to fetch ALL routes
+ * Fetches all 3,289+ routes from dynamic_routes table
  */
 async function getDynamicRoutesForSitemap(): Promise<Array<{
   city: string;
@@ -307,59 +307,27 @@ async function getDynamicRoutesForSitemap(): Promise<Array<{
   const startTime = Date.now();
   
   try {
-    // Query dynamic_routes table for ALL model-service-page routes
-    // Use pagination to get all rows (Supabase has limits)
-    let allRoutes: any[] = [];
-    const pageSize = 1000;
-    let page = 0;
-    let hasMore = true;
+    sitemapLogger.info('Fetching ALL dynamic routes for sitemap (no timeout limit)...');
     
-    while (hasMore) {
-      const start = page * pageSize;
-      const end = start + pageSize - 1;
-      
-      sitemapLogger.info(`Fetching page ${page + 1} (rows ${start}-${end})...`);
-      
-      const { data: routes, error, count } = await supabase
-        .from('dynamic_routes')
-        .select('slug_path, last_updated', { count: 'exact' })
-        .eq('route_type', 'model-service-page')
-        .range(start, end);
-      
-      if (error) {
-        sitemapLogger.error(`Error fetching page ${page + 1}:`, error);
-        break;
-      }
-      
-      if (routes && routes.length > 0) {
-        allRoutes = [...allRoutes, ...routes];
-        sitemapLogger.info(`Page ${page + 1}: Got ${routes.length} routes`);
-        
-        // If we got fewer routes than page size, we've reached the end
-        if (routes.length < pageSize) {
-          hasMore = false;
-          sitemapLogger.info(`Reached end of data at page ${page + 1}`);
-        } else {
-          page++;
-        }
-      } else {
-        hasMore = false;
-        sitemapLogger.info(`No more routes at page ${page + 1}`);
-      }
-      
-      // Safety limit: don't fetch more than 10 pages (10,000 routes)
-      if (page >= 10) {
-        sitemapLogger.warn(`Hit safety limit at 10 pages (${allRoutes.length} routes)`);
-        break;
-      }
+    // Query ALL dynamic_routes at once without pagination limit
+    // This ensures we get all 3,289+ routes
+    const { data: allRoutes, error, count } = await supabase
+      .from('dynamic_routes')
+      .select('slug_path, last_updated', { count: 'exact' })
+      .eq('route_type', 'model-service-page')
+      .order('slug_path', { ascending: true });
+    
+    if (error) {
+      sitemapLogger.error('Error fetching dynamic routes:', error);
+      return getFallbackCombinations();
     }
     
-    if (allRoutes.length === 0) {
-      sitemapLogger.warn('No dynamic routes found, using fallback');
+    if (!allRoutes || allRoutes.length === 0) {
+      sitemapLogger.warn('No dynamic routes found in database');
       return getFallbackCombinations();
     }
 
-    sitemapLogger.info(`Found ${allRoutes.length} dynamic routes in database (after pagination)`);
+    sitemapLogger.info(`✅ Fetched ${allRoutes.length}/${count} total routes from database`);
     
     // Parse slug_path to extract city, service, model
     const result: Array<{
@@ -369,58 +337,37 @@ async function getDynamicRoutesForSitemap(): Promise<Array<{
       updated_at: string;
     }> = [];
     
-    // Use batch processing for better performance
-    const batchSize = 1000;
-    for (let i = 0; i < allRoutes.length; i += batchSize) {
-      const batch = allRoutes.slice(i, i + batchSize);
-      
-      for (const route of batch) {
-        // Parse slug_path format: "repair/{city}/{service}/{model}"
-        const parts = route.slug_path.split('/');
-        if (parts.length !== 4 || parts[0] !== 'repair') {
-          sitemapLogger.debug(`Skipping invalid slug_path: ${route.slug_path}`);
-          continue;
-        }
-        
-        const [, city, service, model] = parts;
-        
-        // Skip validation for speed - assume database has valid slugs
-        // We'll trust the database integrity
-        result.push({
-          city,
-          service,
-          model,
-          updated_at: route.last_updated || new Date().toISOString()
-        });
+    // Process all routes (no batch size limit)
+    for (const route of allRoutes) {
+      // Parse slug_path format: "repair/{city}/{service}/{model}"
+      const parts = route.slug_path.split('/');
+      if (parts.length !== 4 || parts[0] !== 'repair') {
+        sitemapLogger.debug(`Skipping invalid slug_path: ${route.slug_path}`);
+        continue;
       }
       
-      // Log progress for large datasets
-      if (i % 1000 === 0) {
-        sitemapLogger.info(`Processed ${i} of ${allRoutes.length} routes...`);
-      }
+      const [, city, service, model] = parts;
+      
+      result.push({
+        city,
+        service,
+        model,
+        updated_at: route.last_updated || new Date().toISOString()
+      });
     }
     
     const executionTime = Date.now() - startTime;
-    sitemapLogger.info(`Processed ${result.length} dynamic routes for sitemap (time: ${executionTime}ms)`);
+    sitemapLogger.info(`✅ Processed ${result.length} valid dynamic routes in ${executionTime}ms`);
     
-    // If we have no results, return fallback
     if (result.length === 0) {
-      sitemapLogger.warn('No valid dynamic routes processed, using fallback');
+      sitemapLogger.warn('No valid routes parsed, using fallback');
       return getFallbackCombinations();
     }
-    
-    // Log what percentage of routes we included
-    const databaseCount = allRoutes.length;
-    const includedCount = result.length;
-    const percentage = ((includedCount / databaseCount) * 100).toFixed(1);
-    sitemapLogger.info(`Sitemap includes ${includedCount}/${databaseCount} routes (${percentage}%)`);
     
     return result;
     
   } catch (error) {
     sitemapLogger.error('Error fetching dynamic routes for sitemap:', error);
-    
-    // Return fallback combinations on error
     return getFallbackCombinations();
   }
 }

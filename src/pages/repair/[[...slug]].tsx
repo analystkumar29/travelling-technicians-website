@@ -112,6 +112,9 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
         
         {/* Canonical URL - CRITICAL for SEO */}
         <link rel="canonical" href={canonicalUrl} />
+        
+        {/* Language and regional targeting - Canadian English */}
+        <link rel="alternate" hrefLang="en-CA" href={canonicalUrl} />
       </>
     );
   }
@@ -192,7 +195,7 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
       return (
         <>
           <Head>
-            <title>{cmpModelName} Repair in {cmpCityName} | The Travelling Technicians</title>
+            <title>{`${cmpModelName} Repair in ${cmpCityName} | The Travelling Technicians`}</title>
             <meta name="description" content={`Professional ${cmpModelName} repair services in ${cmpCityName}. Screen replacement, battery replacement, and more. Doorstep service with 90-day warranty.`} />
             <meta name="keywords" content={`${cmpModelName} repair, ${cmpBrandName} repair, ${cmpCityName} phone repair, doorstep repair`} />
             <meta name="robots" content="index, follow" />
@@ -412,7 +415,7 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
         return (
           <>
             <Head>
-              <title>Repair Services in {citySlugCS} | The Travelling Technicians</title>
+              <title>{`Repair Services in ${citySlugCS} | The Travelling Technicians`}</title>
               <meta name="description" content={`Professional doorstep repair services in ${citySlugCS}.`} />
             </Head>
             <div className="min-h-screen flex items-center justify-center">
@@ -456,8 +459,8 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
       return (
         <>
           <Head>
-            <title>{csServiceName} in {csCityName} | The Travelling Technicians</title>
-            <meta name="description" content={`Professional ${csServiceName.toLowerCase()} for ${csDeviceType.toLowerCase()}s in ${csCityName}. Doorstep service by expert technicians with 90-day warranty.`} />
+            <title>{`${csServiceName} in ${csCityName} | The Travelling Technicians`}</title>
+            <meta name="description" content={`Professional ${csServiceName.toLowerCase()} for ${csDeviceType.toLowerCase()}s in ${csCityName}. Same-day doorstep service by certified technicians with 90-day warranty.`} />
             <meta name="keywords" content={`${csServiceName}, ${csCityName} repair, ${csDeviceType} repair, doorstep repair, mobile repair ${csCityName}`} />
             <meta name="robots" content="index, follow" />
             <link rel="canonical" href={`${siteUrl}/${routeData.slug_path}`} />

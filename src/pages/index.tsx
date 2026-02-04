@@ -197,6 +197,11 @@ export default function Home({
   return (
     <>
       <Head>
+        {/* Page Title & Meta Description */}
+        <title>The Travelling Technicians | Mobile &amp; Laptop Repair Vancouver BC</title>
+        <meta name="description" content="Expert mobile phone and laptop repair with convenient doorstep service across Vancouver, Burnaby, Surrey, Richmond, and Lower Mainland. Same-day service with up to 6-month warranty." />
+        <link rel="canonical" href="https://www.travelling-technicians.ca/" />
+        
         {/* Critical Resource Preloads */}
         <HomePagePreloads />
         
