@@ -162,6 +162,12 @@
     }
   ],
 
+  "rewrites": [
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap.xml"
+    }
+  ],
   "redirects": [
     {
       "source": "/contact/",
