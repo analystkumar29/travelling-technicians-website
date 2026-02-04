@@ -367,6 +367,38 @@
   animation: attention-pulse 2s infinite;
 }
 
+/* Limit visible models in city-service pages */
+.limit-models-grid .model-item:nth-child(n+7) {
+  display: none;
+}
+
+/* Show all models when expanded */
+.limit-models-grid.expanded .model-item {
+  display: block;
+}
+
+/* Responsive adjustments for model grid */
+@media (min-width: 768px) {
+  .limit-models-grid .model-item:nth-child(n+7) {
+    display: none;
+  }
+  
+  .limit-models-grid.expanded .model-item {
+    display: block;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* On large screens, show 10 models by default (2 rows of 5) */
+  .limit-models-grid .model-item:nth-child(n+11) {
+    display: none;
+  }
+  
+  .limit-models-grid.expanded .model-item {
+    display: block;
+  }
+}
+
 
 
 @layer base {
@@ -379,4 +411,4 @@
 }
 
 /* Blog Enhancements */
-@import './blog-enhancements.css'; 
+@import './blog-enhancements.css';

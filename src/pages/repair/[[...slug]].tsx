@@ -637,12 +637,12 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 limit-models-grid">
                   {csSampleModels.map((model: { id: string; name: string; slug: string; display_name: string }) => (
                     <Link
                       key={model.id}
                       href={`/repair/${csCity?.slug}/${csService?.slug}/${model.slug}`}
-                      className="bg-white p-4 rounded-lg text-center shadow-sm hover:shadow-lg transition-all border border-gray-100 group"
+                      className="bg-white p-4 rounded-lg text-center shadow-sm hover:shadow-lg transition-all border border-gray-100 group model-item"
                     >
                       <div className="text-gray-800 font-medium group-hover:text-primary-600 transition-colors">
                         {model.display_name || model.name}
