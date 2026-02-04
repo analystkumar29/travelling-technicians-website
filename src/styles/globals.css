@@ -530,7 +530,7 @@
 
 /* Local Content Section */
 .local-content {
-  @apply prose prose-sm max-w-none text-gray-700;
+  @apply max-w-none text-gray-700;
 }
 
 .local-content h2 {
@@ -541,17 +541,29 @@
   @apply text-lg font-bold text-gray-900 mt-4 mb-3;
 }
 
+.local-content h4 {
+  @apply text-base font-bold text-gray-900 mt-3 mb-2;
+}
+
 .local-content p {
-  @apply mb-4 leading-relaxed;
+  @apply mb-4 leading-relaxed text-gray-700;
 }
 
 .local-content ul,
 .local-content ol {
-  @apply mb-4 ml-5;
+  @apply mb-4 ml-6;
 }
 
 .local-content li {
-  @apply mb-2;
+  @apply mb-2 text-gray-700;
+}
+
+.local-content strong {
+  @apply font-bold text-gray-900;
+}
+
+.local-content em {
+  @apply italic;
 }
 
 /* Postal Code Badge */
