@@ -15,8 +15,6 @@ Allow: /faq                # FAQ page
 Allow: /privacy-policy     # Privacy policy
 Allow: /terms-conditions   # Terms & conditions
 
-# Note: /doorstep-repair is not in sitemap - removed from robots.txt (replaced with /repair)
-
 # ============================================
 # API ACCESS CONTROL - GRANULAR PERMISSIONS
 # ============================================
@@ -69,13 +67,12 @@ Disallow: /debug
 Disallow: /minimal
 
 # ============================================
-# SITEMAPS
+# SITEMAP
 # ============================================
-
-# Primary Sitemap - Dynamic API (generates 2000+ URLs with real lastmod dates)
-Sitemap: https://www.travelling-technicians.ca/api/sitemap.xml
-
-# Static Fallback Sitemap (minimal URLs - use only if API fails)
+# Dynamic sitemap at root (rewrites to /api/sitemap.xml via Vercel)
+# Contains 3289+ URLs with real lastmod dates from database
+# Includes: static pages, service areas, city locations, neighborhoods,
+#           blog posts, services, and city-service-model pages
 Sitemap: https://www.travelling-technicians.ca/sitemap.xml
 
 # Image Sitemap
@@ -93,3 +90,4 @@ Crawl-delay: 1
 # 4. For pages that need dynamic content, prefer server-side rendering (getServerSideProps)
 #    or static generation (getStaticProps) over client-side API calls
 # 5. Test robots.txt changes with: https://search.google.com/search-console/robots-testing-tool
+# 6. The /sitemap.xml URL is rewritten to /api/sitemap.xml via Vercel configuration
