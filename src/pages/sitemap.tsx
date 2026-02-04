@@ -58,11 +58,11 @@ const SitemapPage: NextPage = () => {
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
               <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <div className="text-primary-600 font-bold text-lg mb-1">2000+ Pages</div>
+                <div className="text-primary-600 font-bold text-lg mb-1">3289+ Pages</div>
                 <div className="text-gray-600 text-sm">Dynamic service pages indexed</div>
               </div>
               <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <div className="text-primary-600 font-bold text-lg mb-1">10+ Cities</div>
+                <div className="text-primary-600 font-bold text-lg mb-1">13 Cities</div>
                 <div className="text-gray-600 text-sm">Service areas across Lower Mainland</div>
               </div>
               <div className="bg-white p-4 rounded-lg border border-gray-200">
@@ -99,9 +99,6 @@ const SitemapPage: NextPage = () => {
                 <SitemapLink href="/services/mobile-repair" icon="📱">Mobile Phone Repair</SitemapLink>
                 <SitemapLink href="/services/laptop-repair" icon="💻">Laptop Repair</SitemapLink>
                 <SitemapLink href="/services/tablet-repair" icon="📱">Tablet Repair</SitemapLink>
-                <SitemapLink href="/mobile-screen-repair" icon="🖥️">Mobile Screen Repair</SitemapLink>
-                <SitemapLink href="/laptop-screen-repair" icon="💻">Laptop Screen Repair</SitemapLink>
-                <SitemapLink href="/mobile-repair-near-me" icon="📍">Mobile Repair Near Me</SitemapLink>
                 
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <h4 className="font-semibold text-gray-700 mb-2">Common Services:</h4>
@@ -124,10 +121,6 @@ const SitemapPage: NextPage = () => {
               >
                 <SitemapLink href="/faq" icon="❓">Frequently Asked Questions</SitemapLink>
                 <SitemapLink href="/blog" icon="📝">Blog & Articles</SitemapLink>
-                <SitemapLink href="/warranty" icon="🛡️">Warranty Information</SitemapLink>
-                <SitemapLink href="/repair-process" icon="⚙️">Our Repair Process</SitemapLink>
-                <SitemapLink href="/technicians" icon="👨‍🔧">Our Technicians</SitemapLink>
-                <SitemapLink href="/quality-parts" icon="🔧">Quality Parts We Use</SitemapLink>
               </SectionCard>
             </div>
 
@@ -151,16 +144,18 @@ const SitemapPage: NextPage = () => {
                   <CityLink href="/repair/delta">Delta</CityLink>
                   <CityLink href="/repair/langley">Langley</CityLink>
                   <CityLink href="/repair/chilliwack">Chilliwack</CityLink>
-                  <CityLink href="/locations">All Locations</CityLink>
+                  <CityLink href="/repair/abbotsford">Abbotsford</CityLink>
+                  <CityLink href="/repair/squamish">Squamish</CityLink>
+                  <CityLink href="/service-areas">All Service Areas</CityLink>
                 </div>
                 
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <h4 className="font-semibold text-gray-700 mb-2">Neighborhood Services:</h4>
                   <p className="text-sm text-gray-600 mb-2">
-                    We serve specific neighborhoods within each city. Visit our location pages for detailed neighborhood coverage.
+                    We serve specific neighborhoods within each city. Visit our service areas page for detailed neighborhood coverage.
                   </p>
-                  <a href="/locations" className="text-primary-600 hover:text-primary-800 text-sm font-medium inline-flex items-center">
-                    Explore Neighborhoods <FaExternalLinkAlt className="ml-1 text-xs" />
+                  <a href="/service-areas" className="text-primary-600 hover:text-primary-800 text-sm font-medium inline-flex items-center">
+                    Explore Service Areas <FaExternalLinkAlt className="ml-1 text-xs" />
                   </a>
                 </div>
               </SectionCard>
@@ -189,8 +184,6 @@ const SitemapPage: NextPage = () => {
               >
                 <SitemapLink href="/privacy-policy" icon="🔒">Privacy Policy</SitemapLink>
                 <SitemapLink href="/terms-conditions" icon="📄">Terms & Conditions</SitemapLink>
-                <SitemapLink href="/cookie-policy" icon="🍪">Cookie Policy</SitemapLink>
-                <SitemapLink href="/accessibility" icon="♿">Accessibility Statement</SitemapLink>
                 <SitemapLink href="/sitemap.xml" icon="🗺️">XML Sitemap</SitemapLink>
                 <SitemapLink href="/robots.txt" icon="🤖">Robots.txt</SitemapLink>
               </SectionCard>
