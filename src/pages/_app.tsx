@@ -10,9 +10,9 @@ import '@/styles/booking-animations.css';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useEffect, useState, ReactNode } from 'react';
+import { useRouter } from 'next/router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { generateDefaultSeo } from 'next-seo/pages';
-import { defaultSeoConfig } from '@/next-seo.config';
+// next-seo imports REMOVED - they were causing side effects that overwrote page-specific title tags
 // Environment validation temporarily disabled
 
 // Analytics loading with fallback
@@ -52,6 +52,7 @@ function SafeHydrate({ children }: { children: React.ReactNode }) {
 }
 
 export default function App({ Component, pageProps }: AppProps) {
+  const router = useRouter();
   const [queryClient] = useState(() => new QueryClient());
   
   useEffect(() => {
@@ -92,11 +93,13 @@ export default function App({ Component, pageProps }: AppProps) {
     return () => clearTimeout(timer);
   }, []);
 
+  // generateDefaultSeo removed - each page now defines its own title/description
+  // This prevents default SEO from overriding page-specific SEO tags
+
   return (
     <>
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        {generateDefaultSeo(defaultSeoConfig)}
       </Head>
 
       <EnvironmentGuard>
