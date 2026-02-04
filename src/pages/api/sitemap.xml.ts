@@ -52,6 +52,8 @@ interface DynamicContent {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const startTime = Date.now();
+  
   try {
     // Set cache headers for ISR-like behavior
     res.setHeader('Cache-Control', `public, s-maxage=${CACHE_DURATION}, stale-while-revalidate`);
@@ -60,43 +62,81 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const siteUrl = getSiteUrl();
     const now = new Date().toISOString();
     
-    sitemapLogger.info('Generating sitemap...');
+    sitemapLogger.info('========================================');
+    sitemapLogger.info('🚀 SITEMAP GENERATION STARTED');
+    sitemapLogger.info(`📅 Timestamp: ${now}`);
+    sitemapLogger.info('========================================');
     
     // Get dynamic content from database
+    const fetchStartTime = Date.now();
     const dynamicContent = await fetchDynamicContent();
+    const fetchDuration = Date.now() - fetchStartTime;
+    sitemapLogger.info(`⏱️ Dynamic content fetch took: ${fetchDuration}ms`);
     
-    // Build sitemap entries
+    // Build sitemap entries with detailed logging
+    const staticPages = getStaticPages(siteUrl, now);
+    sitemapLogger.info(`📄 Static high-priority pages: ${staticPages.length}`);
+    
+    const serviceAreaPages = getServiceAreaPages(siteUrl, dynamicContent.serviceAreas);
+    sitemapLogger.info(`🏙️ Service area pages (legacy /repair/{city}): ${serviceAreaPages.length}`);
+    
+    const cityLocationPages = getCityLocationPages(siteUrl, dynamicContent.cityLocations);
+    sitemapLogger.info(`📍 City location pages (/locations/{city}): ${cityLocationPages.length}`);
+    
+    const neighborhoodPages = getNeighborhoodPages(siteUrl, dynamicContent.neighborhoods);
+    sitemapLogger.info(`🏘️ Neighborhood pages: ${neighborhoodPages.length}`);
+    
+    const blogPages = getBlogPages(siteUrl, dynamicContent.blogPosts);
+    sitemapLogger.info(`📝 Blog pages: ${blogPages.length}`);
+    
+    const servicePages = getServicePages(siteUrl, dynamicContent.services);
+    sitemapLogger.info(`🔧 Service pages: ${servicePages.length}`);
+    
+    const cityServiceModelPages = getCityServiceModelPages(siteUrl, dynamicContent.cityServiceModels);
+    sitemapLogger.info(`🎯 City-service-model pages (MAIN DYNAMIC ROUTES): ${cityServiceModelPages.length}`);
+    
+    const informationalPages = getInformationalPages(siteUrl, now);
+    sitemapLogger.info(`ℹ️ Informational pages: ${informationalPages.length}`);
+    
+    const legalPages = getLegalPages(siteUrl, now);
+    sitemapLogger.info(`⚖️ Legal pages: ${legalPages.length}`);
+    
     const entries: SitemapEntry[] = [
-      // Static high-priority pages
-      ...getStaticPages(siteUrl, now),
-      
-      // Dynamic service area pages (legacy /repair/{city})
-      ...getServiceAreaPages(siteUrl, dynamicContent.serviceAreas),
-      
-      // City location pages (Phase 8: /locations/{city})
-      ...getCityLocationPages(siteUrl, dynamicContent.cityLocations),
-      
-      // Neighborhood pages (Phase 8: /locations/{city}/{neighborhood})
-      ...getNeighborhoodPages(siteUrl, dynamicContent.neighborhoods),
-      
-      // Dynamic blog pages
-      ...getBlogPages(siteUrl, dynamicContent.blogPosts),
-      
-      // Dynamic service pages
-      ...getServicePages(siteUrl, dynamicContent.services),
-      
-      // City-service-model dynamic pages
-      ...getCityServiceModelPages(siteUrl, dynamicContent.cityServiceModels),
-      
-      // Static informational pages
-      ...getInformationalPages(siteUrl, now),
-      
-      // Static legal pages
-      ...getLegalPages(siteUrl, now)
+      ...staticPages,
+      ...serviceAreaPages,
+      ...cityLocationPages,
+      ...neighborhoodPages,
+      ...blogPages,
+      ...servicePages,
+      ...cityServiceModelPages,
+      ...informationalPages,
+      ...legalPages
     ];
+    
+    // Summary statistics
+    const totalDuration = Date.now() - startTime;
+    sitemapLogger.info('========================================');
+    sitemapLogger.info('📊 SITEMAP GENERATION SUMMARY');
+    sitemapLogger.info('========================================');
+    sitemapLogger.info(`✅ TOTAL URLS IN SITEMAP: ${entries.length}`);
+    sitemapLogger.info('----------------------------------------');
+    sitemapLogger.info('BREAKDOWN:');
+    sitemapLogger.info(`  - Static high-priority: ${staticPages.length}`);
+    sitemapLogger.info(`  - Service areas (cities): ${serviceAreaPages.length}`);
+    sitemapLogger.info(`  - City locations: ${cityLocationPages.length}`);
+    sitemapLogger.info(`  - Neighborhoods: ${neighborhoodPages.length}`);
+    sitemapLogger.info(`  - Blog: ${blogPages.length}`);
+    sitemapLogger.info(`  - Services: ${servicePages.length}`);
+    sitemapLogger.info(`  - City-Service-Model (dynamic): ${cityServiceModelPages.length}`);
+    sitemapLogger.info(`  - Informational: ${informationalPages.length}`);
+    sitemapLogger.info(`  - Legal: ${legalPages.length}`);
+    sitemapLogger.info('----------------------------------------');
+    sitemapLogger.info(`⏱️ Total generation time: ${totalDuration}ms`);
+    sitemapLogger.info('========================================');
     
     // Check if we need sitemap index (for sites with > 50,000 URLs)
     if (entries.length > 45000) {
+      sitemapLogger.info('⚠️ Large sitemap detected - generating sitemap index');
       const sitemapIndex = generateSitemapIndex(siteUrl, entries);
       res.status(200).end(sitemapIndex);
       return;
@@ -105,7 +145,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Generate regular sitemap
     const sitemap = generateSitemap(entries);
     
-    sitemapLogger.info(`Generated sitemap with ${entries.length} entries`);
+    sitemapLogger.info(`🎉 Sitemap generated successfully with ${entries.length} entries`);
     res.status(200).end(sitemap);
     
   } catch (error) {
@@ -294,8 +334,8 @@ async function getNeighborhoodPagesFromDB(): Promise<Array<{
 
 /**
  * Get dynamic routes from database for sitemap
- * FIXED: Removed timeout limit and simplified pagination to fetch ALL routes
- * Fetches all 3,289+ routes from dynamic_routes table
+ * FIXED: Simplified to fetch ALL routes and handle pagination for Vercel timeout
+ * Fetches all 3,289+ routes from dynamic_routes table with pagination
  */
 async function getDynamicRoutesForSitemap(): Promise<Array<{
   city: string;
@@ -305,31 +345,28 @@ async function getDynamicRoutesForSitemap(): Promise<Array<{
 }>> {
   const supabase = getServiceSupabase();
   const startTime = Date.now();
+  const MAX_ROUTES_PER_BATCH = 1000; // Fetch in batches to avoid timeout
   
   try {
-    sitemapLogger.info('Fetching ALL dynamic routes for sitemap (no timeout limit)...');
+    sitemapLogger.info('Fetching ALL dynamic routes for sitemap with pagination...');
     
-    // Query ALL dynamic_routes at once without pagination limit
-    // This ensures we get all 3,289+ routes
-    const { data: allRoutes, error, count } = await supabase
+    // First, get total count
+    const { count: totalRoutes, error: countError } = await supabase
       .from('dynamic_routes')
-      .select('slug_path, last_updated', { count: 'exact' })
-      .eq('route_type', 'model-service-page')
-      .order('slug_path', { ascending: true });
+      .select('*', { count: 'exact', head: true })
+      .eq('route_type', 'model-service-page');
     
-    if (error) {
-      sitemapLogger.error('Error fetching dynamic routes:', error);
+    if (countError) {
+      sitemapLogger.error('Error counting routes:', countError);
       return getFallbackCombinations();
     }
     
-    if (!allRoutes || allRoutes.length === 0) {
-      sitemapLogger.warn('No dynamic routes found in database');
-      return getFallbackCombinations();
-    }
-
-    sitemapLogger.info(`✅ Fetched ${allRoutes.length}/${count} total routes from database`);
+    sitemapLogger.info(`Total routes in database: ${totalRoutes}`);
     
-    // Parse slug_path to extract city, service, model
+    // Calculate number of batches needed
+    const numBatches = Math.ceil((totalRoutes || 0) / MAX_ROUTES_PER_BATCH);
+    sitemapLogger.info(`Fetching in ${numBatches} batches of ${MAX_ROUTES_PER_BATCH} routes each`);
+    
     const result: Array<{
       city: string;
       service: string;
@@ -337,23 +374,60 @@ async function getDynamicRoutesForSitemap(): Promise<Array<{
       updated_at: string;
     }> = [];
     
-    // Process all routes (no batch size limit)
-    for (const route of allRoutes) {
-      // Parse slug_path format: "repair/{city}/{service}/{model}"
-      const parts = route.slug_path.split('/');
-      if (parts.length !== 4 || parts[0] !== 'repair') {
-        sitemapLogger.debug(`Skipping invalid slug_path: ${route.slug_path}`);
+    // Fetch routes in batches
+    for (let batch = 0; batch < numBatches; batch++) {
+      const start = batch * MAX_ROUTES_PER_BATCH;
+      const end = start + MAX_ROUTES_PER_BATCH - 1;
+      
+      sitemapLogger.info(`Fetching batch ${batch + 1}/${numBatches} (routes ${start}-${end})...`);
+      
+      // Fetch content_updated_at for accurate lastmod (Phase 5 SEO improvement)
+      const { data: batchRoutes, error } = await supabase
+        .from('dynamic_routes')
+        .select('slug_path, last_updated, content_updated_at')
+        .eq('route_type', 'model-service-page')
+        .order('slug_path', { ascending: true })
+        .range(start, end);
+      
+      if (error) {
+        sitemapLogger.error(`Error fetching batch ${batch + 1}:`, error);
         continue;
       }
       
-      const [, city, service, model] = parts;
+      if (!batchRoutes || batchRoutes.length === 0) {
+        sitemapLogger.warn(`Batch ${batch + 1} returned no routes`);
+        continue;
+      }
       
-      result.push({
-        city,
-        service,
-        model,
-        updated_at: route.last_updated || new Date().toISOString()
-      });
+      // Process routes in this batch
+      for (const route of batchRoutes) {
+        // Parse slug_path format: "repair/{city}/{service}/{model}"
+        const parts = route.slug_path.split('/');
+        if (parts.length !== 4 || parts[0] !== 'repair') {
+          sitemapLogger.debug(`Skipping invalid slug_path: ${route.slug_path}`);
+          continue;
+        }
+        
+        const [, city, service, model] = parts;
+        
+        // Use content_updated_at if available (Phase 5 SEO improvement), fallback to last_updated
+        const lastmod = route.content_updated_at || route.last_updated || new Date().toISOString();
+        
+        result.push({
+          city,
+          service,
+          model,
+          updated_at: lastmod
+        });
+      }
+      
+      sitemapLogger.info(`Batch ${batch + 1} processed: ${batchRoutes.length} routes`);
+      
+      // Check timeout - if we're taking too long, return what we have
+      if (Date.now() - startTime > 8000) { // 8 second timeout for Vercel 10s limit
+        sitemapLogger.warn(`Timeout approaching, returning ${result.length} routes so far`);
+        break;
+      }
     }
     
     const executionTime = Date.now() - startTime;
@@ -363,6 +437,10 @@ async function getDynamicRoutesForSitemap(): Promise<Array<{
       sitemapLogger.warn('No valid routes parsed, using fallback');
       return getFallbackCombinations();
     }
+    
+    // Log coverage
+    const coverage = totalRoutes ? ((result.length / totalRoutes) * 100).toFixed(1) : '0';
+    sitemapLogger.info(`Sitemap coverage: ${result.length}/${totalRoutes} routes (${coverage}%)`);
     
     return result;
     
