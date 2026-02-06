@@ -924,10 +924,11 @@ export const getStaticPaths: GetStaticPaths = async () => {
     
     console.log('🚀 Starting pagination-based route generation...');
     
-    // First, get the total count of ALL routes (not just model-service-page)
+    // First, get the total count of ALL active routes (only show active routes)
     const { count: totalCount, error: countError } = await supabase
       .from('dynamic_routes')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true);
     
     if (countError) {
       console.error('❌ Error getting route count:', countError);
@@ -1135,12 +1136,13 @@ export const getStaticProps: GetStaticProps<PageProps> = async ({ params }) => {
     // Construct the full slug path for database lookup
     const slugPath = `repair/${slug.join('/')}`;
     
-    // Fetch route data from dynamic_routes table
+    // Fetch route data from dynamic_routes table (only active routes)
     const supabase = getServiceSupabase();
     const { data: route, error } = await supabase
       .from('dynamic_routes')
       .select('*')
       .eq('slug_path', slugPath)
+      .eq('is_active', true)
       .single();
 
     // Handle database errors or missing routes

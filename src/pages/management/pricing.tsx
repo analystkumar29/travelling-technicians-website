@@ -41,7 +41,8 @@ export default function PricingAdmin() {
     brand: 'all',
     model: 'all',
     service: 'all',
-    tier: 'all'
+    tier: 'all',
+    status: 'all' // New: filter by active status
   });
   const [deviceSearch, setDeviceSearch] = useState<string>('');
   
@@ -67,6 +68,10 @@ export default function PricingAdmin() {
   // Bulk edit state
   const [editingRows, setEditingRows] = useState<{[key: string]: {base_price: string}}>({}); 
   const [editingId, setEditingId] = useState<string | null>(null);
+  
+  // Bulk selection state (NEW)
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   const loadAllData = useCallback(async () => {
     setLoading(true);
@@ -364,6 +369,60 @@ export default function PricingAdmin() {
     }
   };
 
+  // Handle toggle active status
+  const handleToggleActive = async (id: string, newStatus: boolean) => {
+    if (!confirm(`Are you sure you want to ${newStatus ? 'activate' : 'deactivate'} this pricing?`)) return;
+
+    try {
+      const response = await authFetch(`/api/management/dynamic-pricing`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, is_active: newStatus })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setSuccess(`Pricing ${newStatus ? 'activated' : 'deactivated'} successfully`);
+        loadDynamicPricing();
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError(data.message || 'Failed to update status');
+      }
+    } catch (err) {
+      setError('Error updating status');
+      console.error('Error:', err);
+    }
+  };
+
+  // Handle bulk status update
+  const handleBulkStatusUpdate = async (ids: string[], newStatus: boolean) => {
+    if (!confirm(`Are you sure you want to ${newStatus ? 'activate' : 'deactivate'} ${ids.length} pricing records?`)) return;
+
+    setBulkUpdating(true);
+    try {
+      const response = await authFetch('/api/management/bulk-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, is_active: newStatus })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setSuccess(`${data.updated} pricing record(s) ${newStatus ? 'activated' : 'deactivated'} successfully`);
+        loadDynamicPricing();
+        setSelectedIds([]);
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError(data.message || 'Failed to update status');
+      }
+    } catch (err) {
+      setError('Error updating status');
+      console.error('Error:', err);
+    } finally {
+      setBulkUpdating(false);
+    }
+  };
+
   // Filter pricing data
   const getFilteredPricing = () => {
     return dynamicPricing.filter((pricing) => {
@@ -373,13 +432,18 @@ export default function PricingAdmin() {
       const sMatch = filters.service === 'all' || pricing.service_name?.toLowerCase().includes(filters.service.toLowerCase());
       const tMatch = filters.tier === 'all' || pricing.pricing_tier === filters.tier;
       
+      // Status filter
+      const statusMatch = filters.status === 'all' || 
+                         (filters.status === 'active' && pricing.is_active) ||
+                         (filters.status === 'inactive' && !pricing.is_active);
+      
       // Device search: matches both brand and model name
       const searchLower = deviceSearch.toLowerCase();
       const dSearch = deviceSearch === '' || 
         (pricing.brand_name?.toLowerCase().includes(searchLower) || 
          pricing.model_name?.toLowerCase().includes(searchLower));
 
-      return dtMatch && bMatch && mMatch && sMatch && tMatch && dSearch;
+      return dtMatch && bMatch && mMatch && sMatch && tMatch && statusMatch && dSearch;
     });
   };
 
@@ -638,7 +702,7 @@ export default function PricingAdmin() {
             />
             
             {/* Filter Row */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
               <select value={filters.deviceType} onChange={(e) => {setFilters({...filters, deviceType: e.target.value}); setCurrentPage(1);}} className="px-3 py-2 border border-gray-300 rounded">
                 <option value="all">All Device Types</option>
                 <option value="mobile">Mobile</option>
@@ -656,9 +720,14 @@ export default function PricingAdmin() {
                 <option value="standard">Standard</option>
                 <option value="premium">Premium</option>
               </select>
+              <select value={filters.status} onChange={(e) => {setFilters({...filters, status: e.target.value}); setCurrentPage(1);}} className="px-3 py-2 border border-gray-300 rounded">
+                <option value="all">All Status</option>
+                <option value="active">Active Only</option>
+                <option value="inactive">Inactive Only</option>
+              </select>
               <button 
                 onClick={() => {
-                  setFilters({deviceType: 'all', brand: 'all', model: 'all', service: 'all', tier: 'all'});
+                  setFilters({deviceType: 'all', brand: 'all', model: 'all', service: 'all', tier: 'all', status: 'all'});
                   setDeviceSearch('');
                   setCurrentPage(1);
                 }} 
@@ -673,10 +742,52 @@ export default function PricingAdmin() {
             <p className="text-center py-8 text-gray-500">No pricing records found</p>
           ) : (
             <>
+              {/* Bulk Actions Section */}
+              {selectedIds.length > 0 && (
+                <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded flex items-center gap-3">
+                  <span className="font-medium text-blue-900">{selectedIds.length} pricing record(s) selected</span>
+                  <button 
+                    onClick={() => handleBulkStatusUpdate(selectedIds, true)}
+                    disabled={bulkUpdating}
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 text-sm font-medium"
+                  >
+                    Activate Selected
+                  </button>
+                  <button 
+                    onClick={() => handleBulkStatusUpdate(selectedIds, false)}
+                    disabled={bulkUpdating}
+                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 text-sm font-medium"
+                  >
+                    Deactivate Selected
+                  </button>
+                  <button 
+                    onClick={() => setSelectedIds([])}
+                    disabled={bulkUpdating}
+                    className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 disabled:opacity-50 text-sm font-medium"
+                  >
+                    Clear Selection
+                  </button>
+                </div>
+              )}
+
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b">
                     <tr>
+                      <th className="px-4 py-3 text-center w-10">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedIds.length === filteredPricing.length && filteredPricing.length > 0}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedIds(filteredPricing.map(p => p.id));
+                            } else {
+                              setSelectedIds([]);
+                            }
+                          }}
+                          className="h-4 w-4 text-primary-600"
+                        />
+                      </th>
                       <th className="px-4 py-3 text-left font-medium">Device</th>
                       <th className="px-4 py-3 text-left font-medium">Service</th>
                       <th className="px-4 py-3 text-left font-medium">Tier</th>
@@ -690,6 +801,20 @@ export default function PricingAdmin() {
                       const isEditing = !!editingRows[pricing.id];
                       return (
                         <tr key={pricing.id} className="border-b hover:bg-gray-50">
+                          <td className="px-4 py-3 text-center">
+                            <input 
+                              type="checkbox" 
+                              checked={selectedIds.includes(pricing.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedIds([...selectedIds, pricing.id]);
+                                } else {
+                                  setSelectedIds(selectedIds.filter(id => id !== pricing.id));
+                                }
+                              }}
+                              className="h-4 w-4 text-primary-600"
+                            />
+                          </td>
                           <td className="px-4 py-3">{pricing.brand_name} {pricing.model_name}</td>
                           <td className="px-4 py-3">{pricing.service_name}</td>
                           <td className="px-4 py-3 capitalize">{pricing.pricing_tier}</td>
@@ -715,16 +840,22 @@ export default function PricingAdmin() {
                               {pricing.is_active ? 'Active' : 'Inactive'}
                             </span>
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
+                          <td className="px-4 py-3 whitespace-nowrap space-x-1">
                             {isEditing ? (
                               <>
-                                <button onClick={() => handleRowEditSave(pricing.id)} className="text-green-600 hover:underline mr-2 font-medium">Save</button>
-                                <button onClick={() => handleRowEditCancel(pricing.id)} className="text-gray-600 hover:underline mr-2">Cancel</button>
+                                <button onClick={() => handleRowEditSave(pricing.id)} className="text-green-600 hover:underline mr-2 font-medium text-xs">Save</button>
+                                <button onClick={() => handleRowEditCancel(pricing.id)} className="text-gray-600 hover:underline mr-2 text-xs">Cancel</button>
                               </>
                             ) : (
                               <>
-                                <button onClick={() => handleRowEditStart(pricing.id, pricing.base_price)} className="text-blue-600 hover:underline mr-2">Edit Price</button>
-                                <button onClick={() => handleDelete(pricing.id)} className="text-red-600 hover:underline">Delete</button>
+                                <button onClick={() => handleRowEditStart(pricing.id, pricing.base_price)} className="text-blue-600 hover:underline mr-1 text-xs">Edit</button>
+                                <button 
+                                  onClick={() => handleToggleActive(pricing.id, !pricing.is_active)} 
+                                  className={`px-2 py-1 rounded text-xs font-medium ${pricing.is_active ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
+                                >
+                                  {pricing.is_active ? 'Deactivate' : 'Activate'}
+                                </button>
+                                <button onClick={() => handleDelete(pricing.id)} className="text-red-600 hover:underline text-xs">Delete</button>
                               </>
                             )}
                           </td>

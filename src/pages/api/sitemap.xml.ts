@@ -350,11 +350,12 @@ async function getDynamicRoutesForSitemap(): Promise<Array<{
   try {
     sitemapLogger.info('Fetching ALL dynamic routes for sitemap with pagination...');
     
-    // First, get total count
+    // First, get total count of active routes only
     const { count: totalRoutes, error: countError } = await supabase
       .from('dynamic_routes')
       .select('*', { count: 'exact', head: true })
-      .eq('route_type', 'model-service-page');
+      .eq('route_type', 'model-service-page')
+      .eq('is_active', true);
     
     if (countError) {
       sitemapLogger.error('Error counting routes:', countError);
@@ -386,6 +387,7 @@ async function getDynamicRoutesForSitemap(): Promise<Array<{
         .from('dynamic_routes')
         .select('slug_path, last_updated, content_updated_at')
         .eq('route_type', 'model-service-page')
+        .eq('is_active', true)
         .order('slug_path', { ascending: true })
         .range(start, end);
       

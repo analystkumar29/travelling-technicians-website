@@ -379,16 +379,16 @@ async function handleDelete(req: NextApiRequest, res: NextApiResponse<ApiRespons
 
 /**
  * PATCH /api/management/dynamic-pricing
- * Quick price update
+ * Quick updates for any field (base_price, is_active, etc.)
  */
 async function handlePatch(req: NextApiRequest, res: NextApiResponse<ApiResponse>, supabase: any) {
   try {
-    const { id, base_price } = req.body;
+    const { id, ...updateFields } = req.body;
     
-    if (!id || typeof base_price !== 'number') {
+    if (!id) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Missing id or base_price' 
+        error: 'Missing id' 
       });
     }
 
@@ -399,15 +399,32 @@ async function handlePatch(req: NextApiRequest, res: NextApiResponse<ApiResponse
       });
     }
 
-    apiLogger.info('Updating price', { id, base_price });
+    if (Object.keys(updateFields).length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No fields to update'
+      });
+    }
+
+    // Validate is_active if provided
+    if (updateFields.is_active !== undefined && typeof updateFields.is_active !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        error: 'is_active must be a boolean'
+      });
+    }
+
+    apiLogger.info('Updating pricing entry', { id, updateFields });
     
-    const { error } = await supabase
+    const { data: entry, error } = await supabase
       .from('dynamic_pricing')
-      .update({ base_price })
-      .eq('id', id);
+      .update(updateFields)
+      .eq('id', id)
+      .select()
+      .single();
     
     if (error) {
-      apiLogger.error('Failed to update price', error);
+      apiLogger.error('Failed to update pricing entry', error);
       return res.status(500).json({ 
         success: false, 
         error: error.message 
@@ -416,13 +433,14 @@ async function handlePatch(req: NextApiRequest, res: NextApiResponse<ApiResponse
     
     return res.status(200).json({ 
       success: true, 
-      message: 'Price updated' 
-    });
+      message: 'Pricing entry updated successfully',
+      entry
+    } as any);
   } catch (error) {
     apiLogger.error('Error in handlePatch', { error });
     return res.status(500).json({
       success: false,
-      message: 'Failed to update price'
+      message: 'Failed to update pricing entry'
     });
   }
 }
