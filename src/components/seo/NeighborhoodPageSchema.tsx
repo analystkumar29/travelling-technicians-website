@@ -56,7 +56,7 @@ export const NeighborhoodPageSchema: React.FC<NeighborhoodPageSchemaProps> = ({
       addressRegion: 'BC',
       addressCountry: 'CA'
     },
-    telephone: '+1-604-XXX-XXXX', // Will be replaced with actual phone
+    telephone: '+1-604-849-5329',
     areaServed: {
       '@type': 'City',
       name: neighborhoodName,
@@ -70,7 +70,7 @@ export const NeighborhoodPageSchema: React.FC<NeighborhoodPageSchemaProps> = ({
       latitude: latitude,
       longitude: longitude
     },
-    url: `https://www.travelling-technicians.ca/locations/${cityName.toLowerCase().replace(/\s+/g, '-')}/${neighborhoodName.toLowerCase().replace(/\s+/g, '-')}`,
+    url: `https://www.travelling-technicians.ca/repair/${cityName.toLowerCase().replace(/\s+/g, '-')}/${neighborhoodName.toLowerCase().replace(/\s+/g, '-')}`,
     
     // Proof-of-Life signals: Monthly repair statistics
     additionalProperty: [

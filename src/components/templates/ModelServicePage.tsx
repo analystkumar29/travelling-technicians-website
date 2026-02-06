@@ -33,7 +33,7 @@ interface PricingTier {
 
 interface RouteData {
   slug_path: string;
-  route_type: 'model-service-page' | 'city-service-page' | 'city-page' | 'city-model-page';
+  route_type: 'model-service-page' | 'city-service-page' | 'city-page' | 'city-model-page' | 'neighborhood-page';
   city_id: string;
   service_id: string;
   model_id: string;

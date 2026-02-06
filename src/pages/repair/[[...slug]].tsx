@@ -36,11 +36,12 @@ import Footer from '@/components/layout/Footer';
 const RepairIndex = dynamic(() => import('@/components/templates/RepairIndex'));
 const ModelServicePage = dynamic(() => import('@/components/templates/ModelServicePage'));
 const CityPage = dynamic(() => import('@/components/templates/CityPage'));
+const NeighborhoodPage = dynamic(() => import('@/components/templates/NeighborhoodPage'));
 
 // Types for our route data
 interface RouteData {
   slug_path: string;
-  route_type: 'model-service-page' | 'city-service-page' | 'city-page' | 'city-model-page';
+  route_type: 'model-service-page' | 'city-service-page' | 'city-page' | 'city-model-page' | 'neighborhood-page';
   city_id: string;
   service_id: string;
   model_id: string;
@@ -48,7 +49,7 @@ interface RouteData {
 }
 
 interface PageProps {
-  routeType: 'REPAIR_INDEX' | 'MODEL_SERVICE_PAGE' | 'CITY_PAGE' | 'CITY_SERVICE_PAGE' | 'CITY_MODEL_PAGE';
+  routeType: 'REPAIR_INDEX' | 'MODEL_SERVICE_PAGE' | 'CITY_PAGE' | 'CITY_SERVICE_PAGE' | 'CITY_MODEL_PAGE' | 'NEIGHBORHOOD_PAGE';
   routeData?: RouteData;
   cities?: Array<{ slug: string; city_name: string }>;
   services?: Array<{ slug: string; name: string; display_name: string }>;
@@ -444,7 +445,8 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
         neighborhoods: csNeighborhoods,
         operating_hours: csOperatingHours,
         testimonials: csTestimonials,
-        nearby_cities: csNearbyCities
+        nearby_cities: csNearbyCities,
+        city_service_content: csCityServiceContent
       } = routeData.payload;
       
       const csServiceName = csService?.name || 'Repair Service';
@@ -591,8 +593,66 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
             </div>
           </section>
 
+          {/* City-Service Unique Editorial Content (SEO differentiator) */}
+          {csCityServiceContent && (
+            <section className="py-16 bg-white">
+              <div className="container-custom">
+                <div className="max-w-4xl mx-auto">
+                  {csCityServiceContent.headline && (
+                    <h2 className="text-3xl font-bold mb-6 text-center">
+                      {csCityServiceContent.headline}
+                    </h2>
+                  )}
+                  {csCityServiceContent.intro_paragraph && (
+                    <p className="text-lg text-primary-600 leading-relaxed mb-8">
+                      {csCityServiceContent.intro_paragraph}
+                    </p>
+                  )}
+
+                  {csCityServiceContent.local_tips && csCityServiceContent.local_tips.length > 0 && (
+                    <div className="mb-8">
+                      <h3 className="text-xl font-bold mb-4">Local Tips</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {csCityServiceContent.local_tips.map((tip: string, i: number) => (
+                          <div key={i} className="flex items-start bg-primary-50 p-4 rounded-lg">
+                            <svg className="h-5 w-5 text-accent-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            <span className="text-primary-700">{tip}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {csCityServiceContent.common_scenarios && csCityServiceContent.common_scenarios.length > 0 && (
+                    <div className="mb-8">
+                      <h3 className="text-xl font-bold mb-4">Common Scenarios in {csCityName}</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {csCityServiceContent.common_scenarios.map((scenario: string, i: number) => (
+                          <div key={i} className="flex items-start bg-accent-50 p-4 rounded-lg border border-accent-200">
+                            <svg className="h-5 w-5 text-accent-600 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                            <span className="text-primary-700">{scenario}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {csCityServiceContent.service_guarantee && (
+                    <div className="bg-primary-900 text-white p-6 rounded-xl text-center">
+                      <p className="text-lg font-medium">{csCityServiceContent.service_guarantee}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* Service Description */}
-          <section className="py-16 bg-white">
+          <section className="py-16 bg-primary-50">
             <div className="container-custom">
               <div className="max-w-4xl mx-auto">
                 <h2 className="text-3xl font-bold mb-6 text-center">
@@ -896,6 +956,10 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
         </>
       );
 
+    case 'NEIGHBORHOOD_PAGE':
+      if (!routeData) return <NotFound />;
+      return <NeighborhoodPage routeData={routeData} />;
+
     default:
       return <NotFound />;
   }
@@ -1190,6 +1254,15 @@ export const getStaticProps: GetStaticProps<PageProps> = async ({ params }) => {
         return {
           props: {
             routeType: 'CITY_MODEL_PAGE',
+            routeData: route as RouteData,
+          },
+          revalidate: 86400,
+        };
+
+      case 'neighborhood-page':
+        return {
+          props: {
+            routeType: 'NEIGHBORHOOD_PAGE',
             routeData: route as RouteData,
           },
           revalidate: 86400,

@@ -54,6 +54,11 @@ interface DynamicContent {
     citySlug: string;
     updated_at: string;
   }>;
+  cityServicePages: Array<{
+    citySlug: string;
+    serviceSlug: string;
+    updated_at: string;
+  }>;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -103,6 +108,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const cityModelPages = getCityModelSitemapEntries(siteUrl, dynamicContent.cityModelPages);
     sitemapLogger.info(`📱 City-model pages (/repair/{city}/{model}): ${cityModelPages.length}`);
 
+    const cityServicePages = getCityServiceSitemapEntries(siteUrl, dynamicContent.cityServicePages);
+    sitemapLogger.info(`🔧 City-service pages (/repair/{city}/{service}): ${cityServicePages.length}`);
+
     const informationalPages = getInformationalPages(siteUrl, now);
     sitemapLogger.info(`ℹ️ Informational pages: ${informationalPages.length}`);
     
@@ -114,6 +122,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ...serviceAreaPages,
       ...cityLocationPages,
       ...neighborhoodPages,
+      ...cityServicePages,
       ...blogPages,
       ...servicePages,
       ...cityServiceModelPages,
@@ -138,6 +147,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     sitemapLogger.info(`  - Services: ${servicePages.length}`);
     sitemapLogger.info(`  - City-Service-Model (dynamic): ${cityServiceModelPages.length}`);
     sitemapLogger.info(`  - City-Model pages: ${cityModelPages.length}`);
+    sitemapLogger.info(`  - City-Service pages: ${cityServicePages.length}`);
     sitemapLogger.info(`  - Informational: ${informationalPages.length}`);
     sitemapLogger.info(`  - Legal: ${legalPages.length}`);
     sitemapLogger.info('----------------------------------------');
@@ -247,8 +257,11 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
     const cityModelPages = await getCityModelPagesForSitemap();
     sitemapLogger.info(`DEBUG: Fetched ${cityModelPages.length} city-model routes for sitemap`);
 
-    // Fetch neighborhood pages (Phase 8)
+    // Fetch neighborhood pages
     const neighborhoods = await getNeighborhoodPagesFromDB();
+
+    // Fetch city-service pages from dynamic_routes
+    const cityServicePages = await getCityServicePagesForSitemap();
     
     // Fetch city locations for /locations/{city} pages
     const cityLocations = serviceLocations?.map(loc => {
@@ -278,7 +291,8 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       cityServiceModels,
       cityModelPages,
       neighborhoods,
-      cityLocations
+      cityLocations,
+      cityServicePages
     };
 
   } catch (error) {
@@ -290,7 +304,8 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       cityServiceModels: [],
       cityModelPages: [],
       neighborhoods: [],
-      cityLocations: []
+      cityLocations: [],
+      cityServicePages: []
     };
   }
 }
@@ -526,6 +541,64 @@ async function getCityModelPagesForSitemap(): Promise<Array<{
     sitemapLogger.error('Error fetching city-model pages for sitemap:', error);
     return [];
   }
+}
+
+/**
+ * Fetch city-service-page routes from dynamic_routes for sitemap
+ * These are 2-segment routes like /repair/vancouver/screen-replacement-mobile
+ */
+async function getCityServicePagesForSitemap(): Promise<Array<{
+  citySlug: string;
+  serviceSlug: string;
+  updated_at: string;
+}>> {
+  const supabase = getServiceSupabase();
+
+  try {
+    const { data: routes, error } = await supabase
+      .from('dynamic_routes')
+      .select('slug_path, last_updated, content_updated_at')
+      .eq('route_type', 'city-service-page')
+      .eq('is_active', true)
+      .order('slug_path');
+
+    if (error || !routes) {
+      sitemapLogger.error('Error fetching city-service pages:', error);
+      return [];
+    }
+
+    return routes.map(route => {
+      const parts = route.slug_path.split('/');
+      // Format: "repair/{city}/{service}"
+      if (parts.length !== 3 || parts[0] !== 'repair') return null;
+
+      return {
+        citySlug: parts[1],
+        serviceSlug: parts[2],
+        updated_at: route.content_updated_at || route.last_updated || new Date().toISOString()
+      };
+    }).filter(Boolean) as Array<{ citySlug: string; serviceSlug: string; updated_at: string }>;
+
+  } catch (error) {
+    sitemapLogger.error('Error in getCityServicePagesForSitemap:', error);
+    return [];
+  }
+}
+
+/**
+ * Generate sitemap entries for city-service pages
+ */
+function getCityServiceSitemapEntries(siteUrl: string, cityServicePages: Array<{
+  citySlug: string;
+  serviceSlug: string;
+  updated_at: string;
+}>): SitemapEntry[] {
+  return cityServicePages.map(({ citySlug, serviceSlug, updated_at }) => ({
+    loc: `${siteUrl}/repair/${citySlug}/${serviceSlug}`,
+    lastmod: updated_at,
+    changefreq: 'weekly',
+    priority: '0.8'
+  }));
 }
 
 /**
@@ -824,25 +897,18 @@ function getStaticPages(siteUrl: string, now: string): SitemapEntry[] {
 }
 
 /**
- * Generate city location pages (Phase 8: /locations/{city})
+ * Generate city location pages (/repair/{city})
+ * Note: These duplicate serviceAreaPages — kept for backwards compatibility but
+ * the service area entries at /repair/{city} are the canonical ones.
  */
 function getCityLocationPages(siteUrl: string, cityLocations: Array<{ city: string; citySlug: string; updated_at: string }>): SitemapEntry[] {
-  const entries: SitemapEntry[] = [];
-  
-  cityLocations.forEach(({ city, citySlug, updated_at }) => {
-    entries.push({
-      loc: `${siteUrl}/locations/${citySlug}`,
-      lastmod: updated_at,
-      changefreq: 'weekly',
-      priority: '0.85' // Higher than neighborhoods, lower than main pages
-    });
-  });
-  
-  return entries;
+  // City pages are already covered by getServiceAreaPages at /repair/{city}
+  // No need to emit duplicate /locations/{city} entries
+  return [];
 }
 
 /**
- * Generate neighborhood pages (Phase 8: /locations/{city}/{neighborhood})
+ * Generate neighborhood pages (/repair/{city}/{neighborhood})
  */
 function getNeighborhoodPages(siteUrl: string, neighborhoods: Array<{
   city: string;
@@ -852,16 +918,16 @@ function getNeighborhoodPages(siteUrl: string, neighborhoods: Array<{
   updated_at: string;
 }>): SitemapEntry[] {
   const entries: SitemapEntry[] = [];
-  
+
   neighborhoods.forEach(({ citySlug, neighborhoodSlug, updated_at }) => {
     entries.push({
-      loc: `${siteUrl}/locations/${citySlug}/${neighborhoodSlug}`,
+      loc: `${siteUrl}/repair/${citySlug}/${neighborhoodSlug}`,
       lastmod: updated_at,
       changefreq: 'monthly',
-      priority: '0.75' // Lower than city pages but still important
+      priority: '0.75'
     });
   });
-  
+
   return entries;
 }
 

@@ -642,14 +642,15 @@ export default function CityPage({ routeData }: CityPageProps) {
       )}
 
       {/* ========== NEIGHBORHOOD LINKS COMPONENT (SEO Internal Linking) ========== */}
-      {neighborhoods && neighborhoods.length > 0 && (
+      {(neighborhood_pages && neighborhood_pages.length > 0) || (neighborhoods && neighborhoods.length > 0) ? (
         <NeighborhoodLinks
           cityName={cityName}
           citySlug={citySlug}
           neighborhoods={neighborhoods}
+          neighborhoodPages={neighborhood_pages}
           title="Service Areas"
         />
-      )}
+      ) : null}
 
       {/* ========== LOCAL CONTENT SECTION (City-Specific SEO Content) ========== */}
       {local_content && (
