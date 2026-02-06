@@ -148,7 +148,23 @@ Admin changes pricing → dynamic_pricing row updated
 - **Revoked access** to `mv_sitemap_routes` materialized view
 - **Fixed API routes**: `technicians/availability.ts` writes now use service role + admin auth; `warranties/index.ts` POST now uses service role
 
+## Performance Optimization (APPLIED 2026-02-06)
+
+**Migration `optimize_indexes_and_fix_neighborhood_rls`**:
+- **Fixed `neighborhood_pages` RLS bypass** — dropped 3 `authenticated_can_*` duplicate policies (same OR-bypass pattern as the earlier RLS fix)
+- **Optimized `testimonials` indexes** — dropped 4 unused indexes (city/service/location/neighborhood, all 0 scans), added `idx_testimonials_featured` covering actual query pattern (`is_featured, featured_order, created_at DESC`)
+- **Dropped duplicate bookings indexes** — `idx_bookings_booking_ref` (duplicate of unique constraint), `idx_bookings_technician_id` (duplicate of partial index)
+- **Dropped duplicate/unused payments indexes** — `unique_booking_payment` constraint (duplicate of `one_payment_per_booking`), `idx_payments_processed_at`, `idx_payments_status`
+- **Dropped unused `idx_warranties_end_date`** (0 scans, no code path)
+- **Disabled orphaned trigger** `booking_status_change_trigger` — writes to `booking_status_history` which has 0 code references
+
+**Migration `fix_rls_initplan_duplicates_and_policies`**:
+- **Fixed `auth_rls_initplan`** on `neighborhood_pages` — rewrote 3 admin policies to use `(select auth.uid())` / `(select auth.jwt())` for per-query evaluation
+- **Fixed `multiple_permissive_policies`** on `technicians` and `technician_service_zones` — split `Strict Admin Access` (ALL) into separate INSERT/UPDATE/DELETE policies with `(select auth.jwt())`, eliminating SELECT overlap with `Public Read Access`
+- **Dropped duplicate index** `idx_dynamic_pricing_model_service_status` (identical to `idx_dynamic_pricing_active`)
+
 **Remaining advisories** (pre-existing, lower priority):
 - 11 tables have RLS enabled but no policies (intentional — all grants revoked, no anon/authenticated access)
 - 29 functions have mutable `search_path` (cosmetic; all trigger-only or service-role-only)
 - `bookings` table has `INSERT` policy with `true` (intentional — public booking flow)
+- `booking_communications` and `booking_status_history` are orphaned tables (0 code references, 0 rows)
