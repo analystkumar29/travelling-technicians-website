@@ -1,6 +1,6 @@
 import { requireAdminAuth } from '@/middleware/adminAuth';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '@/utils/supabaseClient';
+import { supabase, getServiceSupabase } from '@/utils/supabaseClient';
 import logger from '@/utils/logger';
 
 /**
@@ -135,8 +135,9 @@ async function handleCreateWarranty(req: NextApiRequest, res: NextApiResponse) {
       });
     }
     
-    // Insert into database
-    const { data, error } = await supabase
+    // Insert into database (service role needed — anon has SELECT-only)
+    const serviceSupabase = getServiceSupabase();
+    const { data, error } = await serviceSupabase
       .from('warranties')
       .insert([body])
       .select();
