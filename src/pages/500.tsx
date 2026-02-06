@@ -9,8 +9,8 @@ export default function Custom500() {
         <div className="container-custom">
           <div className="max-w-3xl mx-auto text-center">
             <div className="flex justify-center mb-6">
-              <div className="bg-amber-100 p-5 rounded-full">
-                <FaExclamationCircle className="text-5xl text-amber-500" />
+              <div className="bg-accent-100 p-5 rounded-full">
+                <FaExclamationCircle className="text-5xl text-accent-500" />
               </div>
             </div>
             

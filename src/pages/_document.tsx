@@ -166,15 +166,21 @@ class MyDocument extends Document {
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
           <link rel="preconnect" href={siteUrl} />
+
+          {/* Plus Jakarta Sans (headings) + Inter (body) */}
+          <link
+            href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap"
+            rel="stylesheet"
+          />
           
           {/* Web App Manifest - include both formats for maximum compatibility */}
           <link rel="manifest" href={`/manifest.json?v=${assetVersion}`} />
           <link rel="manifest" href={`/site.webmanifest?v=${assetVersion}`} />
           
           {/* Theme Color */}
-          <meta name="theme-color" content="#075985" />
-          <meta name="msapplication-TileColor" content="#075985" />
-          <meta name="msapplication-navbutton-color" content="#075985" />
+          <meta name="theme-color" content="#102a43" />
+          <meta name="msapplication-TileColor" content="#102a43" />
+          <meta name="msapplication-navbutton-color" content="#102a43" />
           <meta name="apple-mobile-web-app-status-bar-style" content="default" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-title" content="TT Repair" />

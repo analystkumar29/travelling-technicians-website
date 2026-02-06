@@ -63,11 +63,11 @@ function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">Page Not Found</h1>
-        <p className="text-gray-600">The requested repair page could not be found.</p>
+        <h1 className="text-2xl font-bold text-primary-800 mb-4">Page Not Found</h1>
+        <p className="text-primary-500">The requested repair page could not be found.</p>
         <button
           onClick={() => router.push('/repair')}
-          className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+          className="mt-6 bg-primary-800 text-white px-6 py-2 rounded-lg hover:bg-primary-900 transition"
         >
           Go to Repair Home
         </button>
@@ -124,8 +124,8 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading repair information...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-800 mx-auto"></div>
+          <p className="mt-4 text-primary-500">Loading repair information...</p>
         </div>
       </div>
     );
@@ -137,10 +137,10 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center max-w-md">
           <h1 className="text-2xl font-bold text-red-600 mb-4">Error Loading Page</h1>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <p className="text-primary-500 mb-6">{error}</p>
           <button
             onClick={() => router.push('/repair')}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+            className="bg-primary-800 text-white px-6 py-2 rounded-lg hover:bg-primary-900 transition"
           >
             Go to Repair Home
           </button>
@@ -206,7 +206,7 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
           <Header />
           
           {/* Hero Section */}
-          <section className="pt-8 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
+          <section className="pt-8 pb-12 bg-gradient-to-r from-primary-900 to-primary-900 text-white">
             <div className="container-custom">
               <div className="text-center max-w-4xl mx-auto">
                 <div className="flex items-center justify-center mb-4">
@@ -222,17 +222,17 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
                 <p className="text-xl md:text-2xl mb-8 text-primary-100">
                   Professional {cmpBrandName} {cmpDeviceType} repair at your doorstep
                 </p>
-                
+
                 <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-                  <Link 
-                    href={`/book-online?city=${cmpCity?.slug}&model=${cmpModel?.slug}`} 
+                  <Link
+                    href={`/book-online?city=${cmpCity?.slug}&model=${cmpModel?.slug}`}
                     className="btn-accent text-lg px-8 py-4"
                   >
                     Book Repair Now
                   </Link>
-                  <a 
+                  <a
                     href={cmpPhoneHref}
-                    className="btn-outline border-white text-white hover:bg-primary-600 text-lg px-8 py-4 flex items-center justify-center"
+                    className="btn-outline border-white text-white hover:bg-primary-800 text-lg px-8 py-4 flex items-center justify-center"
                   >
                     <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
@@ -270,7 +270,7 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
             <div className="container-custom">
               <div className="text-center mb-12">
                 <h2 className="text-3xl font-bold mb-4">Available Services for {cmpModelName}</h2>
-                <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                <p className="text-lg text-primary-500 max-w-2xl mx-auto">
                   Select a service to see pricing and book your doorstep repair in {cmpCityName}
                 </p>
               </div>
@@ -300,17 +300,17 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
                           </div>
                         )}
                       </div>
-                      <h3 className="font-bold text-xl text-gray-900 group-hover:text-primary-600 transition-colors mb-2">
+                      <h3 className="font-bold text-xl text-primary-900 group-hover:text-primary-800 transition-colors mb-2">
                         {service.display_name}
                       </h3>
-                      <p className="text-sm text-gray-600 mb-4">
+                      <p className="text-sm text-primary-500 mb-4">
                         {service.description || `Professional ${service.display_name.toLowerCase()} for your ${cmpModelName}`}
                       </p>
                       <div className="flex items-center justify-between">
-                        <span className="text-primary-500 font-bold">
+                        <span className="text-primary-800 font-bold">
                           {service.pricing_available ? 'View Pricing' : 'Get Quote'}
                         </span>
-                        <svg className="h-5 w-5 text-primary-500 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="h-5 w-5 text-primary-800 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
                         </svg>
                       </div>
@@ -319,10 +319,10 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <p className="text-gray-600 mb-6">No services currently available for this device.</p>
+                  <p className="text-primary-500 mb-6">No services currently available for this device.</p>
                   <Link
                     href={`/book-online?city=${cmpCity?.slug}`}
-                    className="text-primary-600 hover:text-primary-700 font-semibold"
+                    className="text-primary-800 hover:text-primary-900 font-semibold"
                   >
                     Contact us for a custom quote →
                   </Link>
@@ -332,39 +332,39 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
           </section>
 
           {/* Why Choose Us Section */}
-          <section className="py-16 bg-gray-50">
+          <section className="py-16 bg-primary-50">
             <div className="container-custom">
               <div className="max-w-4xl mx-auto">
                 <h2 className="text-3xl font-bold mb-8 text-center">
                   Why Choose The Travelling Technicians for {cmpModelName} Repair?
                 </h2>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-white p-6 rounded-xl">
                     <div className="text-3xl mb-3">🏠</div>
                     <h3 className="font-bold text-lg mb-2">Doorstep Convenience</h3>
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-primary-500 text-sm">
                       No need to travel. We come to your location in {cmpCityName} with all necessary tools and parts.
                     </p>
                   </div>
                   <div className="bg-white p-6 rounded-xl">
                     <div className="text-3xl mb-3">⚡</div>
                     <h3 className="font-bold text-lg mb-2">Fast Service</h3>
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-primary-500 text-sm">
                       Most {cmpModelName} repairs completed in 30-90 minutes on the same day.
                     </p>
                   </div>
                   <div className="bg-white p-6 rounded-xl">
                     <div className="text-3xl mb-3">✅</div>
                     <h3 className="font-bold text-lg mb-2">90-Day Warranty</h3>
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-primary-500 text-sm">
                       All {cmpModelName} repairs come with a comprehensive 90-day warranty on parts and labor.
                     </p>
                   </div>
                   <div className="bg-white p-6 rounded-xl">
                     <div className="text-3xl mb-3">🔧</div>
                     <h3 className="font-bold text-lg mb-2">Certified Technicians</h3>
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-primary-500 text-sm">
                       Our technicians are certified and experienced in {cmpBrandName} {cmpDeviceType} repairs.
                     </p>
                   </div>
@@ -379,10 +379,10 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
               <h2 className="text-3xl md:text-4xl font-bold mb-6">
                 Ready to Repair Your {cmpModelName}?
               </h2>
-              <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
+              <p className="text-xl text-primary-700 mb-8 max-w-2xl mx-auto">
                 Book your doorstep repair in {cmpCityName} today and get your device working like new.
               </p>
-              
+
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   href={`/book-online?city=${cmpCity?.slug}&model=${cmpModel?.slug}`}
@@ -392,7 +392,7 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
                 </Link>
                 <a
                   href={cmpPhoneHref}
-                  className="btn-outline border-primary-600 text-primary-600 hover:bg-primary-50 text-lg px-8 py-4"
+                  className="btn-outline border-primary-800 text-primary-800 hover:bg-primary-50 text-lg px-8 py-4"
                 >
                   Call {cmpPhoneDisplay}
                 </a>
@@ -421,7 +421,7 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
             <div className="min-h-screen flex items-center justify-center">
               <div className="text-center">
                 <h1 className="text-2xl font-bold">Loading service information...</h1>
-                <Link href="/repair" className="mt-4 text-blue-600 hover:underline inline-block">
+                <Link href="/repair" className="mt-4 text-primary-800 hover:underline inline-block">
                   View All Services
                 </Link>
               </div>
@@ -517,7 +517,7 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
           <Header />
           
           {/* Hero Section */}
-          <section className="pt-8 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
+          <section className="pt-8 pb-12 bg-gradient-to-r from-primary-900 to-primary-900 text-white">
             <div className="container-custom">
               <div className="text-center max-w-4xl mx-auto">
                 <div className="flex items-center justify-center mb-4">
@@ -533,22 +533,22 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
                 <p className="text-xl md:text-2xl mb-8 text-primary-100">
                   Professional {csDeviceType.toLowerCase()} {csServiceName.toLowerCase()} at your doorstep
                 </p>
-                
+
                 <div className="inline-block bg-accent-500 text-white text-lg px-6 py-3 rounded-full mb-8">
                   <span className="font-bold">From $89</span>
                   <span className="ml-2 text-primary-100">with 90-day warranty</span>
                 </div>
-                
+
                 <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-                  <Link 
-                    href={`/book-online?city=${csCity?.slug}&service=${csService?.slug}`} 
+                  <Link
+                    href={`/book-online?city=${csCity?.slug}&service=${csService?.slug}`}
                     className="btn-accent text-lg px-8 py-4"
                   >
                     Book {csServiceName} Now
                   </Link>
-                  <a 
+                  <a
                     href={csPhoneHref}
-                    className="btn-outline border-white text-white hover:bg-primary-600 text-lg px-8 py-4 flex items-center justify-center"
+                    className="btn-outline border-white text-white hover:bg-primary-800 text-lg px-8 py-4 flex items-center justify-center"
                   >
                     <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
@@ -598,29 +598,29 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
                 <h2 className="text-3xl font-bold mb-6 text-center">
                   Professional {csServiceName} Services
                 </h2>
-                <p className="text-lg text-gray-600 mb-8 text-center">
+                <p className="text-lg text-primary-500 mb-8 text-center">
                   {csService?.description || `Get professional ${csServiceName.toLowerCase()} for your ${csDeviceType.toLowerCase()} right at your doorstep in ${csCityName}. Our certified technicians bring all the necessary tools and genuine parts to complete your repair quickly and efficiently.`}
                 </p>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-                  <div className="bg-gray-50 p-6 rounded-xl text-center">
+                  <div className="bg-primary-50 p-6 rounded-xl text-center">
                     <div className="text-4xl mb-4">🏠</div>
                     <h3 className="font-bold text-lg mb-2">Doorstep Service</h3>
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-primary-500 text-sm">
                       We come to your home or office in {csCityName} with all needed equipment
                     </p>
                   </div>
-                  <div className="bg-gray-50 p-6 rounded-xl text-center">
+                  <div className="bg-primary-50 p-6 rounded-xl text-center">
                     <div className="text-4xl mb-4">⚡</div>
                     <h3 className="font-bold text-lg mb-2">Same-Day Service</h3>
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-primary-500 text-sm">
                       Most repairs completed in 30-90 minutes on the same day
                     </p>
                   </div>
-                  <div className="bg-gray-50 p-6 rounded-xl text-center">
+                  <div className="bg-primary-50 p-6 rounded-xl text-center">
                     <div className="text-4xl mb-4">✅</div>
                     <h3 className="font-bold text-lg mb-2">Quality Guarantee</h3>
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-primary-500 text-sm">
                       90-day warranty on all parts and labor
                     </p>
                   </div>
@@ -631,11 +631,11 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
 
           {/* Select Your Model Section */}
           {csSampleModels && csSampleModels.length > 0 && (
-            <section className="py-16 bg-gray-50">
+            <section className="py-16 bg-primary-50">
               <div className="container-custom">
                 <div className="text-center mb-12">
                   <h2 className="text-3xl font-bold mb-4">Select Your {csDeviceType} Model</h2>
-                  <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                  <p className="text-lg text-primary-500 max-w-2xl mx-auto">
                     Choose your device model to see pricing and book your {csServiceName.toLowerCase()} in {csCityName}
                   </p>
                 </div>
@@ -647,10 +647,10 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
                       href={`/repair/${csCity?.slug}/${csService?.slug}/${model.slug}`}
                       className="bg-white p-4 rounded-lg text-center shadow-sm hover:shadow-lg transition-all border border-gray-100 group model-item"
                     >
-                      <div className="text-gray-800 font-medium group-hover:text-primary-600 transition-colors">
+                      <div className="text-primary-800 font-medium group-hover:text-primary-800 transition-colors">
                         {model.display_name || model.name}
                       </div>
-                      <div className="text-sm text-primary-500 mt-2">
+                      <div className="text-sm text-primary-800 mt-2">
                         View Pricing →
                       </div>
                     </Link>
@@ -687,10 +687,10 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
                 )}
                 
                 <div className="text-center mt-8">
-                  <p className="text-gray-600 mb-4">Don't see your model?</p>
+                  <p className="text-primary-500 mb-4">Don't see your model?</p>
                   <Link
                     href={`/book-online?city=${csCity?.slug}&service=${csService?.slug}`}
-                    className="text-primary-600 hover:text-primary-700 font-semibold"
+                    className="text-primary-800 hover:text-primary-900 font-semibold"
                   >
                     Contact us for a custom quote →
                   </Link>
@@ -705,22 +705,22 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
               <div className="container-custom">
                 <div className="text-center mb-12">
                   <h2 className="text-3xl font-bold mb-4">What Our {csCityName} Customers Say</h2>
-                  <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                  <p className="text-lg text-primary-500 max-w-2xl mx-auto">
                     Real reviews from satisfied customers in {csCityName} and surrounding areas
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {csTestimonials.slice(0, 3).map((testimonial: { id?: string; customer_name: string; review: string; rating: number; city?: string; service?: string }, index: number) => (
-                    <div 
-                      key={testimonial.id || index} 
-                      className="bg-gray-50 p-6 rounded-xl"
+                    <div
+                      key={testimonial.id || index}
+                      className="bg-primary-50 p-6 rounded-xl"
                     >
                       <div className="flex items-center mb-4">
                         {[...Array(5)].map((_, i) => (
-                          <svg 
-                            key={i} 
-                            className={`h-5 w-5 ${i < testimonial.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                          <svg
+                            key={i}
+                            className={`h-5 w-5 ${i < testimonial.rating ? 'text-accent-400' : 'text-primary-200'}`}
                             fill="currentColor" 
                             viewBox="0 0 20 20"
                           >
@@ -728,11 +728,11 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
                           </svg>
                         ))}
                       </div>
-                      <p className="text-gray-700 mb-4 italic">"{testimonial.review}"</p>
+                      <p className="text-primary-700 mb-4 italic">"{testimonial.review}"</p>
                       <div className="border-t pt-4">
-                        <div className="font-semibold text-gray-900">{testimonial.customer_name}</div>
+                        <div className="font-semibold text-primary-900">{testimonial.customer_name}</div>
                         {testimonial.city && (
-                          <div className="text-sm text-gray-500">{testimonial.city}</div>
+                          <div className="text-sm text-primary-400">{testimonial.city}</div>
                         )}
                       </div>
                     </div>
@@ -744,14 +744,14 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
 
           {/* City-Specific Local Content Section */}
           {csLocalContent && (
-            <section className="py-16 bg-gray-50">
+            <section className="py-16 bg-primary-50">
               <div className="container-custom">
                 <div className="max-w-4xl mx-auto">
                   <h2 className="text-3xl font-bold mb-8 text-center">
                     {csServiceName} Experts in {csCityName}
                   </h2>
-                  <div 
-                    className="prose prose-lg max-w-none text-gray-700"
+                  <div
+                    className="prose prose-lg max-w-none text-primary-700"
                     dangerouslySetInnerHTML={{ __html: csLocalContent.replace(/\\n/g, '<br/>') }}
                   />
                 </div>
@@ -765,7 +765,7 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
               <div className="container-custom">
                 <div className="text-center mb-12">
                   <h2 className="text-3xl font-bold mb-4">{csCityName} Neighborhoods We Serve</h2>
-                  <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                  <p className="text-lg text-primary-500 max-w-2xl mx-auto">
                     We provide doorstep {csServiceName.toLowerCase()} throughout {csCityName}
                   </p>
                 </div>
@@ -774,10 +774,10 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
                   {csNeighborhoods.map((neighborhood: string, index: number) => (
                     <div 
                       key={index}
-                      className="bg-gray-50 px-4 py-2 rounded-full text-gray-700 hover:bg-primary-50 hover:text-primary-700 transition-colors"
+                      className="bg-primary-50 px-4 py-2 rounded-full text-primary-700 hover:bg-primary-100 hover:text-primary-900 transition-colors"
                     >
                       <span className="flex items-center">
-                        <svg className="h-4 w-4 mr-2 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="h-4 w-4 mr-2 text-primary-800" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                         </svg>
                         {neighborhood}
@@ -791,11 +791,11 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
 
           {/* Neighborhood Pages - Hyper-Local SEO Linking */}
           {routeData.payload.neighborhood_pages && routeData.payload.neighborhood_pages.length > 0 && (
-            <section className="py-16 bg-gray-50">
+            <section className="py-16 bg-primary-50">
               <div className="container-custom">
                 <div className="text-center mb-12">
                   <h2 className="text-3xl font-bold mb-4">{csServiceName} by Neighborhood</h2>
-                  <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                  <p className="text-lg text-primary-500 max-w-2xl mx-auto">
                     Find repair services in your specific {csCityName} neighborhood
                   </p>
                 </div>
@@ -807,15 +807,15 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
                       href={`/repair/${csCity?.slug}/${neighborhood.slug}`}
                       className="bg-white p-4 rounded-lg hover:shadow-md transition-all border border-gray-100 group"
                     >
-                      <div className="font-bold text-gray-900 group-hover:text-primary-600 transition-colors mb-1">
+                      <div className="font-bold text-primary-900 group-hover:text-primary-800 transition-colors mb-1">
                         {neighborhood.neighborhood_name}
                       </div>
                       {neighborhood.landmark_name && (
-                        <div className="text-xs text-gray-500 mb-2">
+                        <div className="text-xs text-primary-400 mb-2">
                           Near {neighborhood.landmark_name}
                         </div>
                       )}
-                      <div className="text-xs text-primary-600 flex items-center">
+                      <div className="text-xs text-primary-800 flex items-center">
                         <svg className="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
                         </svg>
@@ -830,11 +830,11 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
 
           {/* Nearby Cities Section (SEO Internal Linking) */}
           {csNearbyCities && csNearbyCities.length > 0 && (
-            <section className="py-16 bg-gray-50">
+            <section className="py-16 bg-primary-50">
               <div className="container-custom">
                 <div className="text-center mb-12">
                   <h2 className="text-3xl font-bold mb-4">Also Serving Nearby Cities</h2>
-                  <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                  <p className="text-lg text-primary-500 max-w-2xl mx-auto">
                     Need {csServiceName.toLowerCase()} in a nearby city? We've got you covered!
                   </p>
                 </div>
@@ -846,15 +846,15 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
                       href={`/repair/${nearbyCity.slug}/${csService?.slug}`}
                       className="bg-white p-4 rounded-lg text-center shadow-sm hover:shadow-md transition-all border border-gray-100 group"
                     >
-                      <div className="text-gray-800 font-medium group-hover:text-primary-600 transition-colors">
+                      <div className="text-primary-800 font-medium group-hover:text-primary-800 transition-colors">
                         {nearbyCity.name}
                       </div>
                       {nearbyCity.distance_km && (
-                        <div className="text-sm text-gray-500 mt-1">
+                        <div className="text-sm text-primary-400 mt-1">
                           {nearbyCity.distance_km.toFixed(1)} km away
                         </div>
                       )}
-                      <div className="text-sm text-primary-500 mt-2">
+                      <div className="text-sm text-primary-800 mt-2">
                         {csServiceName} →
                       </div>
                     </Link>
@@ -870,10 +870,10 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
               <h2 className="text-3xl md:text-4xl font-bold mb-6">
                 Ready for {csServiceName} in {csCityName}?
               </h2>
-              <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
+              <p className="text-xl text-primary-700 mb-8 max-w-2xl mx-auto">
                 Book your doorstep {csServiceName.toLowerCase()} today and get back to using your {csDeviceType.toLowerCase()}.
               </p>
-              
+
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   href={`/book-online?city=${csCity?.slug}&service=${csService?.slug}`}
@@ -883,7 +883,7 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
                 </Link>
                 <a
                   href={csPhoneHref}
-                  className="btn-outline border-primary-600 text-primary-600 hover:bg-primary-50 text-lg px-8 py-4"
+                  className="btn-outline border-primary-800 text-primary-800 hover:bg-primary-50 text-lg px-8 py-4"
                 >
                   Call {csPhoneDisplay}
                 </a>
@@ -1148,28 +1148,9 @@ export const getStaticProps: GetStaticProps<PageProps> = async ({ params }) => {
     // Handle database errors or missing routes
     if (error || !route) {
       console.warn(`Route not found: ${slugPath}`, error?.message);
-      
-      // Check if this might be a city page or city-service page
-      // (we don't have those in dynamic_routes yet, but we could add them)
-      if (slug.length === 1) {
-        // Could be a city page like /repair/vancouver
-        return {
-          props: {
-            routeType: 'CITY_PAGE',
-          },
-          revalidate: 86400,
-        };
-      } else if (slug.length === 2) {
-        // Could be a city-service page like /repair/vancouver/screen-repair
-        return {
-          props: {
-            routeType: 'CITY_SERVICE_PAGE',
-          },
-          revalidate: 86400,
-        };
-      }
-      
-      // Return 404 for unknown routes
+
+      // All valid routes (city pages, city-model, model-service) now exist in dynamic_routes.
+      // If not found, it's genuinely a 404.
       return {
         notFound: true,
         revalidate: 3600,

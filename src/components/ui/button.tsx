@@ -19,11 +19,17 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        // New premium variants
+        navy: "bg-primary-800 text-white shadow-sm hover:bg-primary-900 focus-visible:ring-primary-400",
+        amber: "bg-accent-500 text-primary-900 font-semibold shadow-sm hover:bg-accent-600 focus-visible:ring-accent-400",
+        "primary-outline": "border border-primary-300 text-primary-700 bg-transparent hover:bg-primary-50 focus-visible:ring-primary-400",
+        "primary-ghost": "text-primary-700 hover:bg-primary-50 focus-visible:ring-primary-400",
       },
       size: {
         default: "h-9 px-4 py-2",
         sm: "h-8 rounded-md px-3 text-xs",
         lg: "h-10 rounded-md px-8",
+        xl: "h-14 px-8 text-lg rounded-lg",
         icon: "h-9 w-9",
       },
     },

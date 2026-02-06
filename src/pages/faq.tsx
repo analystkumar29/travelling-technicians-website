@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Head from 'next/head';
 import Layout from '@/components/layout/Layout';
 import Link from 'next/link';
-import { FaChevronDown, FaChevronUp, FaTools, FaDollarSign, FaShippingFast, FaShieldAlt, FaRegClock, FaBusinessTime } from 'react-icons/fa';
+import { ChevronDown, ChevronUp, Wrench, DollarSign, Truck, Shield, Clock, Briefcase } from 'lucide-react';
 import { FAQSchema } from '@/components/seo/StructuredData';
 
 // FAQ Categories and Questions
@@ -10,7 +10,7 @@ const faqCategories = [
   {
     id: 'services',
     name: 'Our Services',
-    icon: <FaTools className="h-6 w-6" />,
+    icon: <Wrench className="h-6 w-6" />,
     questions: [
       {
         id: 'services-1',
@@ -42,7 +42,7 @@ const faqCategories = [
   {
     id: 'process',
     name: 'Repair Process',
-    icon: <FaRegClock className="h-6 w-6" />,
+    icon: <Clock className="h-6 w-6" />,
     questions: [
       {
         id: 'process-1',
@@ -74,7 +74,7 @@ const faqCategories = [
   {
     id: 'pricing',
     name: 'Pricing & Payment',
-    icon: <FaDollarSign className="h-6 w-6" />,
+    icon: <DollarSign className="h-6 w-6" />,
     questions: [
       {
         id: 'pricing-1',
@@ -106,7 +106,7 @@ const faqCategories = [
   {
     id: 'warranty',
     name: 'Warranty & Support',
-    icon: <FaShieldAlt className="h-6 w-6" />,
+    icon: <Shield className="h-6 w-6" />,
     questions: [
       {
         id: 'warranty-1',
@@ -138,7 +138,7 @@ const faqCategories = [
   {
     id: 'scheduling',
     name: 'Booking & Scheduling',
-    icon: <FaBusinessTime className="h-6 w-6" />,
+    icon: <Briefcase className="h-6 w-6" />,
     questions: [
       {
         id: 'scheduling-1',
@@ -170,7 +170,7 @@ const faqCategories = [
   {
     id: 'locations',
     name: 'Service Areas',
-    icon: <FaShippingFast className="h-6 w-6" />,
+    icon: <Truck className="h-6 w-6" />,
     questions: [
       {
         id: 'locations-1',
@@ -211,23 +211,23 @@ interface FaqItemProps {
 
 const FaqItem = ({ question, answer, isOpen, toggleOpen }: FaqItemProps) => {
   return (
-    <div className="border-b border-gray-200 py-4">
+    <div className="border-b border-primary-100 py-4">
       <button
         className="flex justify-between items-center w-full text-left focus:outline-none"
         onClick={toggleOpen}
       >
-        <h3 className="text-lg font-medium text-gray-900">{question}</h3>
+        <h3 className="text-lg font-medium text-primary-900">{question}</h3>
         <span className="ml-6 flex-shrink-0">
           {isOpen ? (
-            <FaChevronUp className="h-5 w-5 text-primary-500" />
+            <ChevronUp className="h-5 w-5 text-primary-800" />
           ) : (
-            <FaChevronDown className="h-5 w-5 text-gray-400" />
+            <ChevronDown className="h-5 w-5 text-primary-400" />
           )}
         </span>
       </button>
       {isOpen && (
         <div className="mt-3 pr-12">
-          <p className="text-base text-gray-600">{answer}</p>
+          <p className="text-base text-primary-500">{answer}</p>
         </div>
       )}
     </div>
@@ -255,11 +255,11 @@ const FaqCategory = ({ category, openItemId, setOpenItemId }: FaqCategoryProps) 
     <div className="mb-10">
       <div className="flex items-center mb-6">
         <div className="rounded-full bg-primary-100 p-3 mr-4">
-          <div className="text-primary-600">{category.icon}</div>
+          <div className="text-primary-800">{category.icon}</div>
         </div>
-        <h2 className="text-2xl font-bold text-gray-900">{category.name}</h2>
+        <h2 className="text-2xl font-bold text-primary-900">{category.name}</h2>
       </div>
-      <div className="bg-white rounded-lg shadow-sm">
+      <div className="bg-white rounded-xl shadow-sm">
         {category.questions.map((item) => (
           <FaqItem
             key={item.id}
@@ -281,7 +281,7 @@ export default function FAQPage() {
   const [filteredFaqs, setFilteredFaqs] = useState(faqCategories);
 
   // Collect all FAQs for structured data
-  const allFaqs = faqCategories.flatMap(category => 
+  const allFaqs = faqCategories.flatMap(category =>
     category.questions.map(q => ({
       question: q.question,
       answer: q.answer
@@ -296,13 +296,13 @@ export default function FAQPage() {
       </Head>
       <Layout>
       {/* Hero Section */}
-      <section className="pt-16 pb-20 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
+      <section className="pt-16 pb-20 bg-gradient-to-br from-primary-900 to-primary-800 text-white">
         <div className="container-custom">
           <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">
+            <h1 className="text-4xl md:text-5xl font-heading font-bold mb-6">
               Frequently Asked Questions
             </h1>
-            <p className="text-xl mb-8 text-primary-100">
+            <p className="text-xl mb-8 text-primary-200">
               Find answers to common questions about our doorstep repair services, pricing, warranty, and more.
             </p>
           </div>
@@ -310,16 +310,16 @@ export default function FAQPage() {
       </section>
 
       {/* Quick Search */}
-      <section className="py-10 bg-gray-50">
+      <section className="py-10 bg-primary-50">
         <div className="container-custom">
           <div className="max-w-2xl mx-auto">
             <div className="relative">
               <input
                 type="text"
-                className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent shadow-sm"
+                className="w-full px-4 py-3 pl-12 border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent shadow-sm"
                 placeholder="Search for questions..."
               />
-              <div className="absolute left-4 top-3.5 text-gray-400">
+              <div className="absolute left-4 top-3.5 text-primary-400">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
@@ -336,15 +336,15 @@ export default function FAQPage() {
             {/* Category Navigation Sidebar */}
             <div className="w-full md:w-1/4 px-4 mb-8 md:mb-0">
               <div className="sticky top-24">
-                <h3 className="text-lg font-bold mb-4 text-gray-900">FAQ Categories</h3>
+                <h3 className="text-lg font-bold mb-4 text-primary-900">FAQ Categories</h3>
                 <nav className="space-y-2">
                   {faqCategories.map((category) => (
                     <button
                       key={category.id}
-                      className={`flex items-center w-full px-4 py-2 text-left rounded-md ${
-                        activeCategory === category.id 
-                          ? 'bg-primary-100 text-primary-700 font-medium' 
-                          : 'text-gray-700 hover:bg-gray-100'
+                      className={`flex items-center w-full px-4 py-2 text-left rounded-lg ${
+                        activeCategory === category.id
+                          ? 'bg-primary-100 text-primary-800 font-medium'
+                          : 'text-primary-600 hover:bg-primary-50'
                       }`}
                       onClick={() => setActiveCategory(category.id)}
                     >
@@ -354,13 +354,13 @@ export default function FAQPage() {
                   ))}
                 </nav>
 
-                <div className="mt-8 p-4 bg-primary-50 rounded-lg">
-                  <h3 className="font-bold text-gray-900 mb-2">Can\'t find an answer?</h3>
-                  <p className="text-sm text-gray-600 mb-4">
+                <div className="mt-8 p-4 bg-primary-50 rounded-xl">
+                  <h3 className="font-bold text-primary-900 mb-2">Can't find an answer?</h3>
+                  <p className="text-sm text-primary-500 mb-4">
                     We're here to help. Contact our support team for assistance with any questions you may have.
                   </p>
                   <div className="mt-6">
-                    <Link href="/contact" className="btn-primary text-sm py-2 block text-center">
+                    <Link href="/contact" className="bg-primary-800 hover:bg-primary-900 text-white text-sm py-2 px-4 rounded-lg block text-center font-medium transition-colors">
                         Contact Our Team
                       </Link>
                   </div>
@@ -387,20 +387,20 @@ export default function FAQPage() {
       </section>
 
       {/* Still Have Questions */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-primary-50">
         <div className="container-custom">
-          <div className="bg-white rounded-lg shadow-custom p-8 max-w-3xl mx-auto">
+          <div className="bg-white rounded-xl shadow-sm p-8 max-w-3xl mx-auto">
             <div className="text-center">
-              <h2 className="text-2xl font-bold mb-4">Still Have Questions?</h2>
-              <p className="text-gray-600 mb-6">
-                Can\'t find the answer you\'re looking for? Our friendly team is here to help you with any questions or concerns about our doorstep repair services.
+              <h2 className="text-2xl font-heading font-bold mb-4 text-primary-900">Still Have Questions?</h2>
+              <p className="text-primary-500 mb-6">
+                Can't find the answer you're looking for? Our friendly team is here to help you with any questions or concerns about our doorstep repair services.
               </p>
               <div className="text-center mt-12">
-                <Link href="/contact" className="btn-primary text-center">
+                <Link href="/contact" className="inline-flex items-center justify-center bg-primary-800 hover:bg-primary-900 text-white font-semibold px-6 py-3 rounded-lg transition-colors text-center">
                     Have More Questions? Contact Us
                   </Link>
-                <span className="mx-3 text-gray-300">or</span>
-                <Link href="/book-online" className="btn-outline text-center">
+                <span className="mx-3 text-primary-300">or</span>
+                <Link href="/book-online" className="inline-flex items-center justify-center border border-primary-300 text-primary-700 hover:bg-primary-50 font-medium px-6 py-3 rounded-lg transition-colors text-center">
                     Book a Repair
                   </Link>
               </div>
@@ -410,14 +410,14 @@ export default function FAQPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 bg-primary-600 text-white">
+      <section className="py-16 bg-primary-900 text-white">
         <div className="container-custom">
           <div className="text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready for Doorstep Device Repair?</h2>
-            <p className="text-xl mb-8 max-w-3xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6">Ready for Doorstep Device Repair?</h2>
+            <p className="text-xl mb-8 max-w-3xl mx-auto text-primary-200">
               Our technicians bring the repair shop to you – saving you time and hassle. Book your appointment now.
             </p>
-            <Link href="/book-online" className="btn-accent text-center inline-block">
+            <Link href="/book-online" className="inline-flex items-center justify-center bg-accent-500 hover:bg-accent-600 text-primary-900 font-semibold px-8 py-3 rounded-lg transition-colors text-center">
                 Book Your Repair Now
               </Link>
           </div>
@@ -426,4 +426,4 @@ export default function FAQPage() {
     </Layout>
     </>
   );
-} 
+}

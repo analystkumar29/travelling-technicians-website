@@ -37,6 +37,11 @@ interface DynamicContent {
     model: string;
     updated_at: string;
   }>;
+  cityModelPages: Array<{
+    city: string;
+    model: string;
+    updated_at: string;
+  }>;
   neighborhoods: Array<{
     city: string;
     citySlug: string;
@@ -94,7 +99,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     const cityServiceModelPages = getCityServiceModelPages(siteUrl, dynamicContent.cityServiceModels);
     sitemapLogger.info(`🎯 City-service-model pages (MAIN DYNAMIC ROUTES): ${cityServiceModelPages.length}`);
-    
+
+    const cityModelPages = getCityModelSitemapEntries(siteUrl, dynamicContent.cityModelPages);
+    sitemapLogger.info(`📱 City-model pages (/repair/{city}/{model}): ${cityModelPages.length}`);
+
     const informationalPages = getInformationalPages(siteUrl, now);
     sitemapLogger.info(`ℹ️ Informational pages: ${informationalPages.length}`);
     
@@ -109,6 +117,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ...blogPages,
       ...servicePages,
       ...cityServiceModelPages,
+      ...cityModelPages,
       ...informationalPages,
       ...legalPages
     ];
@@ -128,6 +137,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     sitemapLogger.info(`  - Blog: ${blogPages.length}`);
     sitemapLogger.info(`  - Services: ${servicePages.length}`);
     sitemapLogger.info(`  - City-Service-Model (dynamic): ${cityServiceModelPages.length}`);
+    sitemapLogger.info(`  - City-Model pages: ${cityModelPages.length}`);
     sitemapLogger.info(`  - Informational: ${informationalPages.length}`);
     sitemapLogger.info(`  - Legal: ${legalPages.length}`);
     sitemapLogger.info('----------------------------------------');
@@ -233,6 +243,10 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
     sitemapLogger.info(`DEBUG: Fetched ${cityServiceModels.length} dynamic routes for sitemap`);
     sitemapLogger.info(`DEBUG: First few routes: ${JSON.stringify(cityServiceModels.slice(0, 3))}`);
     
+    // Fetch city-model pages from dynamic_routes
+    const cityModelPages = await getCityModelPagesForSitemap();
+    sitemapLogger.info(`DEBUG: Fetched ${cityModelPages.length} city-model routes for sitemap`);
+
     // Fetch neighborhood pages (Phase 8)
     const neighborhoods = await getNeighborhoodPagesFromDB();
     
@@ -262,10 +276,11 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       blogPosts,
       services,
       cityServiceModels,
+      cityModelPages,
       neighborhoods,
       cityLocations
     };
-    
+
   } catch (error) {
     sitemapLogger.error('Error fetching dynamic content:', error);
     return {
@@ -273,6 +288,7 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       blogPosts: [],
       services: [],
       cityServiceModels: [],
+      cityModelPages: [],
       neighborhoods: [],
       cityLocations: []
     };
@@ -450,6 +466,82 @@ async function getDynamicRoutesForSitemap(): Promise<Array<{
     sitemapLogger.error('Error fetching dynamic routes for sitemap:', error);
     return getFallbackCombinations();
   }
+}
+
+/**
+ * Fetch city-model-page routes from dynamic_routes for sitemap
+ * These are 2-segment routes like /repair/vancouver/iphone-14
+ */
+async function getCityModelPagesForSitemap(): Promise<Array<{
+  city: string;
+  model: string;
+  updated_at: string;
+}>> {
+  const supabase = getServiceSupabase();
+
+  try {
+    const BATCH_SIZE = 1000;
+    const result: Array<{ city: string; model: string; updated_at: string }> = [];
+
+    // Get total count
+    const { count: totalRoutes } = await supabase
+      .from('dynamic_routes')
+      .select('*', { count: 'exact', head: true })
+      .eq('route_type', 'city-model-page')
+      .eq('is_active', true);
+
+    const numBatches = Math.ceil((totalRoutes || 0) / BATCH_SIZE);
+
+    for (let batch = 0; batch < numBatches; batch++) {
+      const start = batch * BATCH_SIZE;
+      const end = start + BATCH_SIZE - 1;
+
+      const { data: batchRoutes, error } = await supabase
+        .from('dynamic_routes')
+        .select('slug_path, last_updated, content_updated_at')
+        .eq('route_type', 'city-model-page')
+        .eq('is_active', true)
+        .order('slug_path', { ascending: true })
+        .range(start, end);
+
+      if (error || !batchRoutes) continue;
+
+      for (const route of batchRoutes) {
+        // Parse: "repair/{city}/{model}"
+        const parts = route.slug_path.split('/');
+        if (parts.length !== 3 || parts[0] !== 'repair') continue;
+
+        result.push({
+          city: parts[1],
+          model: parts[2],
+          updated_at: route.content_updated_at || route.last_updated || new Date().toISOString()
+        });
+      }
+    }
+
+    sitemapLogger.info(`Processed ${result.length} city-model routes for sitemap`);
+    return result;
+
+  } catch (error) {
+    sitemapLogger.error('Error fetching city-model pages for sitemap:', error);
+    return [];
+  }
+}
+
+/**
+ * Generate sitemap entries for city-model pages
+ */
+function getCityModelSitemapEntries(siteUrl: string, cityModelPages: Array<{
+  city: string;
+  model: string;
+  updated_at: string;
+}>): SitemapEntry[] {
+  return cityModelPages.map(({ city, model, updated_at }) => ({
+    loc: `${siteUrl}/repair/${city}/${model}`,
+    lastmod: updated_at,
+    changefreq: 'weekly',
+    priority: '0.75' // Between city pages (0.8) and model-service pages (0.7)
+  }));
 }
 
 /**

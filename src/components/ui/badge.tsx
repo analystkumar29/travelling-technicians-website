@@ -14,6 +14,11 @@ const badgeVariants = cva(
         destructive:
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
+        // New premium variants
+        navy: "border-transparent bg-primary-100 text-primary-800",
+        amber: "border-transparent bg-accent-100 text-accent-800",
+        "primary-outline": "border-primary-200 text-primary-700 bg-transparent",
+        success: "border-transparent bg-emerald-100 text-emerald-800",
       },
     },
     defaultVariants: {
@@ -32,4 +37,4 @@ function Badge({ className, variant, ...props }: BadgeProps) {
   )
 }
 
-export { Badge, badgeVariants } 
+export { Badge, badgeVariants }

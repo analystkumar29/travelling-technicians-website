@@ -26,18 +26,18 @@
 /* 2. Enhanced Button Pulse Animation */
 .book-now-button-pulse {
   animation: gentlePulse 2s infinite;
-  box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  box-shadow: 0 0 0 0 rgba(36, 59, 83, 0.4);
 }
 
 @keyframes gentlePulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+    box-shadow: 0 0 0 0 rgba(36, 59, 83, 0.4);
   }
   70% {
-    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+    box-shadow: 0 0 0 8px rgba(36, 59, 83, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    box-shadow: 0 0 0 0 rgba(36, 59, 83, 0);
   }
 }
 
@@ -67,7 +67,7 @@
 
 .device-card.selected {
   transform: scale(1.02);
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 8px 25px rgba(36, 59, 83, 0.2);
 }
 
 .device-card::before {
@@ -111,7 +111,7 @@
 .enhanced-button .button-gradient {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
+  background: linear-gradient(135deg, rgba(36, 59, 83, 0.1), rgba(16, 42, 67, 0.1));
   opacity: 0;
   transition: opacity 0.2s;
 }
@@ -162,7 +162,7 @@
   border-radius: 16px;
   padding: 16px 20px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(36, 59, 83, 0.1);
   z-index: 40; /* Lower z-index to stay below mobile menus */
   animation: slideInFromRight 0.3s ease-out;
   min-width: 200px;
@@ -190,10 +190,10 @@
 
 .floating-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  background: linear-gradient(90deg, #243b53, #102a43);
   border-radius: 3px;
   transition: width 0.5s ease-out;
-  box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 8px rgba(36, 59, 83, 0.3);
 }
 
 /* 8. Tooltip Component */
@@ -323,7 +323,7 @@
   width: 20px;
   height: 20px;
   border: 2px solid #e5e7eb;
-  border-top-color: #3b82f6;
+  border-top-color: #243b53;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -354,8 +354,8 @@
 /* 14. Form Field Focus Ring Enhancement */
 .enhanced-focus-ring:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(36, 59, 83, 0.1);
+  border-color: #243b53;
 }
 
 /* 15. Responsive Enhancements */
