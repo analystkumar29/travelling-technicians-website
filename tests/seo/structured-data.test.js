@@ -321,24 +321,26 @@ describe('Structured Data SEO Tests', () => {
     
     test('should validate correct schemas without errors', () => {
       const validSchema = structuredDataSchemas.organization
-      
-      expect(() => {
-        validateStructuredData(validSchema, 'Organization')
-      }).not.toThrow()
+      const result = validateStructuredData(validSchema)
+
+      expect(result.isValid).toBe(true)
+      expect(result.errors).toHaveLength(0)
     })
-    
+
     test('should detect missing required fields', () => {
       const invalidSchema = {
         '@context': 'https://schema.org',
         '@type': 'Organization'
         // Missing required fields like name, url, etc.
       }
-      
-      expect(() => {
-        validateStructuredData(invalidSchema, 'Organization')
-      }).toThrow()
+
+      const result = validateStructuredData(invalidSchema)
+
+      expect(result.isValid).toBe(false)
+      expect(result.errors.length).toBeGreaterThan(0)
+      expect(result.errors.some(e => e.includes('Required field missing'))).toBe(true)
     })
-    
+
     test('should detect invalid field types', () => {
       const invalidSchema = {
         '@context': 'https://schema.org',
@@ -346,19 +348,19 @@ describe('Structured Data SEO Tests', () => {
         name: 123, // Should be string
         url: 'https://travelling-technicians.ca'
       }
-      
-      expect(() => {
-        validateStructuredData(invalidSchema, 'Organization')
-      }).toThrow()
+
+      const result = validateStructuredData(invalidSchema)
+
+      expect(result.isValid).toBe(false)
+      expect(result.errors.some(e => e.includes('Invalid type'))).toBe(true)
     })
-    
+
     test('should validate nested object structures', () => {
       const schemaWithNestedObjects = structuredDataSchemas.localBusiness
-      
-      expect(() => {
-        validateStructuredData(schemaWithNestedObjects, 'LocalBusiness')
-      }).not.toThrow()
-      
+      const result = validateStructuredData(schemaWithNestedObjects)
+
+      expect(result.isValid).toBe(true)
+
       // Validate nested address structure
       expect(schemaWithNestedObjects.address['@type']).toBe('PostalAddress')
       expect(schemaWithNestedObjects.geo['@type']).toBe('GeoCoordinates')

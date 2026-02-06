@@ -134,6 +134,7 @@
     "glob": "^11.0.2",
     "jest-environment-jsdom": "^29.7.0",
     "node-fetch": "^2.7.0",
+    "node-mocks-http": "^1.17.2",
     "sharp": "^0.34.2",
     "typescript": "^5.2.2"
   },
