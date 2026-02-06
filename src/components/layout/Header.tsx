@@ -4,11 +4,13 @@ import { useRouter } from 'next/router';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogoImage } from '@/components/common/OptimizedImage';
 import { ChevronDown, Menu, X } from 'lucide-react';
+import { useServiceAreas } from '@/hooks/useBusinessSettings';
 
 const Header = () => {
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { cities, loading: citiesLoading } = useServiceAreas();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -105,18 +107,19 @@ const Header = () => {
                 <ChevronDown className="ml-1 h-3.5 w-3.5" />
               </button>
               <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-primary-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                <div className="py-1.5">
+                <div className="py-1.5 max-h-[70vh] overflow-y-auto">
                   <div className="px-4 py-2 text-xs font-semibold text-primary-400 uppercase tracking-wide">
                     Repair Services By City
                   </div>
-                  <Link href="/repair/vancouver" className="block px-4 py-2 text-sm text-primary-700 hover:bg-primary-50 hover:text-primary-900 transition-colors">Vancouver Repair</Link>
-                  <Link href="/repair/burnaby" className="block px-4 py-2 text-sm text-primary-700 hover:bg-primary-50 hover:text-primary-900 transition-colors">Burnaby Repair</Link>
-                  <Link href="/repair/richmond" className="block px-4 py-2 text-sm text-primary-700 hover:bg-primary-50 hover:text-primary-900 transition-colors">Richmond Repair</Link>
-                  <Link href="/repair/new-westminster" className="block px-4 py-2 text-sm text-primary-700 hover:bg-primary-50 hover:text-primary-900 transition-colors">New Westminster Repair</Link>
-                  <Link href="/repair/north-vancouver" className="block px-4 py-2 text-sm text-primary-700 hover:bg-primary-50 hover:text-primary-900 transition-colors">North Vancouver Repair</Link>
-                  <Link href="/repair/west-vancouver" className="block px-4 py-2 text-sm text-primary-700 hover:bg-primary-50 hover:text-primary-900 transition-colors">West Vancouver Repair</Link>
-                  <Link href="/repair/coquitlam" className="block px-4 py-2 text-sm text-primary-700 hover:bg-primary-50 hover:text-primary-900 transition-colors">Coquitlam Repair</Link>
-                  <Link href="/repair/chilliwack" className="block px-4 py-2 text-sm text-primary-700 hover:bg-primary-50 hover:text-primary-900 transition-colors">Chilliwack Repair</Link>
+                  {citiesLoading ? (
+                    <div className="px-4 py-2 text-sm text-primary-400">Loading...</div>
+                  ) : (
+                    cities.map((city) => (
+                      <Link key={city.slug} href={`/repair/${city.slug}`} className="block px-4 py-2 text-sm text-primary-700 hover:bg-primary-50 hover:text-primary-900 transition-colors">
+                        {city.cityName} Repair
+                      </Link>
+                    ))
+                  )}
                   <div className="border-t border-primary-100 my-1" />
                   <Link href="/service-areas" className="block px-4 py-2 text-sm text-primary-700 hover:bg-primary-50 hover:text-primary-900 transition-colors">View All Service Areas</Link>
                 </div>
@@ -187,9 +190,15 @@ const Header = () => {
                 {/* Mobile Locations */}
                 <div className="px-3 py-2">
                   <div className="text-primary-400 text-xs font-semibold uppercase tracking-wide mb-2">Locations</div>
-                  <Link href="/repair/vancouver" className="block px-3 py-1.5 text-primary-600 hover:text-accent-600 transition-colors text-sm">Vancouver</Link>
-                  <Link href="/repair/burnaby" className="block px-3 py-1.5 text-primary-600 hover:text-accent-600 transition-colors text-sm">Burnaby</Link>
-                  <Link href="/repair/richmond" className="block px-3 py-1.5 text-primary-600 hover:text-accent-600 transition-colors text-sm">Richmond</Link>
+                  {citiesLoading ? (
+                    <div className="px-3 py-1.5 text-primary-400 text-sm">Loading...</div>
+                  ) : (
+                    cities.slice(0, 5).map((city) => (
+                      <Link key={city.slug} href={`/repair/${city.slug}`} className="block px-3 py-1.5 text-primary-600 hover:text-accent-600 transition-colors text-sm">
+                        {city.cityName}
+                      </Link>
+                    ))
+                  )}
                   <Link href="/service-areas" className="block px-3 py-1.5 text-accent-600 hover:text-accent-700 transition-colors text-sm font-medium">View All Areas</Link>
                 </div>
 

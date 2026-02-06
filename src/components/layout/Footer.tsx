@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { LogoImage } from '@/components/common/OptimizedImage';
 import { useSimplePhoneNumber, useBusinessSettings, useServiceAreas } from '@/hooks/useBusinessSettings';
-import { Phone, Mail, MapPin, Smartphone, Laptop, Tablet, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
+import { Phone, Mail, MapPin, Smartphone, Laptop, Tablet } from 'lucide-react';
 
 /** Format 24h time string (e.g. "08:00") to 12h display (e.g. "8:00 AM") */
 function formatTime(time: string): string {
@@ -53,13 +53,6 @@ export default function Footer() {
                 Serving the entire Lower Mainland, BC
               </Link>
             </div>
-            {/* Social Media */}
-            <div className="flex space-x-4 mt-5">
-              <a href="#" className="text-primary-400 hover:text-accent-400 transition-colors duration-200" aria-label="Facebook"><Facebook size={20} /></a>
-              <a href="#" className="text-primary-400 hover:text-accent-400 transition-colors duration-200" aria-label="Twitter"><Twitter size={20} /></a>
-              <a href="#" className="text-primary-400 hover:text-accent-400 transition-colors duration-200" aria-label="Instagram"><Instagram size={20} /></a>
-              <a href="#" className="text-primary-400 hover:text-accent-400 transition-colors duration-200" aria-label="LinkedIn"><Linkedin size={20} /></a>
-            </div>
           </div>
 
           {/* Quick Links */}
@@ -82,7 +75,7 @@ export default function Footer() {
                   <Tablet className="h-3.5 w-3.5 mr-2 text-primary-400" />Tablet Repair
                 </Link>
               </li>
-              <li><Link href="/doorstep" className="text-primary-200 hover:text-white transition-colors duration-200">Doorstep Repair</Link></li>
+              <li><Link href="/repair" className="text-primary-200 hover:text-white transition-colors duration-200">Doorstep Repair</Link></li>
               <li><Link href="/pricing" className="text-primary-200 hover:text-white transition-colors duration-200">Pricing</Link></li>
               <li><Link href="/book-online" className="text-primary-200 hover:text-white transition-colors duration-200">Book Online</Link></li>
               <li><Link href="/contact" className="text-primary-200 hover:text-white transition-colors duration-200">Contact Us</Link></li>
