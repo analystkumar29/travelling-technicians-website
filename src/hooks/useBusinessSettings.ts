@@ -9,6 +9,7 @@ import {
   CityBusinessSettings,
   fetchBusinessSettings,
   fetchCityBusinessSettings,
+  fetchAllCityBusinessSettings,
   getPhoneNumberForCity,
   DEFAULT_BUSINESS_SETTINGS
 } from '@/lib/business-settings';
@@ -253,6 +254,26 @@ export function usePhoneNumberWithAreaCode(citySlug?: string): {
     areaCode,
     loading
   };
+}
+
+/**
+ * Hook to fetch all active service areas (cities)
+ */
+export function useServiceAreas(): {
+  cities: Array<{ cityName: string; slug: string }>;
+  loading: boolean;
+} {
+  const [cities, setCities] = useState<Array<{ cityName: string; slug: string }>>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAllCityBusinessSettings()
+      .then((data) => setCities(data.map(({ cityName, slug }) => ({ cityName, slug }))))
+      .catch(() => setCities([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { cities, loading };
 }
 
 /**

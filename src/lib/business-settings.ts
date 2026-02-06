@@ -44,8 +44,9 @@ export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
   phone: parsePhoneNumber(DEFAULT_PHONE_NUMBER),
   email: 'info@travelling-technicians.ca',
   hours: {
-    weekdays: '9am-7pm',
-    weekends: '10am-5pm',
+    weekday: { label: 'Monday - Friday', open: '08:00', close: '20:00' },
+    saturday: { label: 'Saturday', open: '09:00', close: '19:00' },
+    sunday: { label: 'Sunday', open: '09:00', close: '19:00' },
     emergency: true
   },
   whatsapp: parsePhoneNumber(DEFAULT_PHONE_NUMBER),
