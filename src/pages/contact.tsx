@@ -15,9 +15,25 @@ type ContactFormData = {
   message: string;
 };
 
+interface HoursSlot {
+  label: string;
+  open: string;
+  close: string;
+}
+
 interface ContactPageProps {
   businessPhone: string;
   businessPhoneHref: string;
+  businessEmail: string;
+  businessHours: Record<string, HoursSlot | boolean>;
+}
+
+/** Format 24h time string (e.g. "08:00") to 12h display (e.g. "8:00 AM") */
+function formatTime(time: string): string {
+  const [h, m] = time.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const hour = h % 12 || 12;
+  return m === 0 ? `${hour}:00 ${ampm}` : `${hour}:${m.toString().padStart(2, '0')} ${ampm}`;
 }
 
 export async function getStaticProps() {
@@ -26,7 +42,9 @@ export async function getStaticProps() {
     return {
       props: {
         businessPhone: businessSettings.phone.display,
-        businessPhoneHref: businessSettings.phone.href
+        businessPhoneHref: businessSettings.phone.href,
+        businessEmail: businessSettings.email,
+        businessHours: businessSettings.hours
       },
       revalidate: 3600
     };
@@ -34,7 +52,13 @@ export async function getStaticProps() {
     return {
       props: {
         businessPhone: '(604) 849-5329',
-        businessPhoneHref: 'tel:+16048495329'
+        businessPhoneHref: 'tel:+16048495329',
+        businessEmail: 'info@travelling-technicians.ca',
+        businessHours: {
+          weekday: { label: 'Monday - Friday', open: '08:00', close: '20:00' },
+          saturday: { label: 'Saturday', open: '09:00', close: '19:00' },
+          sunday: { label: 'Sunday', open: '09:00', close: '19:00' },
+        }
       },
       revalidate: 3600
     };
@@ -43,7 +67,9 @@ export async function getStaticProps() {
 
 export default function ContactPage({
   businessPhone = '(604) 849-5329',
-  businessPhoneHref = 'tel:+16048495329'
+  businessPhoneHref = 'tel:+16048495329',
+  businessEmail = 'info@travelling-technicians.ca',
+  businessHours = {}
 }: ContactPageProps) {
   // Contact form state
   const [formData, setFormData] = useState<ContactFormData>({
@@ -138,7 +164,7 @@ export default function ContactPage({
           name="The Travelling Technicians"
           description="Professional mobile phone and laptop repair services with doorstep service across Vancouver and Lower Mainland, BC. Contact us for fast, reliable tech repair solutions."
           telephone={businessPhoneHref}
-          email="info@travellingtechnicians.ca"
+          email={businessEmail}
         />
       </Head>
       <Layout>
@@ -190,10 +216,10 @@ export default function ContactPage({
                 Send us a message anytime
               </p>
               <a
-                href="mailto:info@travellingtechnicians.ca"
+                href={`mailto:${businessEmail}`}
                 className="text-primary-800 hover:text-accent-600 transition-colors font-medium block break-all"
               >
-                info@travellingtechnicians.ca
+                {businessEmail}
               </a>
               <p className="text-sm text-primary-400 mt-2">
                 We aim to respond within 24 hours
@@ -210,9 +236,14 @@ export default function ContactPage({
                 When our technicians are available
               </p>
               <ul className="space-y-1 text-primary-500">
-                <li>Monday - Friday: 8:00 AM - 8:00 PM</li>
-                <li>Saturday: 9:00 AM - 6:00 PM</li>
-                <li>Sunday: 10:00 AM - 5:00 PM</li>
+                {['weekday', 'saturday', 'sunday'].map((key) => {
+                  const slot = businessHours[key];
+                  if (!slot || typeof slot !== 'object' || !('open' in slot)) return null;
+                  const s = slot as HoursSlot;
+                  return (
+                    <li key={key}>{s.label}: {formatTime(s.open)} - {formatTime(s.close)}</li>
+                  );
+                })}
               </ul>
             </div>
           </div>

@@ -1,10 +1,20 @@
 import Link from 'next/link';
 import { LogoImage } from '@/components/common/OptimizedImage';
-import { useSimplePhoneNumber } from '@/hooks/useBusinessSettings';
+import { useSimplePhoneNumber, useBusinessSettings, useServiceAreas } from '@/hooks/useBusinessSettings';
 import { Phone, Mail, MapPin, Smartphone, Laptop, Tablet, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
+
+/** Format 24h time string (e.g. "08:00") to 12h display (e.g. "8:00 AM") */
+function formatTime(time: string): string {
+  const [h, m] = time.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const hour = h % 12 || 12;
+  return m === 0 ? `${hour}:00 ${ampm}` : `${hour}:${m.toString().padStart(2, '0')} ${ampm}`;
+}
 
 export default function Footer() {
   const { display: phoneDisplay, href: phoneHref, loading: phoneLoading } = useSimplePhoneNumber();
+  const { settings, loading: settingsLoading } = useBusinessSettings();
+  const { cities, loading: citiesLoading } = useServiceAreas();
 
   return (
     <footer className="bg-primary-950 text-white">
@@ -34,9 +44,9 @@ export default function Footer() {
                 <Phone className="h-4 w-4 text-accent-400 mr-2.5" />
                 {phoneLoading ? 'Loading...' : phoneDisplay}
               </a>
-              <a href="mailto:info@travellingtechnicians.ca" className="flex items-center text-primary-200 hover:text-accent-400 transition-colors duration-200">
+              <a href={settingsLoading ? '#' : `mailto:${settings.email}`} className="flex items-center text-primary-200 hover:text-accent-400 transition-colors duration-200">
                 <Mail className="h-4 w-4 text-accent-400 mr-2.5" />
-                info@travellingtechnicians.ca
+                {settingsLoading ? 'Loading...' : settings.email}
               </a>
               <Link href="/service-areas" className="flex items-start text-primary-200 hover:text-accent-400 transition-colors duration-200">
                 <MapPin className="h-4 w-4 text-accent-400 mr-2.5 mt-0.5" />
@@ -83,14 +93,19 @@ export default function Footer() {
           <div>
             <h3 className="text-lg font-heading font-bold mb-4 text-accent-400">Service Areas</h3>
             <ul className="grid grid-cols-2 gap-x-2 gap-y-2">
-              <li><Link href="/repair/vancouver" className="text-primary-200 hover:text-white transition-colors duration-200">Vancouver</Link></li>
-              <li><Link href="/repair/burnaby" className="text-primary-200 hover:text-white transition-colors duration-200">Burnaby</Link></li>
-              <li><Link href="/repair/richmond" className="text-primary-200 hover:text-white transition-colors duration-200">Richmond</Link></li>
-              <li><Link href="/repair/new-westminster" className="text-primary-200 hover:text-white transition-colors duration-200">New Westminster</Link></li>
-              <li><Link href="/repair/north-vancouver" className="text-primary-200 hover:text-white transition-colors duration-200">North Vancouver</Link></li>
-              <li><Link href="/repair/west-vancouver" className="text-primary-200 hover:text-white transition-colors duration-200">West Vancouver</Link></li>
-              <li><Link href="/repair/coquitlam" className="text-primary-200 hover:text-white transition-colors duration-200">Coquitlam</Link></li>
-              <li><Link href="/repair/chilliwack" className="text-primary-200 hover:text-white transition-colors duration-200">Chilliwack</Link></li>
+              {citiesLoading ? (
+                Array.from({ length: 8 }).map((_, i) => (
+                  <li key={i}><span className="text-primary-400">Loading...</span></li>
+                ))
+              ) : (
+                cities.map((city) => (
+                  <li key={city.slug}>
+                    <Link href={`/repair/${city.slug}`} className="text-primary-200 hover:text-white transition-colors duration-200">
+                      {city.cityName}
+                    </Link>
+                  </li>
+                ))
+              )}
             </ul>
           </div>
 
@@ -98,18 +113,24 @@ export default function Footer() {
           <div>
             <h3 className="text-lg font-heading font-bold mb-4 text-accent-400">Business Hours</h3>
             <ul className="space-y-2 text-primary-200">
-              <li className="flex justify-between">
-                <span>Monday - Friday:</span>
-                <span className="text-white">8:00 AM - 8:00 PM</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Saturday:</span>
-                <span className="text-white">9:00 AM - 6:00 PM</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Sunday:</span>
-                <span className="text-white">10:00 AM - 5:00 PM</span>
-              </li>
+              {settingsLoading ? (
+                <>
+                  <li className="flex justify-between"><span>Monday - Friday:</span><span className="text-white">Loading...</span></li>
+                  <li className="flex justify-between"><span>Saturday:</span><span className="text-white">Loading...</span></li>
+                  <li className="flex justify-between"><span>Sunday:</span><span className="text-white">Loading...</span></li>
+                </>
+              ) : (
+                ['weekday', 'saturday', 'sunday'].map((key) => {
+                  const slot = settings.hours[key];
+                  if (!slot || typeof slot !== 'object' || !slot.open) return null;
+                  return (
+                    <li key={key} className="flex justify-between">
+                      <span>{slot.label || key}:</span>
+                      <span className="text-white">{formatTime(slot.open)} - {formatTime(slot.close)}</span>
+                    </li>
+                  );
+                })
+              )}
             </ul>
             <div className="mt-6">
               <Link
