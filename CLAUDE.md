@@ -98,8 +98,8 @@ Admin changes pricing → dynamic_pricing row updated
 | `/api/pricing/*` | None (public) | Anon | `dynamic_pricing`, `services`, `device_models` |
 | `/api/devices/*` | None (public) | Anon | `device_models`, `brands` |
 | `/api/management/*` | JWT Bearer | Service Role | All tables (CRUD) |
-| `/api/technicians/*` | None (public reads) | Anon/Service | `technicians`, `technician_availability` |
-| `/api/warranties/*` | None | Service Role | `warranties`, `bookings` |
+| `/api/technicians/*` | None (GET) / JWT (writes) | Anon (GET) / Service (writes) | `technicians`, `technician_availability` |
+| `/api/warranties/*` | JWT Bearer | Anon (GET) / Service (POST) | `warranties`, `bookings` |
 | `/api/sitemap.xml` | None | Anon | `dynamic_routes` |
 
 ## Section 4: Rules of Engagement
@@ -131,7 +131,24 @@ Admin changes pricing → dynamic_pricing row updated
 - Rewrote `Public Read Types` on `device_types` (was also `true`, now `is_active = true`)
 - Each table now has exactly one SELECT policy: `is_active = true`
 
-**Remaining security advisories** (from Supabase linter):
-- 9 tables have RLS disabled: `customer_profiles`, `booking_status_history`, `whatsapp_dispatches`, `webhook_logs`, `seo_content_audit_log`, `city_distance_matrix`, `repair_parts`, `route_generation_logs`, `service_categories`
-- 4 views use `SECURITY DEFINER`: `view_active_repair_routes`, `pricing_tier_comparison`, `seo_coverage_report`, `sitemap_freshness_monitoring`
-- 5 tables have RLS enabled but no policies: `booking_communications`, `payments`, `sitemap_regeneration_status`, `technician_availability`, `warranties`
+## Full Security Lockdown (RESOLVED 2026-02-06)
+
+**Finding**: After the RLS policy bypass fix, 3 classes of issues remained:
+1. 9 tables had RLS disabled — wide open to the public anon key
+2. 5 tables had RLS enabled but zero policies
+3. 4 views used `SECURITY DEFINER` instead of `security_invoker`
+4. All 14 tables granted full privileges (SELECT/INSERT/UPDATE/DELETE) to anon + authenticated
+
+**Fix applied** (migration `fix_all_security_advisories`):
+- **Revoked all grants** from anon + authenticated on 11 internal tables (service-role-only)
+- **Granted SELECT-only** to anon on 3 public reference tables: `technician_availability`, `warranties`, `service_categories`
+- **Enabled RLS** on all 9 previously-disabled tables
+- **Created SELECT policies** on the 3 anon-readable tables
+- **Set `security_invoker = true`** on all 4 views and revoked direct access
+- **Revoked access** to `mv_sitemap_routes` materialized view
+- **Fixed API routes**: `technicians/availability.ts` writes now use service role + admin auth; `warranties/index.ts` POST now uses service role
+
+**Remaining advisories** (pre-existing, lower priority):
+- 11 tables have RLS enabled but no policies (intentional — all grants revoked, no anon/authenticated access)
+- 29 functions have mutable `search_path` (cosmetic; all trigger-only or service-role-only)
+- `bookings` table has `INSERT` policy with `true` (intentional — public booking flow)

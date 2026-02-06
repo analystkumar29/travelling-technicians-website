@@ -1,30 +1,37 @@
+import { requireAdminAuth } from '@/middleware/adminAuth';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '@/utils/supabaseClient';
+import { supabase, getServiceSupabase } from '@/utils/supabaseClient';
 import logger from '@/utils/logger';
 
 /**
  * API handler for technician availability
- * GET - Retrieve availability for a technician
- * POST - Set availability for a technician
- * PUT - Update availability
- * DELETE - Remove availability
+ * GET - Retrieve availability for a technician (public)
+ * POST - Set availability for a technician (admin only)
+ * PUT - Update availability (admin only)
+ * DELETE - Remove availability (admin only)
  */
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { method } = req;
 
-  switch (method) {
-    case 'GET':
-      return handleGetAvailability(req, res);
-    case 'POST':
-      return handleCreateAvailability(req, res);
-    case 'PUT':
-      return handleUpdateAvailability(req, res);
-    case 'DELETE':
-      return handleDeleteAvailability(req, res);
-    default:
-      res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
-      return res.status(405).json({ error: `Method ${method} Not Allowed` });
+  // GET is public; POST/PUT/DELETE require admin auth
+  if (method === 'GET') {
+    return handleGetAvailability(req, res);
   }
+
+  // Wrap write operations in admin auth
+  return requireAdminAuth(async (authReq: NextApiRequest, authRes: NextApiResponse) => {
+    switch (authReq.method) {
+      case 'POST':
+        return handleCreateAvailability(authReq, authRes);
+      case 'PUT':
+        return handleUpdateAvailability(authReq, authRes);
+      case 'DELETE':
+        return handleDeleteAvailability(authReq, authRes);
+      default:
+        authRes.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
+        return authRes.status(405).json({ error: `Method ${method} Not Allowed` });
+    }
+  })(req, res);
 }
 
 /**
@@ -91,31 +98,33 @@ async function handleCreateAvailability(req: NextApiRequest, res: NextApiRespons
       });
     }
     
+    const serviceSupabase = getServiceSupabase();
+
     // Check if technician exists
-    const { data: technician, error: techError } = await supabase
+    const { data: technician, error: techError } = await serviceSupabase
       .from('technicians')
       .select('id')
       .eq('id', body.technician_id)
       .single();
-    
+
     if (techError || !technician) {
       return res.status(404).json({ error: 'Technician not found' });
     }
-    
+
     // Check if availability already exists for this day
-    const { data: existingAvailability } = await supabase
+    const { data: existingAvailability } = await serviceSupabase
       .from('technician_availability')
       .select('id')
       .eq('technician_id', body.technician_id)
       .eq('day_of_week', dayOfWeek)
       .single();
-    
+
     if (existingAvailability) {
-      return res.status(409).json({ 
-        error: 'Availability already exists for this day. Use PUT to update.' 
+      return res.status(409).json({
+        error: 'Availability already exists for this day. Use PUT to update.'
       });
     }
-    
+
     // Prepare availability data
     const availabilityData = {
       technician_id: body.technician_id,
@@ -124,9 +133,9 @@ async function handleCreateAvailability(req: NextApiRequest, res: NextApiRespons
       end_time: body.end_time,
       is_available: body.is_available ?? true
     };
-    
+
     // Insert into database
-    const { data, error } = await supabase
+    const { data, error } = await serviceSupabase
       .from('technician_availability')
       .insert([availabilityData])
       .select()
@@ -156,20 +165,22 @@ async function handleUpdateAvailability(req: NextApiRequest, res: NextApiRespons
       return res.status(400).json({ error: 'Availability ID is required' });
     }
     
+    const serviceSupabase = getServiceSupabase();
+
     // Check if availability exists
-    const { data: existingAvailability, error: fetchError } = await supabase
+    const { data: existingAvailability, error: fetchError } = await serviceSupabase
       .from('technician_availability')
       .select('*')
       .eq('id', id)
       .single();
-    
+
     if (fetchError || !existingAvailability) {
       return res.status(404).json({ error: 'Availability not found' });
     }
-    
+
     // Prepare update data
     const updateData: any = {};
-    
+
     // Updateable fields
     const updateableFields = ['start_time', 'end_time', 'is_available'];
     updateableFields.forEach(field => {
@@ -177,9 +188,9 @@ async function handleUpdateAvailability(req: NextApiRequest, res: NextApiRespons
         updateData[field] = body[field];
       }
     });
-    
+
     // Update the availability
-    const { data, error } = await supabase
+    const { data, error } = await serviceSupabase
       .from('technician_availability')
       .update(updateData)
       .eq('id', id)
@@ -209,19 +220,21 @@ async function handleDeleteAvailability(req: NextApiRequest, res: NextApiRespons
       return res.status(400).json({ error: 'Availability ID is required' });
     }
     
+    const serviceSupabase = getServiceSupabase();
+
     // Check if availability exists
-    const { data: existingAvailability, error: fetchError } = await supabase
+    const { data: existingAvailability, error: fetchError } = await serviceSupabase
       .from('technician_availability')
       .select('id')
       .eq('id', id)
       .single();
-    
+
     if (fetchError || !existingAvailability) {
       return res.status(404).json({ error: 'Availability not found' });
     }
-    
+
     // Delete the availability
-    const { error } = await supabase
+    const { error } = await serviceSupabase
       .from('technician_availability')
       .delete()
       .eq('id', id);
