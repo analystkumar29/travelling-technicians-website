@@ -1,114 +1,69 @@
 import React from 'react';
 import Link from 'next/link';
-import { FaChevronRight } from 'react-icons/fa';
+import { ChevronRight } from 'lucide-react';
 
 /**
  * NeighborhoodLinks Component
  * Renders internal links for neighborhood-specific pages with SEO benefits
  * Implements topic clustering strategy for local SEO
+ *
+ * Accepts either rich neighborhood_pages data (from DB payload) or
+ * plain string[] neighborhoods for backwards compatibility.
  */
 
-interface NeighborhoodLink {
-  neighborhood: string;
-  description?: string;
-  href: string;
+interface NeighborhoodPageData {
+  id: number;
+  neighborhood_name: string;
+  slug: string;
+  landmark_name?: string;
 }
 
 interface NeighborhoodLinksProps {
   cityName: string;
   citySlug: string;
-  neighborhoods: string[];
+  neighborhoods?: string[];
+  neighborhoodPages?: NeighborhoodPageData[];
   title?: string;
   className?: string;
 }
-
-/**
- * Mapping of neighborhoods to SEO-optimized descriptions
- * Used for internal link context on city pages
- */
-const neighborhoodDescriptions: Record<string, Record<string, string>> = {
-  vancouver: {
-    'Downtown': 'iPhone and laptop repairs in Downtown Vancouver - near SkyTrain stations',
-    'Yaletown': 'Tech repair services in Yaletown - popular with young professionals',
-    'Kitsilano': 'Mobile and laptop repair in Kitsilano - serving UBC students and residents',
-    'Coal Harbour': 'Premium tech repair service in Coal Harbour - luxury condos',
-    'West End': 'Doorstep device repair in West End - convenient for busy professionals',
-    'Mount Pleasant': 'Affordable tech repairs in Mount Pleasant neighborhood',
-    'Fairview': 'Computer and phone repair in Fairview - family-friendly service',
-    'South Granville': 'Luxury tech repair in South Granville - high-end clientele'
-  },
-  burnaby: {
-    'Metrotown': 'Device repair at Metrotown - near major shopping center',
-    'Brentwood': 'Tech repair in Brentwood - serving local families and businesses',
-    'Lougheed': 'Laptop and phone repair in Lougheed area - convenient location',
-    'Deer Lake': 'Doorstep repair service in Deer Lake - peaceful neighborhood',
-    'Burnaby Heights': 'Premium tech repair in Burnaby Heights',
-    'Edmonds': 'Affordable repair services in Edmonds neighborhood'
-  },
-  coquitlam: {
-    'Coquitlam Centre': 'Central Coquitlam tech repair - near shopping and transit',
-    'Burquitlam': 'Mobile and laptop repair in Burquitlam',
-    'Maillardville': 'Neighborhood tech services in Maillardville',
-    'Westwood Plateau': 'Premium repair service in Westwood Plateau',
-    'Austin Heights': 'Family-friendly device repair in Austin Heights'
-  },
-  richmond: {
-    'Richmond Centre': 'Central Richmond repair services - near major mall',
-    'Steveston': 'Charming neighborhood tech repair in Steveston',
-    'Ironwood': 'Local device repair in Ironwood neighborhood',
-    'Terra Nova': 'Tech services in Terra Nova area',
-    'Bridgeport': 'Convenient repair location in Bridgeport'
-  },
-  'north-vancouver': {
-    'Lonsdale': 'North Vancouver repair services in Lonsdale - main commercial area',
-    'Lower Lonsdale': 'Waterfront neighborhood tech repair',
-    'Lynn Valley': 'Family-oriented repair services in Lynn Valley',
-    'Deep Cove': 'Premium tech repair in scenic Deep Cove',
-    'Edgemont': 'North shore neighborhood repair services'
-  },
-  surrey: {
-    'Guildford': 'Central Surrey tech repair in Guildford - near shopping',
-    'Newton': 'Convenient device repair in Newton neighborhood',
-    'Fleetwood': 'Community-focused tech services in Fleetwood',
-    'Whalley': 'Doorstep repair service in growing Whalley area',
-    'Cloverdale': 'Neighborhood repair services in Cloverdale',
-    'South Surrey': 'White Rock area tech repair - South Surrey services',
-    'Panorama': 'Family-friendly repair in Panorama neighborhood',
-    'Bridgeview': 'Local device repair in Bridgeview'
-  }
-};
 
 export function NeighborhoodLinks({
   cityName,
   citySlug,
   neighborhoods,
+  neighborhoodPages,
   title = 'Service Neighborhoods',
   className = ''
 }: NeighborhoodLinksProps) {
-  // Get descriptions for this city
-  const descriptions = neighborhoodDescriptions[citySlug] || {};
+  // Prefer rich DB data; fall back to string array
+  const links = neighborhoodPages && neighborhoodPages.length > 0
+    ? neighborhoodPages.map(np => ({
+        name: np.neighborhood_name,
+        href: `/repair/${citySlug}/${np.slug}`,
+        landmark: np.landmark_name
+      }))
+    : (neighborhoods || []).map(name => ({
+        name,
+        href: `/repair/${citySlug}/${name.toLowerCase().replace(/\s+/g, '-')}`,
+        landmark: undefined as string | undefined
+      }));
 
-  // Create neighborhood link objects - using /repair path for consolidation
-  const neighborhoodLinks: NeighborhoodLink[] = neighborhoods.map(neighborhood => ({
-    neighborhood,
-    description: descriptions[neighborhood],
-    href: `/repair/${citySlug}/${neighborhood.toLowerCase().replace(/\s+/g, '-')}`
-  }));
+  if (links.length === 0) return null;
 
   return (
-    <section className="py-16 bg-gradient-to-b from-gray-50 to-white">
+    <section className="py-16 bg-gradient-to-b from-primary-50 to-white">
       <div className="container-custom">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
             {title} in {cityName}
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-xl text-primary-500 max-w-3xl mx-auto">
             Expert repair services available in every {cityName} neighborhood
           </p>
         </div>
 
         <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${className}`}>
-          {neighborhoodLinks.map((link, index) => (
+          {links.map((link, index) => (
             <Link
               key={index}
               href={link.href}
@@ -116,16 +71,16 @@ export function NeighborhoodLinks({
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold text-gray-900 group-hover:text-primary-600 transition-colors mb-2">
-                    {link.neighborhood}
+                  <h3 className="text-lg font-bold text-primary-900 group-hover:text-primary-800 transition-colors mb-1">
+                    {link.name}
                   </h3>
-                  {link.description && (
-                    <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors line-clamp-2">
-                      {link.description}
+                  {link.landmark && (
+                    <p className="text-sm text-primary-500 group-hover:text-primary-600 transition-colors line-clamp-2">
+                      Near {link.landmark}
                     </p>
                   )}
                 </div>
-                <FaChevronRight className="ml-2 text-gray-400 group-hover:text-primary-600 transition-colors flex-shrink-0 mt-1" />
+                <ChevronRight className="ml-2 h-5 w-5 text-primary-300 group-hover:text-primary-800 transition-colors flex-shrink-0 mt-1" />
               </div>
             </Link>
           ))}
@@ -141,12 +96,12 @@ export function NeighborhoodLinks({
               name: `${cityName} Neighborhood Repair Services`,
               description: `Browse device repair services across all ${cityName} neighborhoods`,
               url: `/repair/${citySlug}`,
-              hasMap: neighborhoodLinks.map(link => ({
+              hasPart: links.map(link => ({
                 '@type': 'LocalBusiness',
-                name: `The Travelling Technicians - ${link.neighborhood}`,
+                name: `The Travelling Technicians - ${link.name}`,
                 address: {
                   '@type': 'PostalAddress',
-                  addressLocality: link.neighborhood,
+                  addressLocality: link.name,
                   addressRegion: 'BC',
                   addressCountry: 'CA'
                 }

@@ -31,8 +31,8 @@ export const NeighborhoodBreadcrumbs: React.FC<NeighborhoodBreadcrumbsProps> = (
 }) => {
   const breadcrumbItems: BreadcrumbItem[] = [
     { label: 'Home', href: '/' },
-    { label: 'Locations', href: '/locations' },
-    { label: cityName, href: `/locations/${citySlug}` },
+    { label: 'Repair', href: '/repair' },
+    { label: cityName, href: `/repair/${citySlug}` },
     { label: neighborhoodName }
   ];
 
@@ -67,7 +67,7 @@ export const NeighborhoodBreadcrumbs: React.FC<NeighborhoodBreadcrumbsProps> = (
               {item.href ? (
                 <Link
                   href={item.href}
-                  className="text-blue-600 hover:text-blue-800 hover:underline transition-colors font-medium"
+                  className="text-primary-800 hover:text-primary-900 hover:underline transition-colors font-medium"
                 >
                   {item.label}
                 </Link>
