@@ -109,12 +109,12 @@ const MapWithNoSSR = dynamic(
 );
 
 // Main component that uses the dynamic import
-export default function InteractiveMap({ height = "500px", className = "" }: InteractiveMapProps) {
+export default function InteractiveMap({ height = "500px", className = "", serviceAreas }: InteractiveMapProps) {
   return (
-    <MapWithNoSSR 
-      height={height} 
-      className={className} 
-      serviceAreas={enhancedServiceAreas} 
+    <MapWithNoSSR
+      height={height}
+      className={className}
+      serviceAreas={serviceAreas || enhancedServiceAreas}
     />
   );
 } 
