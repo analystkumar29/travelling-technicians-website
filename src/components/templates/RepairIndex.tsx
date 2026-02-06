@@ -19,7 +19,7 @@ import { getSiteUrl } from '@/utils/supabaseClient';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import OptimizedImage from '@/components/common/OptimizedImage';
-import { FaTools, FaCheck, FaClock, FaMapMarkerAlt, FaShieldAlt, FaStar, FaArrowRight, FaMobile, FaLaptop } from 'react-icons/fa';
+import { FaTools, FaCheck, FaClock, FaMapMarkerAlt, FaShieldAlt, FaArrowRight, FaMobile, FaLaptop } from 'react-icons/fa';
 
 interface RepairIndexProps {
   cities: Array<{ slug: string; city_name: string }>;
@@ -252,9 +252,9 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
         />
       </Head>
 
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-primary-50">
         {/* Hero Section - Updated with doorstep-repair styling */}
-        <section className="pt-16 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
+        <section className="pt-16 pb-12 bg-gradient-to-r from-primary-900 to-primary-900 text-white">
           <div className="container-custom">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               <div>
@@ -281,7 +281,7 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
                   <Link href="/book-online" className="btn-accent text-center">
                     Book Your Doorstep Repair
                   </Link>
-                  <Link href="/pricing" className="btn-outline border-white text-white hover:bg-primary-600 text-center">
+                  <Link href="/pricing" className="btn-outline border-white text-white hover:bg-primary-800 text-center">
                     View Pricing
                   </Link>
                 </div>
@@ -318,7 +318,7 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
             <div className="container-custom">
               <div className="text-center mb-12">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4">Benefits of Doorstep Repair</h2>
-                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                <p className="text-xl text-primary-500 max-w-3xl mx-auto">
                   Experience the convenience and advantages of having your device repaired at your location
                 </p>
               </div>
@@ -328,12 +328,12 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
                   <div key={benefit.id} className="card hover:shadow-custom-lg transition-shadow">
                     <div className="p-6">
                       <div className="rounded-full bg-primary-100 w-16 h-16 flex items-center justify-center mb-4">
-                        <div className="text-primary-600">
+                        <div className="text-primary-800">
                           {benefit.icon}
                         </div>
                       </div>
                       <h3 className="text-xl font-bold mb-3">{benefit.title}</h3>
-                      <p className="text-gray-600">
+                      <p className="text-primary-500">
                         {benefit.description}
                       </p>
                     </div>
@@ -345,36 +345,36 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
 
           {/* How It Works - Moved to top */}
           <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-8 mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 text-center mb-10">
+            <h2 className="text-3xl font-bold text-primary-900 text-center mb-10">
               How Our Doorstep Repair Works
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="text-center">
-                <div className="bg-blue-100 text-blue-600 w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+                <div className="bg-primary-100 text-primary-800 w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                   1
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">Book Online</h3>
-                <p className="text-gray-600">
+                <h3 className="text-xl font-bold text-primary-900 mb-3">Book Online</h3>
+                <p className="text-primary-500">
                   Select your city, service, and device model. Choose a convenient time slot.
                 </p>
               </div>
-              
+
               <div className="text-center">
-                <div className="bg-blue-100 text-blue-600 w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+                <div className="bg-primary-100 text-primary-800 w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                   2
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">Technician Arrives</h3>
-                <p className="text-gray-600">
+                <h3 className="text-xl font-bold text-primary-900 mb-3">Technician Arrives</h3>
+                <p className="text-primary-500">
                   Our certified technician comes to your location with all necessary tools and parts.
                 </p>
               </div>
-              
+
               <div className="text-center">
-                <div className="bg-blue-100 text-blue-600 w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+                <div className="bg-primary-100 text-primary-800 w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                   3
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">Repair Complete</h3>
-                <p className="text-gray-600">
+                <h3 className="text-xl font-bold text-primary-900 mb-3">Repair Complete</h3>
+                <p className="text-primary-500">
                   Professional repair completed on-site. Up to 6 months warranty included.
                 </p>
               </div>
@@ -383,7 +383,7 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
 
           {/* Service Areas */}
           <div className="mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">
+            <h2 className="text-3xl font-bold text-primary-900 text-center mb-8">
               Service Areas
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -393,8 +393,8 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
                   href={`/repair/${city.id}`}
                   className="bg-white rounded-lg shadow p-4 text-center hover:shadow-lg transition-shadow"
                 >
-                  <div className="text-blue-600 font-semibold">{city.name}</div>
-                  <div className="text-sm text-gray-500 mt-1">248 repair pages</div>
+                  <div className="text-primary-800 font-semibold">{city.name}</div>
+                  <div className="text-sm text-primary-400 mt-1">248 repair pages</div>
                 </Link>
               ))}
             </div>
@@ -405,7 +405,7 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
             <div className="container-custom">
               <div className="text-center mb-12">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4">Services Available at Your Doorstep</h2>
-                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                <p className="text-xl text-primary-500 max-w-3xl mx-auto">
                   Most repairs can be completed on-site at your location
                 </p>
               </div>
@@ -416,38 +416,38 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
                   <div className="p-6">
                     <h3 className="text-2xl font-bold mb-4 flex items-center">
                       <span className="rounded-full bg-primary-100 p-2 mr-3">
-                        <FaMobile className="h-6 w-6 text-primary-600" />
+                        <FaMobile className="h-6 w-6 text-primary-800" />
                       </span>
                       Mobile Phone Repairs
                     </h3>
                     <ul className="space-y-3">
                       <li className="flex items-start">
-                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <FaCheck className="text-primary-800 mt-1 mr-2 flex-shrink-0" />
                         <span>Screen replacements for all major brands</span>
                       </li>
                       <li className="flex items-start">
-                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <FaCheck className="text-primary-800 mt-1 mr-2 flex-shrink-0" />
                         <span>Battery replacements and optimization</span>
                       </li>
                       <li className="flex items-start">
-                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <FaCheck className="text-primary-800 mt-1 mr-2 flex-shrink-0" />
                         <span>Charging port and connector repairs</span>
                       </li>
                       <li className="flex items-start">
-                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <FaCheck className="text-primary-800 mt-1 mr-2 flex-shrink-0" />
                         <span>Camera, speaker, and microphone fixes</span>
                       </li>
                       <li className="flex items-start">
-                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <FaCheck className="text-primary-800 mt-1 mr-2 flex-shrink-0" />
                         <span>Software troubleshooting and updates</span>
                       </li>
                       <li className="flex items-start">
-                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <FaCheck className="text-primary-800 mt-1 mr-2 flex-shrink-0" />
                         <span>Data backup and transfer assistance</span>
                       </li>
                     </ul>
                     <div className="mt-6">
-                      <Link href="/repair" className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
+                      <Link href="/repair" className="text-primary-800 hover:text-primary-900 font-medium flex items-center">
                         View All Repair Services
                         <FaArrowRight className="ml-2 h-4 w-4" />
                       </Link>
@@ -460,38 +460,38 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
                   <div className="p-6">
                     <h3 className="text-2xl font-bold mb-4 flex items-center">
                       <span className="rounded-full bg-primary-100 p-2 mr-3">
-                        <FaLaptop className="h-6 w-6 text-primary-600" />
+                        <FaLaptop className="h-6 w-6 text-primary-800" />
                       </span>
                       Laptop Repairs
                     </h3>
                     <ul className="space-y-3">
                       <li className="flex items-start">
-                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <FaCheck className="text-primary-800 mt-1 mr-2 flex-shrink-0" />
                         <span>Screen replacements and repairs</span>
                       </li>
                       <li className="flex items-start">
-                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <FaCheck className="text-primary-800 mt-1 mr-2 flex-shrink-0" />
                         <span>Battery replacements for extended life</span>
                       </li>
                       <li className="flex items-start">
-                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <FaCheck className="text-primary-800 mt-1 mr-2 flex-shrink-0" />
                         <span>Keyboard and trackpad repairs</span>
                       </li>
                       <li className="flex items-start">
-                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <FaCheck className="text-primary-800 mt-1 mr-2 flex-shrink-0" />
                         <span>Hard drive/SSD upgrades and replacements</span>
                       </li>
                       <li className="flex items-start">
-                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <FaCheck className="text-primary-800 mt-1 mr-2 flex-shrink-0" />
                         <span>RAM upgrades for improved performance</span>
                       </li>
                       <li className="flex items-start">
-                        <FaCheck className="text-primary-600 mt-1 mr-2 flex-shrink-0" />
+                        <FaCheck className="text-primary-800 mt-1 mr-2 flex-shrink-0" />
                         <span>Operating system installation and troubleshooting</span>
                       </li>
                     </ul>
                     <div className="mt-6">
-                      <Link href="/repair" className="text-primary-600 hover:text-primary-700 font-medium flex items-center">
+                      <Link href="/repair" className="text-primary-800 hover:text-primary-900 font-medium flex items-center">
                         View All Repair Services
                         <FaArrowRight className="ml-2 h-4 w-4" />
                       </Link>
@@ -500,8 +500,8 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
                 </div>
               </div>
 
-              <div className="mt-10 bg-gray-50 rounded-lg p-6 max-w-3xl mx-auto">
-                <p className="text-center text-gray-700 mb-0">
+              <div className="mt-10 bg-primary-50 rounded-lg p-6 max-w-3xl mx-auto">
+                <p className="text-center text-primary-700 mb-0">
                   <span className="font-medium">Note:</span> While most repairs can be completed at your doorstep, some complex issues may require additional equipment. Our technician will diagnose on-site and provide options if more extensive work is needed.
                 </p>
               </div>
@@ -510,7 +510,7 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
 
           {/* Popular Services with Pricing */}
           <div className="mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">
+            <h2 className="text-3xl font-bold text-primary-900 text-center mb-8">
               Popular Services with Pricing
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -524,20 +524,20 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
                     className="card hover:shadow-custom-lg transition-shadow"
                   >
                     <div className="p-6">
-                      <div className="text-primary-600 text-2xl mb-4">
+                      <div className="text-primary-800 text-2xl mb-4">
                         {service.type === 'mobile' ? '📱' : '💻'}
                       </div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-3">
+                      <h3 className="text-xl font-bold text-primary-900 mb-3">
                         {service.name}
                       </h3>
-                      <p className="text-gray-600 mb-4">
+                      <p className="text-primary-500 mb-4">
                         Professional doorstep {service.name.toLowerCase()} for all major brands.
                       </p>
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-900 font-bold text-lg">From ${minPrice}</span>
+                        <span className="text-primary-900 font-bold text-lg">From ${minPrice}</span>
                         <Link
                           href={`/repair/vancouver/${service.id}`}
-                          className="text-primary-600 hover:text-primary-700 font-medium flex items-center"
+                          className="text-primary-800 hover:text-primary-900 font-medium flex items-center"
                         >
                           View details
                           <FaArrowRight className="ml-2 h-4 w-4" />
@@ -553,7 +553,7 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
           {/* Testimonials Section */}
           {testimonials.length > 0 && (
             <div className="mb-16">
-              <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">
+              <h2 className="text-3xl font-bold text-primary-900 text-center mb-8">
                 What Our Customers Say
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -567,7 +567,7 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
                       {[...Array(5)].map((_, i) => (
                         <svg
                           key={i}
-                          className={`h-5 w-5 ${i < testimonial.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                          className={`h-5 w-5 ${i < testimonial.rating ? 'text-accent-400' : 'text-primary-200'}`}
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -577,14 +577,14 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
                     </div>
                     
                     {/* Review Text */}
-                    <p className="text-gray-700 mb-4 italic">"{testimonial.review}"</p>
-                    
+                    <p className="text-primary-700 mb-4 italic">"{testimonial.review}"</p>
+
                     {/* Customer Details */}
                     <div className="border-t pt-4">
-                      <div className="font-semibold text-gray-900">{testimonial.customer_name}</div>
-                      <div className="text-sm text-gray-500">{testimonial.city}</div>
+                      <div className="font-semibold text-primary-900">{testimonial.customer_name}</div>
+                      <div className="text-sm text-primary-400">{testimonial.city}</div>
                       {testimonial.device_model && (
-                        <div className="text-sm text-gray-500 mt-1">
+                        <div className="text-sm text-primary-400 mt-1">
                           {testimonial.device_model} • {testimonial.service}
                         </div>
                       )}
@@ -597,11 +597,11 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
 
 
           {/* FAQ Section - Added at bottom */}
-          <section className="py-16 bg-gray-50">
+          <section className="py-16 bg-primary-50">
             <div className="container-custom">
               <div className="text-center mb-12">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4">Common Questions About Doorstep Repair</h2>
-                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                <p className="text-xl text-primary-500 max-w-3xl mx-auto">
                   Everything you need to know about our mobile repair service
                 </p>
               </div>
@@ -610,15 +610,15 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
                 {faqQuestions.map((faq) => (
                   <div key={faq.id} className="bg-white rounded-lg shadow-sm p-6">
                     <h3 className="text-xl font-bold mb-2">{faq.question}</h3>
-                    <p className="text-gray-600">
+                    <p className="text-primary-500">
                       {faq.answer}
                     </p>
                   </div>
                 ))}
               </div>
-              
+
               <div className="text-center mt-8">
-                <Link href="/faq" className="text-primary-600 hover:text-primary-700 font-medium">
+                <Link href="/faq" className="text-primary-800 hover:text-primary-900 font-medium">
                   View All FAQs
                 </Link>
               </div>
@@ -627,22 +627,22 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
 
           {/* CTA Section */}
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
+            <h2 className="text-3xl font-bold text-primary-900 mb-6">
               Ready to Repair Your Device?
             </h2>
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+            <p className="text-xl text-primary-500 mb-8 max-w-2xl mx-auto">
               Join thousands of satisfied customers who have used our convenient doorstep repair service.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Link
                 href="/book-online"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300"
+                className="bg-primary-800 hover:bg-primary-900 text-white font-bold py-3 px-8 rounded-lg transition duration-300"
               >
                 Book Repair Now
               </Link>
               <a
                 href={formatPhoneNumberForHref('+16048495329')}
-                className="bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-50 font-bold py-3 px-8 rounded-lg transition duration-300"
+                className="bg-white border-2 border-primary-800 text-primary-800 hover:bg-primary-50 font-bold py-3 px-8 rounded-lg transition duration-300"
               >
                 Call {formatPhoneNumberForDisplay('+16048495329')}
               </a>
@@ -651,9 +651,9 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
         </main>
 
         {/* Disclaimer */}
-        <div className="bg-gray-100 border-t border-gray-200">
+        <div className="bg-primary-100 border-t border-primary-200">
           <div className="container mx-auto px-4 py-6">
-            <p className="text-center text-sm text-gray-600">
+            <p className="text-center text-sm text-primary-500">
               The Travelling Technicians is an independent service provider. We are not affiliated with,
               authorized by, or endorsed by Apple Inc., Samsung Electronics Co., Ltd., or Google LLC.
               All trademarks are the property of their respective owners. We provide out-of-warranty

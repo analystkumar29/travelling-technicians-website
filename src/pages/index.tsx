@@ -2,11 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Head from 'next/head';
 import Layout from '@/components/layout/Layout';
-import { FaCheckCircle, FaMapMarkerAlt, FaStar, FaArrowRight, FaPhone, FaUsers, FaShieldAlt, FaClock } from 'react-icons/fa';
+import { MapPin, Star, ArrowRight, Phone, Shield, Clock, CheckCircle, Smartphone, Laptop, Wrench, ChevronRight } from 'lucide-react';
 import PostalCodeChecker from '@/components/PostalCodeChecker';
 import StickyBookingWidget from '@/components/common/StickyBookingWidget';
-import { initUIEnhancements } from '@/utils/ui-enhancements';
-import { testSupabaseConnection, supabase } from '@/utils/supabaseClient';
 import { trackLocationEvent } from '@/utils/analytics';
 import StructuredData, { LocalBusinessSchema, OrganizationSchema, ReviewSchema } from '@/components/seo/StructuredData';
 import { TechnicianSchema } from '@/components/seo/TechnicianSchema';
@@ -14,23 +12,9 @@ import OptimizedImage from '@/components/common/OptimizedImage';
 import { HomePagePreloads } from '@/components/common/PreloadHints';
 import { getPricingData, getPopularServices, getTestimonials } from '@/lib/data-service';
 import { getBusinessSettingsForSSG } from '@/lib/business-settings';
-
-// Component to render device brand image with proper dimensions
-const BrandImage = ({ src, alt }: { src: string, alt: string }) => {
-  return (
-    <div className="relative w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 mx-auto">
-      <OptimizedImage 
-        src={src} 
-        alt={alt}
-        fill
-        className="object-contain"
-        sizes="(max-width: 640px) 48px, (max-width: 768px) 64px, 80px"
-        loading="lazy"
-        quality={90}
-      />
-    </div>
-  );
-};
+import { ScrollReveal } from '@/components/motion/ScrollReveal';
+import { AnimatedCounter } from '@/components/motion/AnimatedCounter';
+import { StaggerContainer, StaggerItem } from '@/components/motion/StaggerContainer';
 
 // Device brands
 const deviceBrands = [
@@ -42,58 +26,25 @@ const deviceBrands = [
   { id: 'huawei', name: 'Huawei', image: '/images/brands/huawei.svg' },
 ];
 
-
-
-// Testimonials - focusing only on target cities
-// Note: These are now fetched via getStaticProps, but we keep static fallbacks
+// Testimonials fallback
 const staticTestimonials = [
-  {
-    id: 1,
-    name: 'Sarah J.',
-    location: 'Vancouver',
-    rating: 5,
-    comment: 'Excellent service! The technician came to my home and fixed my iPhone screen quickly. Very professional and convenient.',
-    device: 'iPhone 13 Pro'
-  },
-  {
-    id: 2,
-    name: 'Michael C.',
-    location: 'Burnaby',
-    rating: 5,
-    comment: 'Had my MacBook battery replaced at home. Professional service and saved me a trip to the mall. Highly recommend!',
-    device: 'MacBook Pro 2019'
-  },
-  {
-    id: 3,
-    name: 'Jason T.',
-    location: 'Richmond',
-    rating: 4,
-    comment: 'Great doorstep service for my Samsung. The price was fair and the repair was done perfectly.',
-    device: 'Samsung Galaxy S22'
-  },
-  {
-    id: 4,
-    name: 'Anna W.',
-    location: 'North Vancouver',
-    rating: 5,
-    comment: 'Amazing convenience! The technician was punctual and fixed my laptop keyboard issue in under an hour.',
-    device: 'Dell XPS 13'
-  },
+  { id: 1, name: 'Sarah J.', location: 'Vancouver', rating: 5, comment: 'Excellent service! The technician came to my home and fixed my iPhone screen quickly. Very professional and convenient.', device: 'iPhone 13 Pro' },
+  { id: 2, name: 'Michael C.', location: 'Burnaby', rating: 5, comment: 'Had my MacBook battery replaced at home. Professional service and saved me a trip to the mall. Highly recommend!', device: 'MacBook Pro 2019' },
+  { id: 3, name: 'Jason T.', location: 'Richmond', rating: 4, comment: 'Great doorstep service for my Samsung. The price was fair and the repair was done perfectly.', device: 'Samsung Galaxy S22' },
+  { id: 4, name: 'Anna W.', location: 'North Vancouver', rating: 5, comment: 'Amazing convenience! The technician was punctual and fixed my laptop keyboard issue in under an hour.', device: 'Dell XPS 13' },
 ];
 
-// Static pricing data as fallback (matches current hardcoded values)
 const staticPricingData = {
   mobile: { range: '$79-$189', common: '$129', time: '30-45 min' },
   laptop: { range: '$99-$249', common: '$169', time: '45-90 min' },
-  tablet: { range: '$89-$199', common: '$149', time: '30-60 min' }
+  tablet: { range: '$89-$199', common: '$149', time: '30-60 min' },
 };
 
-// Static popular services as fallback
 const staticPopularServices = [
   { name: 'Screen Repair', price: 'From $89', icon: '📱' },
   { name: 'Battery Replace', price: 'From $79', icon: '🔋' },
   { name: 'Laptop Repair', price: 'From $99', icon: '💻' },
-  { name: 'Charging Issues', price: 'From $69', icon: '⚡' }
+  { name: 'Charging Issues', price: 'From $69', icon: '⚡' },
 ];
 
 interface HomePageProps {
@@ -106,12 +57,11 @@ interface HomePageProps {
 
 export async function getStaticProps() {
   try {
-    // Fetch data from our new data service and business settings
     const [pricingData, testimonials, popularServices, businessSettings] = await Promise.all([
       getPricingData(),
       getTestimonials(),
       getPopularServices(),
-      getBusinessSettingsForSSG()
+      getBusinessSettingsForSSG(),
     ]);
 
     return {
@@ -120,13 +70,11 @@ export async function getStaticProps() {
         testimonials,
         popularServices,
         businessPhone: businessSettings.phone.display,
-        businessPhoneHref: businessSettings.phone.href
+        businessPhoneHref: businessSettings.phone.href,
       },
-      // Revalidate every hour (ISR)
-      revalidate: 3600
+      revalidate: 3600,
     };
   } catch (error) {
-    // If anything fails, return static data (zero regression guarantee)
     console.error('Error in getStaticProps, using static fallback:', error);
     return {
       props: {
@@ -134,9 +82,9 @@ export async function getStaticProps() {
         testimonials: staticTestimonials,
         popularServices: staticPopularServices,
         businessPhone: '(604) 849-5329',
-        businessPhoneHref: 'tel:+16048495329'
+        businessPhoneHref: 'tel:+16048495329',
       },
-      revalidate: 3600
+      revalidate: 3600,
     };
   }
 }
@@ -146,44 +94,26 @@ export default function Home({
   testimonials = staticTestimonials,
   popularServices = staticPopularServices,
   businessPhone = '(604) 849-5329',
-  businessPhoneHref = 'tel:+16048495329'
+  businessPhoneHref = 'tel:+16048495329',
 }: HomePageProps) {
-  const [selectedTestimonial, setSelectedTestimonial] = useState(0);
   const [showFAB, setShowFAB] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
-  const testimonialsRef = useRef<HTMLDivElement>(null);
-
-  // Rotate testimonials automatically
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setSelectedTestimonial((prev) => 
-        prev === testimonials.length - 1 ? 0 : prev + 1
-      );
-    }, 5000);
-    
-    return () => clearInterval(interval);
-  }, [testimonials.length]);
 
   // Smart FAB scroll behavior
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
-      // Show FAB when scrolling up or at top, hide when scrolling down
       if (currentScrollY < lastScrollY || currentScrollY < 100) {
         setShowFAB(true);
       } else if (currentScrollY > lastScrollY && currentScrollY > 200) {
         setShowFAB(false);
       }
-      
       setLastScrollY(currentScrollY);
     };
-
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
-  // Basic cleanup
   useEffect(() => {
     if (typeof window !== 'undefined') {
       document.body.classList.remove('loading-navigation');
@@ -191,505 +121,399 @@ export default function Home({
     }
   }, []);
 
-  // Pricing data is now passed via props (pricingData parameter)
-  // No need for local constant - using the prop directly
-
   return (
     <>
       <Head>
-        {/* Page Title & Meta Description */}
         <title>The Travelling Technicians | Mobile &amp; Laptop Repair Vancouver BC</title>
         <meta name="description" content="Expert mobile phone and laptop repair with convenient doorstep service across Vancouver, Burnaby, Surrey, Richmond, and Lower Mainland. Same-day service with up to 6-month warranty." />
         <link rel="canonical" href="https://www.travelling-technicians.ca/" />
-        
-        {/* Critical Resource Preloads */}
         <HomePagePreloads />
-        
-        {/* Homepage Structured Data */}
         <LocalBusinessSchema telephone={businessPhoneHref} />
         <OrganizationSchema telephone={businessPhoneHref} />
         <ReviewSchema
-          reviews={testimonials.map(testimonial => ({
-            author: testimonial.name,
-            rating: testimonial.rating,
-            reviewBody: testimonial.comment,
-            location: testimonial.location,
-            datePublished: "2024-01-01" // You can make this dynamic
+          reviews={testimonials.map((t) => ({
+            author: t.name,
+            rating: t.rating,
+            reviewBody: t.comment,
+            location: t.location,
+            datePublished: '2024-01-01',
           }))}
-          aggregateRating={{
-            ratingValue: 4.8,
-            reviewCount: testimonials.length,
-            bestRating: 5,
-            worstRating: 1
-          }}
+          aggregateRating={{ ratingValue: 4.8, reviewCount: testimonials.length, bestRating: 5, worstRating: 1 }}
         />
-        
-        {/* E-E-A-T Technician Schema for expertise signals */}
         <TechnicianSchema
           includeAggregate={true}
-          aggregateData={{
-            totalTechnicians: 4,
-            averageExperience: 7.25,
-            totalCertifications: 11
-          }}
+          aggregateData={{ totalTechnicians: 4, averageExperience: 7.25, totalCertifications: 11 }}
         />
       </Head>
       <Layout>
-      {/* Desktop Sticky Booking Widget */}
-      <StickyBookingWidget 
-        businessPhone={businessPhone}
-        businessPhoneHref={businessPhoneHref}
-      />
-      
-      {/* Smart Mobile Floating Action Button */}
-      <div className={`fixed bottom-0 left-0 right-0 md:hidden z-50 transition-transform duration-300 ${
-        showFAB ? 'translate-y-0' : 'translate-y-full'
-      }`}>
-        {/* Safe area spacing for iPhone home indicator */}
-        <div className="bg-gradient-to-r from-accent-500 to-accent-600 text-white p-4 shadow-2xl">
-          <div className="flex items-center justify-between max-w-sm mx-auto">
-            <div className="flex-1">
-              <div className="font-bold text-base">📱 Device Broken?</div>
-              <div className="text-xs opacity-90">Free quote in 2 minutes</div>
-            </div>
-            <Link 
-              href="/book-online" 
-              className="bg-white text-accent-600 px-4 py-3 rounded-lg font-bold text-sm hover:bg-gray-100 transition-colors ml-3 flex-shrink-0 min-h-[44px] flex items-center justify-center"
-            >
-              Fix Now
-            </Link>
-          </div>
-        </div>
-        {/* Safe area for iPhone home indicator */}
-        <div className="bg-accent-600 h-safe-area-inset-bottom"></div>
-      </div>
+        {/* Desktop Sticky Booking Widget */}
+        <StickyBookingWidget businessPhone={businessPhone} businessPhoneHref={businessPhoneHref} />
 
-      {/* SIMPLIFIED MOBILE HERO SECTION */}
-      <section className="py-6 md:py-12 bg-gradient-to-br from-primary-50 to-primary-100">
-        <div className="container-custom px-4 sm:px-6">
-          {/* Add bottom padding for mobile FAB */}
-          <div className="pb-12 md:pb-0">
-            {/* Enhanced Urgency Banner with Countdown - Hidden on Mobile */}
-            <div className="hidden md:block bg-gradient-to-r from-red-500 to-accent-500 text-white text-center py-3 px-4 rounded-lg mb-6 shadow-lg">
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
-                <div className="flex items-center">
-                  <span className="text-xl mr-2">🚨</span>
-                  <span className="font-bold">LIMITED SAME-DAY SLOTS:</span>
+        {/* Mobile FAB */}
+        <div className={`fixed bottom-0 left-0 right-0 md:hidden z-50 transition-transform duration-300 ${showFAB ? 'translate-y-0' : 'translate-y-full'}`}>
+          <div className="bg-primary-900 text-white p-4 shadow-2xl">
+            <div className="flex items-center justify-between max-w-sm mx-auto">
+              <div className="flex-1">
+                <div className="font-semibold text-base flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-accent-400" />
+                  Need a Repair?
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="bg-white text-red-600 font-bold px-3 py-1 rounded-lg animate-pulse">
-                    ⏱️ 3 SLOTS LEFT TODAY
-                  </span>
-                  <span className="hidden sm:inline">•</span>
-                  <span className="text-sm">Book before 3 PM for same-day service</span>
-                </div>
+                <div className="text-xs text-primary-300">Same-day service available</div>
               </div>
+              <Link
+                href="/book-online"
+                className="bg-accent-500 text-primary-900 px-5 py-3 rounded-lg font-bold text-sm hover:bg-accent-600 transition-colors ml-3 flex-shrink-0"
+              >
+                Book Now
+              </Link>
             </div>
+          </div>
+          <div className="bg-primary-950 h-safe-area-inset-bottom" />
+        </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-              <div className="space-y-6">
-                {/* Mobile-Optimized Headline */}
-                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight">
-                  Get Your Device Fixed Today
-                  <span className="block text-accent-600">At Your Doorstep</span>
-                </h1>
-                
-                <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed">
-                  Professional repair technicians come to you. Most fixes completed in 30-90 minutes with 90-day warranty.
-                </p>
+        {/* === HERO SECTION === */}
+        <section className="pt-8 pb-12 md:pt-16 md:pb-20 bg-gradient-to-b from-primary-50 to-white">
+          <div className="container-custom px-4 sm:px-6">
+            <div className="pb-12 md:pb-0">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div className="space-y-6">
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-heading font-extrabold text-primary-900 leading-[1.15] tracking-tight">
+                    Expert Device Repair,
+                    <span className="block text-accent-600">Delivered to Your Door.</span>
+                  </h1>
 
-                {/* Social Proof in Hero - Hidden on Mobile */}
-                <div className="hidden md:block bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <div className="flex items-center">
-                      <FaUsers className="text-blue-600 mr-2" />
-                      <div>
-                        <div className="font-bold text-gray-900">500+ Repairs This Month</div>
-                        <div className="text-sm text-gray-600">Join satisfied customers across the Lower Mainland</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <FaStar key={i} className="h-4 w-4 text-yellow-400 fill-current" />
-                        ))}
-                      </div>
-                      <span className="font-bold text-gray-900">4.8/5</span>
-                      <span className="text-sm text-gray-600">(500+ reviews)</span>
-                    </div>
-                  </div>
-                </div>
+                  <p className="text-lg md:text-xl text-primary-600 leading-relaxed max-w-lg">
+                    Professional screen, battery, and hardware repair across Vancouver&apos;s Lower Mainland. 90-day warranty on every repair.
+                  </p>
 
-                {/* Mobile-Optimized Pricing Preview - Hidden on Mobile */}
-                <div className="hidden md:block bg-white rounded-xl p-4 sm:p-6 shadow-md border-l-4 border-green-500">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-bold text-base sm:text-lg text-gray-900">Quick Pricing Preview</h3>
-                    <span className="text-green-600 font-bold text-xs sm:text-sm">✓ No Hidden Fees</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                    <div className="text-center">
-                      <div className="text-lg sm:text-xl mb-1">📱</div>
-                      <div className="font-bold text-xs sm:text-sm text-accent-600">Mobile</div>
-                      <div className="text-sm sm:text-base font-semibold text-gray-800">{pricingData.mobile.range}</div>
-                      <div className="text-xs text-gray-500">{pricingData.mobile.time}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg sm:text-xl mb-1">💻</div>
-                      <div className="font-bold text-xs sm:text-sm text-accent-600">Laptop</div>
-                      <div className="text-sm sm:text-base font-semibold text-gray-800">{pricingData.laptop.range}</div>
-                      <div className="text-xs text-gray-500">{pricingData.laptop.time}</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Service Area Checker - Keep Postal Code Checker */}
-                <div className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-xl p-4 sm:p-6 border border-teal-200">
-                  <div className="flex items-center justify-center mb-4">
-                    <FaMapMarkerAlt className="text-teal-600 mr-2" />
-                    <h3 className="text-base sm:text-lg font-bold text-center text-gray-900">
-                      ⚡ Check Same-Day Availability
-                    </h3>
-                  </div>
-                  <PostalCodeChecker 
-                    variant="compact"
-                    onSuccess={(result, postalCode) => {
-                      setTimeout(() => {
-                        window.location.href = '/book-online';
-                      }, 1500);
-                    }}
-                  />
-                </div>
-
-                {/* Quick Repair Options - Mobile Only: Screen & Battery */}
-                <div className="md:hidden grid grid-cols-2 gap-3">
-                  <Link 
-                    href="/book-online?service=screen-replacement"
-                    className="bg-white rounded-xl p-4 shadow-md hover:shadow-lg transition-shadow text-center border-2 border-accent-200"
-                  >
-                    <div className="text-3xl mb-2">📱</div>
-                    <h3 className="font-bold text-sm text-gray-900">Screen Repair</h3>
-                    <p className="text-xs text-gray-600 mt-1">From $89</p>
-                  </Link>
-                  <Link 
-                    href="/book-online?service=battery-replacement"
-                    className="bg-white rounded-xl p-4 shadow-md hover:shadow-lg transition-shadow text-center border-2 border-accent-200"
-                  >
-                    <div className="text-3xl mb-2">🔋</div>
-                    <h3 className="font-bold text-sm text-gray-900">Battery Replace</h3>
-                    <p className="text-xs text-gray-600 mt-1">From $79</p>
-                  </Link>
-                </div>
-
-                {/* Primary CTA - Simplified for Mobile */}
-                <div className="space-y-4">
-                  <Link 
-                    href="/book-online" 
-                    className="w-full bg-gradient-to-r from-accent-500 to-accent-600 text-white text-center py-4 px-6 rounded-xl font-bold text-base sm:text-lg hover:from-accent-600 hover:to-accent-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 flex items-center justify-center min-h-[56px]"
-                  >
-                    <span className="mr-2">🚀</span>
-                    <span>Book Now - Free Quote</span>
-                  </Link>
-                  
-                  <div className="hidden md:grid grid-cols-2 gap-3 sm:gap-4">
-                    <a 
-                      href={businessPhoneHref} 
-                      className="bg-green-600 hover:bg-green-700 text-white text-center py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center min-h-[48px]"
+                  {/* CTA Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Link
+                      href="/book-online"
+                      className="bg-primary-800 hover:bg-primary-900 text-white text-center py-3.5 px-8 rounded-lg font-semibold text-base transition-colors shadow-sm inline-flex items-center justify-center gap-2"
                     >
-                      <FaPhone className="mr-2" />
-                      <span>Call Now</span>
-                    </a>
-                    <Link 
-                      href="/services" 
-                      className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-center py-3 px-4 rounded-lg font-semibold transition-colors min-h-[48px] flex items-center justify-center"
+                      Book a Repair
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                    <Link
+                      href="#how-it-works"
+                      className="border border-primary-300 text-primary-700 hover:bg-primary-50 text-center py-3.5 px-8 rounded-lg font-medium text-base transition-colors inline-flex items-center justify-center"
                     >
-                      <span>All Services</span>
+                      See How It Works
                     </Link>
                   </div>
-                </div>
 
-                {/* Trust Indicators - Hidden on Mobile */}
-                <div className="hidden md:flex flex-wrap items-center justify-start gap-3 sm:gap-4">
-                  <div className="flex items-center text-green-600 bg-green-50 px-3 py-2 rounded-lg">
-                    <FaCheckCircle className="mr-1 text-sm" />
-                    <span className="text-xs sm:text-sm font-medium">90-Day Warranty</span>
-                  </div>
-                  <div className="flex items-center text-green-600 bg-green-50 px-3 py-2 rounded-lg">
-                    <FaCheckCircle className="mr-1 text-sm" />
-                    <span className="text-xs sm:text-sm font-medium">Same-Day Service</span>
-                  </div>
-                  <div className="flex items-center text-green-600 bg-green-50 px-3 py-2 rounded-lg">
-                    <FaCheckCircle className="mr-1 text-sm" />
-                    <span className="text-xs sm:text-sm font-medium">Certified Techs</span>
-                  </div>
-                </div>
-              </div>
-            
-              {/* Hero Image with Overlay - Hidden on Mobile */}
-              <div className="hidden lg:block relative rounded-2xl overflow-hidden shadow-2xl h-96">
-                <OptimizedImage 
-                  src="/images/services/doorstep-repair-tech-optimized.webp" 
-                  alt="Professional technician providing doorstep device repair services at customer's location" 
-                  className="object-cover"
-                  fill={true}
-                  isCritical={true}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex items-end">
-                  <div className="p-6 w-full">
-                    <div className="inline-block bg-accent-500 text-white text-sm px-3 py-1 rounded-full mb-3">
-                      ✨ Doorstep Service
+                  {/* Inline trust badges */}
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-primary-500 pt-2">
+                    <div className="flex items-center gap-1.5">
+                      <Shield className="h-4 w-4 text-accent-500" />
+                      <span>Certified Techs</span>
                     </div>
-                    <h3 className="text-white text-xl md:text-2xl font-bold mb-2">
-                      Skip the repair shop chaos
-                    </h3>
-                    <p className="text-white/90 text-sm md:text-base">
-                      Professional repair at your location. Watch your device get fixed!
-                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="h-4 w-4 text-accent-500" />
+                      <span>Same-Day Service</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle className="h-4 w-4 text-accent-500" />
+                      <span>90-Day Warranty</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hero Image */}
+                <div className="hidden lg:block relative rounded-2xl overflow-hidden shadow-xl h-[440px]">
+                  <OptimizedImage
+                    src="/images/services/doorstep-repair-tech-optimized.webp"
+                    alt="Professional technician providing doorstep device repair services at customer's location"
+                    className="object-cover"
+                    fill={true}
+                    isCritical={true}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary-900/60 via-transparent to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-6">
+                    <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 flex items-center gap-3">
+                      <div className="bg-accent-100 rounded-full p-2">
+                        <Star className="h-5 w-5 text-accent-600 fill-accent-600" />
+                      </div>
+                      <div>
+                        <div className="font-semibold text-primary-800 text-sm">4.8/5 Average Rating</div>
+                        <div className="text-primary-500 text-xs">from 500+ verified reviews</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
-      
-      {/* Customer Success Stories - Moved Higher */}
-      <section className="py-12 bg-white">
-        <div className="container-custom">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">Join 500+ Happy Customers</h2>
-            <p className="text-lg text-gray-600">Real reviews from your neighbors across the Lower Mainland</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {testimonials.slice(0, 2).map((testimonial) => (
-              <div key={testimonial.id} className="bg-gray-50 rounded-xl p-6 shadow-sm border-l-4 border-accent-500">
-                <div className="flex items-center mb-3">
-                  {[...Array(5)].map((_, i) => (
-                    <FaStar 
-                      key={i} 
-                      className={`h-4 w-4 ${i < testimonial.rating ? 'text-yellow-400' : 'text-gray-300'}`} 
-                    />
-                  ))}
-                  <span className="ml-2 text-sm font-medium text-gray-700">{testimonial.location}</span>
-                </div>
-                <p className="text-gray-700 mb-3 text-sm leading-relaxed">&ldquo;{testimonial.comment}&rdquo;</p>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="font-medium text-gray-900">{testimonial.name}</span>
-                  <span className="text-gray-500">{testimonial.device}</span>
+        </section>
+
+        {/* === TESTIMONIALS === */}
+        <ScrollReveal>
+          <section className="py-16 bg-white">
+            <div className="container-custom">
+              <div className="text-center mb-10">
+                <h2 className="text-2xl md:text-3xl font-heading font-bold text-primary-900 mb-3">What Our Customers Say</h2>
+                <p className="text-primary-500 text-lg">Real reviews from your neighbors across the Lower Mainland</p>
+              </div>
+
+              <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                {testimonials.slice(0, 4).map((testimonial) => (
+                  <StaggerItem key={testimonial.id}>
+                    <div className="bg-primary-50 rounded-xl p-6 border border-primary-100">
+                      <div className="flex items-center gap-1 mb-3">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className={`h-4 w-4 ${i < testimonial.rating ? 'text-accent-400 fill-accent-400' : 'text-primary-200'}`} />
+                        ))}
+                        <span className="ml-2 text-sm text-primary-400">{testimonial.location}</span>
+                      </div>
+                      <p className="text-primary-700 mb-4 text-sm leading-relaxed">&ldquo;{testimonial.comment}&rdquo;</p>
+                      <div className="flex justify-between items-center text-sm border-t border-primary-100 pt-3">
+                        <span className="font-medium text-primary-800">{testimonial.name}</span>
+                        <span className="text-primary-400 text-xs">{testimonial.device}</span>
+                      </div>
+                    </div>
+                  </StaggerItem>
+                ))}
+              </StaggerContainer>
+
+              <div className="text-center">
+                <div className="inline-flex items-center bg-emerald-50 text-emerald-700 px-5 py-2.5 rounded-full text-sm font-medium border border-emerald-200">
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  98% Customer Satisfaction Rate
                 </div>
               </div>
-            ))}
-          </div>
-          
-          <div className="text-center">
-            <div className="inline-flex items-center bg-gradient-to-r from-green-50 to-green-100 px-6 py-3 rounded-full">
-              <FaCheckCircle className="text-green-600 mr-2" />
-              <span className="text-green-800 font-medium">98% Customer Satisfaction Rate</span>
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
+        </ScrollReveal>
 
-      {/* Our Repair Process - Simplified */}
-      <section className="py-12 bg-gray-50">
-        <div className="container-custom">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">How We Fix Your Device</h2>
-            <p className="text-lg text-gray-600">Simple 3-step process</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-xl p-6 text-center shadow-sm border-t-4 border-accent-500">
-              <div className="text-3xl mb-3">📱</div>
-              <h3 className="text-lg font-bold mb-2">1. Book Online</h3>
-              <p className="text-gray-600 text-sm">Quick 2-minute booking with instant confirmation</p>
-            </div>
-            
-            <div className="bg-white rounded-xl p-6 text-center shadow-sm border-t-4 border-accent-500">
-              <div className="text-3xl mb-3">🚗</div>
-              <h3 className="text-lg font-bold mb-2">2. We Come to You</h3>
-              <p className="text-gray-600 text-sm">Certified tech arrives with tools & parts</p>
-            </div>
-            
-            <div className="bg-white rounded-xl p-6 text-center shadow-sm border-t-4 border-accent-500">
-              <div className="text-3xl mb-3">✅</div>
-              <h3 className="text-lg font-bold mb-2">3. Fixed & Done</h3>
-              <p className="text-gray-600 text-sm">Most repairs completed in 30-90 minutes</p>
-            </div>
-          </div>
-          
-          {/* Second Strong CTA */}
-          <div className="text-center mt-8">
-            <div className="bg-white rounded-2xl p-6 shadow-lg max-w-md mx-auto">
-              <h3 className="text-lg font-bold mb-2">Ready to Get Fixed?</h3>
-              <p className="text-gray-600 text-sm mb-4">Join hundreds of satisfied customers</p>
-              <Link 
-                href="/book-online" 
-                className="w-full bg-gradient-to-r from-accent-500 to-accent-600 text-white py-3 px-6 rounded-xl font-bold hover:from-accent-600 hover:to-accent-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 inline-block"
-              >
-                Start My Repair - Free Quote ⚡
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-      
-      {/* Popular Services - Simplified */}
-      <section className="py-12 bg-white">
-        <div className="container-custom">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">Most Popular Repairs</h2>
-            <p className="text-lg text-gray-600">We fix these issues at your doorstep every day</p>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            {popularServices.map((service, index) => (
-              <div key={index} className="bg-gray-50 rounded-xl p-4 text-center hover:shadow-md transition-shadow">
-                <div className="text-3xl mb-2">{service.icon}</div>
-                <h3 className="font-bold text-sm mb-1">{service.name}</h3>
-                <p className="text-xs text-gray-600">{service.price}</p>
+        {/* === HOW IT WORKS === */}
+        <ScrollReveal>
+          <section id="how-it-works" className="py-16 bg-primary-50">
+            <div className="container-custom">
+              <div className="text-center mb-10">
+                <h2 className="text-2xl md:text-3xl font-heading font-bold text-primary-900 mb-3">How It Works</h2>
+                <p className="text-primary-500 text-lg">Three simple steps to a repaired device</p>
               </div>
-            ))}
-          </div>
-          
-          <div className="text-center">
-            <p className="text-gray-600 mb-4">Not sure what's wrong? Our technicians will diagnose for free!</p>
-            <Link 
-              href="/book-online" 
-              className="bg-gradient-to-r from-primary-600 to-primary-700 text-white py-3 px-8 rounded-xl font-bold hover:from-primary-700 hover:to-primary-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 inline-block"
-            >
-              Book Free Diagnosis 🔍
-            </Link>
-          </div>
-        </div>
-      </section>
-      
-      {/* Trust Metrics - Simplified */}
-      <section className="py-12 bg-gradient-to-r from-primary-600 to-primary-700 text-white">
-        <div className="container-custom">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold mb-2">Trusted by 500+ Customers</h2>
-            <p className="text-lg text-primary-100">Professional repair service across the Lower Mainland</p>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-              <div className="text-2xl md:text-3xl font-bold mb-1 text-accent-400">500+</div>
-              <p className="text-primary-100 text-sm">Happy Customers</p>
-            </div>
-            <div className="text-center bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-              <div className="text-2xl md:text-3xl font-bold mb-1 text-accent-400">95%</div>
-              <p className="text-primary-100 text-sm">Same Day Fix</p>
-            </div>
-            <div className="text-center bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-              <div className="text-2xl md:text-3xl font-bold mb-1 text-accent-400">4.8★</div>
-              <p className="text-primary-100 text-sm">Average Rating</p>
-            </div>
-            <div className="text-center bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-              <div className="text-2xl md:text-3xl font-bold mb-1 text-accent-400">90</div>
-              <p className="text-primary-100 text-sm">Day Warranty</p>
-            </div>
-          </div>
-        </div>
-      </section>
-      
 
-      
-      {/* Service Areas - Simplified */}
-      <section className="py-12 bg-gray-50">
-        <div className="container-custom">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">We Come to You</h2>
-            <p className="text-lg text-gray-600">Serving the entire Lower Mainland</p>
-          </div>
-          
-          <div className="bg-white rounded-xl p-6 shadow-sm">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-              {[
-                { name: 'Vancouver', slug: 'vancouver' },
-                { name: 'Burnaby', slug: 'burnaby' },
-                { name: 'Richmond', slug: 'richmond' },
-                { name: 'Chilliwack', slug: 'chilliwack' },
-                { name: 'North Vancouver', slug: 'north-vancouver' },
-                { name: 'West Vancouver', slug: 'west-vancouver' },
-                { name: 'Coquitlam', slug: 'coquitlam' },
-                { name: 'New Westminster', slug: 'new-westminster' }
-              ].map((city, index) => (
-                <Link 
-                  key={index}
-                  href={`/repair/${city.slug}`}
-                  className="bg-primary-50 rounded-lg p-3 text-center text-sm hover:bg-primary-100 transition-colors block"
-                  onClick={() => trackLocationEvent('area_selected', city.name)}
+              <StaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {[
+                  { icon: Smartphone, title: 'Book Online', desc: 'Quick 2-minute booking with instant confirmation', step: '1' },
+                  { icon: Wrench, title: 'We Come to You', desc: 'Certified tech arrives with tools & parts at your location', step: '2' },
+                  { icon: CheckCircle, title: 'Fixed & Done', desc: 'Most repairs completed in 30-90 minutes with warranty', step: '3' },
+                ].map((item) => (
+                  <StaggerItem key={item.step}>
+                    <div className="bg-white rounded-xl p-6 text-center shadow-sm border border-primary-100">
+                      <div className="inline-flex items-center justify-center w-12 h-12 bg-accent-100 rounded-full mb-4">
+                        <item.icon className="h-6 w-6 text-accent-600" />
+                      </div>
+                      <div className="text-xs font-semibold text-accent-600 uppercase tracking-wider mb-2">Step {item.step}</div>
+                      <h3 className="text-lg font-heading font-bold text-primary-800 mb-2">{item.title}</h3>
+                      <p className="text-primary-500 text-sm">{item.desc}</p>
+                    </div>
+                  </StaggerItem>
+                ))}
+              </StaggerContainer>
+
+              {/* CTA */}
+              <div className="text-center mt-10">
+                <Link
+                  href="/book-online"
+                  className="bg-accent-500 hover:bg-accent-600 text-primary-900 py-3 px-8 rounded-lg font-semibold transition-colors inline-flex items-center gap-2"
                 >
-                  <FaMapMarkerAlt className="inline-block mr-1 text-primary-600" />
-                  {city.name}
+                  Start My Repair
+                  <ArrowRight className="h-4 w-4" />
                 </Link>
-              ))}
-            </div>
-            
-            <div className="text-center">
-              <p className="text-gray-600 text-sm mb-3">+ More cities across the Lower Mainland</p>
-              <Link href="/service-areas" className="text-primary-600 hover:text-primary-700 font-medium text-sm">
-                Check if we serve your area →
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-      
-      {/* Final Strong CTA */}
-      <section className="py-16 bg-gradient-to-br from-accent-500 via-accent-600 to-accent-700 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/10"></div>
-        <div className="container-custom relative z-10">
-          <div className="text-center max-w-2xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 leading-tight">
-              Device Broken? We'll Fix It Today! 
-            </h2>
-            <p className="text-xl mb-6 text-accent-100">
-              Professional repair at your doorstep. Most repairs done in 30-90 minutes with 90-day warranty.
-            </p>
-            
-            <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 mb-6">
-              <div className="grid grid-cols-2 gap-4 text-center">
-                <div>
-                  <div className="text-2xl font-bold">⚡ Same Day</div>
-                  <div className="text-sm text-accent-100">Available today</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">🛡️ 90 Days</div>
-                  <div className="text-sm text-accent-100">Warranty included</div>
-                </div>
               </div>
             </div>
-            
-            <div className="space-y-4">
-              <Link 
-                href="/book-online" 
-                className="w-full sm:w-auto bg-white text-accent-600 py-4 px-8 rounded-2xl font-bold text-xl hover:bg-gray-100 transition-all duration-300 shadow-2xl hover:shadow-3xl transform hover:scale-105 inline-block"
-              >
-                🚀 Book Emergency Repair Now
-              </Link>
-              
-              <div className="flex items-center justify-center space-x-4 text-sm">
-                <a 
-                  href={businessPhoneHref} 
-                  className="flex items-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+          </section>
+        </ScrollReveal>
+
+        {/* === SERVICES === */}
+        <ScrollReveal>
+          <section className="py-16 bg-white">
+            <div className="container-custom">
+              <div className="text-center mb-10">
+                <h2 className="text-2xl md:text-3xl font-heading font-bold text-primary-900 mb-3">Most Popular Repairs</h2>
+                <p className="text-primary-500 text-lg">We fix these issues at your doorstep every day</p>
+              </div>
+
+              <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                {[
+                  { icon: Smartphone, name: 'Screen Repair', price: pricingData.mobile.range, time: pricingData.mobile.time },
+                  { icon: Smartphone, name: 'Battery Replace', price: '$79-$149', time: '30-45 min' },
+                  { icon: Laptop, name: 'Laptop Screen', price: pricingData.laptop.range, time: pricingData.laptop.time },
+                  { icon: Laptop, name: 'Laptop Battery', price: '$99-$179', time: '45-60 min' },
+                ].map((service, i) => (
+                  <StaggerItem key={i}>
+                    <Link
+                      href="/book-online"
+                      className="bg-primary-50 rounded-xl p-5 text-center hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border border-primary-100 block"
+                    >
+                      <div className="inline-flex items-center justify-center w-10 h-10 bg-accent-100 rounded-full mb-3">
+                        <service.icon className="h-5 w-5 text-accent-600" />
+                      </div>
+                      <h3 className="font-semibold text-sm text-primary-800 mb-1">{service.name}</h3>
+                      <p className="text-accent-600 font-bold text-sm">{service.price}</p>
+                      <p className="text-primary-400 text-xs mt-1">{service.time}</p>
+                    </Link>
+                  </StaggerItem>
+                ))}
+              </StaggerContainer>
+
+              <div className="text-center">
+                <p className="text-primary-500 mb-4 text-sm">Not sure what&apos;s wrong? Our technicians will diagnose for free.</p>
+                <Link
+                  href="/book-online"
+                  className="text-primary-700 hover:text-primary-900 font-medium text-sm inline-flex items-center gap-1"
                 >
-                  <FaPhone className="mr-2" />
-                  Call Now: {businessPhone}
-                </a>
-                <span className="text-accent-100">or</span>
-                <span className="text-accent-100">2-minute online booking</span>
+                  Book Free Diagnosis
+                  <ChevronRight className="h-4 w-4" />
+                </Link>
               </div>
             </div>
-            
-            <p className="mt-6 text-accent-100 text-sm">
-              ✓ Free quotes ✓ No hidden fees ✓ Certified technicians ✓ All brands welcome
-            </p>
+          </section>
+        </ScrollReveal>
+
+        {/* === STATS === */}
+        <ScrollReveal>
+          <section className="py-16 bg-primary-900 text-white">
+            <div className="container-custom">
+              <div className="text-center mb-10">
+                <h2 className="text-2xl md:text-3xl font-heading font-bold mb-3">Trusted Across the Lower Mainland</h2>
+                <p className="text-primary-300 text-lg">Professional repair service you can count on</p>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="text-center">
+                  <div className="text-3xl md:text-4xl font-heading font-bold text-accent-400 mb-1">
+                    <AnimatedCounter to={500} suffix="+" />
+                  </div>
+                  <p className="text-primary-300 text-sm">Happy Customers</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl md:text-4xl font-heading font-bold text-accent-400 mb-1">
+                    <AnimatedCounter to={95} suffix="%" />
+                  </div>
+                  <p className="text-primary-300 text-sm">Same-Day Fix</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl md:text-4xl font-heading font-bold text-accent-400 mb-1">
+                    <AnimatedCounter to={4} suffix=".8" />
+                  </div>
+                  <p className="text-primary-300 text-sm">Average Rating</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl md:text-4xl font-heading font-bold text-accent-400 mb-1">
+                    <AnimatedCounter to={90} />
+                  </div>
+                  <p className="text-primary-300 text-sm">Day Warranty</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </ScrollReveal>
+
+        {/* === POSTAL CODE CHECKER === */}
+        <ScrollReveal>
+          <section className="py-16 bg-white">
+            <div className="container-custom max-w-xl mx-auto text-center">
+              <h2 className="text-2xl md:text-3xl font-heading font-bold text-primary-900 mb-3">Check Your Area</h2>
+              <p className="text-primary-500 mb-6">Enter your postal code to see if we serve your location</p>
+              <div className="bg-primary-50 rounded-xl p-6 border border-primary-100">
+                <PostalCodeChecker
+                  variant="compact"
+                  onSuccess={(result, postalCode) => {
+                    setTimeout(() => {
+                      window.location.href = '/book-online';
+                    }, 1500);
+                  }}
+                />
+              </div>
+            </div>
+          </section>
+        </ScrollReveal>
+
+        {/* === SERVICE AREAS === */}
+        <ScrollReveal>
+          <section className="py-16 bg-primary-50">
+            <div className="container-custom">
+              <div className="text-center mb-10">
+                <h2 className="text-2xl md:text-3xl font-heading font-bold text-primary-900 mb-3">We Come to You</h2>
+                <p className="text-primary-500 text-lg">Serving the entire Lower Mainland</p>
+              </div>
+
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-primary-100">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                  {[
+                    { name: 'Vancouver', slug: 'vancouver' },
+                    { name: 'Burnaby', slug: 'burnaby' },
+                    { name: 'Richmond', slug: 'richmond' },
+                    { name: 'Chilliwack', slug: 'chilliwack' },
+                    { name: 'North Vancouver', slug: 'north-vancouver' },
+                    { name: 'West Vancouver', slug: 'west-vancouver' },
+                    { name: 'Coquitlam', slug: 'coquitlam' },
+                    { name: 'New Westminster', slug: 'new-westminster' },
+                  ].map((city) => (
+                    <Link
+                      key={city.slug}
+                      href={`/repair/${city.slug}`}
+                      className="bg-primary-50 rounded-lg p-3 text-center text-sm text-primary-700 hover:bg-primary-100 transition-colors block font-medium"
+                      onClick={() => trackLocationEvent('area_selected', city.name)}
+                    >
+                      <MapPin className="inline-block mr-1 h-3.5 w-3.5 text-accent-500" />
+                      {city.name}
+                    </Link>
+                  ))}
+                </div>
+                <div className="text-center">
+                  <p className="text-primary-400 text-sm mb-2">+ More cities across the Lower Mainland</p>
+                  <Link href="/service-areas" className="text-primary-700 hover:text-primary-900 font-medium text-sm inline-flex items-center gap-1">
+                    Check if we serve your area <ChevronRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </section>
+        </ScrollReveal>
+
+        {/* === FINAL CTA === */}
+        <section className="py-20 bg-primary-900 text-white relative overflow-hidden">
+          <div className="container-custom relative z-10">
+            <div className="text-center max-w-2xl mx-auto">
+              <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4 leading-tight">
+                Ready to Get Your Device Fixed?
+              </h2>
+              <p className="text-xl mb-8 text-primary-300">
+                Professional repair at your doorstep. Most repairs done in 30-90 minutes with 90-day warranty.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+                <Link
+                  href="/book-online"
+                  className="bg-accent-500 hover:bg-accent-600 text-primary-900 py-4 px-8 rounded-lg font-bold text-lg transition-colors inline-flex items-center justify-center gap-2"
+                >
+                  Book Your Repair
+                  <ArrowRight className="h-5 w-5" />
+                </Link>
+                <a
+                  href={businessPhoneHref}
+                  className="bg-white/10 hover:bg-white/20 text-white border border-white/20 py-4 px-8 rounded-lg font-medium text-lg transition-colors inline-flex items-center justify-center gap-2"
+                >
+                  <Phone className="h-5 w-5" />
+                  {businessPhone}
+                </a>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-primary-300">
+                <span className="flex items-center gap-1.5"><CheckCircle className="h-4 w-4 text-accent-400" />Free quotes</span>
+                <span className="flex items-center gap-1.5"><CheckCircle className="h-4 w-4 text-accent-400" />No hidden fees</span>
+                <span className="flex items-center gap-1.5"><CheckCircle className="h-4 w-4 text-accent-400" />Certified technicians</span>
+                <span className="flex items-center gap-1.5"><CheckCircle className="h-4 w-4 text-accent-400" />All brands welcome</span>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
-    </Layout>
+        </section>
+      </Layout>
     </>
   );
-} 
+}

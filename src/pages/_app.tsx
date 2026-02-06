@@ -1,17 +1,14 @@
 import '@/utils/nextjs-runtime-fix';
 import '@/styles/globals.css';
-import '@/styles/white-screen-fix.css';
 import 'leaflet/dist/leaflet.css';
 import '@/styles/leaflet-custom.css';
-import '@/styles/homepage-enhancements.css';
-import '@/styles/header-fix.css';
 import '@/styles/booking-form-enhancements.css';
-import '@/styles/booking-animations.css';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useEffect, useState, ReactNode } from 'react';
 import { useRouter } from 'next/router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'sonner';
 // next-seo imports REMOVED - they were causing side effects that overwrote page-specific title tags
 // Environment validation temporarily disabled
 
@@ -106,6 +103,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <SafeHydrate>
           <QueryClientProvider client={queryClient}>
             <Component {...pageProps} />
+            <Toaster position="bottom-right" richColors />
           </QueryClientProvider>
         </SafeHydrate>
       </EnvironmentGuard>

@@ -63,18 +63,6 @@ module.exports = (phase, { defaultConfig }) => {
         },
       ];
     },
-    // Disable Fast Refresh in development
-    webpack: (config, { dev, isServer }) => {
-      if (dev) {
-        // Disable Fast Refresh
-        config.plugins = config.plugins.filter(
-          (plugin) => 
-            plugin.constructor.name !== 'HotModuleReplacementPlugin' &&
-            plugin.constructor.name !== 'ReactFreshWebpackPlugin'
-        );
-      }
-      return config;
-    },
     // Optimize compilation
     compiler: {
       // Remove console.log in production for performance (debug completed)
@@ -90,23 +78,27 @@ module.exports = (phase, { defaultConfig }) => {
         },
       ],
     },
-    // Enable asset copying from public folder to ensure manifest.json and favicons are properly included
+    // Single merged webpack config (previously two configs — second overwrote first)
     webpack: (config, { dev, isServer }) => {
-      // Development optimizations
       if (dev) {
+        // Disable Fast Refresh
+        config.plugins = config.plugins.filter(
+          (plugin) =>
+            plugin.constructor.name !== 'HotModuleReplacementPlugin' &&
+            plugin.constructor.name !== 'ReactFreshWebpackPlugin'
+        );
+
         // Optimize Fast Refresh
         config.watchOptions = {
-          aggregateTimeout: 200, // Delay rebuild
-          poll: false, // Use filesystem events
+          aggregateTimeout: 200,
+          poll: false,
           ignored: ['**/node_modules', '**/.git', '**/.next']
         };
-        
-        // Reduce compilation output
+
         config.infrastructureLogging = {
           level: 'error',
         };
-        
-        // Optimize development performance
+
         config.optimization = {
           ...config.optimization,
           removeAvailableModules: false,
@@ -114,11 +106,10 @@ module.exports = (phase, { defaultConfig }) => {
           splitChunks: false,
         };
       }
-      
-      // Production optimizations
+
+      // Production client-side: copy static assets
       if (!dev && !isServer) {
         try {
-          // Copy static assets
           const CopyWebpackPlugin = require('copy-webpack-plugin');
           config.plugins.push(
             new CopyWebpackPlugin({
@@ -138,7 +129,7 @@ module.exports = (phase, { defaultConfig }) => {
           console.warn('copy-webpack-plugin not available:', error.message);
         }
       }
-      
+
       return config;
     },
     // Remove trailing slash to fix API routing

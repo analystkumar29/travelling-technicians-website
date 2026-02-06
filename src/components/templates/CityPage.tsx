@@ -276,7 +276,7 @@ export default function CityPage({ routeData }: CityPageProps) {
       <Header />
       
       {/* ========== HERO SECTION ========== */}
-      <section className="pt-8 pb-12 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
+      <section className="pt-8 pb-12 bg-gradient-to-r from-primary-900 to-primary-900 text-white">
         <div className="container-custom">
           <div className="text-center max-w-4xl mx-auto">
             <div className="flex items-center justify-center mb-4">
@@ -292,22 +292,22 @@ export default function CityPage({ routeData }: CityPageProps) {
             <p className="text-xl md:text-2xl mb-8 text-primary-100">
               Doorstep repair service to all {cityName} neighborhoods
             </p>
-            
+
             <div className="inline-block bg-accent-500 text-white text-lg px-6 py-3 rounded-full mb-8">
               <span className="font-bold">From $89</span>
               <span className="ml-2 text-primary-100">with 90-day warranty</span>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-              <Link 
-                href={`/book-online?city=${citySlug}`} 
+              <Link
+                href={`/book-online?city=${citySlug}`}
                 className="btn-accent text-lg px-8 py-4"
               >
                 Book Repair in {cityName}
               </Link>
-              <a 
+              <a
                 href={cityPhoneHref}
-                className="btn-outline border-white text-white hover:bg-primary-600 text-lg px-8 py-4 flex items-center justify-center"
+                className="btn-outline border-white text-white hover:bg-primary-800 text-lg px-8 py-4 flex items-center justify-center"
               >
                 <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
@@ -355,33 +355,33 @@ export default function CityPage({ routeData }: CityPageProps) {
         <div className="container-custom">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
-              <div className="text-3xl font-bold text-primary-600 mb-2">{stats.repairsCompleted}+</div>
-              <p className="text-gray-600">{cityName} Repairs</p>
+              <div className="text-3xl font-bold text-primary-800 mb-2">{stats.repairsCompleted}+</div>
+              <p className="text-primary-500">{cityName} Repairs</p>
             </div>
             <div>
-              <div className="text-3xl font-bold text-primary-600 mb-2">{stats.rating}★</div>
-              <p className="text-gray-600">Customer Rating</p>
+              <div className="text-3xl font-bold text-primary-800 mb-2">{stats.rating}★</div>
+              <p className="text-primary-500">Customer Rating</p>
             </div>
             <div>
-              <div className="text-3xl font-bold text-primary-600 mb-2">{stats.sameDayRate}%</div>
-              <p className="text-gray-600">Same-Day Service</p>
+              <div className="text-3xl font-bold text-primary-800 mb-2">{stats.sameDayRate}%</div>
+              <p className="text-primary-500">Same-Day Service</p>
             </div>
             <div>
-              <div className="text-3xl font-bold text-primary-600 mb-2">{stats.warrantyDays}</div>
-              <p className="text-gray-600">Day Warranty</p>
+              <div className="text-3xl font-bold text-primary-800 mb-2">{stats.warrantyDays}</div>
+              <p className="text-primary-500">Day Warranty</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* ========== SERVICES SECTION (Side-by-Side Layout) ========== */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-primary-50">
         <div className="container-custom">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Device Repair Services in {cityName}
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-primary-500 max-w-3xl mx-auto">
               Professional repair services delivered directly to your location in {cityName}
             </p>
           </div>
@@ -394,8 +394,8 @@ export default function CityPage({ routeData }: CityPageProps) {
               <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
                 <span className="text-4xl">📱</span>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">Mobile Phone Repairs</h3>
-                  <p className="text-sm text-gray-500">iPhone, Samsung, Pixel & more</p>
+                  <h3 className="text-xl font-bold text-primary-900">Mobile Phone Repairs</h3>
+                  <p className="text-sm text-primary-400">iPhone, Samsung, Pixel & more</p>
                 </div>
               </div>
               
@@ -415,17 +415,17 @@ export default function CityPage({ routeData }: CityPageProps) {
                           {service.slug?.includes('screen') ? '📱' : '🔋'}
                         </div>
                         <div>
-                          <h4 className="font-bold text-gray-900 group-hover:text-primary-600 transition-colors">
+                          <h4 className="font-bold text-primary-900 group-hover:text-primary-800 transition-colors">
                             {service.display_name}
                           </h4>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-primary-400">
                             {service.description?.substring(0, 50) || 'Professional repair service'}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-lg font-bold text-primary-600">From ${minPrice}</div>
-                        <div className="text-xs text-gray-400">View details →</div>
+                        <div className="text-lg font-bold text-primary-800">From ${minPrice}</div>
+                        <div className="text-xs text-primary-400">View details →</div>
                       </div>
                     </Link>
                   );
@@ -438,8 +438,8 @@ export default function CityPage({ routeData }: CityPageProps) {
               <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
                 <span className="text-4xl">💻</span>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">Laptop Repairs</h3>
-                  <p className="text-sm text-gray-500">MacBook, Windows laptops & more</p>
+                  <h3 className="text-xl font-bold text-primary-900">Laptop Repairs</h3>
+                  <p className="text-sm text-primary-400">MacBook, Windows laptops & more</p>
                 </div>
               </div>
               
@@ -459,17 +459,17 @@ export default function CityPage({ routeData }: CityPageProps) {
                           {service.slug?.includes('screen') ? '🖥️' : '🔋'}
                         </div>
                         <div>
-                          <h4 className="font-bold text-gray-900 group-hover:text-primary-600 transition-colors">
+                          <h4 className="font-bold text-primary-900 group-hover:text-primary-800 transition-colors">
                             {service.display_name}
                           </h4>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-primary-400">
                             {service.description?.substring(0, 50) || 'Professional repair service'}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-lg font-bold text-primary-600">From ${minPrice}</div>
-                        <div className="text-xs text-gray-400">View details →</div>
+                        <div className="text-lg font-bold text-primary-800">From ${minPrice}</div>
+                        <div className="text-xs text-primary-400">View details →</div>
                       </div>
                     </Link>
                   );
@@ -486,7 +486,7 @@ export default function CityPage({ routeData }: CityPageProps) {
           <div className="container-custom">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold mb-4">Popular Devices We Repair in {cityName}</h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              <p className="text-lg text-primary-500 max-w-2xl mx-auto">
                 We specialize in repairing the most popular devices. Click to see screen replacement options.
               </p>
             </div>
@@ -505,19 +505,19 @@ export default function CityPage({ routeData }: CityPageProps) {
                   <Link
                     key={model.id}
                     href={`/repair/${citySlug}/${defaultService}/${modelSlug}`}
-                    className={`bg-gray-50 p-4 rounded-lg text-center shadow-sm hover:shadow-md transition-all border border-gray-100 group cursor-pointer
+                    className={`bg-primary-50 p-4 rounded-lg text-center shadow-sm hover:shadow-md transition-all border border-gray-100 group cursor-pointer
                       ${index >= 12 && !showAllModels ? 'hidden md:hidden lg:hidden' : ''}`}
                     // CSS hides models 13+ when collapsed, but they remain in DOM for Google indexing
                   >
-                    <div className="text-gray-800 font-medium text-sm group-hover:text-primary-600 transition-colors">
+                    <div className="text-primary-800 font-medium text-sm group-hover:text-primary-800 transition-colors">
                       {model.name}
                     </div>
                     {model.brand && (
-                      <div className="text-gray-500 text-xs mt-1">
+                      <div className="text-primary-400 text-xs mt-1">
                         {model.brand}
                       </div>
                     )}
-                    <div className="text-xs text-primary-500 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="text-xs text-primary-800 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       Screen Repair →
                     </div>
                   </Link>
@@ -530,7 +530,7 @@ export default function CityPage({ routeData }: CityPageProps) {
               <div className="text-center mt-8">
                 <button
                   onClick={() => setShowAllModels(!showAllModels)}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-primary-600 text-primary-600 font-semibold rounded-lg hover:bg-primary-50 transition-colors"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-primary-800 text-primary-800 font-semibold rounded-lg hover:bg-primary-50 transition-colors"
                   aria-expanded={showAllModels}
                   aria-controls="device-models-grid"
                 >
@@ -558,11 +558,11 @@ export default function CityPage({ routeData }: CityPageProps) {
 
       {/* ========== LOCAL TESTIMONIALS SECTION ========== */}
       {testimonials && testimonials.length > 0 && (
-        <section className="py-16 bg-gray-50">
+        <section className="py-16 bg-primary-50">
           <div className="container-custom">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold mb-4">What Our {cityName} Customers Say</h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              <p className="text-lg text-primary-500 max-w-2xl mx-auto">
                 Real reviews from satisfied customers in {cityName}
               </p>
             </div>
@@ -577,7 +577,7 @@ export default function CityPage({ routeData }: CityPageProps) {
                     {[...Array(5)].map((_, i) => (
                       <svg 
                         key={i} 
-                        className={`h-5 w-5 ${i < testimonial.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                        className={`h-5 w-5 ${i < testimonial.rating ? 'text-accent-400' : 'text-primary-200'}`}
                         fill="currentColor" 
                         viewBox="0 0 20 20"
                       >
@@ -585,14 +585,14 @@ export default function CityPage({ routeData }: CityPageProps) {
                       </svg>
                     ))}
                   </div>
-                  <p className="text-gray-700 mb-4 italic line-clamp-4">"{testimonial.review}"</p>
+                  <p className="text-primary-700 mb-4 italic line-clamp-4">"{testimonial.review}"</p>
                   <div className="border-t pt-4">
-                    <div className="font-semibold text-gray-900">{testimonial.customer_name}</div>
+                    <div className="font-semibold text-primary-900">{testimonial.customer_name}</div>
                     {testimonial.city && (
-                      <div className="text-sm text-gray-500">{testimonial.city}</div>
+                      <div className="text-sm text-primary-400">{testimonial.city}</div>
                     )}
                     {testimonial.device_model && (
-                      <div className="text-xs text-primary-600">{testimonial.device_model}</div>
+                      <div className="text-xs text-primary-800">{testimonial.device_model}</div>
                     )}
                   </div>
                 </div>
@@ -608,7 +608,7 @@ export default function CityPage({ routeData }: CityPageProps) {
           <div className="container-custom">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold mb-4">{cityName} Neighborhood Repair Services</h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              <p className="text-lg text-primary-500 max-w-2xl mx-auto">
                 Find repair services in your specific {cityName} neighborhood
               </p>
             </div>
@@ -618,17 +618,17 @@ export default function CityPage({ routeData }: CityPageProps) {
                 <Link
                   key={neighborhood.id}
                   href={`/repair/${citySlug}/${neighborhood.slug}`}
-                  className="bg-gray-50 p-4 rounded-lg hover:shadow-md transition-all border border-gray-100 group"
+                  className="bg-primary-50 p-4 rounded-lg hover:shadow-md transition-all border border-gray-100 group"
                 >
-                  <div className="font-bold text-gray-900 group-hover:text-primary-600 transition-colors mb-1">
+                  <div className="font-bold text-primary-900 group-hover:text-primary-800 transition-colors mb-1">
                     {neighborhood.neighborhood_name}
                   </div>
                   {neighborhood.landmark_name && (
-                    <div className="text-xs text-gray-500 mb-2">
+                    <div className="text-xs text-primary-400 mb-2">
                       Near {neighborhood.landmark_name}
                     </div>
                   )}
-                  <div className="text-xs text-primary-600 flex items-center">
+                  <div className="text-xs text-primary-800 flex items-center">
                     <svg className="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
@@ -662,10 +662,10 @@ export default function CityPage({ routeData }: CityPageProps) {
           <h2 className="text-3xl md:text-4xl font-bold mb-6">
             Ready to Repair Your Device in {cityName}?
           </h2>
-          <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-primary-700 mb-8 max-w-2xl mx-auto">
             Book your doorstep repair service today and get back to using your device.
           </p>
-          
+
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href={`/book-online?city=${citySlug}`}
@@ -675,7 +675,7 @@ export default function CityPage({ routeData }: CityPageProps) {
             </Link>
             <a
               href={cityPhoneHref}
-              className="btn-outline border-primary-600 text-primary-600 hover:bg-primary-50 text-lg px-8 py-4"
+              className="btn-outline border-primary-800 text-primary-800 hover:bg-primary-50 text-lg px-8 py-4"
             >
               Call {cityPhoneDisplay}
             </a>

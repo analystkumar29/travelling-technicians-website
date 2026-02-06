@@ -568,10 +568,10 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     return (
       <div className="space-y-8">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Select Your Device</h2>
+          <h2 className="text-2xl font-bold text-primary-900 mb-6">Select Your Device</h2>
           
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-primary-700 mb-2">
               Device Type <span className="text-red-500">*</span>
             </label>
             
@@ -580,7 +580,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <label className={`device-card relative overflow-hidden rounded-lg border-2 transition-all duration-300 ${
                 deviceType === 'mobile' 
                   ? 'border-primary-500 bg-primary-50 selected' 
-                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  : 'border-primary-200 hover:border-primary-300 hover:bg-primary-50'
               }`}>
               <Controller
                 name="deviceType"
@@ -612,7 +612,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 </svg>
                   </div>
                   <div>
-                  <span className="font-medium text-gray-900">Mobile Phone</span>
+                  <span className="font-medium text-primary-900">Mobile Phone</span>
                     {deviceType === 'mobile' && (
                       <div className="h-1 w-full bg-primary-500 absolute bottom-0 left-0 rounded-b-lg"></div>
                     )}
@@ -624,7 +624,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <label className={`device-card relative overflow-hidden rounded-lg border-2 transition-all duration-300 ${
                 deviceType === 'laptop' 
                   ? 'border-primary-500 bg-primary-50 selected' 
-                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  : 'border-primary-200 hover:border-primary-300 hover:bg-primary-50'
               }`}>
               <Controller
                 name="deviceType"
@@ -656,7 +656,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 </svg>
                   </div>
                   <div>
-                  <span className="font-medium text-gray-900">Laptop</span>
+                  <span className="font-medium text-primary-900">Laptop</span>
                     {deviceType === 'laptop' && (
                       <div className="h-1 w-full bg-primary-500 absolute bottom-0 left-0 rounded-b-lg"></div>
                     )}
@@ -676,7 +676,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               data-section="brand-selection"
             >
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-primary-700">
                   Brand <span className="text-red-500">*</span>
                 </label>
                 {showBrandWarning && (
@@ -693,7 +693,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               {deviceType === 'mobile' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4">
                   {brandsLoading ? (
-                    <div className="col-span-3 text-center py-4 text-gray-500">
+                    <div className="col-span-3 text-center py-4 text-primary-500">
                       Loading brands...
                     </div>
                   ) : (brandsData || []).concat([{ id: 'other' as any, name: 'Other', slug: 'other', is_active: true, created_at: new Date().toISOString() }]).map((brand) => {
@@ -705,7 +705,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         className={`device-card relative rounded-md border overflow-hidden transition-all duration-200 ${
                           methods.watch('deviceBrand') === brandSlug
                             ? 'border-primary-500 bg-primary-50 shadow-sm selected'
-                            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                            : 'border-primary-300 hover:border-primary-300 hover:bg-primary-50'
                         }`}
                       >
                         <Controller
@@ -744,12 +744,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                                 />
                               </div>
                             ) : (
-                              <div className="w-8 h-8 flex items-center justify-center text-lg font-medium rounded-full bg-gray-100 text-gray-700">
+                              <div className="w-8 h-8 flex items-center justify-center text-lg font-medium rounded-full bg-primary-100 text-primary-700">
                                 ...
                               </div>
                             )}
                           </div>
-                          <span className="font-medium text-gray-900">{brand.name}</span>
+                          <span className="font-medium text-primary-900">{brand.name}</span>
                           {methods.watch('deviceBrand') === brandSlug && (
                             <div className="ml-auto">
                               <svg className="h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -768,7 +768,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               {deviceType === 'laptop' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4">
                   {brandsLoading ? (
-                    <div className="col-span-3 text-center py-4 text-gray-500">
+                    <div className="col-span-3 text-center py-4 text-primary-500">
                       Loading brands...
                     </div>
                   ) : (brandsData || []).concat([{ id: 'other' as any, name: 'Other', slug: 'other', is_active: true, created_at: new Date().toISOString() }]).map((brand) => {
@@ -780,7 +780,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                         className={`device-card relative rounded-md border overflow-hidden transition-all duration-200 ${
                           methods.watch('deviceBrand') === brandSlug
                             ? 'border-primary-500 bg-primary-50 shadow-sm selected'
-                            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                            : 'border-primary-300 hover:border-primary-300 hover:bg-primary-50'
                         }`}
                       >
                         <Controller
@@ -819,12 +819,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                                 />
                               </div>
                             ) : (
-                              <div className="w-8 h-8 flex items-center justify-center text-lg font-medium rounded-full bg-gray-100 text-gray-700">
+                              <div className="w-8 h-8 flex items-center justify-center text-lg font-medium rounded-full bg-primary-100 text-primary-700">
                                 {brand.name.charAt(0)}
                               </div>
                             )}
                           </div>
-                          <span className="font-medium text-gray-900">{brand.name}</span>
+                          <span className="font-medium text-primary-900">{brand.name}</span>
                           {methods.watch('deviceBrand') === brandSlug && (
                             <div className="ml-auto">
                               <svg className="h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -846,8 +846,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               
               {/* Custom Brand Input (when "Other Brand" is selected) */}
               {methods.watch('deviceBrand') === 'other' && (
-                <div className="mb-4 bg-gray-50 p-4 rounded-md border border-gray-200 animate-fadeIn">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="mb-4 bg-primary-50 p-4 rounded-md border border-primary-200 animate-fadeIn">
+                  <label className="block text-sm font-medium text-primary-700 mb-1">
                     Enter Brand Name <span className="text-red-500">*</span>
                   </label>
                   <Controller
@@ -857,7 +857,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <>
               <input
                 type="text"
-                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200"
+                          className="block w-full px-3 py-2 border border-primary-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-400 focus:border-primary-500 sm:text-sm transition-all duration-200"
                           placeholder="Enter brand name..."
                   {...field}
                 />
@@ -874,7 +874,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           
           {deviceType && (
             <div id="model-selection-section" className="mb-4 transition-opacity duration-300" style={{ opacity: deviceType ? '1' : '0.5' }}>
-              <label htmlFor="deviceModel" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="deviceModel" className="block text-sm font-medium text-primary-700 mb-2">
                 Model <span className="text-red-500">*</span>
               </label>
               
@@ -889,7 +889,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   <>
                     <input
                       type="text"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full px-4 py-3 border border-primary-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-400"
                       placeholder={`Enter your ${deviceType} model`}
                       value={field.value || ''}
                       onChange={(e) => field.onChange(e.target.value)}
@@ -905,7 +905,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               return (
                 <>
                   <select
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-3 bg-white border border-primary-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-400 disabled:bg-primary-100 disabled:cursor-not-allowed"
                     value={field.value || ''}
                     onChange={(e) => {
                       if (handleModelSelectionAttempt()) {
@@ -944,7 +944,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                     <div className="mt-2">
                       <input
                         type="text"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full px-4 py-3 border border-primary-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-400"
                         placeholder={`Enter your ${deviceType} model manually`}
                         onChange={(e) => field.onChange(e.target.value)}
                         autoFocus
@@ -953,7 +953,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   )}
 
                   {modelsLoading && (
-                    <div className="mt-2 flex items-center text-sm text-gray-500">
+                    <div className="mt-2 flex items-center text-sm text-primary-500">
                       <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -1262,7 +1262,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       <div className="space-y-6">
         <div className="bg-gradient-to-r from-blue-50 to-primary-50 p-4 rounded-lg mb-6">
           <h3 className="text-lg font-semibold text-primary-900 mb-2">Select Your Service</h3>
-          <p className="text-sm text-gray-700">
+          <p className="text-sm text-primary-700">
             Choose the service that best matches your {deviceType}'s issue. All doorstep services include free diagnostics.
           </p>
         </div>
@@ -1273,10 +1273,10 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           
           return (
             <div key={group} className="space-y-3">
-              <h3 className="text-base font-medium text-gray-900 border-b border-gray-200 pb-2">
+              <h3 className="text-base font-medium text-primary-900 border-b border-primary-200 pb-2">
                 {groupLabels[group]}
                 {group === 'common' && (
-                  <span className="ml-2 text-sm text-gray-500 font-normal">(Multiple selections allowed)</span>
+                  <span className="ml-2 text-sm text-primary-500 font-normal">(Multiple selections allowed)</span>
                 )}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1293,7 +1293,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       className={`relative rounded-lg border-2 transition overflow-hidden ${
                         isSelected
                           ? 'border-primary-500 bg-primary-50' 
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          : 'border-primary-200 hover:border-primary-300 hover:bg-primary-50'
                       }`}
                     >
                       <label className="flex p-4 cursor-pointer">
@@ -1305,7 +1305,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                             render={({ field }) => (
                               <input
                                 type={isCommonRepair ? "checkbox" : "radio"}
-                                className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+                                className="h-4 w-4 text-primary-600 border-primary-300 focus:ring-primary-400"
                                 value={service.id}
                                 checked={isSelected}
                                 onChange={() => {
@@ -1337,23 +1337,23 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                             <svg className="h-5 w-5 text-primary-600 mr-2" viewBox="0 0 24 24" fill="currentColor">
                               <path d={service.icon} />
                             </svg>
-                            <span className="font-medium text-gray-900">{service.label}</span>
+                            <span className="font-medium text-primary-900">{service.label}</span>
                           </div>
                           
                           <div className="flex items-center justify-between mt-2 text-xs">
                             <div className="flex items-center">
-                              <svg className="h-4 w-4 text-gray-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                              <svg className="h-4 w-4 text-primary-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                               </svg>
-                              <span className="text-gray-600">{service.time}</span>
+                              <span className="text-primary-600">{service.time}</span>
                             </div>
                             
                             <div className="flex items-center ml-4">
-                              <svg className="h-4 w-4 text-gray-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                              <svg className="h-4 w-4 text-primary-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
                                 <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
                               </svg>
-                              <span className="text-gray-600">{service.price}</span>
+                              <span className="text-primary-600">{service.price}</span>
                             </div>
                           </div>
                         </div>
@@ -1372,7 +1372,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                           </div>
                         ) : (
                           <div className="absolute top-0 right-0 mt-2 mr-2">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-accent-100 text-accent-800 border border-accent-200">
                               In-Shop Only
                             </span>
                           </div>
@@ -1392,10 +1392,10 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         
         <div className="space-y-2 mt-8">
           <div className="flex justify-between items-center">
-          <label htmlFor="issueDescription" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="issueDescription" className="block text-sm font-medium text-primary-700">
               Describe Your Issue
           </label>
-            <span className="text-sm text-gray-500">Recommended</span>
+            <span className="text-sm text-primary-500">Recommended</span>
           </div>
           
           <Controller
@@ -1407,7 +1407,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           <textarea
             id="issueDescription"
             rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-sm"
+                  className="w-full px-3 py-2 border border-primary-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-400 shadow-sm"
                   placeholder={`Please describe your ${deviceType} issue in as much detail as possible. For example: "My screen is cracked and has black spots" or "Battery drains very quickly, only lasts 2 hours"`}
                   {...field}
                 />
@@ -1418,14 +1418,14 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             )}
           />
           
-          <div className="bg-blue-50 p-4 rounded-md mt-3 border border-blue-100">
+          <div className="bg-primary-50 p-4 rounded-md mt-3 border border-primary-100">
             <div className="flex">
-              <svg className="h-6 w-6 text-blue-500 mr-3 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+              <svg className="h-6 w-6 text-primary-700 mr-3 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
                 <path fillRule="evenodd" d="M12 22a10 10 0 100-20 10 10 0 000 20zm0-18a8 8 0 100 16 8 8 0 000-16zm1 6a1 1 0 00-2 0v4a1 1 0 002 0V10zm-1-3a1 1 0 100 2 1 1 0 000-2z" clipRule="evenodd" />
               </svg>
               <div>
-                <h4 className="font-semibold text-blue-700 text-sm">Why this matters:</h4>
-                <p className="text-sm text-blue-700 mt-1">
+                <h4 className="font-semibold text-primary-900 text-sm">Why this matters:</h4>
+                <p className="text-sm text-primary-900 mt-1">
                   A detailed description helps our technicians prepare properly, bring the right parts, and provide a more accurate estimate before arrival.
                 </p>
               </div>
@@ -1503,18 +1503,18 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         {/* Header Section */}
         <div className="bg-gradient-to-r from-blue-50 to-primary-50 p-4 rounded-lg mb-6">
           <h3 className="text-lg font-semibold text-primary-900 mb-2">Service Details & Pricing</h3>
-          <p className="text-sm text-gray-700">
+          <p className="text-sm text-primary-700">
             Select the services you need and choose your preferred service tier.
           </p>
         </div>
 
         {/* Service Selection Section */}
         <div id="services-section" className="space-y-6">
-          <h4 className="text-xl font-semibold text-gray-900">What needs repair?</h4>
+          <h4 className="text-xl font-semibold text-primary-900">What needs repair?</h4>
           
           {servicesLoading && (
             <div className="text-center py-4">
-              <div className="inline-flex items-center text-gray-600">
+              <div className="inline-flex items-center text-primary-600">
                 <svg className="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -1543,7 +1543,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                           className={`relative border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
                             isSelected
                               ? 'border-primary-500 bg-primary-50'
-                              : 'border-gray-200 hover:border-gray-300'
+                              : 'border-primary-200 hover:border-primary-300'
                           }`}
                           onClick={() => {
                             // Toggle service selection
@@ -1567,14 +1567,14 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between mb-2">
-                                <h4 className="text-lg font-medium text-gray-900">{service.label}</h4>
+                                <h4 className="text-lg font-medium text-primary-900">{service.label}</h4>
                                 {service.doorstep && (
                                   <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
                                     Doorstep
                                   </div>
                                 )}
                               </div>
-                              <div className="flex items-center justify-between text-sm text-gray-600">
+                              <div className="flex items-center justify-between text-sm text-primary-600">
                                 <span>{service.time}</span>
                                 <span className="font-medium text-primary-600">{service.price}</span>
                               </div>
@@ -1602,7 +1602,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
 
           <div className="space-y-4">
             <div className="relative">
-              <label htmlFor="issueDescription" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="issueDescription" className="block text-sm font-medium text-primary-700 mb-2">
                 Additional Details (Optional)
               </label>
               <Controller
@@ -1612,13 +1612,13 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                   <textarea
                     id="issueDescription"
                     rows={3}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                    className="block w-full px-3 py-2 border border-primary-300 rounded-md shadow-sm focus:ring-primary-400 focus:border-primary-500 sm:text-sm"
                     placeholder="Please describe any additional details about the issue..."
                     {...field}
                   />
                 )}
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-primary-500">
                 Help our technicians understand the problem better (optional).
               </p>
             </div>
@@ -1627,8 +1627,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
 
         {/* Service Tier Selection with Pricing - Condensed */}
         <div id="pricing-tier-section" className="space-y-4 border-t pt-8">
-          <h4 className="text-xl font-semibold text-gray-900 mb-2">Choose Your Service Tier</h4>
-          <p className="text-sm text-gray-600 mb-4">Click on a pricing card below to select your preferred service tier</p>
+          <h4 className="text-xl font-semibold text-primary-900 mb-2">Choose Your Service Tier</h4>
+          <p className="text-sm text-primary-600 mb-4">Click on a pricing card below to select your preferred service tier</p>
           
           <Controller
             name="pricingTier"
@@ -1673,19 +1673,19 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       <div className="space-y-6">
         <div className="bg-gradient-to-r from-blue-50 to-primary-50 p-4 rounded-lg mb-6">
           <h3 className="text-lg font-semibold text-primary-900 mb-2">Your Contact Information</h3>
-          <p className="text-sm text-gray-700">
+          <p className="text-sm text-primary-700">
             We need your contact details to confirm your booking and for our technician to reach you.
           </p>
         </div>
 
         <div className="space-y-5">
           <div className="relative">
-            <label htmlFor="customerName" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="customerName" className="block text-sm font-medium text-primary-700 mb-1">
               Full Name <span className="text-red-500">*</span>
           </label>
             <div className="relative rounded-md shadow-sm">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                <svg className="h-5 w-5 text-primary-400" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                 </svg>
               </div>
@@ -1698,12 +1698,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 <input
                   id="customerName"
                   type="text"
-                  className={`input-field enhanced-focus-ring block w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200 ${
+                  className={`input-field enhanced-focus-ring block w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-primary-400 focus:border-primary-500 sm:text-sm transition-all duration-200 ${
                     fieldState.error 
                       ? 'border-red-300 invalid' 
                       : field.value && !fieldState.error 
                         ? 'border-green-300 valid' 
-                        : 'border-gray-300'
+                        : 'border-primary-300'
                   }`}
                       placeholder="John Smith"
                   {...field}
@@ -1725,12 +1725,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           </div>
           
           <div className="relative">
-            <label htmlFor="customerEmail" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="customerEmail" className="block text-sm font-medium text-primary-700 mb-1">
               Email Address <span className="text-red-500">*</span>
           </label>
             <div className="relative rounded-md shadow-sm">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                <svg className="h-5 w-5 text-primary-400" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                   <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                 </svg>
@@ -1750,12 +1750,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 <input
                   id="customerEmail"
                   type="email"
-                  className={`input-field enhanced-focus-ring block w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200 ${
+                  className={`input-field enhanced-focus-ring block w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-primary-400 focus:border-primary-500 sm:text-sm transition-all duration-200 ${
                     fieldState.error 
                       ? 'border-red-300 invalid' 
                       : field.value && !fieldState.error 
                         ? 'border-green-300 valid' 
-                        : 'border-gray-300'
+                        : 'border-primary-300'
                   }`}
                   placeholder="you@example.com"
                   {...field}
@@ -1774,18 +1774,18 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             )}
           />
             </div>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-primary-500">
               We'll send booking confirmation and updates to this email. We won't share it with third parties.
           </p>
         </div>
         
           <div className="relative">
-            <label htmlFor="customerPhone" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="customerPhone" className="block text-sm font-medium text-primary-700 mb-1">
               Phone Number <span className="text-red-500">*</span>
           </label>
             <div className="relative rounded-md shadow-sm">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                <svg className="h-5 w-5 text-primary-400" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                 </svg>
               </div>
@@ -1806,12 +1806,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 <input
                   id="customerPhone"
                   type="tel"
-                  className={`input-field enhanced-focus-ring block w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-200 ${
+                  className={`input-field enhanced-focus-ring block w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-primary-400 focus:border-primary-500 sm:text-sm transition-all duration-200 ${
                     fieldState.error 
                       ? 'border-red-300 invalid' 
                       : field.value && !fieldState.error 
                         ? 'border-green-300 valid' 
-                        : 'border-gray-300'
+                        : 'border-primary-300'
                   }`}
                   placeholder="(555) 123-4567"
                   {...field}
@@ -1830,24 +1830,24 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             )}
           />
             </div>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-primary-500">
             Our technician will call you before arriving for the repair.
           </p>
           </div>
         </div>
 
-        <div className="mt-6 bg-blue-50 rounded-lg p-4 border border-blue-100">
+        <div className="mt-6 bg-primary-50 rounded-lg p-4 border border-primary-100">
           <div className="flex">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="h-5 w-5 text-primary-700" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clipRule="evenodd" />
               </svg>
             </div>
             <div className="ml-3">
-              <h4 className="text-sm font-medium text-blue-800">Privacy Notice</h4>
-              <p className="mt-1 text-xs text-blue-700">
+              <h4 className="text-sm font-medium text-primary-900">Privacy Notice</h4>
+              <p className="mt-1 text-xs text-primary-900">
                 Your information is secure and only used to facilitate your repair service. See our 
-                <a href="/privacy-policy" className="underline ml-1 font-medium hover:text-blue-900 transition-colors">
+                <a href="/privacy-policy" className="underline ml-1 font-medium hover:text-primary-900 transition-colors">
                   Privacy Policy
                 </a> for details.
               </p>
@@ -2004,15 +2004,15 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
     
     return (
       <div className="space-y-6">
-        <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+        <div className="bg-primary-50 border-l-4 border-primary-400 p-4 mb-4">
           <div className="flex">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="h-5 w-5 text-primary-600" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clipRule="evenodd" />
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-sm text-blue-700">
+              <p className="text-sm text-primary-900">
                 We service the entire Lower Mainland area including Vancouver, Burnaby, Richmond, New Westminster, North Vancouver, West Vancouver, Coquitlam, and Chilliwack.
               </p>
           </div>
@@ -2040,15 +2040,15 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         )}
 
         {needsPostalCodeAttention && (
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+          <div className="bg-accent-50 border-l-4 border-accent-400 p-4 mb-4">
             <div className="flex">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                <svg className="h-5 w-5 text-accent-400" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
               </div>
               <div className="ml-3">
-                <p className="text-sm text-yellow-700">
+                <p className="text-sm text-accent-700">
                   <strong>Please ensure your postal code is correct.</strong> We need this to verify if you're in our service area.
                 </p>
               </div>
@@ -2058,7 +2058,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
 
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-          <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="address" className="block text-sm font-medium text-primary-700">
             Street Address
           </label>
             <button
@@ -2108,7 +2108,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         
         <div id="city-postal-section" className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label htmlFor="city" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="city" className="block text-sm font-medium text-primary-700">
               City
           </label>
             <Controller
@@ -2198,7 +2198,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         {/* Rest of your form fields... */}
         
         <div className="space-y-2">
-          <label htmlFor="province" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="province" className="block text-sm font-medium text-primary-700">
             Province
           </label>
           <Controller
@@ -2210,7 +2210,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 <input
                   id="province"
                   type="text"
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm bg-gray-100"
+                  className="block w-full px-3 py-2 border border-primary-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-400 focus:border-primary-500 sm:text-sm bg-primary-100"
                   disabled
                   {...field}
                 />
@@ -2249,14 +2249,14 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
       <div className="space-y-6">
         <div className="bg-gradient-to-r from-blue-50 to-primary-50 p-4 rounded-lg mb-6">
           <h3 className="text-lg font-semibold text-primary-900 mb-2">Schedule Your Appointment</h3>
-          <p className="text-sm text-gray-700">
+          <p className="text-sm text-primary-700">
             Choose your preferred date and time for the repair. Our technician will arrive during your selected timeframe.
           </p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-primary-700 mb-2">
               Preferred Date <span className="text-red-500">*</span>
           </label>
           <Controller
@@ -2267,13 +2267,13 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <>
                   <div className="relative rounded-md shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                      <svg className="h-5 w-5 text-primary-400" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
                       </svg>
                     </div>
                     <input
                       type="date"
-                      className={`block w-full pl-10 pr-10 py-2 border ${fieldState.error ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm`}
+                      className={`block w-full pl-10 pr-10 py-2 border ${fieldState.error ? 'border-red-300' : 'border-primary-300'} rounded-md shadow-sm focus:outline-none focus:ring-primary-400 focus:border-primary-500 sm:text-sm`}
                       min={getTomorrowDate()}
                       max={getMaxDate()}
                       {...field}
@@ -2292,11 +2292,11 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               </>
             )}
           />
-            <p className="mt-1 text-xs text-gray-500">We accept bookings up to 60 days in advance.</p>
+            <p className="mt-1 text-xs text-primary-500">We accept bookings up to 60 days in advance.</p>
         </div>
         
           <div id="time-slot-selection">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-primary-700 mb-2">
               Preferred Time <span className="text-red-500">*</span>
           </label>
           <Controller
@@ -2307,12 +2307,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <>
                   <div className="relative rounded-md shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                      <svg className="h-5 w-5 text-primary-400" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                       </svg>
                     </div>
                 <select
-                      className={`block w-full pl-10 pr-10 py-2 border ${fieldState.error ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm appearance-none`}
+                      className={`block w-full pl-10 pr-10 py-2 border ${fieldState.error ? 'border-red-300' : 'border-primary-300'} rounded-md shadow-sm focus:outline-none focus:ring-primary-400 focus:border-primary-500 sm:text-sm appearance-none`}
                   {...field}
                   value={field.value || ''}
                   disabled={isLoadingTimeSlots || !methods.watch('appointmentDate')}
@@ -2340,7 +2340,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       ))}
                 </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <svg className="h-5 w-5 text-primary-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                       </svg>
                     </div>
@@ -2351,12 +2351,12 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               </>
             )}
           />
-            <p className="mt-1 text-xs text-gray-500">Our technicians work 7 days a week.</p>
+            <p className="mt-1 text-xs text-primary-500">Our technicians work 7 days a week.</p>
           </div>
         </div>
         
         <div className="mt-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-primary-700 mb-2">
             Additional Notes (Optional)
           </label>
           <Controller
@@ -2365,7 +2365,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             render={({ field }) => (
               <div className="relative rounded-md shadow-sm">
                 <textarea
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm transition-all duration-300"
+                  className="block w-full px-3 py-2 border border-primary-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-400 focus:border-primary-500 sm:text-sm transition-all duration-300"
                   rows={4}
                   placeholder="Any special instructions about access to your location, parking details, or additional information about your repair..."
                   {...field}
@@ -2375,53 +2375,53 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           />
         </div>
         
-        <div className="mt-8 bg-blue-50 border border-blue-100 rounded-lg p-5">
+        <div className="mt-8 bg-primary-50 border border-primary-100 rounded-lg p-5">
           <div className="flex items-center mb-3">
-            <div className="flex-shrink-0 bg-blue-100 rounded-full p-1">
-              <svg className="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <div className="flex-shrink-0 bg-primary-100 rounded-full p-1">
+              <svg className="h-5 w-5 text-primary-800" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clipRule="evenodd" />
               </svg>
             </div>
-            <h3 className="ml-3 text-base font-medium text-blue-800">Important Information</h3>
+            <h3 className="ml-3 text-base font-medium text-primary-900">Important Information</h3>
           </div>
           <ul className="space-y-3 ml-6">
             <li className="flex items-start">
-              <svg className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="h-5 w-5 text-primary-700 mr-2 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
-              <span className="text-sm text-blue-700">Our technician will call to confirm your appointment.</span>
+              <span className="text-sm text-primary-900">Our technician will call to confirm your appointment.</span>
             </li>
             <li className="flex items-start">
-              <svg className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="h-5 w-5 text-primary-700 mr-2 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
-              <span className="text-sm text-blue-700">We'll arrive within your selected time window.</span>
+              <span className="text-sm text-primary-900">We'll arrive within your selected time window.</span>
             </li>
             <li className="flex items-start">
-              <svg className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="h-5 w-5 text-primary-700 mr-2 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
-              <span className="text-sm text-blue-700">Please ensure someone (18+) will be present.</span>
+              <span className="text-sm text-primary-900">Please ensure someone (18+) will be present.</span>
             </li>
           </ul>
         </div>
         
-        <div id="terms-section" className="mt-6 border-t border-gray-200 pt-6">
+        <div id="terms-section" className="mt-6 border-t border-primary-200 pt-6">
           <div className="flex items-start">
             <div className="flex-shrink-0 mt-0.5">
               <input
                 id="terms"
                 type="checkbox"
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded transition-all duration-300"
+                className="h-4 w-4 text-primary-600 focus:ring-primary-400 border-primary-300 rounded transition-all duration-300"
                 checked={agreeToTerms}
                 onChange={(e) => setAgreeToTerms(e.target.checked)}
               />
             </div>
             <div className="ml-3 text-sm">
-              <label htmlFor="terms" className="font-medium text-gray-700">
+              <label htmlFor="terms" className="font-medium text-primary-700">
                 I agree to the terms and conditions <span className="text-red-500">*</span>
               </label>
-              <p className="text-gray-500 mt-1">
+              <p className="text-primary-500 mt-1">
                 By proceeding, you agree to our <a href="/terms" className="text-primary-600 hover:text-primary-800 underline">Terms of Service</a> and <a href="/privacy" className="text-primary-600 hover:text-primary-800 underline">Privacy Policy</a>.
               </p>
               {submitAttempted && !agreeToTerms && (
@@ -2488,25 +2488,25 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           </div>
         </div>
         
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-primary-200">
           <div className="py-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Device Details</h3>
+            <h3 className="text-lg font-medium text-primary-900 mb-2">Device Details</h3>
             <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
               <div className="sm:col-span-1">
-                <dt className="text-sm font-medium text-gray-500">Device Type</dt>
-                <dd className="mt-1 text-sm text-gray-900 capitalize">{formData.deviceType}</dd>
+                <dt className="text-sm font-medium text-primary-500">Device Type</dt>
+                <dd className="mt-1 text-sm text-primary-900 capitalize">{formData.deviceType}</dd>
             </div>
               <div className="sm:col-span-1">
-                <dt className="text-sm font-medium text-gray-500">Brand</dt>
-                <dd className="mt-1 text-sm text-gray-900 capitalize">{displayBrand}</dd>
+                <dt className="text-sm font-medium text-primary-500">Brand</dt>
+                <dd className="mt-1 text-sm text-primary-900 capitalize">{displayBrand}</dd>
           </div>
               <div className="sm:col-span-2">
-                <dt className="text-sm font-medium text-gray-500">Model</dt>
-                <dd className="mt-1 text-sm text-gray-900">{formData.deviceModel}</dd>
+                <dt className="text-sm font-medium text-primary-500">Model</dt>
+                <dd className="mt-1 text-sm text-primary-900">{formData.deviceModel}</dd>
               </div>
               <div className="sm:col-span-2">
-                <dt className="text-sm font-medium text-gray-500">Service{Array.isArray(formData.serviceType) && formData.serviceType.length > 1 ? 's' : ''}</dt>
-                <dd className="mt-1 text-sm text-gray-900">
+                <dt className="text-sm font-medium text-primary-500">Service{Array.isArray(formData.serviceType) && formData.serviceType.length > 1 ? 's' : ''}</dt>
+                <dd className="mt-1 text-sm text-primary-900">
                   {Array.isArray(formData.serviceType) 
                     ? formData.serviceType.map(service => serviceTypeMap[service] || service).join(', ')
                     : serviceTypeMap[formData.serviceType as string] || formData.serviceType
@@ -2514,28 +2514,28 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                 </dd>
               </div>
               <div className="sm:col-span-2">
-                <dt className="text-sm font-medium text-gray-500">Service Tier & Pricing</dt>
+                <dt className="text-sm font-medium text-primary-500">Service Tier & Pricing</dt>
                 <dd className="mt-1">
-                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <div className="bg-primary-50 rounded-lg p-4 border border-primary-200">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium text-primary-900">
                         {formData.pricingTier === 'premium' ? 'Premium Service' : 'Standard Repair'}
                       </span>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         formData.pricingTier === 'premium' 
                           ? 'bg-orange-100 text-orange-800' 
-                          : 'bg-blue-100 text-blue-800'
+                          : 'bg-primary-100 text-primary-900'
                       }`}>
                         {formData.pricingTier === 'premium' ? 'Express Service' : 'Most Popular'}
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span className="text-gray-600">Warranty:</span>
+                        <span className="text-primary-600">Warranty:</span>
                         <span className="ml-2 font-medium">{formData.pricingTier === 'premium' ? '6 Months' : '3 Months'}</span>
                       </div>
                       <div>
-                        <span className="text-gray-600">Turnaround:</span>
+                        <span className="text-primary-600">Turnaround:</span>
                         <span className="ml-2 font-medium">{formData.pricingTier === 'premium' ? '12-24 Hours' : '24-48 Hours'}</span>
                       </div>
                     </div>
@@ -2544,59 +2544,59 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               </div>
               {formData.issueDescription && (
               <div className="sm:col-span-2">
-                <dt className="text-sm font-medium text-gray-500">Issue Description</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{formData.issueDescription}</dd>
+                <dt className="text-sm font-medium text-primary-500">Issue Description</dt>
+                  <dd className="mt-1 text-sm text-primary-900">{formData.issueDescription}</dd>
               </div>
               )}
             </dl>
           </div>
           
           <div className="py-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Contact Details</h3>
+            <h3 className="text-lg font-medium text-primary-900 mb-2">Contact Details</h3>
             <dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
               <div className="sm:col-span-1">
-                <dt className="text-sm font-medium text-gray-500">Name</dt>
-                <dd className="mt-1 text-sm text-gray-900">{formData.customerName}</dd>
+                <dt className="text-sm font-medium text-primary-500">Name</dt>
+                <dd className="mt-1 text-sm text-primary-900">{formData.customerName}</dd>
               </div>
               <div className="sm:col-span-1">
-                <dt className="text-sm font-medium text-gray-500">Phone</dt>
-                <dd className="mt-1 text-sm text-gray-900">{formData.customerPhone}</dd>
+                <dt className="text-sm font-medium text-primary-500">Phone</dt>
+                <dd className="mt-1 text-sm text-primary-900">{formData.customerPhone}</dd>
               </div>
               <div className="sm:col-span-2">
-                <dt className="text-sm font-medium text-gray-500">Email</dt>
-                <dd className="mt-1 text-sm text-gray-900">{formData.customerEmail}</dd>
+                <dt className="text-sm font-medium text-primary-500">Email</dt>
+                <dd className="mt-1 text-sm text-primary-900">{formData.customerEmail}</dd>
               </div>
             </dl>
         </div>
         
           <div className="py-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Location</h3>
+            <h3 className="text-lg font-medium text-primary-900 mb-2">Location</h3>
             <dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <dt className="text-sm font-medium text-gray-500">Address</dt>
-                <dd className="mt-1 text-sm text-gray-900">{formData.address}</dd>
+                <dt className="text-sm font-medium text-primary-500">Address</dt>
+                <dd className="mt-1 text-sm text-primary-900">{formData.address}</dd>
               </div>
               <div className="sm:col-span-1">
-                <dt className="text-sm font-medium text-gray-500">City</dt>
-                <dd className="mt-1 text-sm text-gray-900">{formData.city}</dd>
+                <dt className="text-sm font-medium text-primary-500">City</dt>
+                <dd className="mt-1 text-sm text-primary-900">{formData.city}</dd>
               </div>
               <div className="sm:col-span-1">
-                <dt className="text-sm font-medium text-gray-500">Postal Code</dt>
-                <dd className="mt-1 text-sm text-gray-900">{formData.postalCode}</dd>
+                <dt className="text-sm font-medium text-primary-500">Postal Code</dt>
+                <dd className="mt-1 text-sm text-primary-900">{formData.postalCode}</dd>
               </div>
             </dl>
         </div>
         
           <div className="py-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Appointment</h3>
+            <h3 className="text-lg font-medium text-primary-900 mb-2">Appointment</h3>
             <dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
               <div className="sm:col-span-1">
-                <dt className="text-sm font-medium text-gray-500">Date</dt>
-                <dd className="mt-1 text-sm text-gray-900">{formatDate(formData.appointmentDate)}</dd>
+                <dt className="text-sm font-medium text-primary-500">Date</dt>
+                <dd className="mt-1 text-sm text-primary-900">{formatDate(formData.appointmentDate)}</dd>
               </div>
               <div className="sm:col-span-1">
-                <dt className="text-sm font-medium text-gray-500">Time</dt>
-                <dd className="mt-1 text-sm text-gray-900">{formatTime(formData.appointmentTime)}</dd>
+                <dt className="text-sm font-medium text-primary-500">Time</dt>
+                <dd className="mt-1 text-sm text-primary-900">{formatTime(formData.appointmentTime)}</dd>
               </div>
             </dl>
           </div>
@@ -2620,14 +2620,14 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
             <input
                 id="terms"
               type="checkbox"
-                className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                className="h-4 w-4 text-primary-600 border-primary-300 rounded focus:ring-primary-400"
                 checked={agreeToTerms}
                 onChange={(e) => setAgreeToTerms(e.target.checked)}
               />
         </div>
             <div className="ml-3 text-sm">
-              <label htmlFor="terms" className="font-medium text-gray-700">I agree to the terms and conditions</label>
-              <p className="text-gray-500">By submitting this booking, you agree to our <a href="/terms" className="text-primary-600 hover:text-primary-500">Terms of Service</a> and <a href="/privacy" className="text-primary-600 hover:text-primary-500">Privacy Policy</a>.</p>
+              <label htmlFor="terms" className="font-medium text-primary-700">I agree to the terms and conditions</label>
+              <p className="text-primary-500">By submitting this booking, you agree to our <a href="/terms" className="text-primary-600 hover:text-primary-500">Terms of Service</a> and <a href="/privacy" className="text-primary-600 hover:text-primary-500">Privacy Policy</a>.</p>
               {submitAttempted && !agreeToTerms && (
                 <p className="mt-1 text-sm text-red-600">You must agree to the terms to proceed</p>
               )}
@@ -2773,7 +2773,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               return renderScheduleAndConfirmStep(); // Combined appointment and confirmation
             default:
               return (
-                <div className="text-center text-gray-500">
+                <div className="text-center text-primary-500">
                   <p className="mb-2">This is a placeholder for the {steps[currentStep]} step.</p>
                   <p>Future implementation will include all necessary fields for this step.</p>
                 </div>
@@ -2860,7 +2860,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         stepNames={steps} 
       />
       
-      <div className="bg-white rounded-xl shadow-xl p-4 sm:p-6 md:p-8 max-w-3xl mx-auto border border-gray-100">
+      <div className="bg-white rounded-xl shadow-xl p-4 sm:p-6 md:p-8 max-w-3xl mx-auto border border-primary-100">
       <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center text-primary-600 relative">
         <span className="relative inline-block">
           Book Your Doorstep Repair
@@ -2879,7 +2879,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               </svg>
             </div>
             <h4 className="font-bold text-primary-700 mb-1">Convenience</h4>
-            <p className="text-xs text-gray-600">We come to you</p>
+            <p className="text-xs text-primary-600">We come to you</p>
           </div>
           
           {/* Speed */}
@@ -2890,7 +2890,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               </svg>
             </div>
             <h4 className="font-bold text-primary-700 mb-1">Speed</h4>
-            <p className="text-xs text-gray-600">30-60 min repairs</p>
+            <p className="text-xs text-primary-600">30-60 min repairs</p>
           </div>
           
           {/* Quality */}
@@ -2901,7 +2901,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               </svg>
             </div>
             <h4 className="font-bold text-primary-700 mb-1">Quality</h4>
-            <p className="text-xs text-gray-600">Certified techs</p>
+            <p className="text-xs text-primary-600">Certified techs</p>
           </div>
         </div>
       </div>
@@ -2916,7 +2916,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
           }
         }}>
           {/* Step content with improved styling */}
-          <div className="mb-6 sm:mb-8 bg-gray-50 p-4 sm:p-6 rounded-lg border border-gray-100 shadow-sm">
+          <div className="mb-6 sm:mb-8 bg-primary-50 p-4 sm:p-6 rounded-lg border border-primary-100 shadow-sm">
             <div className="step-content">
               {renderStepContent()}
             </div>
@@ -2928,7 +2928,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <button
                 type="button"
                 onClick={prevStep}
-                className="w-full sm:w-auto px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-all duration-300 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 shadow-sm flex items-center justify-center"
+                className="w-full sm:w-auto px-6 py-3 bg-white border border-primary-300 text-primary-700 rounded-md hover:bg-primary-50 transition-all duration-300 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-400 shadow-sm flex items-center justify-center"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -2939,7 +2939,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <button
                 type="button"
                 onClick={onCancel}
-                className="w-full sm:w-auto px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-all duration-300 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 shadow-sm"
+                className="w-full sm:w-auto px-6 py-3 bg-white border border-primary-300 text-primary-700 rounded-md hover:bg-primary-50 transition-all duration-300 font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-400 shadow-sm"
               >
                 Cancel
               </button>
@@ -2949,7 +2949,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <button
                 type="button"
                 onClick={() => nextStep()}
-                className="enhanced-button w-full sm:w-auto px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-all duration-300 shadow-md hover:shadow-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center"
+                className="enhanced-button w-full sm:w-auto px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-all duration-300 shadow-md hover:shadow-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-400 transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center"
               >
                 <span className="button-gradient"></span>
                 <span className="relative z-10 flex items-center">
@@ -2963,7 +2963,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
               <button
                 type="button"
                 onClick={handleFinalSubmit}
-                className="w-full sm:w-auto px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-all duration-300 shadow-md hover:shadow-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center"
+                className="w-full sm:w-auto px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-all duration-300 shadow-md hover:shadow-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-400 transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center"
                 disabled={isSubmitting || methods.formState.isSubmitting}
               >
                 {isSubmitting || methods.formState.isSubmitting ? (

@@ -64,11 +64,11 @@ export const NeighborhoodProofOfLife: React.FC<NeighborhoodProofOfLifeProps> = (
   ];
 
   return (
-    <div className="my-12 bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-8 border-2 border-amber-200">
+    <div className="my-12 bg-gradient-to-br from-accent-50 to-orange-50 rounded-lg p-8 border-2 border-accent-200">
       {/* Header with Badge */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-3">
-          <span className="inline-block px-4 py-2 bg-amber-500 text-white text-sm font-semibold rounded-full">
+          <span className="inline-block px-4 py-2 bg-accent-500 text-white text-sm font-semibold rounded-full">
             ✓ Proof of Life - Real Neighborhood Presence
           </span>
         </div>
@@ -95,14 +95,14 @@ export const NeighborhoodProofOfLife: React.FC<NeighborhoodProofOfLifeProps> = (
             </div>
           ))}
         </div>
-        <div className="mt-4 bg-white border-2 border-amber-300 rounded-lg p-4 text-center">
+        <div className="mt-4 bg-white border-2 border-accent-300 rounded-lg p-4 text-center">
           <div className="text-sm text-gray-600 mb-1">Total Monthly Repairs</div>
-          <div className="text-3xl font-bold text-amber-600">{totalMonthlyRepairs} Devices Fixed</div>
+          <div className="text-3xl font-bold text-accent-600">{totalMonthlyRepairs} Devices Fixed</div>
         </div>
       </div>
 
       {/* Landmark Presence */}
-      <div className="bg-white rounded-lg p-6 border-2 border-amber-300">
+      <div className="bg-white rounded-lg p-6 border-2 border-accent-300">
         <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <span>📍</span> Landmark Presence
         </h3>
@@ -111,7 +111,7 @@ export const NeighborhoodProofOfLife: React.FC<NeighborhoodProofOfLifeProps> = (
             <h4 className="font-semibold text-gray-900">{data.landmarkName}</h4>
             <p className="text-gray-700 mt-2">{data.landmarkDescription}</p>
           </div>
-          <div className="flex items-start gap-3 bg-amber-50 p-4 rounded-lg border border-amber-200">
+          <div className="flex items-start gap-3 bg-accent-50 p-4 rounded-lg border border-accent-200">
             <span className="text-2xl">⏰</span>
             <div>
               <div className="font-semibold text-gray-900">Active Service Window</div>

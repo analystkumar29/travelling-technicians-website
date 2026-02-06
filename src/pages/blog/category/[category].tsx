@@ -2,7 +2,7 @@ import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
 import Link from 'next/link';
 import Image from 'next/image';
-import { FaCalendarAlt, FaUser, FaTag, FaClock, FaChevronLeft } from 'react-icons/fa';
+import { Calendar, Clock, ChevronLeft } from 'lucide-react';
 
 // Blog post data - same as in index.tsx
 const blogPosts = [
@@ -141,7 +141,7 @@ export default function CategoryPage() {
         <div className="container-custom">
           <div className="text-center max-w-4xl mx-auto">
             <Link href="/blog" className="inline-flex items-center text-primary-100 hover:text-white transition-colors mb-4">
-                <FaChevronLeft className="mr-2" /> Back to All Categories
+                <ChevronLeft className="w-4 h-4 mr-2 inline" /> Back to All Categories
               </Link>
             <h1 className="text-4xl md:text-5xl font-bold mb-6">
               {categoryName || 'Category Not Found'}
@@ -194,7 +194,7 @@ export default function CategoryPage() {
                             {post.category}
                           </span>
                           <span className="text-gray-500 text-sm ml-3 flex items-center">
-                            <FaClock className="mr-1" /> {post.readTime}
+                            <Clock className="w-3 h-3 mr-1 inline" /> {post.readTime}
                           </span>
                         </div>
                         <h3 className="text-lg font-bold mb-2">
@@ -207,7 +207,7 @@ export default function CategoryPage() {
                         </p>
                         <div className="flex items-center justify-between text-sm">
                           <div className="text-gray-500">
-                            <FaCalendarAlt className="inline-block mr-1" /> 
+                            <Calendar className="w-3 h-3 inline-block mr-1" />
                             <span>{post.date}</span>
                           </div>
                           <Link href={`/blog/${post.slug}`} className="text-primary-600 font-medium hover:text-primary-700 transition-colors">
