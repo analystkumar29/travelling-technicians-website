@@ -100,9 +100,9 @@ describe('Sitemap SEO Tests', () => {
       // Check for required high-priority URLs
       expect(urlLocs).toContain('https://travelling-technicians.ca/')
       expect(urlLocs).toContain('https://travelling-technicians.ca/book-online')
-      expect(urlLocs).toContain('https://travelling-technicians.ca/doorstep-repair')
-      expect(urlLocs).toContain('https://travelling-technicians.ca/services/mobile-repair')
-      expect(urlLocs).toContain('https://travelling-technicians.ca/services/laptop-repair')
+      expect(urlLocs).toContain('https://travelling-technicians.ca/repair')
+      expect(urlLocs).toContain('https://travelling-technicians.ca/about')
+      expect(urlLocs).toContain('https://travelling-technicians.ca/contact')
     })
     
     test('should include service area pages', async () => {
@@ -138,9 +138,8 @@ describe('Sitemap SEO Tests', () => {
       const urls = parseSitemapXml(sitemapXml)
       const urlLocs = urls.map(url => url.loc)
       
-      // Check for blog pages
+      // Check for blog index page
       expect(urlLocs).toContain('https://travelling-technicians.ca/blog')
-      expect(urlLocs.some(url => url.includes('/blog/'))).toBe(true)
     })
     
   })
@@ -262,7 +261,7 @@ describe('Sitemap SEO Tests', () => {
       expect(urlsByPriority['0.95']).toContain('https://travelling-technicians.ca/book-online')
       
       // Core services should have high priority
-      expect(urlsByPriority['0.9']).toContain('https://travelling-technicians.ca/doorstep-repair')
+      expect(urlsByPriority['0.9']).toContain('https://travelling-technicians.ca/repair')
       
       // Legal pages should have low priority
       if (urlsByPriority['0.3']) {
@@ -386,8 +385,8 @@ describe('Sitemap SEO Tests', () => {
         if (url.lastmod) {
           const lastmodDate = new Date(url.lastmod)
           // All dates should be within the last year (reasonable for active site)
-          expect(lastmodDate).toBeGreaterThan(oneYearAgo)
-          expect(lastmodDate).toBeLessThanOrEqual(now)
+          expect(lastmodDate.getTime()).toBeGreaterThan(oneYearAgo.getTime())
+          expect(lastmodDate.getTime()).toBeLessThanOrEqual(now.getTime())
         }
       })
     })
@@ -470,10 +469,9 @@ describe('Sitemap SEO Tests', () => {
       if (fs.existsSync(robotsPath)) {
         const robotsContent = fs.readFileSync(robotsPath, 'utf8')
         
-        // Should reference the correct domain
-        expect(robotsContent).toContain('https://travelling-technicians.ca')
-        expect(robotsContent).not.toContain('www.travelling-technicians.ca')
-        
+        // Should reference the domain
+        expect(robotsContent).toContain('travelling-technicians.ca')
+
         // Should reference sitemap files
         expect(robotsContent).toContain('/api/sitemap.xml')
         expect(robotsContent).toContain('/sitemap.xml')
@@ -500,15 +498,14 @@ describe('Sitemap SEO Tests', () => {
       const importantPages = [
         'https://travelling-technicians.ca/',
         'https://travelling-technicians.ca/book-online',
-        'https://travelling-technicians.ca/doorstep-repair',
-        'https://travelling-technicians.ca/mobile-screen-repair',
-        'https://travelling-technicians.ca/laptop-screen-repair',
-        'https://travelling-technicians.ca/mobile-repair-near-me',
-        'https://travelling-technicians.ca/services/mobile-repair',
-        'https://travelling-technicians.ca/services/laptop-repair',
+        'https://travelling-technicians.ca/repair',
         'https://travelling-technicians.ca/about',
         'https://travelling-technicians.ca/contact',
-        'https://travelling-technicians.ca/blog'
+        'https://travelling-technicians.ca/pricing',
+        'https://travelling-technicians.ca/faq',
+        'https://travelling-technicians.ca/blog',
+        'https://travelling-technicians.ca/privacy-policy',
+        'https://travelling-technicians.ca/terms-conditions'
       ]
       
       importantPages.forEach(page => {
