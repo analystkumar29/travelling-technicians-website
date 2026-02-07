@@ -76,6 +76,7 @@ npm run test:cache-full        # Cache performance + API response benchmarks
 | `/services/[slug]` | SSG + ISR | `services` table | 3,600s |
 | `/service-areas` | SSG + ISR | `service_locations` + `neighborhood_pages` + `testimonials` | 3,600s |
 | `/sitemap` | SSG + ISR | `dynamic_routes` + `services` + `service_locations` | 3,600s |
+| `/check-warranty` | Client SPA | `/api/warranties/lookup` | N/A |
 | `/book-online` `/booking-confirmation` `/verify-booking` | Client SPA | API calls | N/A |
 | `/management/*` | Client SPA (auth-gated) | API calls with Bearer JWT | N/A |
 | `/blog/*` | Static (hardcoded TSX) | None | Build-time |
@@ -122,7 +123,9 @@ Repair completed → repair_completions INSERT
 | `/api/devices/*` | None (public) | Anon | `device_models`, `brands` |
 | `/api/management/*` | JWT Bearer | Service Role | All tables (CRUD) |
 | `/api/technicians/*` | None (GET) / JWT (writes) | Anon (GET) / Service (writes) | `technicians`, `technician_availability` |
-| `/api/warranties/*` | JWT Bearer | Service Role | `warranties`, `bookings`, `device_models`, `services` |
+| `/api/warranties/lookup` | None (public, rate-limited) | Service Role | `warranties`, `bookings`, `device_models`, `services` |
+| `/api/warranties/*` (other) | JWT Bearer | Service Role | `warranties`, `bookings`, `device_models`, `services` |
+| `/api/send-warranty-notification` | None (internal) | N/A | N/A (sends email via SendGrid) |
 | `/api/sitemap.xml` | None | Anon | `dynamic_routes` |
 
 ## Section 4: Rules of Engagement
@@ -230,6 +233,8 @@ pending → confirmed → assigned → in-progress → completed
                                             trg_auto_create_warranty
                                                     ↓
                                             warranties INSERT (90-day, active)
+                                                    ↓
+                                            warranty notification email (non-blocking)
 ```
 
 Any non-completed status can also → `cancelled`.
@@ -275,3 +280,50 @@ Any non-completed status can also → `cancelled`.
 ### Customer-Facing: Verify Booking (`/verify-booking`)
 - For completed bookings with warranty data, shows a warranty card with: warranty code (monospace), valid-until date, status badge
 - Status display updated for all 6 statuses with appropriate colors
+- Warranty card includes "Check warranty status anytime" link to `/check-warranty`
+- **Fixed (2026-02-07)**: `/api/verify-booking` and `/api/bookings/reference/[reference]` now join warranty data for completed bookings — previously the warranty card was dead code (never received data)
+
+## Customer Warranty Confirmation (APPLIED 2026-02-07)
+
+### Public Warranty Lookup API
+
+**New file**: `src/pages/api/warranties/lookup.ts`
+
+- **POST only** — keeps warranty numbers out of URL/access logs
+- **No auth required** — uses `getServiceSupabase()` (warranties table has RLS, no anon policies)
+- **Two lookup modes**: `warranty_number + email` or `booking_ref + email`
+- **Rate limiting**: In-memory Map, 5 requests/minute/IP, auto-cleanup every 5 minutes
+- **Security**: Returns generic 404 whether warranty number or email is wrong (prevents enumeration)
+- **Response**: warranty details (number, dates, duration, status, days_remaining) + booking details (ref, device, service, completion date)
+
+### `/check-warranty` Page
+
+**New file**: `src/pages/check-warranty.tsx`
+
+- Client-side SPA (same pattern as `/verify-booking`, `/book-online`)
+- **Tab toggle**: "Warranty Number" | "Booking Reference"
+- **Email input** always visible (required for both modes)
+- **Result card**: status badge (active=green, expired=gray, void=red, claimed=blue), warranty number (monospace), days remaining progress bar, valid from/until dates, device + service info
+- **CTA**: "Need to file a warranty claim? Call us at (604) 849-5329"
+- **FAQ section**: 3 collapsible items (coverage, claims, expiry)
+- **Rate limit handling**: Shows friendly message on 429
+
+### Warranty Notification Email
+
+**Modified file**: `src/lib/email-templates.ts`
+- `WarrantyEmailData` interface + `buildWarrantyNotificationEmail()` function
+- Uses existing `emailWrapper()`, `headerBanner()`, `detailRow()` helpers
+- Email structure: navy header → greeting → amber WARRANTY CODE badge → details card (duration, dates, device, service, technician, booking ref) → amber CTA button → "What's Covered" bullets → footer
+
+**New file**: `src/pages/api/send-warranty-notification.ts`
+- Follows exact pattern of `send-confirmation.ts` (SendGrid, click tracking disabled, dev simulation mode)
+- Subject: "Your Repair Warranty — The Travelling Technicians"
+
+**Modified file**: `src/pages/api/repairs/complete.ts`
+- After warranty data is fetched post-completion, sends non-blocking warranty email via internal fetch to `/api/send-warranty-notification`
+- Fetches customer name, email, device model, and service name for email content
+- Errors logged but never block the API response
+
+### Navigation Links
+- **Footer** (`src/components/layout/Footer.tsx`): "Check Warranty" link added to Quick Links (between "Book Online" and "Contact Us")
+- **Verify Booking** (`src/pages/verify-booking.tsx`): "Check warranty status anytime" link below warranty card
