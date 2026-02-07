@@ -134,7 +134,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     delete booking.service_locations;
     // Ensure final_price is not included in response
     delete booking.final_price;
-    
+
+    // Fetch warranty data for completed bookings
+    if (bookingData.status === 'completed') {
+      const { data: warrantyData } = await supabase
+        .from('warranties')
+        .select('warranty_number, start_date, end_date, duration_days, status')
+        .eq('booking_id', bookingData.id)
+        .single();
+      if (warrantyData) {
+        booking.warranty = warrantyData;
+      }
+    }
+
     apiLogger.info('Found booking successfully', { 
       reference, 
       id: booking.id,

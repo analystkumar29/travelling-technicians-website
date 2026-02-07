@@ -152,6 +152,68 @@ ${data.address ? detailRow('Address', data.address) : ''}
   return emailWrapper(content);
 }
 
+export interface WarrantyEmailData {
+  name: string;
+  warrantyNumber: string;
+  bookingReference: string;
+  deviceName: string;
+  serviceName: string;
+  technicianName: string;
+  startDate: string;
+  endDate: string;
+  durationDays: number;
+  checkWarrantyUrl: string;
+}
+
+export function buildWarrantyNotificationEmail(data: WarrantyEmailData): string {
+  const content = `
+${headerBanner()}
+<!-- Body -->
+<tr><td style="padding:32px 32px 0;">
+<p style="margin:0 0 16px;font-size:16px;color:${TEXT};">Hi ${data.name},</p>
+<p style="margin:0 0 8px;font-size:16px;color:${TEXT};">Great news — your repair is complete!</p>
+<p style="margin:0 0 24px;font-size:14px;color:${TEXT_LIGHT};">Your warranty has been activated:</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+<tr><td style="background-color:${AMBER};color:${NAVY};font-size:18px;font-weight:700;padding:10px 24px;border-radius:6px;letter-spacing:1px;">
+WARRANTY: ${data.warrantyNumber}
+</td></tr>
+</table>
+</td></tr>
+<!-- Warranty Details Card -->
+<tr><td style="padding:0 32px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${CARD_BG};border-radius:8px;margin-bottom:28px;">
+<tr><td style="padding:16px 16px 4px;font-size:15px;font-weight:700;color:${NAVY};" colspan="2">Warranty Details</td></tr>
+${detailRow('Duration', `${data.durationDays} days`)}
+${detailRow('Valid From', data.startDate)}
+${detailRow('Valid Until', data.endDate)}
+${detailRow('Device', data.deviceName)}
+${detailRow('Service', data.serviceName)}
+${detailRow('Technician', data.technicianName)}
+${detailRow('Booking Ref', data.bookingReference)}
+<tr><td colspan="2" style="padding:0 0 12px;"></td></tr>
+</table>
+</td></tr>
+<!-- CTA Button -->
+<tr><td style="padding:0 32px 12px;text-align:center;">
+<a href="${data.checkWarrantyUrl}" style="display:inline-block;background-color:${AMBER};color:${NAVY};font-size:15px;font-weight:700;text-decoration:none;padding:14px 36px;border-radius:6px;">Check Warranty Status</a>
+</td></tr>
+<!-- What's Covered -->
+<tr><td style="padding:12px 32px 32px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #e2e8f0;padding-top:20px;">
+<tr><td style="padding-top:20px;">
+<p style="margin:0 0 12px;font-size:15px;font-weight:700;color:${NAVY};">What&rsquo;s Covered</p>
+<p style="margin:0 0 6px;font-size:14px;color:${TEXT};">&#8226; Defects in parts used during the repair</p>
+<p style="margin:0 0 6px;font-size:14px;color:${TEXT};">&#8226; Workmanship issues related to the repair performed</p>
+<p style="margin:0 0 6px;font-size:14px;color:${TEXT};">&#8226; Same issue recurring within the warranty period</p>
+<p style="margin:0 0 12px;font-size:14px;color:${TEXT};">&#8226; Free re-repair or replacement of the repaired component</p>
+<p style="margin:0;font-size:13px;color:${TEXT_LIGHT};">To file a warranty claim, call us at ${PHONE} or visit ${DOMAIN}</p>
+</td></tr>
+</table>
+</td></tr>`;
+
+  return emailWrapper(content);
+}
+
 export function buildRescheduleConfirmationEmail(data: RescheduleEmailData): string {
   const device = formatDevice(data.deviceType, data.brand, data.model);
 

@@ -78,6 +78,7 @@ export default function Footer() {
               <li><Link href="/repair" className="text-primary-200 hover:text-white transition-colors duration-200">Doorstep Repair</Link></li>
               <li><Link href="/pricing" className="text-primary-200 hover:text-white transition-colors duration-200">Pricing</Link></li>
               <li><Link href="/book-online" className="text-primary-200 hover:text-white transition-colors duration-200">Book Online</Link></li>
+              <li><Link href="/check-warranty" className="text-primary-200 hover:text-white transition-colors duration-200">Check Warranty</Link></li>
               <li><Link href="/contact" className="text-primary-200 hover:text-white transition-colors duration-200">Contact Us</Link></li>
             </ul>
           </div>
