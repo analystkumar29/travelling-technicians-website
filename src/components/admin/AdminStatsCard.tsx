@@ -21,8 +21,8 @@ const COLOR_MAP = {
 export default function AdminStatsCard({ label, value, icon, trend, color = 'blue' }: AdminStatsCardProps) {
   const colors = COLOR_MAP[color];
 
-  // Determine if icon is a LucideIcon component or a ReactNode
-  const isComponent = typeof icon === 'function';
+  // Determine if icon is a LucideIcon component (forwardRef) or a ReactNode
+  const isComponent = typeof icon === 'function' || (typeof icon === 'object' && icon !== null && 'render' in icon);
   const IconComponent = isComponent ? (icon as LucideIcon) : null;
 
   return (
