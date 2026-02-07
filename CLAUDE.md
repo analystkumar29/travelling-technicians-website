@@ -15,7 +15,7 @@
 - **Deploy**: Vercel (inferred from `VERCEL_URL` checks in `src/utils/supabaseClient.ts`)
 - **Domain**: `www.travelling-technicians.ca` (non-www redirects via `next.config.js`)
 
-**Database** (29 tables, 4 views, 31 triggers):
+**Database** (30 tables, 4 views, 32 triggers):
 
 | Hot Table | Rows | Seq Scans | Idx Scans | Total Updates |
 |---|---|---|---|---|
@@ -106,18 +106,23 @@ Admin changes pricing → dynamic_pricing row updated
   └─ trigger_refresh_routes_pricing (STATEMENT) → upserts ALL routes via view_active_repair_routes
        └─ view does: service_locations × device_models × services × brands × device_types
           with 2 correlated subqueries per row against dynamic_pricing
+
+Repair completed → repair_completions INSERT
+  └─ trg_auto_create_warranty → INSERT into warranties (90-day, status='active')
+       └─ set_warranty_number (BEFORE INSERT) → generates WT-YYMMDD-XXXX number
 ```
 
 ### API Layer Map
 
 | Endpoint Group | Auth | DB Client | Primary Tables |
 |---|---|---|---|
-| `/api/bookings/*` | None (public) | Service Role | `bookings`, `customer_profiles`, `terms_acceptances`, `legal_documents` |
+| `/api/bookings/*` | None (public create) / JWT (list/update) | Service Role | `bookings`, `customer_profiles`, `terms_acceptances`, `legal_documents` |
+| `/api/repairs/complete` | JWT Bearer | Service Role | `repair_completions`, `bookings`, `warranties` (via trigger) |
 | `/api/pricing/*` | None (public) | Anon | `dynamic_pricing`, `services`, `device_models` |
 | `/api/devices/*` | None (public) | Anon | `device_models`, `brands` |
 | `/api/management/*` | JWT Bearer | Service Role | All tables (CRUD) |
 | `/api/technicians/*` | None (GET) / JWT (writes) | Anon (GET) / Service (writes) | `technicians`, `technician_availability` |
-| `/api/warranties/*` | JWT Bearer | Anon (GET) / Service (POST) | `warranties`, `bookings` |
+| `/api/warranties/*` | JWT Bearer | Service Role | `warranties`, `bookings`, `device_models`, `services` |
 | `/api/sitemap.xml` | None | Anon | `dynamic_routes` |
 
 ## Section 4: Rules of Engagement
@@ -188,11 +193,11 @@ Admin changes pricing → dynamic_pricing row updated
 - **Dropped duplicate index** `idx_dynamic_pricing_model_service_status` (identical to `idx_dynamic_pricing_active`)
 
 **Remaining advisories** (pre-existing, lower priority):
-- 12 tables have RLS enabled but no policies (intentional — all grants revoked, no anon/authenticated access; includes `terms_acceptances`)
-- 29 functions have mutable `search_path` (cosmetic; all trigger-only or service-role-only)
+- 14 tables have RLS enabled but no policies (intentional — all grants revoked, no anon/authenticated access; includes `terms_acceptances`, `repair_completions`)
+- 30 functions have mutable `search_path` (cosmetic; all trigger-only or service-role-only; includes `create_warranty_on_completion`)
 - `bookings` table has `INSERT` policy with `true` (intentional — public booking flow)
 - `booking_communications` and `booking_status_history` are orphaned tables (0 code references, 0 rows)
-- `terms_acceptances` has RLS enabled but no policies (intentional — service-role only, no anon/authenticated grants)
+- `terms_acceptances` and `repair_completions` have RLS enabled but no policies (intentional — service-role only, no anon/authenticated grants)
 
 ## Legal Compliance Infrastructure (APPLIED 2026-02-06)
 
@@ -210,3 +215,63 @@ Admin changes pricing → dynamic_pricing row updated
 ### Legal Content
 - **Terms & Conditions** (`/terms-conditions`): 21 sections — PIPEDA/PIPA device data consent, BPCPA s.18.2 pricing disclosure, no mandatory arbitration (BC Bill 4), statutory warranties (BC SGA s.18, ON CPA s.9, QC CPA art.37), provincial addendums (ON 10-day cooling-off, QC legal warranty + French language right), right to repair (Bills C-244/C-294), unclaimed devices (Repairers Lien Act + Commercial Liens Act)
 - **Privacy Policy** (`/privacy-policy`): PIPEDA breach notification procedure (s.10.1 RROSH), BC PIPA references, device data incidental access policy, specific retention periods, Privacy Commissioner complaint filing (federal + BC OIPC)
+
+## Operational Workflow (APPLIED 2026-02-06)
+
+**Migration `create_repair_completions_and_fix_warranties`**:
+
+### Booking Lifecycle
+
+```
+pending → confirmed → assigned → in-progress → completed
+                                                    ↓
+                                            repair_completions INSERT
+                                                    ↓
+                                            trg_auto_create_warranty
+                                                    ↓
+                                            warranties INSERT (90-day, active)
+```
+
+Any non-completed status can also → `cancelled`.
+
+### New Table: `repair_completions`
+- `id` (uuid PK), `booking_id` (FK → bookings, UNIQUE), `technician_id` (FK → technicians)
+- `completed_at` (timestamptz), `repair_notes` (text), `parts_used` (jsonb), `repair_duration` (integer, minutes)
+- `customer_signature_url` (text), `additional_services` (jsonb)
+- RLS enabled, no policies (service-role only — same pattern as `terms_acceptances`)
+- Indexes: `idx_repair_completions_booking`, `idx_repair_completions_technician`
+
+### Schema Changes
+- **`warranties.status`** column added — `warranty_status` enum (`active`/`expired`/`void`/`claimed`), default `'active'`
+- **`bookings_status_check`** constraint updated — now allows: `pending`, `confirmed`, `assigned`, `in-progress`, `completed`, `cancelled`
+- **`BookingStatus` TypeScript type** updated in `src/types/booking.ts` — added `'assigned'` and `'in-progress'`
+
+### Trigger: `trg_auto_create_warranty`
+- AFTER INSERT on `repair_completions`
+- Calls `create_warranty_on_completion()` → inserts into `warranties` with 90-day duration, status `'active'`
+- The existing `set_warranty_number` BEFORE INSERT trigger on `warranties` auto-generates the `WT-YYMMDD-XXXX` warranty number
+
+### API Endpoints Fixed
+- **`/api/repairs/complete.ts`** — Now uses service role + `requireAdminAuth()`. Creates `repair_completions` row, updates booking to `completed`, returns auto-created warranty. Removed references to non-existent booking columns (`repair_status`, `device_type`, `device_brand`, `device_model`, `service_type`).
+- **`/api/bookings/update.ts`** — Completion logic now uses the booking's assigned `technician_id` (falls back to first active technician). Removed references to non-existent columns and default technician creation.
+- **`/api/bookings/index.ts`** — Added `technicians (full_name, phone)` join for admin display.
+- **`/api/warranties/index.ts`** — Switched GET to service role. Replaced invalid booking column joins (`device_type`, `device_brand`, etc.) with proper `device_models (name)` and `services (name, display_name)` joins.
+
+### Admin UI: Booking Management (`/management/bookings`)
+- **Summary cards**: 6 status cards (Total, Pending, Confirmed, Assigned, In Progress, Completed)
+- **Status filter dropdown**: All 6 statuses
+- **Status badges**: pending (yellow), confirmed (blue), assigned (purple), in-progress (indigo), completed (green), cancelled (red)
+- **Status-based action buttons per booking**:
+  - `pending` → **Confirm** button
+  - `confirmed` → **Assign Technician** dropdown + button (inline in list)
+  - `assigned` → **Start Repair** button
+  - `in-progress` → **Complete Repair** button (opens modal with form)
+  - Any non-completed → **Cancel** button
+- **Technician assignment**: Dropdown in booking list (confirmed) and modal (any non-terminal status). Sets `technician_id` on booking and transitions to `assigned`.
+- **Repair completion form** (in modal): Repair notes (required), duration (minutes), parts used (one per line). Calls `/api/repairs/complete`. Shows success message with auto-generated warranty number.
+- **Warranty display** (in modal): For completed bookings, shows warranty number, valid-until date, status badge, and link to warranty management page.
+- **Technician display**: Shows assigned technician name + phone in booking list and modal.
+
+### Customer-Facing: Verify Booking (`/verify-booking`)
+- For completed bookings with warranty data, shows a warranty card with: warranty code (monospace), valid-until date, status badge
+- Status display updated for all 6 statuses with appropriate colors
