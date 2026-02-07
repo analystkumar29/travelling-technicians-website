@@ -1,0 +1,317 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Liquid Glass Design System — Booking Form 2026
+   Glassmorphism tokens, animations, and component styles
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Glass Surfaces ─────────────────────────────────────────────────────── */
+
+.glass-surface {
+  @apply bg-white/80 backdrop-blur-xl border border-white/20 shadow-lg;
+}
+
+.glass-surface-light {
+  @apply bg-white/60 backdrop-blur-md border border-white/15;
+}
+
+.glass-surface-dark {
+  @apply bg-primary-900/80 backdrop-blur-xl border border-white/10 text-white;
+}
+
+/* ─── Glass Form Container ───────────────────────────────────────────────── */
+
+.glass-form-container {
+  @apply bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20;
+  background-image: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(255, 255, 255, 0.7) 50%,
+    rgba(255, 255, 255, 0.85) 100%
+  );
+}
+
+/* ─── Glass Inputs ───────────────────────────────────────────────────────── */
+
+.glass-input {
+  @apply bg-white/60 backdrop-blur-sm border border-primary-200/50 rounded-xl
+         focus:border-primary-500/70 focus:ring-2 focus:ring-primary-500/20
+         transition-all duration-300 px-4 py-3;
+}
+
+.glass-input.valid {
+  @apply border-green-400/60 ring-1 ring-green-400/20;
+}
+
+.glass-input.invalid {
+  @apply border-red-400/60 ring-1 ring-red-400/20;
+}
+
+/* ─── Glass Cards (selectable) ───────────────────────────────────────────── */
+
+.glass-card {
+  @apply bg-white/70 backdrop-blur-md border border-white/30 rounded-xl
+         shadow-md transition-all duration-300 cursor-pointer relative overflow-hidden;
+}
+
+.glass-card:hover {
+  @apply shadow-lg bg-white/85;
+  transform: translateY(-1px);
+}
+
+.glass-card-selected {
+  @apply bg-primary-50/80 border-primary-500/50 shadow-lg;
+  box-shadow: 0 4px 20px rgba(16, 42, 67, 0.12);
+}
+
+.glass-card-selected::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(16, 42, 67, 0.03), rgba(245, 158, 11, 0.03));
+  pointer-events: none;
+}
+
+/* ─── Glass Radio/Checkbox Cards ─────────────────────────────────────────── */
+
+.glass-radio-card {
+  @apply glass-card p-4;
+}
+
+.glass-radio-card.selected {
+  @apply glass-card-selected;
+}
+
+/* ─── Glass Buttons ──────────────────────────────────────────────────────── */
+
+.glass-btn-primary {
+  @apply bg-primary-800/90 backdrop-blur-sm text-white rounded-xl
+         shadow-lg font-medium
+         transition-all duration-300;
+}
+
+.glass-btn-primary:hover {
+  @apply shadow-xl bg-primary-900/95;
+  transform: translateY(-2px);
+}
+
+.glass-btn-primary:active {
+  transform: translateY(0);
+}
+
+.glass-btn-accent {
+  @apply bg-accent-500/90 backdrop-blur-sm text-primary-900 rounded-xl
+         shadow-lg font-semibold
+         transition-all duration-300;
+}
+
+.glass-btn-accent:hover {
+  @apply shadow-xl;
+  transform: translateY(-2px);
+}
+
+.glass-btn-accent:active {
+  transform: translateY(0);
+}
+
+.glass-btn-outline {
+  @apply bg-white/60 backdrop-blur-sm border border-primary-300/50 text-primary-700 rounded-xl
+         shadow-sm font-medium
+         transition-all duration-300;
+}
+
+.glass-btn-outline:hover {
+  @apply bg-white/80 shadow-md border-primary-400/50;
+}
+
+/* ─── Glass Section Headers ──────────────────────────────────────────────── */
+
+.glass-section-header {
+  @apply bg-gradient-to-r from-primary-50/80 to-blue-50/80 backdrop-blur-sm
+         p-5 rounded-xl border border-white/30;
+}
+
+/* ─── Glass Info Banners ─────────────────────────────────────────────────── */
+
+.glass-info-banner {
+  @apply bg-primary-50/60 backdrop-blur-sm border border-primary-200/30
+         rounded-xl p-4;
+}
+
+.glass-success-banner {
+  @apply bg-green-50/60 backdrop-blur-sm border border-green-300/30
+         rounded-xl p-4;
+}
+
+.glass-warning-banner {
+  @apply bg-amber-50/60 backdrop-blur-sm border border-amber-300/30
+         rounded-xl p-4;
+}
+
+/* ─── Glass Progress Bar ─────────────────────────────────────────────────── */
+
+.glass-progress-container {
+  @apply glass-surface rounded-2xl shadow-xl;
+  min-width: 200px;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 40;
+  padding: 16px 20px;
+}
+
+.glass-progress-bar {
+  @apply h-1.5 rounded-full overflow-hidden;
+  background: rgba(16, 42, 67, 0.1);
+}
+
+.glass-progress-fill {
+  @apply h-full rounded-full;
+  background: linear-gradient(90deg, #243b53, #f59e0b);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.glass-step-pill {
+  @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
+         bg-white/60 backdrop-blur-sm border border-white/30;
+}
+
+.glass-step-pill.active {
+  @apply bg-primary-100/80 text-primary-800 border-primary-300/50;
+}
+
+.glass-step-pill.completed {
+  @apply bg-green-100/80 text-green-800 border-green-300/50;
+}
+
+/* ─── Animations ─────────────────────────────────────────────────────────── */
+
+@keyframes glassSlideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes glassSlideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes glassFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes glassProgressSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.glass-animate-in {
+  animation: glassFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .glass-progress-container {
+    top: 80px;
+    right: 8px;
+    padding: 8px 12px;
+    min-width: 140px;
+    max-width: 160px;
+    font-size: 11px;
+    border-radius: 12px;
+  }
+
+  .glass-card:hover {
+    transform: none;
+  }
+
+  .glass-btn-primary:hover,
+  .glass-btn-accent:hover {
+    transform: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .glass-progress-container {
+    top: 70px;
+    right: 6px;
+    padding: 6px 10px;
+    min-width: 120px;
+    max-width: 140px;
+    font-size: 10px;
+    border-radius: 10px;
+  }
+
+  .glass-progress-bar {
+    @apply h-0.5;
+  }
+
+  /* Fade out when user is typing */
+  body:has(input:focus) .glass-progress-container,
+  body:has(textarea:focus) .glass-progress-container,
+  body:has(select:focus) .glass-progress-container {
+    opacity: 0.3;
+    pointer-events: none;
+    transition: opacity 0.2s ease-out;
+  }
+}
+
+/* ─── Reduced Motion ─────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .glass-card:hover,
+  .glass-btn-primary:hover,
+  .glass-btn-accent:hover {
+    transform: none;
+  }
+
+  .glass-progress-fill::after {
+    animation: none;
+  }
+
+  .glass-animate-in {
+    animation: none;
+  }
+}

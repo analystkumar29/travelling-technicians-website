@@ -3,6 +3,7 @@ import '@/styles/globals.css';
 import 'leaflet/dist/leaflet.css';
 import '@/styles/leaflet-custom.css';
 import '@/styles/booking-form-enhancements.css';
+import '@/styles/liquid-glass.css';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useEffect, useState, ReactNode } from 'react';
