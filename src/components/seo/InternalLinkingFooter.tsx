@@ -23,14 +23,21 @@ interface PopularService {
   display_name: string;
 }
 
-// Static fallback cities - essential service areas
+// Static fallback cities - all 13 active service areas
 const FALLBACK_CITIES: PopularCity[] = [
   { slug: 'vancouver', name: 'Vancouver' },
   { slug: 'burnaby', name: 'Burnaby' },
   { slug: 'richmond', name: 'Richmond' },
   { slug: 'surrey', name: 'Surrey' },
   { slug: 'coquitlam', name: 'Coquitlam' },
-  { slug: 'north-vancouver', name: 'North Vancouver' }
+  { slug: 'north-vancouver', name: 'North Vancouver' },
+  { slug: 'west-vancouver', name: 'West Vancouver' },
+  { slug: 'new-westminster', name: 'New Westminster' },
+  { slug: 'delta', name: 'Delta' },
+  { slug: 'langley', name: 'Langley' },
+  { slug: 'abbotsford', name: 'Abbotsford' },
+  { slug: 'chilliwack', name: 'Chilliwack' },
+  { slug: 'squamish', name: 'Squamish' }
 ];
 
 // Static fallback services - most popular repairs
@@ -56,7 +63,7 @@ export default function InternalLinkingFooter() {
             <p className="text-sm text-gray-600 mb-4">
               We provide doorstep device repair across the Lower Mainland
             </p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {FALLBACK_CITIES.map((city: PopularCity) => (
                 <Link
                   key={city.slug}

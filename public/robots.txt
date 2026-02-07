@@ -75,9 +75,6 @@ Disallow: /minimal
 #           blog posts, services, and city-service-model pages
 Sitemap: https://www.travelling-technicians.ca/sitemap.xml
 
-# Image Sitemap
-Sitemap: https://www.travelling-technicians.ca/image-sitemap.xml
-
 # Crawl delay (be nice to servers)
 Crawl-delay: 1
 

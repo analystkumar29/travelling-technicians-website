@@ -250,6 +250,25 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
             })
           }}
         />
+
+        {/* FAQPage Schema for Rich Snippets */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              "mainEntity": faqQuestions.map(faq => ({
+                "@type": "Question",
+                "name": faq.question,
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": faq.answer
+                }
+              }))
+            })
+          }}
+        />
       </Head>
 
       <div className="min-h-screen bg-primary-50">
