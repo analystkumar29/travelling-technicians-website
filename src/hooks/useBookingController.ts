@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useForm, UseFormReturn } from 'react-hook-form';
+import { useForm, useWatch, UseFormReturn } from 'react-hook-form';
 import type { CreateBookingRequest } from '@/types/booking';
 import {
   checkServiceArea,
@@ -76,6 +76,14 @@ export interface BookingController {
   setNeedsPostalCodeAttention: (v: boolean) => void;
   setDetectingLocation: (v: boolean) => void;
   setLocationWasPreFilled: (v: boolean) => void;
+
+  // Watched values (use these instead of calling methods.watch())
+  watchedDeviceType: string | undefined;
+  watchedDeviceBrand: string;
+  watchedDeviceModel: string;
+  watchedServiceType: string | string[];
+  watchedPricingTier: string | undefined;
+  watchedAppointmentDate: string;
 
   // UUID tracking
   selectedBrandId: string;
@@ -197,13 +205,11 @@ export function useBookingController({
     reValidateMode: 'onSubmit',
   });
 
-  // ── Watched values ───────────────────────────────────────────────────────
-  const deviceType = methods.watch('deviceType');
-  const deviceBrand = methods.watch('deviceBrand');
-  const deviceModel = methods.watch('deviceModel');
-  const serviceType = methods.watch('serviceType');
-  const pricingTier = methods.watch('pricingTier');
-  const appointmentDate = methods.watch('appointmentDate');
+  // ── Watched values (useWatch subscribes at field level, not whole form) ─
+  const [deviceType, deviceBrand, deviceModel, serviceType, pricingTier, appointmentDate] = useWatch({
+    control: methods.control,
+    name: ['deviceType', 'deviceBrand', 'deviceModel', 'serviceType', 'pricingTier', 'appointmentDate'],
+  });
 
   // ── Data hooks ───────────────────────────────────────────────────────────
   const { data: brandsData, isLoading: brandsLoading } = useBrands(deviceType || 'mobile');
@@ -228,7 +234,10 @@ export function useBookingController({
   // ── Helpers ──────────────────────────────────────────────────────────────
 
   const revealSection = useCallback((sectionName: string) => {
-    setVisibleSections((prev) => new Set([...Array.from(prev), sectionName]));
+    setVisibleSections((prev) => {
+      if (prev.has(sectionName)) return prev;
+      return new Set([...Array.from(prev), sectionName]);
+    });
   }, []);
 
   const smartScroll = useCallback(() => {
@@ -633,6 +642,12 @@ export function useBookingController({
     setNeedsPostalCodeAttention,
     setDetectingLocation,
     setLocationWasPreFilled,
+    watchedDeviceType: deviceType,
+    watchedDeviceBrand: deviceBrand,
+    watchedDeviceModel: deviceModel,
+    watchedServiceType: serviceType,
+    watchedPricingTier: pricingTier,
+    watchedAppointmentDate: appointmentDate,
     selectedBrandId,
     setSelectedBrandId,
     selectedModelId,

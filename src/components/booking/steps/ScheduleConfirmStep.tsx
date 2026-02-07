@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Controller, UseFormReturn } from 'react-hook-form';
 import { Calendar, Clock, Check, Info, Loader2 } from 'lucide-react';
 import type { CreateBookingRequest } from '@/types/booking';
@@ -21,6 +21,7 @@ interface ScheduleConfirmStepProps {
   servicesData: Service[] | undefined;
   validatedSteps: number[];
   scrollToElement: (selector: string, delay?: number) => void;
+  watchedAppointmentDate: string;
 }
 
 // Service display name mapping
@@ -60,20 +61,21 @@ export default function ScheduleConfirmStep({
   servicesData,
   validatedSteps,
   scrollToElement,
+  watchedAppointmentDate,
 }: ScheduleConfirmStepProps) {
   const showValidationErrors = validatedSteps.includes(2);
 
-  const getTomorrowDate = () => {
+  const tomorrowDate = useMemo(() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toISOString().split('T')[0];
-  };
+  }, []);
 
-  const getMaxDate = () => {
-    const maxDate = new Date();
-    maxDate.setDate(maxDate.getDate() + 60);
-    return maxDate.toISOString().split('T')[0];
-  };
+  const maxDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 60);
+    return d.toISOString().split('T')[0];
+  }, []);
 
   const formData = methods.getValues();
   const displayBrand =
@@ -115,8 +117,8 @@ export default function ScheduleConfirmStep({
                     <input
                       type="date"
                       className={`glass-input w-full pl-10 ${fieldState.error ? 'invalid' : ''}`}
-                      min={getTomorrowDate()}
-                      max={getMaxDate()}
+                      min={tomorrowDate}
+                      max={maxDate}
                       {...field}
                       onChange={(e) => {
                         field.onChange(e);
@@ -150,14 +152,14 @@ export default function ScheduleConfirmStep({
                       className={`glass-input w-full pl-10 appearance-none ${fieldState.error ? 'invalid' : ''}`}
                       {...field}
                       value={field.value || ''}
-                      disabled={isLoadingTimeSlots || !methods.watch('appointmentDate')}
+                      disabled={isLoadingTimeSlots || !watchedAppointmentDate}
                       onChange={(e) => {
                         field.onChange(e);
                         if (e.target.value) scrollToElement('#terms-section', 500);
                       }}
                     >
                       <option value="">
-                        {!methods.watch('appointmentDate')
+                        {!watchedAppointmentDate
                           ? 'Select a date first'
                           : isLoadingTimeSlots
                           ? 'Loading available slots...'
