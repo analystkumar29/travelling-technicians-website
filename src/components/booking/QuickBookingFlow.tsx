@@ -47,7 +47,8 @@ export default function QuickBookingFlow({ onSubmit, isSubmitting, onShowFullFor
     if (step === 1 && !postalCode) {
       autoDetectLocation();
     }
-  }, [step]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, postalCode]);
 
   // Load time slots when postal code is confirmed
   useEffect(() => {
