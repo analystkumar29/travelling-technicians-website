@@ -226,14 +226,18 @@ export default function VerifyBooking() {
                         <div>
                           <span className="text-gray-500">Date: </span>
                           <span className="font-medium">
-                            {bookingInfo.scheduled_at ?
-                              new Date(bookingInfo.scheduled_at).toLocaleDateString('en-US', {
-                                weekday: 'long',
-                                month: 'long',
-                                day: 'numeric'
-                              }) :
-                              bookingInfo.booking_date ?
-                                new Date(bookingInfo.booking_date).toLocaleDateString('en-US', {
+                            {bookingInfo.booking_date ?
+                              (() => {
+                                const [year, month, day] = bookingInfo.booking_date.split('-').map(Number);
+                                return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('en-US', {
+                                  weekday: 'long',
+                                  month: 'long',
+                                  day: 'numeric',
+                                  timeZone: 'UTC'
+                                });
+                              })() :
+                              bookingInfo.scheduled_at ?
+                                new Date(bookingInfo.scheduled_at).toLocaleDateString('en-US', {
                                   weekday: 'long',
                                   month: 'long',
                                   day: 'numeric'
@@ -245,13 +249,20 @@ export default function VerifyBooking() {
                         <div>
                           <span className="text-gray-500">Time: </span>
                           <span className="font-medium">
-                            {bookingInfo.scheduled_at ?
-                              new Date(bookingInfo.scheduled_at).toLocaleTimeString('en-US', {
-                                hour: 'numeric',
-                                minute: '2-digit',
-                                hour12: true
-                              }) :
-                              bookingInfo.booking_time || 'To be scheduled'
+                            {bookingInfo.booking_time ?
+                              (() => {
+                                const [h, m] = bookingInfo.booking_time.split(':').map(Number);
+                                const period = h >= 12 ? 'PM' : 'AM';
+                                const hour12 = h % 12 || 12;
+                                return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
+                              })() :
+                              bookingInfo.scheduled_at ?
+                                new Date(bookingInfo.scheduled_at).toLocaleTimeString('en-US', {
+                                  hour: 'numeric',
+                                  minute: '2-digit',
+                                  hour12: true
+                                }) :
+                                'To be scheduled'
                             }
                           </span>
                         </div>

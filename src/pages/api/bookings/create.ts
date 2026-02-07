@@ -327,19 +327,14 @@ export default async function handler(
       // Convert date + time slot to ISO timestamp for scheduled_at
       // New time slots: "8:00", "10:00", "12:00", "14:00", "16:00", "18:00" (2-hour windows)
       scheduled_at: finalBookingData.booking_date ? (() => {
-        const date = new Date(finalBookingData.booking_date);
         const timeSlot = finalBookingData.booking_time || '12:00'; // Default to noon
-        
-        // Parse the time slot (e.g., "8:00", "10:00", "12:00", "14:00", "16:00", "18:00")
-        // These represent 2-hour windows: 8:00-10:00, 10:00-12:00, etc.
         const [hoursStr, minutesStr] = timeSlot.split(':');
         const hours = parseInt(hoursStr, 10);
         const minutes = minutesStr ? parseInt(minutesStr, 10) : 0;
-        
-        // Set the time to the start of the window
-        date.setHours(hours, minutes, 0, 0);
-        
-        return date.toISOString();
+
+        // Build UTC timestamp from date + time to avoid timezone shift
+        const [year, month, day] = finalBookingData.booking_date.split('-').map(Number);
+        return new Date(Date.UTC(year, month - 1, day, hours, minutes, 0, 0)).toISOString();
       })() : null,
       
       // Issue description from the form

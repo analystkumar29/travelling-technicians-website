@@ -152,20 +152,30 @@ export default function AdminBookings() {
     applyFilters();
   }, [applyFilters]);
 
-  const formatDate = (scheduledAt: string) => {
-    try {
-      return new Date(scheduledAt).toLocaleDateString();
-    } catch {
-      return 'Invalid date';
+  const formatDate = (booking: any) => {
+    if (booking.booking_date) {
+      const [year, month, day] = booking.booking_date.split('-').map(Number);
+      return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'
+      });
     }
+    if (booking.scheduled_at) {
+      return new Date(booking.scheduled_at).toLocaleDateString();
+    }
+    return 'Not scheduled';
   };
 
-  const formatTime = (scheduledAt: string) => {
-    try {
-      return new Date(scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return 'Invalid time';
+  const formatTime = (booking: any) => {
+    if (booking.booking_time) {
+      const [h, m] = booking.booking_time.split(':').map(Number);
+      const period = h >= 12 ? 'PM' : 'AM';
+      const hour12 = h % 12 || 12;
+      return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
     }
+    if (booking.scheduled_at) {
+      return new Date(booking.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    return 'Not scheduled';
   };
 
   const parseAddress = (address: string) => {
@@ -617,11 +627,11 @@ export default function AdminBookings() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Date</label>
-                      <p className="mt-1 text-sm font-medium text-gray-900">{formatDate(booking.scheduled_at)}</p>
+                      <p className="mt-1 text-sm font-medium text-gray-900">{formatDate(booking)}</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Time</label>
-                      <p className="mt-1 text-sm font-medium text-gray-900">{formatTime(booking.scheduled_at)}</p>
+                      <p className="mt-1 text-sm font-medium text-gray-900">{formatTime(booking)}</p>
                     </div>
                   </div>
                 </div>
@@ -1021,7 +1031,7 @@ export default function AdminBookings() {
                             <strong>Service:</strong> {booking.services?.display_name || booking.services?.name || `Service ID: ${booking.service_id?.substring(0, 8)}...`}
                           </div>
                           <div>
-                            <strong>Date:</strong> {formatDate(booking.scheduled_at)} at {formatTime(booking.scheduled_at)}
+                            <strong>Date:</strong> {formatDate(booking)} at {formatTime(booking)}
                           </div>
                           <div>
                             <strong>Address:</strong> {booking.customer_address}
