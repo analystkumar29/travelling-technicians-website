@@ -481,6 +481,39 @@ export default async function handler(
       });
     }
     
+    // Send admin notification (non-blocking)
+    try {
+      const baseUrl = (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production')
+        ? 'https://www.travelling-technicians.ca'
+        : (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+
+      fetch(`${baseUrl}/api/send-admin-notification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingReference: referenceNumber,
+          customerName: normalizedBookingData.customerName,
+          customerEmail: normalizedBookingData.customerEmail,
+          customerPhone: normalizedBookingData.customerPhone,
+          deviceType: normalizedBookingData.deviceType,
+          deviceBrand: normalizedBookingData.deviceBrand,
+          deviceModel: normalizedBookingData.deviceModel,
+          serviceName: normalizedBookingData.serviceType,
+          bookingDate: normalizedBookingData.appointmentDate,
+          bookingTime: normalizedBookingData.appointmentTime,
+          address: normalizedBookingData.address,
+          city: normalizedBookingData.city,
+          province: normalizedBookingData.province,
+          postalCode: normalizedBookingData.postalCode,
+          quotedPrice: bookingData.quoted_price ?? null,
+          pricingTier: bookingData.pricingTier || bookingData.pricing_tier || 'standard',
+          issueDescription: normalizedBookingData.issueDescription,
+        }),
+      }).catch(err => apiLogger.error('Admin notification failed (non-blocking)', { error: String(err) }));
+    } catch (e) {
+      apiLogger.error('Admin notification preparation failed', { error: String(e) });
+    }
+
     // Return successful response
     return res.status(200).json({
       success: true,
