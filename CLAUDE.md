@@ -15,7 +15,7 @@
 - **Deploy**: Vercel (inferred from `VERCEL_URL` checks in `src/utils/supabaseClient.ts`)
 - **Domain**: `www.travelling-technicians.ca` (non-www redirects via `next.config.js`)
 
-**Database** (27 tables, 4 views, 31 triggers):
+**Database** (29 tables, 4 views, 31 triggers):
 
 | Hot Table | Rows | Seq Scans | Idx Scans | Total Updates |
 |---|---|---|---|---|
@@ -164,7 +164,25 @@ Admin changes pricing → dynamic_pricing row updated
 - **Dropped duplicate index** `idx_dynamic_pricing_model_service_status` (identical to `idx_dynamic_pricing_active`)
 
 **Remaining advisories** (pre-existing, lower priority):
-- 11 tables have RLS enabled but no policies (intentional — all grants revoked, no anon/authenticated access)
+- 12 tables have RLS enabled but no policies (intentional — all grants revoked, no anon/authenticated access; includes `terms_acceptances`)
 - 29 functions have mutable `search_path` (cosmetic; all trigger-only or service-role-only)
 - `bookings` table has `INSERT` policy with `true` (intentional — public booking flow)
 - `booking_communications` and `booking_status_history` are orphaned tables (0 code references, 0 rows)
+- `terms_acceptances` has RLS enabled but no policies (intentional — service-role only, no anon/authenticated grants)
+
+## Legal Compliance Infrastructure (APPLIED 2026-02-06)
+
+**Migration `create_legal_compliance_tables`**:
+
+### New Tables
+- **`legal_documents`** — Versioned legal document metadata (T&C + Privacy Policy). Partial unique index `idx_legal_documents_current` ensures one `is_current` per `document_type`. Anon SELECT granted (needed for version display on pages).
+- **`terms_acceptances`** — Audit trail of T&C acceptance at booking time. FK to `bookings(id)` ON DELETE SET NULL, FK to `legal_documents(id)`. Indexes on `booking_id` and `customer_email`. Service-role only (no anon/authenticated grants). Records IP address (`inet`), user-agent, document version, and timestamp.
+
+### Booking Flow Integration
+- `CreateBookingRequest` type includes `agreedToTerms` + `termsVersion` fields
+- `useBookingController` hook sends `agreedToTerms: true` and `termsVersion: '2026-02-06-v1'` in submission payload
+- `/api/bookings/create.ts` inserts `terms_acceptances` row after successful booking creation (non-blocking — errors logged but don't fail the booking)
+
+### Legal Content
+- **Terms & Conditions** (`/terms-conditions`): 21 sections — PIPEDA/PIPA device data consent, BPCPA s.18.2 pricing disclosure, no mandatory arbitration (BC Bill 4), statutory warranties (BC SGA s.18, ON CPA s.9, QC CPA art.37), provincial addendums (ON 10-day cooling-off, QC legal warranty + French language right), right to repair (Bills C-244/C-294), unclaimed devices (Repairers Lien Act + Commercial Liens Act)
+- **Privacy Policy** (`/privacy-policy`): PIPEDA breach notification procedure (s.10.1 RROSH), BC PIPA references, device data incidental access policy, specific retention periods, Privacy Commissioner complaint filing (federal + BC OIPC)
