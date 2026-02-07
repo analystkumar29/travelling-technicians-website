@@ -79,10 +79,10 @@ const SERVICE_DISPLAY_NAMES: Record<string, string> = {
 
 // Tier configuration
 const TIER_CONFIG = {
-  economy: { multiplier: 0.8, warranty: 3, turnaround: 72 },
-  standard: { multiplier: 1.0, warranty: 6, turnaround: 48 },
-  premium: { multiplier: 1.25, warranty: 12, turnaround: 24 },
-  express: { multiplier: 1.5, warranty: 6, turnaround: 12 }
+  economy: { multiplier: 0.8, warranty: 1, turnaround: 72 },
+  standard: { multiplier: 1.0, warranty: 3, turnaround: 48 },
+  premium: { multiplier: 1.25, warranty: 6, turnaround: 24 },
+  express: { multiplier: 1.5, warranty: 3, turnaround: 12 }
 };
 
 // Generate cache key for pricing request (using apiCache utility)
