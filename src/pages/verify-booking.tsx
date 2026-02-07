@@ -334,6 +334,12 @@ export default function VerifyBooking() {
                           <p className="text-xs text-gray-500 mt-2">
                             Keep this warranty code for your records. Contact us to file a warranty claim.
                           </p>
+                          <a
+                            href="/check-warranty"
+                            className="inline-block mt-3 text-sm text-primary-700 hover:text-primary-900 font-medium underline"
+                          >
+                            Check warranty status anytime &rarr;
+                          </a>
                         </div>
                       )}
                     </div>

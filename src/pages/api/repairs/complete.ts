@@ -117,9 +117,54 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // Fetch the auto-created warranty
     const { data: warrantyData } = await supabase
       .from('warranties')
-      .select('id, warranty_number, start_date, end_date, status')
+      .select('id, warranty_number, start_date, end_date, duration_days, status')
       .eq('booking_id', body.booking_id)
       .single();
+
+    // Send warranty notification email (non-blocking)
+    if (warrantyData) {
+      try {
+        const { data: bookingDetails } = await supabase
+          .from('bookings')
+          .select(`
+            customer_email, customer_name, booking_ref,
+            device_models:model_id (name),
+            services:service_id (name, display_name)
+          `)
+          .eq('id', body.booking_id)
+          .single();
+
+        if (bookingDetails?.customer_email) {
+          const deviceModels = bookingDetails.device_models as any;
+          const services = bookingDetails.services as any;
+
+          const baseUrl = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
+            ? 'https://www.travelling-technicians.ca'
+            : process.env.VERCEL_URL
+              ? `https://${process.env.VERCEL_URL}`
+              : 'http://localhost:3000';
+
+          fetch(`${baseUrl}/api/send-warranty-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: bookingDetails.customer_email,
+              name: bookingDetails.customer_name || 'Customer',
+              warrantyNumber: warrantyData.warranty_number,
+              bookingReference: bookingDetails.booking_ref,
+              deviceName: deviceModels?.name || 'Your Device',
+              serviceName: services?.display_name || services?.name || 'Repair Service',
+              technicianName: technicianData.full_name,
+              startDate: warrantyData.start_date,
+              endDate: warrantyData.end_date,
+              durationDays: warrantyData.duration_days
+            }),
+          }).catch(err => logger.error('Warranty email send failed (non-blocking)', { error: String(err) }));
+        }
+      } catch (e) {
+        logger.error('Warranty email preparation failed (non-blocking)', { error: String(e) });
+      }
+    }
 
     return res.status(201).json({
       success: true,
