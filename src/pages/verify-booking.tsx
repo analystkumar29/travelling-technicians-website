@@ -395,18 +395,22 @@ export default function VerifyBooking() {
                                 <div className="mb-2">
                                   <span className="text-gray-500">Date: </span>
                                   <span className="font-medium">
-                                    {booking.scheduled_at ? 
-                                      new Date(booking.scheduled_at).toLocaleDateString('en-US', { 
-                                        weekday: 'long', 
-                                        month: 'long', 
-                                        day: 'numeric' 
-                                      }) : 
-                                      booking.booking_date ? 
-                                        new Date(booking.booking_date).toLocaleDateString('en-US', { 
-                                          weekday: 'long', 
-                                          month: 'long', 
-                                          day: 'numeric' 
-                                        }) : 
+                                    {booking.booking_date ?
+                                      (() => {
+                                        const [year, month, day] = booking.booking_date.split('-').map(Number);
+                                        return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('en-US', {
+                                          weekday: 'long',
+                                          month: 'long',
+                                          day: 'numeric',
+                                          timeZone: 'UTC'
+                                        });
+                                      })() :
+                                      booking.scheduled_at ?
+                                        new Date(booking.scheduled_at).toLocaleDateString('en-US', {
+                                          weekday: 'long',
+                                          month: 'long',
+                                          day: 'numeric'
+                                        }) :
                                         'To be scheduled'
                                     }
                                   </span>
@@ -414,13 +418,20 @@ export default function VerifyBooking() {
                                 <div className="mb-2">
                                   <span className="text-gray-500">Time: </span>
                                   <span className="font-medium">
-                                    {booking.scheduled_at ? 
-                                      new Date(booking.scheduled_at).toLocaleTimeString('en-US', { 
-                                        hour: 'numeric', 
-                                        minute: '2-digit',
-                                        hour12: true 
-                                      }) : 
-                                      booking.booking_time || 'To be scheduled'
+                                    {booking.booking_time ?
+                                      (() => {
+                                        const [h, m] = booking.booking_time.split(':').map(Number);
+                                        const period = h >= 12 ? 'PM' : 'AM';
+                                        const hour12 = h % 12 || 12;
+                                        return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
+                                      })() :
+                                      booking.scheduled_at ?
+                                        new Date(booking.scheduled_at).toLocaleTimeString('en-US', {
+                                          hour: 'numeric',
+                                          minute: '2-digit',
+                                          hour12: true
+                                        }) :
+                                        'To be scheduled'
                                     }
                                   </span>
                                 </div>
@@ -458,13 +469,30 @@ export default function VerifyBooking() {
                       You will receive a call about 30 minutes before arrival.
                     </p>
                   )}
-                  
+
+                  {/* Email input for already-confirmed bookings (email was never collected) */}
+                  {!showAllBookings && !email && (
+                    <div className="bg-gray-50 p-4 rounded-lg mb-4 max-w-md w-full">
+                      <label htmlFor="allBookingsEmail" className="block text-sm font-medium text-gray-700 text-left mb-1">
+                        Enter your email to view all your bookings
+                      </label>
+                      <input
+                        type="email"
+                        id="allBookingsEmail"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        placeholder="Enter the email used for booking"
+                      />
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap gap-4 mt-6">
                     {!showAllBookings && (
-                      <button 
+                      <button
                         onClick={fetchAllBookings}
-                        disabled={loadingAllBookings}
-                        className="btn-secondary flex items-center"
+                        disabled={loadingAllBookings || !email}
+                        className="btn-secondary flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {loadingAllBookings ? (
                           <>

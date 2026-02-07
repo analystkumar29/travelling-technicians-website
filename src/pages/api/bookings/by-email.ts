@@ -15,18 +15,25 @@ if (!VERIFICATION_SECRET) {
 
 const SECRET: string = VERIFICATION_SECRET;
 
-// Function to verify original booking verification token
+// Function to verify original booking verification token (checks today + last 7 days)
 function verifyBookingToken(token: string, email: string, reference: string): boolean {
   try {
-    // Use the same token generation logic as the original verification
-    const today = new Date().toISOString().split('T')[0];
-    const data = `${email.toLowerCase()}:${reference}:${today}`;
-    const expectedToken = crypto
-      .createHmac('sha256', SECRET)
-      .update(data)
-      .digest('hex');
-    
-    return token === expectedToken;
+    // Check today and the last 7 days to match verify-booking.ts logic
+    for (let i = 0; i <= 7; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      const data = `${email.toLowerCase()}:${reference}:${dateStr}`;
+      const expectedToken = crypto
+        .createHmac('sha256', SECRET)
+        .update(data)
+        .digest('hex');
+
+      if (token === expectedToken) {
+        return true;
+      }
+    }
+    return false;
   } catch (error) {
     emailBookingsLogger.error('Error verifying booking token', error);
     return false;
