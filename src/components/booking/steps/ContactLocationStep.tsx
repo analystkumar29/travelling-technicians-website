@@ -176,7 +176,7 @@ export default function ContactLocationStep({
             <h4 className="text-sm font-medium text-primary-900">Privacy Notice</h4>
             <p className="mt-1 text-xs text-primary-700">
               Your information is secure and only used to facilitate your repair service. See our{' '}
-              <a href="/privacy-policy" className="underline font-medium hover:text-primary-900 transition-colors">
+              <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-primary-900 transition-colors">
                 Privacy Policy
               </a>{' '}
               for details.

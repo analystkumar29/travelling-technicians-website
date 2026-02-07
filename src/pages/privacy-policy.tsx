@@ -256,7 +256,7 @@ export default function PrivacyPolicyPage() {
                 <div className="space-y-2">
                   <p><strong>The Travelling Technicians &mdash; Privacy Inquiries</strong></p>
                   <p>Email: <a href="mailto:privacy@travellingtechnicians.ca" className="text-primary-600 hover:text-primary-800">privacy@travellingtechnicians.ca</a></p>
-                  <p>Phone: <a href="tel:+17783899251" className="text-primary-600 hover:text-primary-800">(778) 389-9251</a></p>
+                  <p>Phone: <a href="tel:+16048495329" className="text-primary-600 hover:text-primary-800">(604) 849-5329</a></p>
                   <p>Service Area: Lower Mainland, British Columbia, Canada</p>
                 </div>
               </div>
