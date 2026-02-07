@@ -57,6 +57,10 @@ export interface CreateBookingRequest {
   
   // Pricing information
   quoted_price?: number;  // Price quoted to customer at time of booking
+
+  // Terms acceptance tracking
+  agreedToTerms?: boolean;       // Whether customer agreed to T&C at booking time
+  termsVersion?: string;         // Version of T&C accepted (e.g. '2026-02-06-v1')
 }
 
 /**
