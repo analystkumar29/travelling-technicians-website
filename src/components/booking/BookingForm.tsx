@@ -17,6 +17,12 @@ interface BookingFormProps {
 
 const liquidSpring = { type: 'spring' as const, stiffness: 300, damping: 30 };
 
+const WHY_CHOOSE_ITEMS = [
+  { Icon: Home, title: 'Convenience', desc: 'We come to you' },
+  { Icon: Zap, title: 'Speed', desc: '30-60 min repairs' },
+  { Icon: ShieldCheck, title: 'Quality', desc: 'Certified techs' },
+] as const;
+
 export default function BookingForm({ onSubmit, onCancel, initialData = {} }: BookingFormProps) {
   const controller = useBookingController({ onSubmit, initialData });
   const { methods, currentStep, steps } = controller;
@@ -86,11 +92,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
         {/* Why Choose Banner */}
         <div className="mb-6 sm:mb-8 glass-surface-light rounded-xl p-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[
-              { Icon: Home, title: 'Convenience', desc: 'We come to you' },
-              { Icon: Zap, title: 'Speed', desc: '30-60 min repairs' },
-              { Icon: ShieldCheck, title: 'Quality', desc: 'Certified techs' },
-            ].map(({ Icon, title, desc }) => (
+            {WHY_CHOOSE_ITEMS.map(({ Icon, title, desc }) => (
               <div
                 key={title}
                 className="flex flex-col items-center text-center p-3 rounded-lg hover:bg-white/40 transition-all duration-300 cursor-default group"
@@ -173,6 +175,11 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       setSelectedBrandId={controller.setSelectedBrandId}
                       selectedModelId={controller.selectedModelId}
                       setSelectedModelId={controller.setSelectedModelId}
+                      watchedDeviceType={controller.watchedDeviceType}
+                      watchedDeviceBrand={controller.watchedDeviceBrand}
+                      watchedDeviceModel={controller.watchedDeviceModel}
+                      watchedServiceType={controller.watchedServiceType}
+                      watchedPricingTier={controller.watchedPricingTier}
                     />
                   )}
                   {currentStep === 1 && (
@@ -203,6 +210,7 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       servicesData={controller.servicesData}
                       validatedSteps={controller.validatedSteps}
                       scrollToElement={controller.scrollToElement}
+                      watchedAppointmentDate={controller.watchedAppointmentDate}
                     />
                   )}
                 </motion.div>

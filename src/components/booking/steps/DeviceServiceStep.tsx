@@ -28,6 +28,11 @@ interface DeviceServiceStepProps {
   setSelectedBrandId: (id: string) => void;
   selectedModelId: string;
   setSelectedModelId: (id: string) => void;
+  watchedDeviceType: string | undefined;
+  watchedDeviceBrand: string;
+  watchedDeviceModel: string;
+  watchedServiceType: string | string[];
+  watchedPricingTier: string | undefined;
 }
 
 export default function DeviceServiceStep({
@@ -50,9 +55,14 @@ export default function DeviceServiceStep({
   getServiceIcon,
   setSelectedBrandId,
   setSelectedModelId,
+  watchedDeviceType,
+  watchedDeviceBrand,
+  watchedDeviceModel,
+  watchedServiceType,
+  watchedPricingTier,
 }: DeviceServiceStepProps) {
-  const deviceType = methods.watch('deviceType');
-  const deviceBrand = methods.watch('deviceBrand');
+  const deviceType = watchedDeviceType;
+  const deviceBrand = watchedDeviceBrand;
   const showValidationErrors = validatedSteps.includes(0);
 
   // ── Transform services for UI ──────────────────────────────────────────
@@ -203,7 +213,7 @@ export default function DeviceServiceStep({
               brandsWithOther.map((brand) => {
                 const brandSlug = (brand.slug || brand.name).toLowerCase();
                 const logo = getBrandLogo(brandSlug);
-                const isSelected = methods.watch('deviceBrand') === brandSlug;
+                const isSelected = deviceBrand === brandSlug;
                 return (
                   <label
                     key={brand.id}
@@ -498,12 +508,12 @@ export default function DeviceServiceStep({
             render={({ field, fieldState }) => (
               <>
                 <TierPriceComparison
-                  deviceType={methods.watch('deviceType')}
-                  brand={methods.watch('deviceBrand')}
-                  model={methods.watch('deviceModel')}
-                  services={methods.watch('serviceType')}
-                  postalCode={methods.watch('postalCode')}
-                  enabled={!!(methods.watch('deviceType') && methods.watch('deviceBrand') && methods.watch('deviceModel') && methods.watch('serviceType'))}
+                  deviceType={deviceType}
+                  brand={deviceBrand}
+                  model={watchedDeviceModel}
+                  services={watchedServiceType}
+                  postalCode={methods.getValues('postalCode')}
+                  enabled={!!(deviceType && deviceBrand && watchedDeviceModel && watchedServiceType)}
                   selectedTier={field.value}
                   onTierSelect={(tier: 'standard' | 'premium') => {
                     field.onChange(tier);
