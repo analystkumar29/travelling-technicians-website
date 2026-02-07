@@ -481,13 +481,13 @@ export default async function handler(
       });
     }
     
-    // Send admin notification (non-blocking)
+    // Send admin notification (awaited to prevent Vercel from killing the fetch on function teardown)
     try {
-      const baseUrl = (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production')
+      const adminBaseUrl = (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production')
         ? 'https://www.travelling-technicians.ca'
         : (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
-      fetch(`${baseUrl}/api/send-admin-notification`, {
+      await fetch(`${adminBaseUrl}/api/send-admin-notification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -509,9 +509,10 @@ export default async function handler(
           pricingTier: bookingData.pricingTier || bookingData.pricing_tier || 'standard',
           issueDescription: normalizedBookingData.issueDescription,
         }),
-      }).catch(err => apiLogger.error('Admin notification failed (non-blocking)', { error: String(err) }));
+      });
+      apiLogger.info('Admin notification sent', { reference: referenceNumber });
     } catch (e) {
-      apiLogger.error('Admin notification preparation failed', { error: String(e) });
+      apiLogger.error('Admin notification failed (non-blocking)', { error: String(e) });
     }
 
     // Return successful response

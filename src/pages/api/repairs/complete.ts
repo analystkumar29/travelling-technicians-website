@@ -144,7 +144,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
               ? `https://${process.env.VERCEL_URL}`
               : 'http://localhost:3000';
 
-          fetch(`${baseUrl}/api/send-warranty-notification`, {
+          await fetch(`${baseUrl}/api/send-warranty-notification`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -159,7 +159,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
               endDate: warrantyData.end_date,
               durationDays: warrantyData.duration_days
             }),
-          }).catch(err => logger.error('Warranty email send failed (non-blocking)', { error: String(err) }));
+          });
+          logger.info('Warranty notification email sent', { warranty: warrantyData.warranty_number });
         }
       } catch (e) {
         logger.error('Warranty email preparation failed (non-blocking)', { error: String(e) });
