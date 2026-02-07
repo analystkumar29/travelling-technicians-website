@@ -96,6 +96,11 @@ interface RouteData {
       device_model?: string;
       service?: string;
     }>;
+    sibling_services?: Array<{
+      slug_path: string;
+      service_name: string;
+      service_slug: string;
+    }>;
   };
 }
 
@@ -692,6 +697,28 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
                 </div>
               </div>
             </div>
+
+            {/* Other Services for This Device */}
+            {routeData.payload.sibling_services && routeData.payload.sibling_services.length > 0 && (
+              <div className="bg-white rounded-xl shadow p-6 mb-8">
+                <h3 className="text-xl font-bold text-primary-900 mb-4">Other Services for {model.display_name} in {city.name}</h3>
+                <p className="text-primary-500 mb-4">We also offer these repair services for your {brand.display_name} {model.display_name}:</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {routeData.payload.sibling_services.map((sibling: { slug_path: string; service_name: string; service_slug: string }, index: number) => (
+                    <Link
+                      key={index}
+                      href={`/${sibling.slug_path}`}
+                      className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-primary-200 hover:shadow-sm transition-all group"
+                    >
+                      <span className="text-primary-800 font-medium group-hover:text-primary-900">{sibling.service_name}</span>
+                      <svg className="h-4 w-4 text-primary-400 group-hover:text-primary-800 group-hover:translate-x-0.5 transition-all" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* CTA Section */}
             <div className="text-center bg-gradient-to-r from-primary-800 to-primary-900 rounded-xl shadow-lg p-8 text-white mb-8">

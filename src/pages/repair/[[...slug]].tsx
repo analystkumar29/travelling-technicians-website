@@ -201,6 +201,46 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
             <meta name="keywords" content={`${cmpModelName} repair, ${cmpBrandName} repair, ${cmpCityName} phone repair, doorstep repair`} />
             <meta name="robots" content="index, follow" />
             <link rel="canonical" href={`${siteUrl}/${routeData.slug_path}`} />
+
+            {/* Open Graph */}
+            <meta property="og:title" content={`${cmpModelName} Repair in ${cmpCityName} | The Travelling Technicians`} />
+            <meta property="og:description" content={`Professional ${cmpModelName} repair services in ${cmpCityName}. Doorstep service with 90-day warranty.`} />
+            <meta property="og:url" content={`${siteUrl}/${routeData.slug_path}`} />
+            <meta property="og:type" content="website" />
+
+            {/* Language and regional targeting */}
+            <link rel="alternate" hrefLang="en-CA" href={`${siteUrl}/${routeData.slug_path}`} />
+
+            {/* BreadcrumbList JSON-LD */}
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{
+                __html: JSON.stringify({
+                  "@context": "https://schema.org",
+                  "@type": "BreadcrumbList",
+                  "itemListElement": [
+                    {
+                      "@type": "ListItem",
+                      "position": 1,
+                      "name": "Repair Services",
+                      "item": `${siteUrl}/repair`
+                    },
+                    {
+                      "@type": "ListItem",
+                      "position": 2,
+                      "name": cmpCityName,
+                      "item": `${siteUrl}/repair/${cmpCity?.slug}`
+                    },
+                    {
+                      "@type": "ListItem",
+                      "position": 3,
+                      "name": `${cmpModelName} Repair`,
+                      "item": `${siteUrl}/${routeData.slug_path}`
+                    }
+                  ]
+                })
+              }}
+            />
           </Head>
           
           {/* Navigation Header */}
@@ -373,6 +413,81 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
               </div>
             </div>
           </section>
+
+          {/* Neighborhood Pages - Hyper-Local SEO Linking */}
+          {routeData.payload.neighborhood_pages && routeData.payload.neighborhood_pages.length > 0 && (
+            <section className="py-16 bg-white">
+              <div className="container-custom">
+                <div className="text-center mb-12">
+                  <h2 className="text-3xl font-bold mb-4">{cmpModelName} Repair by Neighborhood</h2>
+                  <p className="text-lg text-primary-500 max-w-2xl mx-auto">
+                    Find repair services in your specific {cmpCityName} neighborhood
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {routeData.payload.neighborhood_pages.map((neighborhood: { id: number; neighborhood_name: string; slug: string; landmark_name?: string }) => (
+                    <Link
+                      key={neighborhood.id}
+                      href={`/repair/${cmpCity?.slug}/${neighborhood.slug}`}
+                      className="bg-primary-50 p-4 rounded-lg hover:shadow-md transition-all border border-gray-100 group"
+                    >
+                      <div className="font-bold text-primary-900 group-hover:text-primary-800 transition-colors mb-1">
+                        {neighborhood.neighborhood_name}
+                      </div>
+                      {neighborhood.landmark_name && (
+                        <div className="text-xs text-primary-400 mb-2">
+                          Near {neighborhood.landmark_name}
+                        </div>
+                      )}
+                      <div className="text-xs text-primary-800 flex items-center">
+                        <svg className="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                        View Services
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Nearby Cities Section (SEO Internal Linking) */}
+          {routeData.payload.nearby_cities && routeData.payload.nearby_cities.length > 0 && (
+            <section className="py-16 bg-primary-50">
+              <div className="container-custom">
+                <div className="text-center mb-12">
+                  <h2 className="text-3xl font-bold mb-4">{cmpModelName} Repair in Nearby Cities</h2>
+                  <p className="text-lg text-primary-500 max-w-2xl mx-auto">
+                    Need {cmpModelName} repair in a nearby city? We&apos;ve got you covered!
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {routeData.payload.nearby_cities.map((nearbyCity: { slug: string; name: string; distance_km?: number }, index: number) => (
+                    <Link
+                      key={index}
+                      href={`/repair/${nearbyCity.slug}/${cmpModel?.slug}`}
+                      className="bg-white p-4 rounded-lg text-center shadow-sm hover:shadow-md transition-all border border-gray-100 group"
+                    >
+                      <div className="text-primary-800 font-medium group-hover:text-primary-900 transition-colors">
+                        {nearbyCity.name}
+                      </div>
+                      {nearbyCity.distance_km && (
+                        <div className="text-sm text-primary-400 mt-1">
+                          {nearbyCity.distance_km.toFixed(1)} km away
+                        </div>
+                      )}
+                      <div className="text-sm text-primary-800 mt-2">
+                        {cmpModelName} Repair →
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
 
           {/* CTA Section */}
           <section className="py-16 bg-primary-50">

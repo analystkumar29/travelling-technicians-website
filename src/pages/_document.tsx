@@ -295,7 +295,7 @@ class MyDocument extends Document {
                     "addressCountry": "CA"
                   },
                   {
-                    "@type": "City", 
+                    "@type": "City",
                     "name": "Burnaby",
                     "addressRegion": "BC",
                     "addressCountry": "CA"
@@ -303,7 +303,7 @@ class MyDocument extends Document {
                   {
                     "@type": "City",
                     "name": "Richmond",
-                    "addressRegion": "BC", 
+                    "addressRegion": "BC",
                     "addressCountry": "CA"
                   },
                   {
@@ -326,7 +326,43 @@ class MyDocument extends Document {
                   },
                   {
                     "@type": "City",
-                    "name": "West Vancouver", 
+                    "name": "West Vancouver",
+                    "addressRegion": "BC",
+                    "addressCountry": "CA"
+                  },
+                  {
+                    "@type": "City",
+                    "name": "Surrey",
+                    "addressRegion": "BC",
+                    "addressCountry": "CA"
+                  },
+                  {
+                    "@type": "City",
+                    "name": "Delta",
+                    "addressRegion": "BC",
+                    "addressCountry": "CA"
+                  },
+                  {
+                    "@type": "City",
+                    "name": "Langley",
+                    "addressRegion": "BC",
+                    "addressCountry": "CA"
+                  },
+                  {
+                    "@type": "City",
+                    "name": "Abbotsford",
+                    "addressRegion": "BC",
+                    "addressCountry": "CA"
+                  },
+                  {
+                    "@type": "City",
+                    "name": "Chilliwack",
+                    "addressRegion": "BC",
+                    "addressCountry": "CA"
+                  },
+                  {
+                    "@type": "City",
+                    "name": "Squamish",
                     "addressRegion": "BC",
                     "addressCountry": "CA"
                   }
