@@ -47,6 +47,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             ),
             service_locations (
               city_name
+            ),
+            technicians (
+              full_name,
+              phone
             )
           `)
           .order('created_at', { ascending: false });

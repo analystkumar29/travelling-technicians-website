@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
-import { FaCheckCircle, FaTimesCircle, FaSpinner } from 'react-icons/fa';
+import { FaCheckCircle, FaTimesCircle, FaSpinner, FaShieldAlt } from 'react-icons/fa';
 
 export default function VerifyBooking() {
   const router = useRouter();
@@ -226,18 +226,18 @@ export default function VerifyBooking() {
                         <div>
                           <span className="text-gray-500">Date: </span>
                           <span className="font-medium">
-                            {bookingInfo.scheduled_at ? 
-                              new Date(bookingInfo.scheduled_at).toLocaleDateString('en-US', { 
-                                weekday: 'long', 
-                                month: 'long', 
-                                day: 'numeric' 
-                              }) : 
-                              bookingInfo.booking_date ? 
-                                new Date(bookingInfo.booking_date).toLocaleDateString('en-US', { 
-                                  weekday: 'long', 
-                                  month: 'long', 
-                                  day: 'numeric' 
-                                }) : 
+                            {bookingInfo.scheduled_at ?
+                              new Date(bookingInfo.scheduled_at).toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                month: 'long',
+                                day: 'numeric'
+                              }) :
+                              bookingInfo.booking_date ?
+                                new Date(bookingInfo.booking_date).toLocaleDateString('en-US', {
+                                  weekday: 'long',
+                                  month: 'long',
+                                  day: 'numeric'
+                                }) :
                                 'To be scheduled'
                             }
                           </span>
@@ -245,12 +245,12 @@ export default function VerifyBooking() {
                         <div>
                           <span className="text-gray-500">Time: </span>
                           <span className="font-medium">
-                            {bookingInfo.scheduled_at ? 
-                              new Date(bookingInfo.scheduled_at).toLocaleTimeString('en-US', { 
-                                hour: 'numeric', 
+                            {bookingInfo.scheduled_at ?
+                              new Date(bookingInfo.scheduled_at).toLocaleTimeString('en-US', {
+                                hour: 'numeric',
                                 minute: '2-digit',
-                                hour12: true 
-                              }) : 
+                                hour12: true
+                              }) :
                               bookingInfo.booking_time || 'To be scheduled'
                             }
                           </span>
@@ -258,26 +258,84 @@ export default function VerifyBooking() {
                         <div>
                           <span className="text-gray-500">Quoted Price: </span>
                           <span className="font-medium">
-                            {bookingInfo.quoted_price ? 
-                              `$${parseFloat(bookingInfo.quoted_price).toFixed(2)}` : 
+                            {bookingInfo.quoted_price ?
+                              `$${parseFloat(bookingInfo.quoted_price).toFixed(2)}` :
                               'Price to be confirmed'
                             }
                           </span>
                         </div>
                         <div>
                           <span className="text-gray-500">Status: </span>
-                          <span className="font-medium text-green-600">Confirmed</span>
+                          <span className={`font-medium ${
+                            bookingInfo.status === 'completed' ? 'text-green-600' :
+                            bookingInfo.status === 'confirmed' ? 'text-green-600' :
+                            bookingInfo.status === 'assigned' ? 'text-purple-600' :
+                            bookingInfo.status === 'in-progress' ? 'text-indigo-600' :
+                            'text-yellow-600'
+                          }`}>
+                            {bookingInfo.status ? bookingInfo.status.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Confirmed'}
+                          </span>
                         </div>
                         <div>
                           <span className="text-gray-500">Technician: </span>
                           <span className="font-medium">
-                            {bookingInfo.technician?.assigned ? 
-                              `${bookingInfo.technician.name} (${bookingInfo.technician.phone || bookingInfo.technician.whatsapp || 'Contact info pending'})` : 
+                            {bookingInfo.technician?.assigned ?
+                              `${bookingInfo.technician.name} (${bookingInfo.technician.phone || bookingInfo.technician.whatsapp || 'Contact info pending'})` :
                               'Your technician will be assigned soon'
                             }
                           </span>
                         </div>
                       </div>
+
+                      {/* Warranty card for completed bookings */}
+                      {bookingInfo.status === 'completed' && bookingInfo.warranty && (
+                        <div className="mt-4 p-4 bg-white border border-green-200 rounded-lg">
+                          <h4 className="font-medium text-gray-900 flex items-center mb-2">
+                            <FaShieldAlt className="mr-2 text-green-600" />
+                            Your Warranty
+                          </h4>
+                          <div className="grid grid-cols-1 gap-2 text-sm">
+                            <div>
+                              <span className="text-gray-500">Warranty Code: </span>
+                              <span className="font-mono font-semibold text-gray-900">
+                                {bookingInfo.warranty.warranty_number || bookingInfo.warranty.warranty_code}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Valid Until: </span>
+                              <span className="font-medium">
+                                {bookingInfo.warranty.end_date ?
+                                  new Date(bookingInfo.warranty.end_date).toLocaleDateString('en-US', {
+                                    month: 'long',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                  }) :
+                                  bookingInfo.warranty.expiry_date ?
+                                    new Date(bookingInfo.warranty.expiry_date).toLocaleDateString('en-US', {
+                                      month: 'long',
+                                      day: 'numeric',
+                                      year: 'numeric'
+                                    }) : 'N/A'
+                                }
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Status: </span>
+                              <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
+                                bookingInfo.warranty.status === 'active' ? 'bg-green-100 text-green-800' :
+                                bookingInfo.warranty.status === 'expired' ? 'bg-gray-100 text-gray-800' :
+                                bookingInfo.warranty.status === 'claimed' ? 'bg-blue-100 text-blue-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {bookingInfo.warranty.status?.charAt(0).toUpperCase() + bookingInfo.warranty.status?.slice(1)}
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2">
+                            Keep this warranty code for your records. Contact us to file a warranty claim.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 

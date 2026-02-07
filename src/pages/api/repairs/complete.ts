@@ -1,10 +1,12 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { supabase, getServiceSupabase } from '@/utils/supabaseClient';
+import { getServiceSupabase } from '@/utils/supabaseClient';
+import { requireAdminAuth } from '@/middleware/adminAuth';
 import logger from '@/utils/logger';
 
 /**
  * API handler for completing repairs
- * POST - Register a completed repair
+ * POST - Register a completed repair and auto-create warranty via DB trigger
+ * Protected by admin auth
  */
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { method } = req;
@@ -16,127 +18,120 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   try {
     const { body } = req;
-    
+    const supabase = getServiceSupabase();
+
     // Validate required fields
     const requiredFields = ['booking_id', 'technician_id'];
     const missingFields = requiredFields.filter(field => !body[field]);
-    
+
     if (missingFields.length > 0) {
-      return res.status(400).json({ 
-        error: 'Missing required fields', 
-        fields: missingFields 
+      return res.status(400).json({
+        error: 'Missing required fields',
+        fields: missingFields
       });
     }
-    
-    // Verify booking exists and is not already completed
+
+    // Verify booking exists and is in-progress (ready for completion)
     const { data: bookingData, error: bookingError } = await supabase
       .from('bookings')
-      .select('status, repair_status')
+      .select('id, status, booking_ref, customer_name, technician_id')
       .eq('id', body.booking_id)
       .single();
-    
+
     if (bookingError) {
       logger.error('Error fetching booking:', bookingError);
       return res.status(404).json({ error: 'Booking not found' });
     }
-    
-    if (bookingData.status === 'completed' || bookingData.repair_status === 'completed') {
+
+    if (bookingData.status === 'completed') {
       return res.status(400).json({ error: 'This booking has already been marked as completed' });
     }
-    
+
     // Verify technician exists
     const { data: technicianData, error: technicianError } = await supabase
       .from('technicians')
-      .select('id')
+      .select('id, full_name')
       .eq('id', body.technician_id)
       .single();
-    
+
     if (technicianError) {
       logger.error('Error fetching technician:', technicianError);
       return res.status(404).json({ error: 'Technician not found' });
     }
-    
-    // Convert parts_used and additional_services to JSONB if present
-    if (body.parts_used && !Array.isArray(body.parts_used)) {
+
+    // Parse parts_used and additional_services if strings
+    let partsUsed = body.parts_used || [];
+    let additionalServices = body.additional_services || [];
+
+    if (partsUsed && !Array.isArray(partsUsed)) {
       try {
-        body.parts_used = JSON.parse(body.parts_used);
-      } catch (e) {
+        partsUsed = JSON.parse(partsUsed);
+      } catch {
         return res.status(400).json({ error: 'Invalid parts_used format. Must be JSON array.' });
       }
     }
-    
-    if (body.additional_services && !Array.isArray(body.additional_services)) {
+
+    if (additionalServices && !Array.isArray(additionalServices)) {
       try {
-        body.additional_services = JSON.parse(body.additional_services);
-      } catch (e) {
+        additionalServices = JSON.parse(additionalServices);
+      } catch {
         return res.status(400).json({ error: 'Invalid additional_services format. Must be JSON array.' });
       }
     }
-    
+
     // Insert repair completion record
-    // Note: The database trigger will create the warranty automatically
+    // The DB trigger trg_auto_create_warranty will auto-create a warranty
     const repairData = {
       booking_id: body.booking_id,
       technician_id: body.technician_id,
       completed_at: body.completed_at || new Date().toISOString(),
-      repair_notes: body.repair_notes,
-      parts_used: body.parts_used,
+      repair_notes: body.repair_notes || null,
+      parts_used: partsUsed,
       repair_duration: body.repair_duration ? parseInt(body.repair_duration.toString()) : null,
-      customer_signature_url: body.customer_signature_url,
-      additional_services: body.additional_services
+      customer_signature_url: body.customer_signature_url || null,
+      additional_services: additionalServices
     };
-    
+
     const { data: completionData, error: completionError } = await supabase
       .from('repair_completions')
       .insert([repairData])
-      .select();
-    
+      .select()
+      .single();
+
     if (completionError) {
       logger.error('Error creating repair completion:', completionError);
       return res.status(500).json({ error: 'Failed to register repair completion' });
     }
-    
-    // Return the repair completion data along with booking and technician info
-    const { data: fullData, error: fullDataError } = await supabase
-      .from('repair_completions')
-      .select(`
-        *,
-        booking:booking_id (
-          booking_ref,
-          customer_name,
-          customer_email,
-          customer_phone,
-          device_type,
-          device_brand,
-          device_model,
-          service_type
-        ),
-        technician:technician_id (
-          full_name,
-          email,
-          phone
-        ),
-        warranty:booking_id (
-          warranty_code,
-          expiry_date,
-          status
-        )
-      `)
-      .eq('id', completionData[0].id)
-      .single();
-    
-    if (fullDataError) {
-      // If we can't get the full data, still return the success with basic data
-      logger.warn('Error getting full repair data:', fullDataError);
-      return res.status(201).json(completionData[0]);
+
+    // Update booking status to completed
+    const { error: updateError } = await supabase
+      .from('bookings')
+      .update({ status: 'completed' })
+      .eq('id', body.booking_id);
+
+    if (updateError) {
+      logger.error('Error updating booking status:', updateError);
+      // Don't fail — the completion record is created
     }
-    
-    return res.status(201).json(fullData);
+
+    // Fetch the auto-created warranty
+    const { data: warrantyData } = await supabase
+      .from('warranties')
+      .select('id, warranty_number, start_date, end_date, status')
+      .eq('booking_id', body.booking_id)
+      .single();
+
+    return res.status(201).json({
+      success: true,
+      repair_completion: completionData,
+      warranty: warrantyData || null,
+      booking_ref: bookingData.booking_ref,
+      technician_name: technicianData.full_name
+    });
   } catch (error) {
     console.error('Error in repair completion API:', error);
-    return res.status(500).json({ error: 'Internal server error', details: String(error) });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
 
-// Export the handler directly
-export default handler; 
+export default requireAdminAuth(handler);
