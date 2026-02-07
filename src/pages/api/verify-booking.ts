@@ -278,11 +278,11 @@ export default async function handler(
     
     verifyLogger.info('Booking verified successfully', { reference });
     
-    // Return success response
+    // Return success response with the transformed booking object (not the raw row)
     return res.status(200).json({
       success: true,
       message: 'Booking verified successfully!',
-      booking: updatedBooking
+      booking: { ...booking, status: 'confirmed' }
     });
     
   } catch (error) {

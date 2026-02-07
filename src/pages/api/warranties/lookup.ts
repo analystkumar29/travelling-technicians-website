@@ -76,7 +76,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             repair_completions (completed_at)
           )
         `)
-        .eq('warranty_number', warranty_number.trim().toUpperCase())
+        .eq('warranty_number', warranty_number.trim())
         .single();
 
       if (error || !data) {
