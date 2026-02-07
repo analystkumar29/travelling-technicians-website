@@ -347,7 +347,10 @@ export default async function handler(
       
       // Pricing information - save quoted price from form if provided
       quoted_price: bookingData.quoted_price ?? null,
-      
+
+      // Pricing tier selection (standard or premium)
+      pricing_tier: bookingData.pricingTier || bookingData.pricing_tier || 'standard',
+
       // Location notes if location lookup had issues
       notes: locationNotes || null,
     };
