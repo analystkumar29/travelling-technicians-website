@@ -211,13 +211,17 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
   }), [siteUrl, city.name, city.slug, model.display_name, service.display_name, fullUrl]);
 
   // ✅ SAFE: Conditional AggregateRating - Only include if testimonials are visible on page
-  const aggregateRating = (routeData.payload.testimonials && routeData.payload.testimonials.length > 0) ? {
-    "@type": "AggregateRating",
-    "ratingValue": 4.9,
-    "reviewCount": routeData.payload.testimonials.length,  // Use actual count from database
-    "bestRating": 5,
-    "worstRating": 1
-  } : null;
+  const aggregateRating = useMemo(() => {
+    const testimonials = routeData.payload.testimonials;
+    if (!testimonials || testimonials.length === 0) return null;
+    return {
+      "@type": "AggregateRating",
+      "ratingValue": 4.9,
+      "reviewCount": testimonials.length,
+      "bestRating": 5,
+      "worstRating": 1
+    };
+  }, [routeData.payload.testimonials]);
 
   // Generate enhanced Service JSON-LD with dynamic pricing and COMPLIANT AggregateRating
   const serviceLd = useMemo(() => ({
