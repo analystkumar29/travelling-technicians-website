@@ -214,6 +214,90 @@ ${detailRow('Booking Ref', data.bookingReference)}
   return emailWrapper(content);
 }
 
+export interface AdminBookingNotificationData {
+  bookingReference: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  deviceType: string;
+  deviceBrand?: string;
+  deviceModel?: string;
+  serviceName: string;
+  bookingDate: string;
+  bookingTime: string;
+  address?: string;
+  city: string;
+  province?: string;
+  postalCode?: string;
+  quotedPrice?: number | null;
+  pricingTier: string;
+  issueDescription?: string;
+  adminPanelUrl: string;
+}
+
+function formatAddress(address?: string, city?: string, province?: string, postalCode?: string): string {
+  const parts = [address, city, province, postalCode].filter(Boolean);
+  if (parts.length === 0) return 'Not provided';
+  // Format as "123 Main St, Vancouver, BC V6B 1A1"
+  const result = [];
+  if (address) result.push(address);
+  if (city) result.push(city);
+  const regionParts = [province, postalCode].filter(Boolean).join(' ');
+  if (regionParts) result.push(regionParts);
+  return result.join(', ');
+}
+
+export function buildAdminBookingNotificationEmail(data: AdminBookingNotificationData): string {
+  const device = formatDevice(data.deviceType, data.deviceBrand, data.deviceModel);
+  const fullAddress = formatAddress(data.address, data.city, data.province, data.postalCode);
+  const priceDisplay = data.quotedPrice != null ? `$${data.quotedPrice.toFixed(2)}` : 'TBD';
+  const tierDisplay = data.pricingTier === 'premium' ? 'Premium' : 'Standard';
+
+  const content = `
+${headerBanner()}
+<!-- Body -->
+<tr><td style="padding:32px 32px 0;">
+<p style="margin:0 0 16px;font-size:16px;color:${TEXT};">A new booking has been received.</p>
+<p style="margin:0 0 24px;font-size:14px;color:${TEXT_LIGHT};">Booking reference:</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+<tr><td style="background-color:${AMBER};color:${NAVY};font-size:18px;font-weight:700;padding:10px 24px;border-radius:6px;letter-spacing:1px;">
+${data.bookingReference}
+</td></tr>
+</table>
+</td></tr>
+<!-- Customer Details Card -->
+<tr><td style="padding:0 32px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${CARD_BG};border-radius:8px;margin-bottom:16px;">
+<tr><td style="padding:16px 16px 4px;font-size:15px;font-weight:700;color:${NAVY};" colspan="2">Customer Details</td></tr>
+${detailRow('Name', data.customerName)}
+${detailRow('Email', data.customerEmail)}
+${detailRow('Phone', data.customerPhone)}
+<tr><td colspan="2" style="padding:0 0 12px;"></td></tr>
+</table>
+</td></tr>
+<!-- Booking Details Card -->
+<tr><td style="padding:0 32px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${CARD_BG};border-radius:8px;margin-bottom:28px;">
+<tr><td style="padding:16px 16px 4px;font-size:15px;font-weight:700;color:${NAVY};" colspan="2">Booking Details</td></tr>
+${detailRow('Device', device)}
+${detailRow('Service', data.serviceName)}
+${detailRow('Date', data.bookingDate)}
+${detailRow('Time', data.bookingTime)}
+${detailRow('Address', fullAddress)}
+${detailRow('Quoted Price', priceDisplay)}
+${detailRow('Pricing Tier', tierDisplay)}
+${data.issueDescription ? detailRow('Issue', data.issueDescription) : ''}
+<tr><td colspan="2" style="padding:0 0 12px;"></td></tr>
+</table>
+</td></tr>
+<!-- CTA Button -->
+<tr><td style="padding:0 32px 32px;text-align:center;">
+<a href="${data.adminPanelUrl}" style="display:inline-block;background-color:${AMBER};color:${NAVY};font-size:15px;font-weight:700;text-decoration:none;padding:14px 36px;border-radius:6px;">View in Admin Panel</a>
+</td></tr>`;
+
+  return emailWrapper(content);
+}
+
 export function buildRescheduleConfirmationEmail(data: RescheduleEmailData): string {
   const device = formatDevice(data.deviceType, data.brand, data.model);
 
