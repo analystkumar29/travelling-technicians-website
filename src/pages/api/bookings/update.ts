@@ -171,8 +171,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    apiLogger.info('Successfully updated booking', { 
-      id: updatedBooking.id, 
+    // Send admin notification for reschedules (date/time changed)
+    if (appointmentDate || appointmentTime) {
+      try {
+        const adminBaseUrl = (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production')
+          ? 'https://www.travelling-technicians.ca'
+          : (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+
+        await fetch(`${adminBaseUrl}/api/send-admin-notification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bookingReference: `${updatedBooking.booking_ref} (Rescheduled)`,
+            customerName: updatedBooking.customer_name || 'Customer',
+            customerEmail: updatedBooking.customer_email || '',
+            customerPhone: updatedBooking.customer_phone || '',
+            deviceType: '',
+            serviceName: 'Rescheduled Booking',
+            bookingDate: appointmentDate || updatedBooking.booking_date || '',
+            bookingTime: appointmentTime || updatedBooking.booking_time || '',
+            city: updatedBooking.city || '',
+            province: updatedBooking.province || '',
+            pricingTier: updatedBooking.pricing_tier || 'standard',
+          }),
+        });
+        apiLogger.info('Admin reschedule notification sent', { reference: updatedBooking.booking_ref });
+      } catch (e) {
+        apiLogger.error('Admin reschedule notification failed (non-blocking)', { error: String(e) });
+      }
+    }
+
+    apiLogger.info('Successfully updated booking', {
+      id: updatedBooking.id,
       reference: updatedBooking.booking_ref,
       updatedFields: Object.keys(updateData)
     });
