@@ -2,13 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import sgMail from '@sendgrid/mail';
 import { logger } from '@/utils/logger';
 import crypto from 'crypto';
-import https from 'https';
-
-// Configure Node.js to handle certificate validation properly
-const httpsAgent = new https.Agent({
-  rejectUnauthorized: true,
-  minVersion: 'TLSv1.2'
-});
+import { buildRescheduleConfirmationEmail } from '@/lib/email-templates';
 
 // Initialize SendGrid with proper configuration
 if (process.env.SENDGRID_API_KEY) {
@@ -20,7 +14,6 @@ const emailLogger = logger.createModuleLogger('send-reschedule-confirmation');
 
 // Ensure required environment variables are set
 const VERIFICATION_SECRET = process.env.BOOKING_VERIFICATION_SECRET;
-const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || process.env.NEXT_PUBLIC_WEBSITE_URL;
 
 if (!VERIFICATION_SECRET) {
   throw new Error('BOOKING_VERIFICATION_SECRET environment variable is required');
@@ -34,7 +27,7 @@ function generateVerificationToken(email: string, reference: string): string {
   // Use date-based token to match verification logic
   const today = new Date().toISOString().split('T')[0];
   const data = `${email.toLowerCase()}:${reference}:${today}`;
-  
+
   return crypto
     .createHmac('sha256', SECRET)
     .update(data)
@@ -89,7 +82,7 @@ export default async function handler(
       emailLogger.warn('Missing required data for reschedule confirmation email', {
         missing: !to ? 'email' : !name ? 'name' : !bookingReference ? 'reference' : !bookingDate ? 'date' : 'time'
       });
-      
+
       return res.status(400).json({
         success: false,
         message: 'Missing required booking information'
@@ -98,14 +91,14 @@ export default async function handler(
 
     // Generate verification token for secure links
     const token = generateVerificationToken(to, bookingReference);
-    
+
     // 🔧 ROBUST URL GENERATION - Fix for production domain issue
     function getBaseUrl(): string {
       // In production, always use the custom domain
       if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production') {
         return 'https://www.travelling-technicians.ca';
       }
-      
+
       // Try multiple environment variables in order of preference
       const possibleUrls = [
         process.env.NEXT_PUBLIC_FRONTEND_URL,
@@ -116,12 +109,12 @@ export default async function handler(
         // Fallback for local development
         'http://localhost:3000'
       ];
-      
+
       // Find the first valid URL
       const validUrl = possibleUrls.find(url => url && !url.includes('url6811'));
       return validUrl || 'http://localhost:3000';
     }
-    
+
     const baseUrl = getBaseUrl();
     emailLogger.info('🔗 URL Generation Debug', {
       baseUrl,
@@ -132,21 +125,21 @@ export default async function handler(
       nextPublicFrontendUrl: process.env.NEXT_PUBLIC_FRONTEND_URL,
       nextPublicSiteUrl: process.env.NEXT_PUBLIC_SITE_URL
     });
-    
+
     const verifyUrl = `${baseUrl}/verify-booking?token=${token}&reference=${bookingReference}`;
     const rescheduleUrl = `${baseUrl}/reschedule-booking?token=${token}&reference=${bookingReference}`;
 
-    emailLogger.info('Preparing reschedule confirmation email', { 
+    emailLogger.info('Preparing reschedule confirmation email', {
       reference: bookingReference,
       to: to.substring(0, 3) + '***', // Log partial email for privacy
       verifyUrl,
       rescheduleUrl
     });
-    
+
     // Check if SendGrid is configured
     if (!process.env.SENDGRID_API_KEY) {
       emailLogger.warn('SendGrid API key not configured - simulating email send');
-      
+
       // Log what would be sent
       emailLogger.debug('Email simulation data', {
         to: to.substring(0, 3) + '***', // Log partial email for privacy
@@ -158,12 +151,12 @@ export default async function handler(
         verifyUrl,
         rescheduleUrl
       });
-      
+
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       // Return success for development
-      return res.status(200).json({ 
+      return res.status(200).json({
         success: true,
         message: 'Reschedule confirmation email sending simulated (SendGrid API key not configured)',
         sentTo: to,
@@ -171,6 +164,23 @@ export default async function handler(
         rescheduleUrl
       });
     }
+
+    // Build inline HTML email
+    const htmlContent = buildRescheduleConfirmationEmail({
+      name,
+      bookingReference,
+      deviceType,
+      brand,
+      model,
+      service,
+      oldDate,
+      oldTime,
+      bookingDate,
+      bookingTime,
+      address,
+      verificationUrl: verifyUrl,
+      rescheduleUrl,
+    });
 
     // Create email message with SendGrid
     const msg: sgMail.MailDataRequired = {
@@ -180,32 +190,8 @@ export default async function handler(
         name: process.env.SENDGRID_FROM_NAME || 'The Travelling Technicians',
       },
       subject: 'Your Booking Has Been Rescheduled',
-      content: [
-        {
-          type: 'text/html',
-          value: '<p>Your booking has been rescheduled. If you cannot view this email properly, please check your booking reference: ${bookingReference}</p>'
-        }
-      ],
-      templateId: process.env.SENDGRID_RESCHEDULE_TEMPLATE_ID || 'd-c9dbac568573432bb15f79c92c4fd4b5', // Use the same template ID for now
-      dynamicTemplateData: {
-        subject: 'Booking Rescheduled - The Travelling Technicians',
-        isRescheduled: true,
-        name,
-        bookingReference,
-        deviceType: deviceType === 'mobile' ? 'Mobile Phone' : deviceType === 'laptop' ? 'Laptop' : 'Tablet',
-        brand,
-        model,
-        service,
-        oldDate,
-        oldTime,
-        bookingDate,
-        bookingTime,
-        address,
-        notes,
-        verifyUrl,
-        rescheduleUrl,
-        year: new Date().getFullYear(),
-      },
+      text: `Hi ${name}, your booking (${bookingReference}) has been rescheduled from ${oldDate} at ${oldTime} to ${bookingDate} at ${bookingTime}. View your booking: ${verifyUrl}`,
+      html: htmlContent,
       trackingSettings: {
         clickTracking: { enable: false, enableText: false },
         openTracking: { enable: false },
@@ -215,14 +201,14 @@ export default async function handler(
     // Send email via SendGrid
     try {
       await sgMail.send(msg);
-      
+
       emailLogger.info('Reschedule confirmation email sent successfully', {
         reference: bookingReference,
         to: to.substring(0, 3) + '***' // Log partial email for privacy
       });
-      
+
       // Return success response
-      return res.status(200).json({ 
+      return res.status(200).json({
         success: true,
         message: 'Reschedule confirmation email sent successfully',
         sentTo: to,
@@ -239,7 +225,7 @@ export default async function handler(
         errorType: sendGridError.name,
         stack: sendGridError.stack
       });
-      
+
       if (sendGridError.response) {
         emailLogger.error('SendGrid Response Error Body:', {
           status: sendGridError.response.status,
@@ -247,28 +233,28 @@ export default async function handler(
           headers: sendGridError.response.headers
         });
       }
-      
+
       // Return appropriate error message without exposing SendGrid details
-      const isNetworkError = sendGridError.code === 'CERT_HAS_EXPIRED' || 
+      const isNetworkError = sendGridError.code === 'CERT_HAS_EXPIRED' ||
                               sendGridError.message?.includes('certificate') ||
                               sendGridError.message?.includes('ECONNREFUSED') ||
                               sendGridError.message?.includes('ERR_');
-      
-      return res.status(500).json({ 
+
+      return res.status(500).json({
         success: false,
-        message: isNetworkError 
+        message: isNetworkError
           ? 'Email service temporarily unavailable. Please try again in a few moments.'
           : 'Failed to send reschedule confirmation. Please contact support.',
         reference: bookingReference
       });
     }
-    
+
   } catch (error: any) {
     emailLogger.error('Error sending reschedule confirmation email:', {
       error: error.message || 'Unknown error'
     });
-    
-    return res.status(500).json({ 
+
+    return res.status(500).json({
       success: false,
       message: 'Failed to send reschedule confirmation email',
       error: error.message
