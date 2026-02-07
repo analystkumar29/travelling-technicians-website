@@ -260,9 +260,7 @@ class MyDocument extends Document {
               `,
             }}
           />
-          {/* Preload critical resources */}
-          <link rel="preload" href={`/images/logo/logo-orange-optimized.webp?v=${assetVersion}`} as="image" type="image/webp" />
-          {/* Removed favicon preload as it might not be used as an image on the page */}
+          {/* Logo preload removed — Header uses Next.js Image with priority={true} which auto-preloads */}
           
           {/* Force search engines to update favicon */}
           <meta property="og:image" content={`${siteUrl}/favicons/android-chrome-512x512.png?v=${assetVersion}`} />
