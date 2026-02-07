@@ -275,6 +275,10 @@ export default async function handler(
         rescheduleUrl,
         year: new Date().getFullYear(),
       },
+      trackingSettings: {
+        clickTracking: { enable: false, enableText: false },
+        openTracking: { enable: false },
+      },
     };
 
     // Send email via SendGrid
