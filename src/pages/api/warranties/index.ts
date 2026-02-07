@@ -34,7 +34,8 @@ async function handleGetWarranties(req: NextApiRequest, res: NextApiResponse) {
     } = req.query;
     
     // Start building the query with joins for related data
-    let query = supabase
+    const serviceSupabase = getServiceSupabase();
+    let query = serviceSupabase
       .from('warranties')
       .select(`
         *,
@@ -43,10 +44,10 @@ async function handleGetWarranties(req: NextApiRequest, res: NextApiResponse) {
           customer_name,
           customer_email,
           customer_phone,
-          device_type,
-          device_brand,
-          device_model,
-          service_type
+          model_id,
+          service_id,
+          device_models (name),
+          services (name, display_name)
         )
       `);
     
@@ -62,7 +63,7 @@ async function handleGetWarranties(req: NextApiRequest, res: NextApiResponse) {
     // If customer email is provided, we need a more complex query
     if (customer_email) {
       // First get the booking IDs for this customer
-      const { data: bookings, error: bookingError } = await supabase
+      const { data: bookings, error: bookingError } = await serviceSupabase
         .from('bookings')
         .select('id')
         .eq('customer_email', customer_email);
