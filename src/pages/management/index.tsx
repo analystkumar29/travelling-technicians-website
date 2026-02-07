@@ -1,27 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
-import Head from 'next/head';
-import Layout from '@/components/layout/Layout';
-import { authFetch, handleAuthError } from '@/utils/auth';
+import { authFetch } from '@/utils/auth';
 import Link from 'next/link';
-import { 
-  FaCalendarAlt, 
-  FaTools, 
-  FaShieldAlt, 
-  FaDollarSign,
-  FaClock,
-  FaExclamationTriangle,
-  FaCheckCircle,
-  FaEye,
-  FaEdit,
-  FaPhone,
-  FaEnvelope,
-  FaMapMarkerAlt,
-  FaSignOutAlt,
-  FaSpinner,
-  FaChartBar,
-  FaUsers
-} from 'react-icons/fa';
+import {
+  Calendar,
+  Wrench,
+  Shield,
+  DollarSign,
+  Clock,
+  CheckCircle,
+  Phone,
+  Mail,
+  MapPin,
+  Loader2,
+  Users
+} from 'lucide-react';
+import { toast } from 'sonner';
+import AdminLayout from '@/components/admin/AdminLayout';
+import AdminPageHeader from '@/components/admin/AdminPageHeader';
+import AdminStatsCard from '@/components/admin/AdminStatsCard';
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge';
+import { useRealtimeBookings } from '@/hooks/useRealtimeBookings';
+import { addNotification } from '@/components/admin/AdminNotificationBell';
 
 interface ManagementStats {
   totalBookings: number;
@@ -62,59 +62,14 @@ interface UpcomingAppointment {
   model_id: string;
   service_id: string;
   scheduled_at: string;
-  // Optional - may not exist in DB  
+  // Optional - may not exist in DB
   status?: string;
   device_brand?: string;
   device_model?: string;
   service_type?: string;
 }
 
-// Add authentication check component
-const withAuth = (WrappedComponent: React.ComponentType) => {
-  return function AuthenticatedComponent(props: any) {
-    const router = useRouter();
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-      const checkAuth = () => {
-        // Check for auth token in localStorage
-        const authToken = localStorage.getItem('authToken');
-
-        if (!authToken) {
-          // No token, redirect to login
-          router.push('/login?redirectTo=' + encodeURIComponent(router.asPath));
-          return;
-        }
-
-        // Token exists, validate it
-        setIsAuthenticated(true);
-        setIsLoading(false);
-      };
-
-      checkAuth();
-    }, [router]);
-
-    if (isLoading) {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Verifying authentication...</p>
-          </div>
-        </div>
-      );
-    }
-
-    if (!isAuthenticated) {
-      return null; // Will redirect
-    }
-
-    return <WrappedComponent {...props} />;
-  };
-};
-
-export default withAuth(function AdminManagement() {
+export default function AdminDashboard() {
   const router = useRouter();
   const [stats, setStats] = useState<ManagementStats>({
     totalBookings: 0,
@@ -130,7 +85,6 @@ export default withAuth(function AdminManagement() {
   const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingAppointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const fetchManagementData = useCallback(async () => {
     try {
@@ -149,53 +103,26 @@ export default withAuth(function AdminManagement() {
   }, []);
 
   useEffect(() => {
-    // Only fetch data if authenticated (after withAuth HOC check completes)
+    // Only fetch data if authenticated (after AdminLayout HOC check completes)
     const checkAndFetch = async () => {
       const token = localStorage.getItem('authToken');
       if (token) {
         fetchManagementData();
       }
     };
-    
+
     checkAndFetch();
   }, [fetchManagementData]);
 
-  // Logout function
-  const handleLogout = async () => {
-    if (isLoggingOut) return;
-    
-    setIsLoggingOut(true);
-    
-    try {
-      const response = await authFetch('/api/management/logout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Clear any client-side auth state
-        localStorage.removeItem('authToken');
-        document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-        
-        // Redirect to login page with logout message
-        router.push('/login?message=logged_out');
-      } else {
-        console.error('Logout failed:', data.message);
-        // Still redirect even if API call fails
-        router.push('/login');
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Still redirect even if there's an error
-      router.push('/login');
-    } finally {
-      setIsLoggingOut(false);
-    }
-  };
+  // Real-time booking updates
+  useRealtimeBookings({
+    onNewBooking: (booking) => {
+      const ref = (booking.booking_ref as string) || 'New booking';
+      const name = (booking.customer_name as string) || 'Unknown';
+      addNotification('new_booking', `New booking ${ref} from ${name}`);
+      fetchManagementData();
+    },
+  });
 
   const fetchStats = async () => {
     const response = await authFetch('/api/bookings');
@@ -219,14 +146,14 @@ export default withAuth(function AdminManagement() {
     const pendingBookings = bookings.filter((b: RecentBooking) => b.status === 'pending').length || 0;
     const confirmedBookings = bookings.filter((b: RecentBooking) => b.status === 'confirmed').length || 0;
     const completedBookings = bookings.filter((b: RecentBooking) => b.status === 'completed').length || 0;
-    const todayBookings = bookings.filter((b: RecentBooking) => 
+    const todayBookings = bookings.filter((b: RecentBooking) =>
       b.scheduled_at?.split('T')[0] === today
     ).length || 0;
-    
+
     const totalWarranties = warranties.length || 0;
     const activeWarranties = warranties.filter((w: any) => w.status === 'active').length || 0;
 
-    const thisWeekBookings = bookings.filter((b: RecentBooking) => 
+    const thisWeekBookings = bookings.filter((b: RecentBooking) =>
       b.created_at >= oneWeekAgo && (b.status === 'completed' || !b.status)
     ).length || 0;
     const thisWeekRevenue = thisWeekBookings * 120;
@@ -250,12 +177,12 @@ export default withAuth(function AdminManagement() {
     }
     const data = await response.json();
     const bookings: RecentBooking[] = data.bookings || [];
-    
+
     // Get the 5 most recent bookings
     const recentBookings = bookings
       .sort((a: RecentBooking, b: RecentBooking) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 5);
-    
+
     setRecentBookings(recentBookings);
   };
 
@@ -266,9 +193,9 @@ export default withAuth(function AdminManagement() {
     }
     const data = await response.json();
     const bookings: UpcomingAppointment[] = data.bookings || [];
-    
+
     const today = new Date().toISOString().split('T')[0];
-    
+
     // Filter for upcoming appointments
     const upcomingAppointments = bookings
       .filter((booking: UpcomingAppointment) => {
@@ -282,14 +209,14 @@ export default withAuth(function AdminManagement() {
         return dateA.getTime() - dateB.getTime();
       })
       .slice(0, 5);
-    
+
     setUpcomingAppointments(upcomingAppointments);
   };
 
   const updateBookingStatus = async (id: string, newStatus: string) => {
     try {
       console.log('Updating booking status:', { id, newStatus });
-      
+
       const response = await authFetch('/api/bookings/update', {
         method: 'POST',
         headers: {
@@ -309,20 +236,11 @@ export default withAuth(function AdminManagement() {
       const result = await response.json();
       console.log('Update successful:', result);
 
+      toast.success('Booking status updated successfully');
       await fetchManagementData();
     } catch (err) {
       console.error('Update booking status error:', err);
-      alert(`Failed to update booking status: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'confirmed': return 'bg-blue-100 text-blue-800';
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      toast.error(`Failed to update booking status: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
@@ -356,396 +274,315 @@ export default withAuth(function AdminManagement() {
 
   if (loading) {
     return (
-      <Layout>
-        <div className="min-h-screen bg-gray-50 py-8">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading management...</p>
-            </div>
+      <AdminLayout title="Dashboard">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary-600 mx-auto mb-4" />
+            <p className="text-gray-600">Loading management...</p>
           </div>
         </div>
-      </Layout>
+      </AdminLayout>
     );
   }
 
   if (error) {
     return (
-      <Layout>
-        <div className="min-h-screen bg-gray-50 py-8">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <p className="text-red-600">{error}</p>
-              <button 
-                onClick={fetchManagementData}
-                className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
-              >
-                Retry
-              </button>
-            </div>
+      <AdminLayout title="Dashboard">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={fetchManagementData}
+              className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+            >
+              Retry
+            </button>
           </div>
         </div>
-      </Layout>
+      </AdminLayout>
     );
   }
 
   return (
-    <Layout>
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header with Logout */}
-          <div className="mb-8 flex justify-between items-start">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Admin Management</h1>
-              <p className="mt-2 text-gray-600">Welcome back! Here's what's happening with your business today.</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link 
-                href="/"
-                className="text-gray-500 hover:text-gray-700 text-sm"
-              >
-                View Website
+    <AdminLayout title="Dashboard">
+      <div className="space-y-8">
+        <AdminPageHeader
+          title="Admin Dashboard"
+          description="Welcome back! Here's what's happening with your business today."
+        />
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <AdminStatsCard
+            label="Total Bookings"
+            value={stats.totalBookings.toString()}
+            icon={Calendar}
+            color="blue"
+            trend={`${stats.pendingBookings} pending • ${stats.confirmedBookings} confirmed`}
+          />
+
+          <AdminStatsCard
+            label="Today's Appointments"
+            value={stats.todayBookings.toString()}
+            icon={Clock}
+            color="amber"
+            trend={
+              <Link href="/management/bookings" className="text-amber-600 hover:text-amber-900 font-medium">
+                View all appointments →
               </Link>
-              <button
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isLoggingOut ? (
-                  <>
-                    <FaSpinner className="h-4 w-4 mr-2 animate-spin" />
-                    Logging out...
-                  </>
-                ) : (
-                  <>
-                    <FaSignOutAlt className="h-4 w-4 mr-2" />
-                    Logout
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <FaCalendarAlt className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Total Bookings</dt>
-                      <dd className="text-lg font-medium text-gray-900">{stats.totalBookings}</dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-5 py-3">
-                <div className="text-sm">
-                  <span className="text-yellow-600 font-medium">{stats.pendingBookings} pending</span>
-                  <span className="text-gray-500"> • </span>
-                  <span className="text-blue-600 font-medium">{stats.confirmedBookings} confirmed</span>
-                </div>
-              </div>
-            </div>
+            }
+          />
 
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <FaClock className="h-6 w-6 text-orange-600" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Today's Appointments</dt>
-                      <dd className="text-lg font-medium text-gray-900">{stats.todayBookings}</dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-5 py-3">
-                <div className="text-sm">
-                  <Link href="/management/bookings" className="text-orange-600 hover:text-orange-900 font-medium">
-                    View all appointments →
-                  </Link>
-                </div>
-              </div>
-            </div>
+          <AdminStatsCard
+            label="Active Warranties"
+            value={stats.activeWarranties.toString()}
+            icon={Shield}
+            color="green"
+            trend={
+              <Link href="/management/warranties" className="text-green-600 hover:text-green-900 font-medium">
+                Manage warranties →
+              </Link>
+            }
+          />
 
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <FaShieldAlt className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Active Warranties</dt>
-                      <dd className="text-lg font-medium text-gray-900">{stats.activeWarranties}</dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-5 py-3">
-                <div className="text-sm">
-                  <Link href="/management/warranties" className="text-green-600 hover:text-green-900 font-medium">
-                    Manage warranties →
-                  </Link>
-                </div>
-              </div>
-            </div>
+          <AdminStatsCard
+            label="This Week Revenue"
+            value={`$${stats.thisWeekRevenue}`}
+            icon={DollarSign}
+            color="purple"
+            trend={`${stats.completedBookings} completed repairs`}
+          />
+        </div>
 
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <FaDollarSign className="h-6 w-6 text-purple-600" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">This Week Revenue</dt>
-                      <dd className="text-lg font-medium text-gray-900">${stats.thisWeekRevenue}</dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-5 py-3">
-                <div className="text-sm">
-                  <span className="text-gray-500">{stats.completedBookings} completed repairs</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Upcoming Appointments */}
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                  <FaClock className="mr-2" />
-                  Upcoming Appointments
-                </h3>
-              </div>
-              <div className="divide-y divide-gray-200">
-                {upcomingAppointments.length === 0 ? (
-                  <div className="px-6 py-8 text-center text-gray-500">
-                    No upcoming appointments
-                  </div>
-                ) : (
-                  upcomingAppointments.map((appointment) => (
-                    <div key={appointment.id} className={`px-6 py-4 ${getUrgencyColor(appointment.scheduled_at)}`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-sm font-medium text-gray-900">
-                              {appointment.booking_ref}
-                            </h4>
-                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(appointment.status || 'pending')}`}>
-                              {appointment.status || 'pending'}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-600 mb-1">
-                            <strong>{appointment.customer_name}</strong>
-                            {appointment.device_brand && ` - ${appointment.device_brand}`}
-                            {appointment.device_model && ` ${appointment.device_model}`}
-                          </p>
-                          <p className="text-sm text-gray-500 mb-2">
-                            {appointment.service_type || `Service ID: ${appointment.service_id?.substring(0, 8)}...`}
-                          </p>
-                          <div className="text-xs text-gray-500 space-y-1">
-                            <div className="flex items-center">
-                              <FaCalendarAlt className="mr-1" />
-                              {formatDate(appointment.scheduled_at)} at {formatTime(appointment.scheduled_at)}
-                            </div>
-                            <div className="flex items-center">
-                              <FaMapMarkerAlt className="mr-1" />
-                              {appointment.customer_address}
-                            </div>
-                            <div className="flex items-center">
-                              <FaPhone className="mr-1" />
-                              {appointment.customer_phone}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-3 flex space-x-2">
-                        {(!appointment.status || appointment.status === 'pending') && (
-                          <button
-                            onClick={() => updateBookingStatus(appointment.id, 'confirmed')}
-                            className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
-                          >
-                            Confirm
-                          </button>
-                        )}
-                        {appointment.status === 'confirmed' && (
-                          <button
-                            onClick={() => updateBookingStatus(appointment.id, 'completed')}
-                            className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-                          >
-                            Complete Repair
-                          </button>
-                        )}
-                        <Link
-                          href={`/management/bookings`}
-                          className="px-3 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 inline-block"
-                        >
-                          View Details
-                        </Link>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Recent Bookings */}
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                  <FaTools className="mr-2" />
-                  Recent Bookings
-                </h3>
-              </div>
-              <div className="divide-y divide-gray-200">
-                {recentBookings.length === 0 ? (
-                  <div className="px-6 py-8 text-center text-gray-500">
-                    No recent bookings
-                  </div>
-                ) : (
-                  recentBookings.map((booking) => (
-                    <div key={booking.id} className="px-6 py-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-sm font-medium text-gray-900">
-                          {booking.booking_ref}
-                        </h4>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status || 'pending')}`}>
-                          {booking.status || 'pending'}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-1">
-                        <strong>{booking.customer_name}</strong>
-                        {booking.device_brand && ` - ${booking.device_brand}`}
-                        {booking.device_model && ` ${booking.device_model}`}
-                      </p>
-                      <p className="text-sm text-gray-500 mb-2">
-                        {booking.service_type || `Service ID: ${booking.service_id?.substring(0, 8)}...`}
-                      </p>
-                      <div className="text-xs text-gray-500 flex items-center justify-between">
-                        <span>Created: {new Date(booking.created_at).toLocaleDateString()}</span>
-                        <div className="flex items-center space-x-2">
-                          <a 
-                            href={`tel:${booking.customer_phone}`}
-                            className="text-blue-600 hover:text-blue-800"
-                            title="Call customer"
-                          >
-                            <FaPhone />
-                          </a>
-                          <a 
-                            href={`mailto:${booking.customer_email}`}
-                            className="text-green-600 hover:text-green-800"
-                            title="Email customer"
-                          >
-                            <FaEnvelope />
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div className="px-6 py-3 bg-gray-50">
-                <Link 
-                  href="/management/bookings"
-                  className="text-sm text-primary-600 hover:text-primary-900 font-medium"
-                >
-                  View all bookings →
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="mt-8 bg-white shadow rounded-lg">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Upcoming Appointments */}
+          <div className="bg-white shadow rounded-lg">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
+              <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                <Clock className="mr-2 h-5 w-5" />
+                Upcoming Appointments
+              </h3>
             </div>
-            <div className="px-6 py-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
-                <Link
-                  href="/management/bookings"
-                  className="flex items-center justify-center px-4 py-6 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
-                >
-                  <div className="text-center">
-                    <FaCalendarAlt className="mx-auto h-8 w-8 text-blue-600 mb-2" />
-                    <p className="text-sm font-medium text-blue-900">Manage Bookings</p>
+            <div className="divide-y divide-gray-200">
+              {upcomingAppointments.length === 0 ? (
+                <div className="px-6 py-8 text-center text-gray-500">
+                  No upcoming appointments
+                </div>
+              ) : (
+                upcomingAppointments.map((appointment) => (
+                  <div key={appointment.id} className={`px-6 py-4 ${getUrgencyColor(appointment.scheduled_at)}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-medium text-gray-900">
+                            {appointment.booking_ref}
+                          </h4>
+                          <AdminStatusBadge
+                            status={appointment.status as any || 'pending'}
+                            size="sm"
+                          />
+                        </div>
+                        <p className="text-sm text-gray-600 mb-1">
+                          <strong>{appointment.customer_name}</strong>
+                          {appointment.device_brand && ` - ${appointment.device_brand}`}
+                          {appointment.device_model && ` ${appointment.device_model}`}
+                        </p>
+                        <p className="text-sm text-gray-500 mb-2">
+                          {appointment.service_type || `Service ID: ${appointment.service_id?.substring(0, 8)}...`}
+                        </p>
+                        <div className="text-xs text-gray-500 space-y-1">
+                          <div className="flex items-center">
+                            <Calendar className="mr-1 h-3 w-3" />
+                            {formatDate(appointment.scheduled_at)} at {formatTime(appointment.scheduled_at)}
+                          </div>
+                          <div className="flex items-center">
+                            <MapPin className="mr-1 h-3 w-3" />
+                            {appointment.customer_address}
+                          </div>
+                          <div className="flex items-center">
+                            <Phone className="mr-1 h-3 w-3" />
+                            {appointment.customer_phone}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex space-x-2">
+                      {(!appointment.status || appointment.status === 'pending') && (
+                        <button
+                          onClick={() => updateBookingStatus(appointment.id, 'confirmed')}
+                          className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                        >
+                          Confirm
+                        </button>
+                      )}
+                      {appointment.status === 'confirmed' && (
+                        <button
+                          onClick={() => updateBookingStatus(appointment.id, 'completed')}
+                          className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                        >
+                          Complete Repair
+                        </button>
+                      )}
+                      <Link
+                        href={`/management/bookings`}
+                        className="px-3 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 inline-block"
+                      >
+                        View Details
+                      </Link>
+                    </div>
                   </div>
-                </Link>
-                
-                <Link
-                  href="/management/warranties"
-                  className="flex items-center justify-center px-4 py-6 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
-                >
-                  <div className="text-center">
-                    <FaShieldAlt className="mx-auto h-8 w-8 text-green-600 mb-2" />
-                    <p className="text-sm font-medium text-green-900">View Warranties</p>
-                  </div>
-                </Link>
+                ))
+              )}
+            </div>
+          </div>
 
-                <Link
-                  href="/management/pricing"
-                  className="flex items-center justify-center px-4 py-6 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors"
-                >
-                  <div className="text-center">
-                    <FaDollarSign className="mx-auto h-8 w-8 text-orange-600 mb-2" />
-                    <p className="text-sm font-medium text-orange-900">Pricing Management</p>
+          {/* Recent Bookings */}
+          <div className="bg-white shadow rounded-lg">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                <Wrench className="mr-2 h-5 w-5" />
+                Recent Bookings
+              </h3>
+            </div>
+            <div className="divide-y divide-gray-200">
+              {recentBookings.length === 0 ? (
+                <div className="px-6 py-8 text-center text-gray-500">
+                  No recent bookings
+                </div>
+              ) : (
+                recentBookings.map((booking) => (
+                  <div key={booking.id} className="px-6 py-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium text-gray-900">
+                        {booking.booking_ref}
+                      </h4>
+                      <AdminStatusBadge
+                        status={booking.status as any || 'pending'}
+                        size="sm"
+                      />
+                    </div>
+                    <p className="text-sm text-gray-600 mb-1">
+                      <strong>{booking.customer_name}</strong>
+                      {booking.device_brand && ` - ${booking.device_brand}`}
+                      {booking.device_model && ` ${booking.device_model}`}
+                    </p>
+                    <p className="text-sm text-gray-500 mb-2">
+                      {booking.service_type || `Service ID: ${booking.service_id?.substring(0, 8)}...`}
+                    </p>
+                    <div className="text-xs text-gray-500 flex items-center justify-between">
+                      <span>Created: {new Date(booking.created_at).toLocaleDateString()}</span>
+                      <div className="flex items-center space-x-2">
+                        <a
+                          href={`tel:${booking.customer_phone}`}
+                          className="text-blue-600 hover:text-blue-800"
+                          title="Call customer"
+                        >
+                          <Phone className="h-4 w-4" />
+                        </a>
+                        <a
+                          href={`mailto:${booking.customer_email}`}
+                          className="text-green-600 hover:text-green-800"
+                          title="Email customer"
+                        >
+                          <Mail className="h-4 w-4" />
+                        </a>
+                      </div>
+                    </div>
                   </div>
-                </Link>
+                ))
+              )}
+            </div>
+            <div className="px-6 py-3 bg-gray-50">
+              <Link
+                href="/management/bookings"
+                className="text-sm text-primary-600 hover:text-primary-900 font-medium"
+              >
+                View all bookings →
+              </Link>
+            </div>
+          </div>
+        </div>
 
-                <Link
-                  href="/management/customer-feedback"
-                  className="flex items-center justify-center px-4 py-6 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100 transition-colors"
-                >
-                  <div className="text-center">
-                    <FaUsers className="mx-auto h-8 w-8 text-teal-600 mb-2" />
-                    <p className="text-sm font-medium text-teal-900">Customer Feedback</p>
-                  </div>
-                </Link>
+        {/* Quick Actions */}
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
+          </div>
+          <div className="px-6 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
+              <Link
+                href="/management/bookings"
+                className="flex items-center justify-center px-4 py-6 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+              >
+                <div className="text-center">
+                  <Calendar className="mx-auto h-8 w-8 text-blue-600 mb-2" />
+                  <p className="text-sm font-medium text-blue-900">Manage Bookings</p>
+                </div>
+              </Link>
 
-                <Link
-                  href="/management/devices"
-                  className="flex items-center justify-center px-4 py-6 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors"
-                >
-                  <div className="text-center">
-                    <FaPhone className="mx-auto h-8 w-8 text-indigo-600 mb-2" />
-                    <p className="text-sm font-medium text-indigo-900">Device Management</p>
-                  </div>
-                </Link>
+              <Link
+                href="/management/warranties"
+                className="flex items-center justify-center px-4 py-6 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+              >
+                <div className="text-center">
+                  <Shield className="mx-auto h-8 w-8 text-green-600 mb-2" />
+                  <p className="text-sm font-medium text-green-900">View Warranties</p>
+                </div>
+              </Link>
 
-                <Link
-                  href="/management/technicians"
-                  className="flex items-center justify-center px-4 py-6 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100 transition-colors"
-                >
-                  <div className="text-center">
-                    <FaTools className="mx-auto h-8 w-8 text-teal-600 mb-2" />
-                    <p className="text-sm font-medium text-teal-900">Technicians</p>
-                  </div>
-                </Link>
+              <Link
+                href="/management/pricing"
+                className="flex items-center justify-center px-4 py-6 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors"
+              >
+                <div className="text-center">
+                  <DollarSign className="mx-auto h-8 w-8 text-orange-600 mb-2" />
+                  <p className="text-sm font-medium text-orange-900">Pricing Management</p>
+                </div>
+              </Link>
 
-                <Link
-                  href="/book-online"
-                  className="flex items-center justify-center px-4 py-6 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
-                >
-                  <div className="text-center">
-                    <FaCheckCircle className="mx-auto h-8 w-8 text-purple-600 mb-2" />
-                    <p className="text-sm font-medium text-purple-900">New Booking</p>
-                  </div>
-                </Link>
-              </div>
+              <Link
+                href="/management/customer-feedback"
+                className="flex items-center justify-center px-4 py-6 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100 transition-colors"
+              >
+                <div className="text-center">
+                  <Users className="mx-auto h-8 w-8 text-teal-600 mb-2" />
+                  <p className="text-sm font-medium text-teal-900">Customer Feedback</p>
+                </div>
+              </Link>
+
+              <Link
+                href="/management/devices"
+                className="flex items-center justify-center px-4 py-6 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors"
+              >
+                <div className="text-center">
+                  <Phone className="mx-auto h-8 w-8 text-indigo-600 mb-2" />
+                  <p className="text-sm font-medium text-indigo-900">Device Management</p>
+                </div>
+              </Link>
+
+              <Link
+                href="/management/technicians"
+                className="flex items-center justify-center px-4 py-6 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100 transition-colors"
+              >
+                <div className="text-center">
+                  <Wrench className="mx-auto h-8 w-8 text-teal-600 mb-2" />
+                  <p className="text-sm font-medium text-teal-900">Technicians</p>
+                </div>
+              </Link>
+
+              <Link
+                href="/book-online"
+                className="flex items-center justify-center px-4 py-6 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
+              >
+                <div className="text-center">
+                  <CheckCircle className="mx-auto h-8 w-8 text-purple-600 mb-2" />
+                  <p className="text-sm font-medium text-purple-900">New Booking</p>
+                </div>
+              </Link>
             </div>
           </div>
         </div>
       </div>
-    </Layout>
+    </AdminLayout>
   );
-}); 
+}
