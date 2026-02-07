@@ -391,6 +391,54 @@ export default async function handler(
       id: booking.id
     });
     
+    // Record T&C acceptance (non-blocking — log errors but don't fail the booking)
+    try {
+      const termsVersion = bookingData.termsVersion || '2026-02-06-v1';
+
+      // Look up the current legal document for terms-conditions
+      const { data: legalDoc } = await supabase
+        .from('legal_documents')
+        .select('id, version')
+        .eq('document_type', 'terms-conditions')
+        .eq('is_current', true)
+        .single();
+
+      if (legalDoc) {
+        const ipAddress = (
+          req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim()
+          || req.socket.remoteAddress
+          || null
+        );
+        const userAgent = req.headers['user-agent'] || null;
+
+        await supabase
+          .from('terms_acceptances')
+          .insert({
+            booking_id: booking.id,
+            document_id: legalDoc.id,
+            document_version: legalDoc.version || termsVersion,
+            customer_email: normalizedBookingData.customerEmail,
+            customer_name: normalizedBookingData.customerName,
+            ip_address: ipAddress,
+            user_agent: userAgent,
+          });
+
+        apiLogger.info('T&C acceptance recorded', {
+          reference: referenceNumber,
+          document_version: legalDoc.version || termsVersion,
+        });
+      } else {
+        apiLogger.warn('No current legal document found for terms-conditions', {
+          reference: referenceNumber,
+        });
+      }
+    } catch (termsError) {
+      apiLogger.error('Failed to record T&C acceptance (non-blocking)', {
+        reference: referenceNumber,
+        error: termsError instanceof Error ? termsError.message : 'Unknown error',
+      });
+    }
+
     // 🔍 DETAILED EMAIL CONFIRMATION PROCESS
     const emailData = {
       to: normalizedBookingData.customerEmail,

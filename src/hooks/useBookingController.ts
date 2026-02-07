@@ -594,6 +594,8 @@ export function useBookingController({
         city: data.city || 'Vancouver',
         province: data.province || 'BC',
         issueDescription: data.issueDescription || '',
+        agreedToTerms: true,
+        termsVersion: '2026-02-06-v1',
       };
       await onSubmit(processedData);
     } finally {
