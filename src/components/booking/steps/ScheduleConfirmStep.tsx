@@ -382,11 +382,11 @@ export default function ScheduleConfirmStep({
               </label>
               <p className="text-primary-500 mt-1">
                 By submitting this booking, you agree to our{' '}
-                <a href="/terms-conditions" className="text-primary-600 hover:text-primary-800 underline">
+                <a href="/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-800 underline">
                   Terms of Service
                 </a>{' '}
                 and{' '}
-                <a href="/privacy-policy" className="text-primary-600 hover:text-primary-800 underline">
+                <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-800 underline">
                   Privacy Policy
                 </a>
                 .

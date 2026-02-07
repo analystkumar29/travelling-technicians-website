@@ -78,7 +78,7 @@ export default function TermsConditionsPage() {
               <p className="text-gray-700 mb-4">
                 We currently provide on-site repair services throughout the <strong>Lower Mainland of British Columbia</strong>,
                 including Vancouver, Burnaby, Surrey, Richmond, Coquitlam, New Westminster, North Vancouver, West Vancouver,
-                Delta, Langley, Maple Ridge, Pitt Meadows, and Port Moody.
+                Delta, Langley, Maple Ridge, Pitt Meadows, Port Moody, Squamish, and Chilliwack.
               </p>
               <p className="text-gray-700 mb-6">
                 Service availability is subject to technician scheduling and geographic coverage. We reserve the right
@@ -449,7 +449,7 @@ export default function TermsConditionsPage() {
                 <div className="space-y-2">
                   <p><strong>The Travelling Technicians</strong></p>
                   <p>Email: <a href="mailto:info@travellingtechnicians.ca" className="text-primary-600 hover:text-primary-800">info@travellingtechnicians.ca</a></p>
-                  <p>Phone: <a href="tel:+17783899251" className="text-primary-600 hover:text-primary-800">(778) 389-9251</a></p>
+                  <p>Phone: <a href="tel:+16048495329" className="text-primary-600 hover:text-primary-800">(604) 849-5329</a></p>
                   <p>Service Area: Lower Mainland, British Columbia, Canada</p>
                   <p>Website: <a href="https://www.travelling-technicians.ca" className="text-primary-600 hover:text-primary-800">www.travelling-technicians.ca</a></p>
                 </div>
