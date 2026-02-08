@@ -34,7 +34,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     // Verify booking exists and is in-progress (ready for completion)
     const { data: bookingData, error: bookingError } = await supabase
       .from('bookings')
-      .select('id, status, booking_ref, customer_name, technician_id')
+      .select('id, status, booking_ref, customer_name, technician_id, quoted_price')
       .eq('id', body.booking_id)
       .single();
 
@@ -79,34 +79,56 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       }
     }
 
-    // Insert repair completion record
-    // The DB trigger trg_auto_create_warranty will auto-create a warranty
-    const repairData = {
-      booking_id: body.booking_id,
-      technician_id: body.technician_id,
-      completed_at: body.completed_at || new Date().toISOString(),
-      repair_notes: body.repair_notes || null,
-      parts_used: partsUsed,
-      repair_duration: body.repair_duration ? parseInt(body.repair_duration.toString()) : null,
-      customer_signature_url: body.customer_signature_url || null,
-      additional_services: additionalServices
-    };
-
-    const { data: completionData, error: completionError } = await supabase
+    // Check if a repair completion already exists (handles retry after partial failure)
+    const { data: existingCompletion } = await supabase
       .from('repair_completions')
-      .insert([repairData])
-      .select()
-      .single();
+      .select('*')
+      .eq('booking_id', body.booking_id)
+      .maybeSingle();
 
-    if (completionError) {
-      logger.error('Error creating repair completion:', completionError);
-      return res.status(500).json({ error: 'Failed to register repair completion' });
+    let completionData = existingCompletion;
+
+    if (!existingCompletion) {
+      // Insert repair completion record
+      // The DB trigger trg_auto_create_warranty will auto-create a warranty
+      const repairData = {
+        booking_id: body.booking_id,
+        technician_id: body.technician_id,
+        completed_at: body.completed_at || new Date().toISOString(),
+        repair_notes: body.repair_notes || null,
+        parts_used: partsUsed,
+        repair_duration: body.repair_duration ? parseInt(body.repair_duration.toString()) : null,
+        customer_signature_url: body.customer_signature_url || null,
+        additional_services: additionalServices
+      };
+
+      const { data: newCompletion, error: completionError } = await supabase
+        .from('repair_completions')
+        .insert([repairData])
+        .select()
+        .single();
+
+      if (completionError) {
+        logger.error('Error creating repair completion:', completionError);
+        return res.status(500).json({ error: 'Failed to register repair completion' });
+      }
+
+      completionData = newCompletion;
+    } else {
+      logger.info('Repair completion already exists, updating booking status', {
+        booking_id: body.booking_id,
+        completion_id: existingCompletion.id,
+      });
     }
 
-    // Determine final price: use provided final_price, fallback to quoted_price
-    const finalPrice = body.final_price != null ? parseFloat(body.final_price) : null;
+    // Determine final price: use provided final_price, fallback to booking's quoted_price
+    const finalPrice = body.final_price != null
+      ? parseFloat(body.final_price)
+      : bookingData.quoted_price != null
+        ? parseFloat(String(bookingData.quoted_price))
+        : null;
 
-    // Update booking status to completed + set final_price if provided
+    // Update booking status to completed + set final_price
     const bookingUpdate: Record<string, unknown> = { status: 'completed' };
     if (finalPrice != null) {
       bookingUpdate.final_price = finalPrice;
@@ -122,27 +144,29 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       // Don't fail — the completion record is created
     }
 
-    // Increment total_bookings_completed on the technician
-    const { error: techUpdateError } = await supabase.rpc('increment_field', {
-      row_id: body.technician_id,
-      table_name: 'technicians',
-      field_name: 'total_bookings_completed',
-    }).maybeSingle();
+    // Increment total_bookings_completed on the technician (skip if retrying existing completion)
+    if (!existingCompletion) {
+      const { error: techUpdateError } = await supabase.rpc('increment_field', {
+        row_id: body.technician_id,
+        table_name: 'technicians',
+        field_name: 'total_bookings_completed',
+      }).maybeSingle();
 
-    // Fallback: if RPC doesn't exist, do a manual increment
-    if (techUpdateError) {
-      logger.warn('RPC increment_field failed, using manual increment', { error: techUpdateError.message });
-      const { data: techData } = await supabase
-        .from('technicians')
-        .select('total_bookings_completed')
-        .eq('id', body.technician_id)
-        .single();
-
-      if (techData) {
-        await supabase
+      // Fallback: if RPC doesn't exist, do a manual increment
+      if (techUpdateError) {
+        logger.warn('RPC increment_field failed, using manual increment', { error: techUpdateError.message });
+        const { data: techData } = await supabase
           .from('technicians')
-          .update({ total_bookings_completed: (techData.total_bookings_completed || 0) + 1 })
-          .eq('id', body.technician_id);
+          .select('total_bookings_completed')
+          .eq('id', body.technician_id)
+          .single();
+
+        if (techData) {
+          await supabase
+            .from('technicians')
+            .update({ total_bookings_completed: (techData.total_bookings_completed || 0) + 1 })
+            .eq('id', body.technician_id);
+        }
       }
     }
 

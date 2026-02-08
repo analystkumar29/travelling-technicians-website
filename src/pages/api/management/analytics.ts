@@ -105,7 +105,7 @@ export default requireAdminAuth(async function handler(
       // Technicians with stats
       supabase
         .from('technicians')
-        .select('id, full_name, total_bookings_completed, average_rating, is_active')
+        .select('id, full_name, total_bookings_completed, is_active')
         .eq('is_active', true),
     ]);
 
@@ -145,25 +145,28 @@ export default requireAdminAuth(async function handler(
       id: string;
       full_name: string;
       total_bookings_completed: number | null;
-      average_rating: number | null;
       is_active: boolean;
     }>;
 
-    // --- Revenue calculations ---
+    // --- Revenue calculations (from completed bookings, not payments) ---
+    const completedBookings = bookings.filter((b) => b.status === 'completed');
     const completedPayments = payments.filter((p) => p.status === 'completed');
 
-    const totalRevenue = completedPayments.reduce(
-      (sum, p) => sum + (parseFloat(String(p.amount)) || 0),
+    const getBookingRevenue = (b: { final_price: number | null; quoted_price: number | null }) =>
+      parseFloat(String(b.final_price ?? b.quoted_price ?? 0)) || 0;
+
+    const totalRevenue = completedBookings.reduce(
+      (sum, b) => sum + getBookingRevenue(b),
       0
     );
 
-    const thisMonthRevenue = completedPayments
-      .filter((p) => p.created_at >= thisMonthStart)
-      .reduce((sum, p) => sum + (parseFloat(String(p.amount)) || 0), 0);
+    const thisMonthRevenue = completedBookings
+      .filter((b) => b.created_at >= thisMonthStart)
+      .reduce((sum, b) => sum + getBookingRevenue(b), 0);
 
-    const lastMonthRevenue = completedPayments
-      .filter((p) => p.created_at >= lastMonthStart && p.created_at <= lastMonthEnd)
-      .reduce((sum, p) => sum + (parseFloat(String(p.amount)) || 0), 0);
+    const lastMonthRevenue = completedBookings
+      .filter((b) => b.created_at >= lastMonthStart && b.created_at <= lastMonthEnd)
+      .reduce((sum, b) => sum + getBookingRevenue(b), 0);
 
     // Revenue by month (last 6 months)
     const revenueByMonth: RevenueByMonth[] = [];
@@ -184,9 +187,9 @@ export default requireAdminAuth(async function handler(
         month: 'short',
       });
 
-      const monthRevenue = completedPayments
-        .filter((p) => p.created_at >= monthStart && p.created_at <= monthEnd)
-        .reduce((sum, p) => sum + (parseFloat(String(p.amount)) || 0), 0);
+      const monthRevenue = completedBookings
+        .filter((b) => b.created_at >= monthStart && b.created_at <= monthEnd)
+        .reduce((sum, b) => sum + getBookingRevenue(b), 0);
 
       revenueByMonth.push({ month: monthLabel, revenue: Math.round(monthRevenue * 100) / 100 });
     }
@@ -277,7 +280,7 @@ export default requireAdminAuth(async function handler(
     const technicianStats: TechnicianStat[] = technicians.map((t) => ({
       name: t.full_name,
       completedBookings: t.total_bookings_completed || 0,
-      rating: t.average_rating || 0,
+      rating: 5.0,
     }));
 
     const analytics: AnalyticsData = {
