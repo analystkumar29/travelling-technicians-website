@@ -18,6 +18,8 @@ import {
   TrendingDown,
   BarChart3,
   ArrowRight,
+  UserPlus,
+  Play,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -90,6 +92,14 @@ interface AnalyticsData {
   technicianStats: { name: string; completedBookings: number; rating: number }[];
 }
 
+interface Technician {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  is_active: boolean;
+}
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [stats, setStats] = useState<ManagementStats>({
@@ -105,6 +115,8 @@ export default function AdminDashboard() {
   const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
   const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingAppointment[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const [selectedTechnician, setSelectedTechnician] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -122,6 +134,19 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchTechnicians = async () => {
+    try {
+      const response = await authFetch('/api/technicians');
+      if (response.ok) {
+        const data = await response.json();
+        const techs = (data.technicians || data || []).filter((t: Technician) => t.is_active);
+        setTechnicians(techs);
+      }
+    } catch {
+      console.error('Failed to fetch technicians');
+    }
+  };
+
   const fetchManagementData = useCallback(async () => {
     try {
       setLoading(true);
@@ -129,7 +154,8 @@ export default function AdminDashboard() {
         fetchStats(),
         fetchRecentBookings(),
         fetchUpcomingAppointments(),
-        fetchAnalytics()
+        fetchAnalytics(),
+        fetchTechnicians()
       ]);
     } catch (err) {
       setError('Failed to load management data');
@@ -241,7 +267,7 @@ export default function AdminDashboard() {
       .filter((booking: UpcomingAppointment) => {
         const bookingDate = booking.scheduled_at?.split('T')[0];
         const status = booking.status || 'pending';
-        return bookingDate >= today && ['confirmed', 'pending'].includes(status);
+        return bookingDate >= today && ['pending', 'confirmed', 'assigned', 'in-progress'].includes(status);
       })
       .sort((a: UpcomingAppointment, b: UpcomingAppointment) => {
         const dateA = new Date(a.scheduled_at);
@@ -253,35 +279,27 @@ export default function AdminDashboard() {
     setUpcomingAppointments(upcomingAppointments);
   };
 
-  const updateBookingStatus = async (id: string, newStatus: string) => {
+  const updateBookingStatus = async (id: string, newStatus: string, extraData?: Record<string, any>) => {
     try {
-      console.log('Updating booking status:', { id, newStatus });
-
       const response = await authFetch('/api/bookings/update', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ id, status: newStatus }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: newStatus, ...extraData }),
       });
 
-      console.log('Response status:', response.status, response.statusText);
-
       if (!response.ok) {
-        const errorData = await response.text();
-        console.error('API Error Response:', errorData);
         throw new Error(`Failed to update booking status: ${response.status} ${response.statusText}`);
       }
-
-      const result = await response.json();
-      console.log('Update successful:', result);
 
       toast.success('Booking status updated successfully');
       await fetchManagementData();
     } catch (err) {
-      console.error('Update booking status error:', err);
       toast.error(`Failed to update booking status: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
+  };
+
+  const assignTechnician = async (bookingId: string, technicianId: string) => {
+    await updateBookingStatus(bookingId, 'assigned', { technician_id: technicianId });
   };
 
   const getUrgencyColor = (scheduledAt: string) => {
@@ -446,25 +464,64 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     </div>
-                    <div className="mt-3 flex space-x-2">
+                    <div className="mt-3 flex items-center space-x-2 flex-wrap gap-y-2">
                       {(!appointment.status || appointment.status === 'pending') && (
                         <button
                           onClick={() => updateBookingStatus(appointment.id, 'confirmed')}
-                          className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                          className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 flex items-center"
                         >
+                          <CheckCircle className="mr-1 h-3 w-3" />
                           Confirm
                         </button>
                       )}
                       {appointment.status === 'confirmed' && (
+                        <>
+                          <select
+                            className="text-xs border border-gray-300 rounded px-2 py-1"
+                            value={selectedTechnician[appointment.id] || ''}
+                            onChange={(e) => setSelectedTechnician(prev => ({ ...prev, [appointment.id]: e.target.value }))}
+                          >
+                            <option value="">Select technician...</option>
+                            {technicians.map((tech) => (
+                              <option key={tech.id} value={tech.id}>{tech.full_name}</option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => {
+                              const techId = selectedTechnician[appointment.id];
+                              if (!techId) {
+                                toast.error('Please select a technician');
+                                return;
+                              }
+                              assignTechnician(appointment.id, techId);
+                            }}
+                            className="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 flex items-center"
+                          >
+                            <UserPlus className="mr-1 h-3 w-3" />
+                            Assign
+                          </button>
+                        </>
+                      )}
+                      {appointment.status === 'assigned' && (
                         <button
-                          onClick={() => updateBookingStatus(appointment.id, 'completed')}
-                          className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                          onClick={() => updateBookingStatus(appointment.id, 'in-progress')}
+                          className="px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 flex items-center"
                         >
-                          Complete Repair
+                          <Play className="mr-1 h-3 w-3" />
+                          Start Repair
                         </button>
                       )}
+                      {appointment.status === 'in-progress' && (
+                        <Link
+                          href="/management/bookings"
+                          className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 inline-flex items-center"
+                        >
+                          <Wrench className="mr-1 h-3 w-3" />
+                          Complete Repair
+                        </Link>
+                      )}
                       <Link
-                        href={`/management/bookings`}
+                        href="/management/bookings"
                         className="px-3 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 inline-block"
                       >
                         View Details

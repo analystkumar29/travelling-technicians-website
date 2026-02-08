@@ -518,7 +518,9 @@ export default async function handler(
       address: normalizedBookingData.address,
       city: normalizedBookingData.city,
       postalCode: normalizedBookingData.postalCode,
-      province: normalizedBookingData.province
+      province: normalizedBookingData.province,
+      quotedPrice: bookingData.quoted_price != null ? parseFloat(bookingData.quoted_price) : undefined,
+      pricingTier: bookingData.pricingTier || bookingData.pricing_tier || 'standard',
     };
 
     apiLogger.info('📧 BOOKING API - Starting email confirmation process', {

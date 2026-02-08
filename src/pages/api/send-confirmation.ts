@@ -33,6 +33,8 @@ interface EmailData {
   model?: string;
   service: string;
   address?: string;
+  quotedPrice?: number;
+  pricingTier?: string;
   bookingReference: string;
 }
 
@@ -109,6 +111,8 @@ export default async function handler(
       model,
       service,
       address,
+      quotedPrice,
+      pricingTier,
       bookingReference = `TTR-${Date.now().toString().substring(6)}`,
     }: EmailData = req.body;
 
@@ -244,6 +248,8 @@ export default async function handler(
       bookingDate,
       bookingTime,
       address,
+      quotedPrice,
+      pricingTier,
       verificationUrl,
       rescheduleUrl,
     });
