@@ -120,6 +120,9 @@ export default function DevicesAdmin() {
     requires_diagnostics: false,
     estimated_duration_minutes: 45
   });
+  const [editingDeviceTypeId, setEditingDeviceTypeId] = useState<string | null>(null);
+  const [editingBrandId, setEditingBrandId] = useState<string | null>(null);
+  const [editingModelId, setEditingModelId] = useState<string | null>(null);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
 
   // Load data on mount and when tab changes
@@ -239,8 +242,13 @@ export default function DevicesAdmin() {
     }
 
     try {
-      const response = await authFetch('/api/management/device-types', {
-        method: 'POST',
+      const method = editingDeviceTypeId ? 'PUT' : 'POST';
+      const url = editingDeviceTypeId
+        ? `/api/management/device-types?id=${editingDeviceTypeId}`
+        : '/api/management/device-types';
+
+      const response = await authFetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(deviceTypeForm)
       });
@@ -248,14 +256,56 @@ export default function DevicesAdmin() {
       const data = await response.json();
 
       if (data.success) {
-        toast.success('Device type added successfully!');
+        toast.success(editingDeviceTypeId ? 'Device type updated successfully!' : 'Device type added successfully!');
         loadDeviceTypes();
-        setDeviceTypeForm({ name: '', slug: '', icon_name: '', is_active: true });
+        resetDeviceTypeForm();
       } else {
-        toast.error(data.message || 'Failed to save device type');
+        toast.error(data.message || `Failed to ${editingDeviceTypeId ? 'update' : 'save'} device type`);
       }
     } catch (err) {
-      toast.error('Error saving device type');
+      toast.error(`Error ${editingDeviceTypeId ? 'updating' : 'saving'} device type`);
+      console.error(err);
+    }
+  };
+
+  const handleEditDeviceType = (dt: DeviceType) => {
+    setEditingDeviceTypeId(dt.id);
+    setDeviceTypeForm({
+      name: dt.name,
+      slug: dt.slug,
+      icon_name: dt.icon_name || '',
+      is_active: dt.is_active
+    });
+  };
+
+  const handleCancelEditDeviceType = () => {
+    setEditingDeviceTypeId(null);
+    resetDeviceTypeForm();
+  };
+
+  const resetDeviceTypeForm = () => {
+    setDeviceTypeForm({ name: '', slug: '', icon_name: '', is_active: true });
+    setEditingDeviceTypeId(null);
+  };
+
+  const handleToggleDeviceTypeActive = async (id: string, isActive: boolean) => {
+    try {
+      const response = await authFetch(`/api/management/device-types?id=${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: isActive })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(`Device type ${isActive ? 'activated' : 'deactivated'} successfully!`);
+        loadDeviceTypes();
+      } else {
+        toast.error(data.message || `Failed to ${isActive ? 'activate' : 'deactivate'} device type`);
+      }
+    } catch (err) {
+      toast.error(`Error ${isActive ? 'activating' : 'deactivating'} device type`);
       console.error(err);
     }
   };
@@ -271,8 +321,13 @@ export default function DevicesAdmin() {
     }
 
     try {
-      const response = await authFetch('/api/management/brands', {
-        method: 'POST',
+      const method = editingBrandId ? 'PUT' : 'POST';
+      const url = editingBrandId
+        ? `/api/management/brands?id=${editingBrandId}`
+        : '/api/management/brands';
+
+      const response = await authFetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(brandForm)
       });
@@ -280,14 +335,56 @@ export default function DevicesAdmin() {
       const data = await response.json();
 
       if (data.success) {
-        toast.success('Brand added successfully!');
+        toast.success(editingBrandId ? 'Brand updated successfully!' : 'Brand added successfully!');
         loadBrands();
-        setBrandForm({ name: '', slug: '', logo_url: '', is_active: true });
+        resetBrandForm();
       } else {
-        toast.error(data.message || 'Failed to save brand');
+        toast.error(data.message || `Failed to ${editingBrandId ? 'update' : 'save'} brand`);
       }
     } catch (err) {
-      toast.error('Error saving brand');
+      toast.error(`Error ${editingBrandId ? 'updating' : 'saving'} brand`);
+      console.error(err);
+    }
+  };
+
+  const handleEditBrand = (brand: Brand) => {
+    setEditingBrandId(brand.id);
+    setBrandForm({
+      name: brand.name,
+      slug: brand.slug,
+      logo_url: brand.logo_url || '',
+      is_active: brand.is_active
+    });
+  };
+
+  const handleCancelEditBrand = () => {
+    setEditingBrandId(null);
+    resetBrandForm();
+  };
+
+  const resetBrandForm = () => {
+    setBrandForm({ name: '', slug: '', logo_url: '', is_active: true });
+    setEditingBrandId(null);
+  };
+
+  const handleToggleBrandActive = async (id: string, isActive: boolean) => {
+    try {
+      const response = await authFetch(`/api/management/brands?id=${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: isActive })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(`Brand ${isActive ? 'activated' : 'deactivated'} successfully!`);
+        loadBrands();
+      } else {
+        toast.error(data.message || `Failed to ${isActive ? 'activate' : 'deactivate'} brand`);
+      }
+    } catch (err) {
+      toast.error(`Error ${isActive ? 'activating' : 'deactivating'} brand`);
       console.error(err);
     }
   };
@@ -303,8 +400,13 @@ export default function DevicesAdmin() {
     }
 
     try {
-      const response = await authFetch('/api/management/models', {
-        method: 'POST',
+      const method = editingModelId ? 'PUT' : 'POST';
+      const url = editingModelId
+        ? `/api/management/models?id=${editingModelId}`
+        : '/api/management/models';
+
+      const response = await authFetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(modelForm)
       });
@@ -312,22 +414,67 @@ export default function DevicesAdmin() {
       const data = await response.json();
 
       if (data.success) {
-        toast.success('Model added successfully!');
+        toast.success(editingModelId ? 'Model updated successfully!' : 'Model added successfully!');
         loadModels();
-        setModelForm({
-          name: '',
-          slug: '',
-          brand_id: '',
-          type_id: '',
-          release_year: new Date().getFullYear(),
-          image_url: '',
-          is_active: true
-        });
+        resetModelForm();
       } else {
-        toast.error(data.message || 'Failed to save model');
+        toast.error(data.message || `Failed to ${editingModelId ? 'update' : 'save'} model`);
       }
     } catch (err) {
-      toast.error('Error saving model');
+      toast.error(`Error ${editingModelId ? 'updating' : 'saving'} model`);
+      console.error(err);
+    }
+  };
+
+  const handleEditModel = (model: Model) => {
+    setEditingModelId(model.id);
+    setModelForm({
+      name: model.name,
+      slug: model.slug,
+      brand_id: model.brand_id,
+      type_id: model.type_id,
+      release_year: model.release_year || new Date().getFullYear(),
+      image_url: model.image_url || '',
+      is_active: model.is_active
+    });
+  };
+
+  const handleCancelEditModel = () => {
+    setEditingModelId(null);
+    resetModelForm();
+  };
+
+  const resetModelForm = () => {
+    setModelForm({
+      name: '',
+      slug: '',
+      brand_id: '',
+      type_id: '',
+      release_year: new Date().getFullYear(),
+      image_url: '',
+      is_active: true
+    });
+    setEditingModelId(null);
+  };
+
+  const handleToggleModelActive = async (id: string, isActive: boolean) => {
+    try {
+      const response = await authFetch(`/api/management/models?id=${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: isActive })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(`Model ${isActive ? 'activated' : 'deactivated'} successfully!`);
+        loadModels();
+      } else {
+        toast.error(data.message || `Failed to ${isActive ? 'activate' : 'deactivate'} model`);
+      }
+    } catch (err) {
+      toast.error(`Error ${isActive ? 'activating' : 'deactivating'} model`);
       console.error(err);
     }
   };
@@ -463,7 +610,9 @@ export default function DevicesAdmin() {
       {activeTab === 'device-types' && (
         <div className="space-y-6">
           <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-900">Add New Device Type</h2>
+            <h2 className="text-xl font-semibold mb-4 text-gray-900">
+              {editingDeviceTypeId ? 'Edit Device Type' : 'Add New Device Type'}
+            </h2>
             <form onSubmit={handleDeviceTypeSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
@@ -514,10 +663,19 @@ export default function DevicesAdmin() {
                 />
                 <label htmlFor="devicetype-active" className="text-sm font-medium text-gray-700">Active</label>
               </div>
-              <div className="md:col-span-2">
+              <div className="md:col-span-2 flex space-x-4">
                 <button type="submit" className="px-4 py-2 bg-primary-800 text-white rounded-lg hover:bg-primary-900 transition-colors">
-                  Add Device Type
+                  {editingDeviceTypeId ? 'Update Device Type' : 'Add Device Type'}
                 </button>
+                {editingDeviceTypeId && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEditDeviceType}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
               </div>
             </form>
           </div>
@@ -533,6 +691,7 @@ export default function DevicesAdmin() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slug</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Icon</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -548,6 +707,22 @@ export default function DevicesAdmin() {
                           {deviceType.is_active ? 'Active' : 'Inactive'}
                         </span>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => handleEditDeviceType(deviceType)}
+                          className="text-primary-600 hover:text-primary-900 mr-3"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleToggleDeviceTypeActive(deviceType.id, !deviceType.is_active)}
+                          className={`${
+                            deviceType.is_active ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'
+                          }`}
+                        >
+                          {deviceType.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -561,7 +736,9 @@ export default function DevicesAdmin() {
       {activeTab === 'brands' && (
         <div className="space-y-6">
           <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-900">Add New Brand</h2>
+            <h2 className="text-xl font-semibold mb-4 text-gray-900">
+              {editingBrandId ? 'Edit Brand' : 'Add New Brand'}
+            </h2>
             <form onSubmit={handleBrandSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
@@ -612,10 +789,19 @@ export default function DevicesAdmin() {
                 />
                 <label htmlFor="brand-active" className="text-sm font-medium text-gray-700">Active</label>
               </div>
-              <div className="md:col-span-2">
+              <div className="md:col-span-2 flex space-x-4">
                 <button type="submit" className="px-4 py-2 bg-primary-800 text-white rounded-lg hover:bg-primary-900 transition-colors">
-                  Add Brand
+                  {editingBrandId ? 'Update Brand' : 'Add Brand'}
                 </button>
+                {editingBrandId && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEditBrand}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
               </div>
             </form>
           </div>
@@ -631,6 +817,7 @@ export default function DevicesAdmin() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slug</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Logo</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -648,6 +835,22 @@ export default function DevicesAdmin() {
                           {brand.is_active ? 'Active' : 'Inactive'}
                         </span>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => handleEditBrand(brand)}
+                          className="text-primary-600 hover:text-primary-900 mr-3"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleToggleBrandActive(brand.id, !brand.is_active)}
+                          className={`${
+                            brand.is_active ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'
+                          }`}
+                        >
+                          {brand.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -661,7 +864,9 @@ export default function DevicesAdmin() {
       {activeTab === 'models' && (
         <div className="space-y-6">
           <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-900">Add New Model</h2>
+            <h2 className="text-xl font-semibold mb-4 text-gray-900">
+              {editingModelId ? 'Edit Model' : 'Add New Model'}
+            </h2>
             <form onSubmit={handleModelSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
@@ -751,10 +956,19 @@ export default function DevicesAdmin() {
                 />
                 <label htmlFor="model-active" className="text-sm font-medium text-gray-700">Active</label>
               </div>
-              <div className="md:col-span-2">
+              <div className="md:col-span-2 flex space-x-4">
                 <button type="submit" className="px-4 py-2 bg-primary-800 text-white rounded-lg hover:bg-primary-900 transition-colors">
-                  Add Model
+                  {editingModelId ? 'Update Model' : 'Add Model'}
                 </button>
+                {editingModelId && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEditModel}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
               </div>
             </form>
           </div>
@@ -771,6 +985,7 @@ export default function DevicesAdmin() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -786,6 +1001,22 @@ export default function DevicesAdmin() {
                         }`}>
                           {model.is_active ? 'Active' : 'Inactive'}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => handleEditModel(model)}
+                          className="text-primary-600 hover:text-primary-900 mr-3"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleToggleModelActive(model.id, !model.is_active)}
+                          className={`${
+                            model.is_active ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'
+                          }`}
+                        >
+                          {model.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
                       </td>
                     </tr>
                   ))}
