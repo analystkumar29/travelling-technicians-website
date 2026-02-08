@@ -4,29 +4,35 @@ import { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   Calendar,
+  CreditCard,
   Smartphone,
   DollarSign,
   BarChart3,
   ScanSearch,
   Users,
   Shield,
+  Star,
   MessageSquare,
   ChevronLeft,
   ChevronRight,
   Wrench,
   X,
+  Settings,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/management', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/management/bookings', label: 'Bookings', icon: Calendar },
+  { href: '/management/payments', label: 'Payments', icon: CreditCard },
   { href: '/management/devices', label: 'Devices', icon: Smartphone },
   { href: '/management/pricing', label: 'Pricing', icon: DollarSign },
   { href: '/management/pricing-coverage', label: 'Price Audit', icon: BarChart3 },
   { href: '/management/quality-control', label: 'Quality', icon: ScanSearch },
   { href: '/management/technicians', label: 'Technicians', icon: Users },
   { href: '/management/warranties', label: 'Warranties', icon: Shield },
+  { href: '/management/testimonials', label: 'Testimonials', icon: Star },
   { href: '/management/customer-feedback', label: 'Feedback', icon: MessageSquare },
+  { href: '/management/site-settings', label: 'Settings', icon: Settings },
 ];
 
 export const SIDEBAR_COLLAPSED_KEY = 'admin_sidebar_collapsed';

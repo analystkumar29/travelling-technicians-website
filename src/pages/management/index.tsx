@@ -13,7 +13,11 @@ import {
   Mail,
   MapPin,
   Loader2,
-  Users
+  Users,
+  TrendingUp,
+  TrendingDown,
+  BarChart3,
+  ArrowRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -71,6 +75,21 @@ interface UpcomingAppointment {
   service_type?: string;
 }
 
+interface AnalyticsData {
+  totalRevenue: number;
+  thisMonthRevenue: number;
+  lastMonthRevenue: number;
+  revenueByMonth: { month: string; revenue: number }[];
+  totalBookings: number;
+  bookingsByStatus: { status: string; count: number }[];
+  bookingsThisMonth: number;
+  bookingsLastMonth: number;
+  paymentMethodBreakdown: { method: string; count: number; total: number }[];
+  topServices: { name: string; count: number; revenue: number }[];
+  topCities: { city: string; count: number }[];
+  technicianStats: { name: string; completedBookings: number; rating: number }[];
+}
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [stats, setStats] = useState<ManagementStats>({
@@ -85,8 +104,23 @@ export default function AdminDashboard() {
   });
   const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
   const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingAppointment[]>([]);
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const fetchAnalytics = async () => {
+    try {
+      const response = await authFetch('/api/management/analytics');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.analytics) {
+          setAnalytics(data.analytics);
+        }
+      }
+    } catch (err) {
+      console.error('Analytics fetch error (non-blocking):', err);
+    }
+  };
 
   const fetchManagementData = useCallback(async () => {
     try {
@@ -94,7 +128,8 @@ export default function AdminDashboard() {
       await Promise.all([
         fetchStats(),
         fetchRecentBookings(),
-        fetchUpcomingAppointments()
+        fetchUpcomingAppointments(),
+        fetchAnalytics()
       ]);
     } catch (err) {
       setError('Failed to load management data');
@@ -507,6 +542,228 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Revenue Analytics */}
+        {analytics && (
+          <div className="bg-white shadow rounded-lg">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                  <BarChart3 className="mr-2 h-5 w-5" />
+                  Revenue Analytics
+                </h3>
+                <Link
+                  href="/management/payments"
+                  className="text-sm text-primary-600 hover:text-primary-900 font-medium flex items-center"
+                >
+                  View Payments <ArrowRight className="ml-1 h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Revenue This Month vs Last Month */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500 mb-3">Monthly Revenue</h4>
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm text-gray-600">This Month</span>
+                        <span className="text-lg font-semibold text-gray-900">
+                          ${analytics.thisMonthRevenue.toLocaleString('en-CA', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      {analytics.lastMonthRevenue > 0 && (
+                        <div className="flex items-center text-xs">
+                          {analytics.thisMonthRevenue >= analytics.lastMonthRevenue ? (
+                            <>
+                              <TrendingUp className="h-3 w-3 text-green-600 mr-1" />
+                              <span className="text-green-600 font-medium">
+                                {Math.round(((analytics.thisMonthRevenue - analytics.lastMonthRevenue) / analytics.lastMonthRevenue) * 100)}% vs last month
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <TrendingDown className="h-3 w-3 text-red-600 mr-1" />
+                              <span className="text-red-600 font-medium">
+                                {Math.round(((analytics.lastMonthRevenue - analytics.thisMonthRevenue) / analytics.lastMonthRevenue) * 100)}% vs last month
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Last Month</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        ${analytics.lastMonthRevenue.toLocaleString('en-CA', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                      <span className="text-sm text-gray-600">All Time</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        ${analytics.totalRevenue.toLocaleString('en-CA', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Revenue Bar Chart (last 6 months using CSS divs) */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500 mb-3">Last 6 Months</h4>
+                  {analytics.revenueByMonth.length > 0 && (
+                    <div className="flex items-end gap-2 h-32">
+                      {(() => {
+                        const maxRevenue = Math.max(...analytics.revenueByMonth.map((m) => m.revenue), 1);
+                        return analytics.revenueByMonth.map((month, i) => (
+                          <div key={month.month} className="flex-1 flex flex-col items-center gap-1">
+                            <span className="text-[10px] text-gray-500 font-medium">
+                              ${month.revenue > 999 ? `${(month.revenue / 1000).toFixed(1)}k` : Math.round(month.revenue)}
+                            </span>
+                            <div
+                              className={`w-full rounded-t transition-all ${
+                                i === analytics.revenueByMonth.length - 1
+                                  ? 'bg-primary-600'
+                                  : 'bg-primary-200'
+                              }`}
+                              style={{
+                                height: `${Math.max((month.revenue / maxRevenue) * 100, 4)}%`,
+                                minHeight: '4px',
+                              }}
+                            />
+                            <span className="text-[10px] text-gray-400 truncate w-full text-center">
+                              {month.month.split(' ')[0]}
+                            </span>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  )}
+                </div>
+
+                {/* Top 5 Services by booking count */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500 mb-3">Top Services</h4>
+                  {analytics.topServices.length > 0 ? (
+                    <div className="space-y-2.5">
+                      {analytics.topServices.map((service, i) => (
+                        <div key={service.name}>
+                          <div className="flex items-center justify-between text-sm mb-1">
+                            <span className="text-gray-700 truncate mr-2">{service.name}</span>
+                            <span className="text-gray-500 text-xs whitespace-nowrap">{service.count} bookings</span>
+                          </div>
+                          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                i === 0 ? 'bg-primary-600' : i === 1 ? 'bg-primary-400' : 'bg-primary-200'
+                              }`}
+                              style={{
+                                width: `${Math.max(
+                                  (service.count / (analytics.topServices[0]?.count || 1)) * 100,
+                                  8
+                                )}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-400">No service data yet</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Booking Pipeline */}
+        {analytics && analytics.bookingsByStatus.length > 0 && (
+          <div className="bg-white shadow rounded-lg">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                <ArrowRight className="mr-2 h-5 w-5" />
+                Booking Pipeline
+              </h3>
+            </div>
+            <div className="p-6">
+              {(() => {
+                const pipelineStatuses = ['pending', 'confirmed', 'assigned', 'in-progress', 'completed'];
+                const statusLabels: Record<string, string> = {
+                  pending: 'Pending',
+                  confirmed: 'Confirmed',
+                  assigned: 'Assigned',
+                  'in-progress': 'In Progress',
+                  completed: 'Completed',
+                };
+                const statusColors: Record<string, string> = {
+                  pending: 'bg-yellow-400',
+                  confirmed: 'bg-blue-400',
+                  assigned: 'bg-purple-400',
+                  'in-progress': 'bg-indigo-400',
+                  completed: 'bg-green-400',
+                };
+                const statusBgLight: Record<string, string> = {
+                  pending: 'bg-yellow-50 border-yellow-200',
+                  confirmed: 'bg-blue-50 border-blue-200',
+                  assigned: 'bg-purple-50 border-purple-200',
+                  'in-progress': 'bg-indigo-50 border-indigo-200',
+                  completed: 'bg-green-50 border-green-200',
+                };
+                const statusTextColor: Record<string, string> = {
+                  pending: 'text-yellow-800',
+                  confirmed: 'text-blue-800',
+                  assigned: 'text-purple-800',
+                  'in-progress': 'text-indigo-800',
+                  completed: 'text-green-800',
+                };
+
+                const statusMap: Record<string, number> = {};
+                analytics.bookingsByStatus.forEach((s) => {
+                  statusMap[s.status] = s.count;
+                });
+
+                const maxCount = Math.max(...pipelineStatuses.map((s) => statusMap[s] || 0), 1);
+
+                return (
+                  <div className="flex items-end gap-3">
+                    {pipelineStatuses.map((status, i) => {
+                      const count = statusMap[status] || 0;
+                      const barHeight = Math.max((count / maxCount) * 100, 8);
+                      return (
+                        <div key={status} className="flex-1 flex flex-col items-center">
+                          <div
+                            className={`border rounded-lg p-3 w-full text-center mb-2 ${statusBgLight[status]}`}
+                          >
+                            <div className={`text-2xl font-bold ${statusTextColor[status]}`}>
+                              {count}
+                            </div>
+                            <div className={`text-xs font-medium ${statusTextColor[status]} mt-0.5`}>
+                              {statusLabels[status]}
+                            </div>
+                          </div>
+                          <div className="w-full h-20 flex items-end">
+                            <div
+                              className={`w-full rounded-t ${statusColors[status]} transition-all`}
+                              style={{ height: `${barHeight}%`, minHeight: '4px' }}
+                            />
+                          </div>
+                          {i < pipelineStatuses.length - 1 && (
+                            <div className="hidden" />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+              <div className="mt-4 flex items-center justify-between text-xs text-gray-400">
+                <span>Bookings this month: {analytics.bookingsThisMonth}</span>
+                <span>Last month: {analytics.bookingsLastMonth}</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Quick Actions */}
         <div className="bg-white shadow rounded-lg">
