@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getServiceSupabase } from '@/utils/supabaseClient';
 import { requireAdminAuth } from '@/middleware/adminAuth';
+import { generateReviewToken } from '@/lib/review-token';
 import logger from '@/utils/logger';
 
 /**
@@ -200,6 +201,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
               ? `https://${process.env.VERCEL_URL}`
               : 'http://localhost:3000';
 
+          // Generate review token and URL
+          let reviewUrl: string | undefined;
+          try {
+            const reviewToken = generateReviewToken(bookingDetails.booking_ref, bookingDetails.customer_email);
+            reviewUrl = `${baseUrl}/leave-review?token=${reviewToken}&ref=${encodeURIComponent(bookingDetails.booking_ref)}`;
+          } catch (e) {
+            logger.warn('Failed to generate review token (non-blocking)', { error: String(e) });
+          }
+
           await fetch(`${baseUrl}/api/send-warranty-notification`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -213,7 +223,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
               technicianName: technicianData.full_name,
               startDate: warrantyData.start_date,
               endDate: warrantyData.end_date,
-              durationDays: warrantyData.duration_days
+              durationDays: warrantyData.duration_days,
+              reviewUrl,
             }),
           });
           logger.info('Warranty notification email sent', { warranty: warrantyData.warranty_number });

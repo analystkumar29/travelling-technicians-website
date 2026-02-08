@@ -72,7 +72,7 @@ async function handleGet(
   supabase: ReturnType<typeof getServiceSupabase>
 ) {
   try {
-    const { source, is_featured, city } = req.query;
+    const { source, is_featured, city, status } = req.query;
 
     apiLogger.info('Fetching testimonials');
 
@@ -83,6 +83,10 @@ async function handleGet(
 
     if (source && source !== 'all') {
       query = query.eq('source', source);
+    }
+
+    if (status && status !== 'all') {
+      query = query.eq('status', status);
     }
 
     if (is_featured === 'true') {
@@ -141,7 +145,8 @@ async function handlePost(
       service_id,
       neighborhood_id,
       verified,
-      source
+      source,
+      status,
     } = req.body;
 
     if (!customer_name || typeof customer_name !== 'string' || !customer_name.trim()) {
@@ -162,11 +167,21 @@ async function handlePost(
     }
 
     if (source !== undefined) {
-      const validSources = ['google', 'yelp', 'manual', 'synthetic'];
+      const validSources = ['google', 'yelp', 'manual', 'synthetic', 'website'];
       if (!validSources.includes(source)) {
         return res.status(400).json({
           success: false,
           message: `source must be one of: ${validSources.join(', ')}`
+        });
+      }
+    }
+
+    if (status !== undefined) {
+      const validStatuses = ['pending', 'approved', 'rejected'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: `status must be one of: ${validStatuses.join(', ')}`
         });
       }
     }
@@ -190,6 +205,7 @@ async function handlePost(
     if (neighborhood_id !== undefined) insertData.neighborhood_id = neighborhood_id || null;
     if (verified !== undefined) insertData.verified = Boolean(verified);
     if (source !== undefined) insertData.source = source;
+    if (status !== undefined) insertData.status = status;
 
     const { data: newTestimonial, error } = await supabase
       .from('testimonials')
@@ -251,7 +267,8 @@ async function handlePut(
       service_id,
       neighborhood_id,
       verified,
-      source
+      source,
+      status,
     } = req.body;
 
     if (rating !== undefined && rating !== null) {
@@ -265,11 +282,21 @@ async function handlePut(
     }
 
     if (source !== undefined) {
-      const validSources = ['google', 'yelp', 'manual', 'synthetic'];
+      const validSources = ['google', 'yelp', 'manual', 'synthetic', 'website'];
       if (!validSources.includes(source)) {
         return res.status(400).json({
           success: false,
           message: `source must be one of: ${validSources.join(', ')}`
+        });
+      }
+    }
+
+    if (status !== undefined) {
+      const validStatuses = ['pending', 'approved', 'rejected'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: `status must be one of: ${validStatuses.join(', ')}`
         });
       }
     }
@@ -292,6 +319,7 @@ async function handlePut(
     if (neighborhood_id !== undefined) updateData.neighborhood_id = neighborhood_id || null;
     if (verified !== undefined) updateData.verified = Boolean(verified);
     if (source !== undefined) updateData.source = source;
+    if (status !== undefined) updateData.status = status;
 
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({

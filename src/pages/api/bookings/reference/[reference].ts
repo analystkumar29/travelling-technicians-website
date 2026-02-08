@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getServiceSupabase } from '@/utils/supabaseClient';
+import { generateReviewToken } from '@/lib/review-token';
 import { logger } from '@/utils/logger';
 
 // Create module logger
@@ -135,7 +136,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Ensure final_price is not included in response
     delete booking.final_price;
 
-    // Fetch warranty data for completed bookings
+    // Fetch warranty data and generate review URL for completed bookings
     if (bookingData.status === 'completed') {
       const { data: warrantyData } = await supabase
         .from('warranties')
@@ -144,6 +145,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .single();
       if (warrantyData) {
         booking.warranty = warrantyData;
+      }
+
+      // Generate review URL
+      if (bookingData.customer_email) {
+        try {
+          const baseUrl = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
+            ? 'https://www.travelling-technicians.ca'
+            : process.env.VERCEL_URL
+              ? `https://${process.env.VERCEL_URL}`
+              : 'http://localhost:3000';
+          const reviewToken = generateReviewToken(bookingData.booking_ref, bookingData.customer_email);
+          booking.reviewUrl = `${baseUrl}/leave-review?token=${reviewToken}&ref=${encodeURIComponent(bookingData.booking_ref)}`;
+        } catch {
+          // Non-critical — review link won't appear
+        }
       }
     }
 
