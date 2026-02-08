@@ -1218,7 +1218,7 @@ export const getStaticProps: GetStaticProps<PageProps> = async ({ params }) => {
       // Fetch models for dropdown (with slug, name, display_name)
       const { data: models, error: modelsError } = await supabase
         .from('device_models')
-        .select('id, slug, name, display_name, device_type_id, brand_id')
+        .select('id, slug, name, display_name, type_id, brand_id')
         .eq('is_active', true)
         .order('popularity_score', { ascending: false })
         .limit(100);
@@ -1241,31 +1241,19 @@ export const getStaticProps: GetStaticProps<PageProps> = async ({ params }) => {
         .limit(3);
 
       // Fetch minimum pricing for each service
-      const { data: pricingData, error: pricingError } = await supabase
-        .rpc('get_service_min_prices');
-
-      // If RPC doesn't exist, fall back to raw query
       let servicePricing: Record<string, number> = {};
-      if (pricingError || !pricingData) {
-        const { data: rawPricing } = await supabase
-          .from('dynamic_pricing')
-          .select('service_id, base_price, services(slug)')
-          .eq('is_active', true)
-          .order('base_price', { ascending: true });
+      const { data: rawPricing } = await supabase
+        .from('dynamic_pricing')
+        .select('service_id, base_price, services(slug)')
+        .eq('is_active', true)
+        .order('base_price', { ascending: true });
 
-        // Create pricing map: slug -> min price
-        if (rawPricing) {
-          rawPricing.forEach((item: any) => {
-            const slug = item.services?.slug;
-            if (slug && (!servicePricing[slug] || item.base_price < servicePricing[slug])) {
-              servicePricing[slug] = item.base_price;
-            }
-          });
-        }
-      } else {
-        // Use RPC result
-        pricingData.forEach((item: any) => {
-          servicePricing[item.service_slug] = item.min_price;
+      if (rawPricing) {
+        rawPricing.forEach((item: any) => {
+          const slug = item.services?.slug;
+          if (slug && (!servicePricing[slug] || item.base_price < servicePricing[slug])) {
+            servicePricing[slug] = item.base_price;
+          }
         });
       }
 
@@ -1293,7 +1281,7 @@ export const getStaticProps: GetStaticProps<PageProps> = async ({ params }) => {
         slug: m.slug,
         name: m.name,
         display_name: m.display_name,
-        type: typeMap.get(m.device_type_id) || 'mobile',
+        type: typeMap.get(m.type_id) || 'mobile',
         brand: brandMap.get(m.brand_id) || 'unknown'
       })) || [];
 
