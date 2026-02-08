@@ -32,6 +32,8 @@ export interface BookingConfirmationEmailData {
   city?: string;
   postalCode?: string;
   province?: string;
+  quotedPrice?: number;
+  pricingTier?: string;
 }
 
 /**
@@ -120,7 +122,9 @@ export async function sendBookingConfirmationEmail(data: BookingConfirmationEmai
       deviceType: data.deviceType || 'mobile', // Use provided device type or default to mobile
       brand: data.deviceBrand, // Add brand information
       model: data.deviceModel, // Add model information
-      address: fullAddress // Add the formatted address to the email data
+      address: fullAddress, // Add the formatted address to the email data
+      quotedPrice: data.quotedPrice,
+      pricingTier: data.pricingTier,
     };
     
     // Get the proper base URL depending on environment

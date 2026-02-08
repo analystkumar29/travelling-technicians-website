@@ -13,6 +13,8 @@ export interface BookingEmailData {
   bookingDate: string;
   bookingTime: string;
   address?: string;
+  quotedPrice?: number | null;
+  pricingTier?: string;
   verificationUrl: string;
   rescheduleUrl: string;
 }
@@ -126,6 +128,7 @@ ${detailRow('Service', data.service)}
 ${detailRow('Date', data.bookingDate)}
 ${detailRow('Time', data.bookingTime)}
 ${data.address ? detailRow('Address', data.address) : ''}
+${data.quotedPrice != null ? detailRow('Estimated Price', `$${data.quotedPrice.toFixed(2)}${data.pricingTier === 'premium' ? ' (Premium)' : ''}`) : ''}
 <tr><td colspan="2" style="padding:0 0 12px;"></td></tr>
 </table>
 </td></tr>
