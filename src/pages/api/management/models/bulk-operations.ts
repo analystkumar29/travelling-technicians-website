@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getServiceSupabase } from '@/utils/supabaseClient';
+import { requireAdminAuth } from '@/middleware/adminAuth';
 import { logger } from '@/utils/logger';
 
 const apiLogger = logger.createModuleLogger('api/management/models/bulk-operations');
@@ -17,7 +18,7 @@ interface ApiResponse {
   error?: string;
 }
 
-export default async function handler(
+async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ApiResponse>
 ) {
@@ -117,3 +118,5 @@ export default async function handler(
     });
   }
 }
+
+export default requireAdminAuth(handler);

@@ -437,6 +437,73 @@ export default async function handler(
       });
     }
 
+    // Upsert customer profile (non-blocking — log errors but don't fail the booking)
+    try {
+      const customerPhone = normalizedBookingData.customerPhone;
+      if (customerPhone) {
+        const today = new Date().toISOString().split('T')[0];
+        const quotedPrice = bookingData.quoted_price ? parseFloat(bookingData.quoted_price) : 0;
+
+        // Try to get existing profile first
+        const { data: existingProfile } = await supabase
+          .from('customer_profiles')
+          .select('id, total_bookings, total_spent')
+          .eq('phone', customerPhone)
+          .maybeSingle();
+
+        if (existingProfile) {
+          // Update existing profile
+          await supabase
+            .from('customer_profiles')
+            .update({
+              email: normalizedBookingData.customerEmail,
+              full_name: normalizedBookingData.customerName,
+              total_bookings: (existingProfile.total_bookings || 0) + 1,
+              total_spent: parseFloat(String(existingProfile.total_spent || 0)) + quotedPrice,
+              last_booking_date: today,
+            })
+            .eq('id', existingProfile.id);
+        } else {
+          // Insert new profile
+          await supabase
+            .from('customer_profiles')
+            .insert({
+              phone: customerPhone,
+              email: normalizedBookingData.customerEmail,
+              full_name: normalizedBookingData.customerName,
+              total_bookings: 1,
+              total_spent: quotedPrice,
+              first_booking_date: today,
+              last_booking_date: today,
+            });
+        }
+
+        // Link customer profile to the booking
+        const { data: profileData } = await supabase
+          .from('customer_profiles')
+          .select('id')
+          .eq('phone', customerPhone)
+          .single();
+
+        if (profileData) {
+          await supabase
+            .from('bookings')
+            .update({ customer_profile_id: profileData.id })
+            .eq('id', booking.id);
+        }
+
+        apiLogger.info('Customer profile upserted', {
+          reference: referenceNumber,
+          phone: customerPhone.substring(0, 3) + '***',
+        });
+      }
+    } catch (profileError) {
+      apiLogger.error('Failed to upsert customer profile (non-blocking)', {
+        reference: referenceNumber,
+        error: profileError instanceof Error ? profileError.message : 'Unknown error',
+      });
+    }
+
     // 🔍 DETAILED EMAIL CONFIRMATION PROCESS
     const emailData = {
       to: normalizedBookingData.customerEmail,

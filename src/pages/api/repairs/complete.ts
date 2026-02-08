@@ -103,15 +103,47 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(500).json({ error: 'Failed to register repair completion' });
     }
 
-    // Update booking status to completed
+    // Determine final price: use provided final_price, fallback to quoted_price
+    const finalPrice = body.final_price != null ? parseFloat(body.final_price) : null;
+
+    // Update booking status to completed + set final_price if provided
+    const bookingUpdate: Record<string, unknown> = { status: 'completed' };
+    if (finalPrice != null) {
+      bookingUpdate.final_price = finalPrice;
+    }
+
     const { error: updateError } = await supabase
       .from('bookings')
-      .update({ status: 'completed' })
+      .update(bookingUpdate)
       .eq('id', body.booking_id);
 
     if (updateError) {
       logger.error('Error updating booking status:', updateError);
       // Don't fail — the completion record is created
+    }
+
+    // Increment total_bookings_completed on the technician
+    const { error: techUpdateError } = await supabase.rpc('increment_field', {
+      row_id: body.technician_id,
+      table_name: 'technicians',
+      field_name: 'total_bookings_completed',
+    }).maybeSingle();
+
+    // Fallback: if RPC doesn't exist, do a manual increment
+    if (techUpdateError) {
+      logger.warn('RPC increment_field failed, using manual increment', { error: techUpdateError.message });
+      const { data: techData } = await supabase
+        .from('technicians')
+        .select('total_bookings_completed')
+        .eq('id', body.technician_id)
+        .single();
+
+      if (techData) {
+        await supabase
+          .from('technicians')
+          .update({ total_bookings_completed: (techData.total_bookings_completed || 0) + 1 })
+          .eq('id', body.technician_id);
+      }
     }
 
     // Fetch the auto-created warranty
