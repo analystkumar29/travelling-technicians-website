@@ -14,10 +14,10 @@ interface PricingCoverage {
   is_missing: boolean;
   existing_price?: number;
   fallback_price?: number;
-  service_id: number;
-  model_id: number;
-  pricing_tier_id: number;
-  existing_id?: number;
+  service_id: string;
+  model_id: string;
+  pricing_tier: string;
+  existing_id?: string;
 }
 
 interface ApiResponse {
@@ -52,27 +52,27 @@ export default requireAdminAuth(async function handler(
       { data: brands },
       { data: deviceModels },
       { data: services },
-      { data: pricingTiers },
       { data: existingPricing }
     ] = await Promise.all([
       supabase.from('device_types').select('*'),
       supabase.from('brands').select('*'),
       supabase.from('device_models').select('*'),
       supabase.from('services').select('*'),
-      supabase.from('pricing_tiers').select('*'),
       supabase.from('dynamic_pricing').select('*').order('id', { ascending: true }).limit(2000)
     ]);
 
-    if (!deviceTypes || !brands || !deviceModels || !services || !pricingTiers || !existingPricing) {
+    if (!deviceTypes || !brands || !deviceModels || !services || !existingPricing) {
       throw new Error('Failed to fetch required data');
     }
+
+    // Hardcoded tiers matching the DB check constraint
+    const tiers = ['standard', 'premium'];
 
     // Step 2: Create lookup maps for efficient data joining
     const servicesMap = new Map(services?.map((s: any) => [s.id, s]) || []);
     const modelsMap = new Map(deviceModels?.map((m: any) => [m.id, m]) || []);
     const brandsMap = new Map(brands?.map((b: any) => [b.id, b]) || []);
     const deviceTypesMap = new Map(deviceTypes?.map((dt: any) => [dt.id, dt]) || []);
-    const tiersMap = new Map(pricingTiers?.map((t: any) => [t.id, t]) || []);
 
     // Step 3: Create a set of existing pricing combinations for fast lookup
     const existingCombinations = new Map();
@@ -81,25 +81,11 @@ export default requireAdminAuth(async function handler(
       const model = modelsMap.get(pricing.model_id);
       const brand = model ? brandsMap.get((model as any).brand_id) : null;
       const deviceType = brand ? deviceTypesMap.get((brand as any).device_type_id) : null;
-      const tier = tiersMap.get(pricing.pricing_tier_id);
+      const tier = pricing.pricing_tier;
 
       if (service && model && brand && deviceType && tier) {
-        const key = `${(deviceType as any).name}-${(brand as any).name}-${(model as any).name}-${(service as any).name}-${(tier as any).name}`.toLowerCase();
+        const key = `${(deviceType as any).name}-${(brand as any).name}-${(model as any).name}-${(service as any).name}-${tier}`.toLowerCase();
         existingCombinations.set(key, pricing);
-        
-        // Debug logging for the specific combination we're tracking
-        if (pricing.service_id === 1 && pricing.model_id === 3 && pricing.pricing_tier_id === 1) {
-          apiLogger.info('Found existing pricing entry for iPhone 15 Plus screen replacement economy', {
-            pricingId: pricing.id,
-            key,
-            deviceType: (deviceType as any).name,
-            brand: (brand as any).name,
-            model: (model as any).name,
-            service: (service as any).name,
-            tier: (tier as any).name,
-            basePrice: pricing.base_price
-          });
-        }
       }
     });
 
@@ -124,50 +110,29 @@ export default requireAdminAuth(async function handler(
 
       models.forEach((model: any) => {
         services.forEach((service: any) => {
-          // Only include services that are relevant to this device type
-          const serviceDeviceType = deviceTypesMap.get((service as any).device_type_id);
-          if (serviceDeviceType && (serviceDeviceType as any).name === (deviceType as any).name) {
-            pricingTiers.forEach((tier: any) => {
-              totalCombinations++;
+          // Include all services for all models — the DB already has only valid active entries
+          tiers.forEach((tier: string) => {
+            totalCombinations++;
 
-              const combinationKey = `${(deviceType as any).name}-${(brand as any).name}-${(model as any).name}-${(service as any).name}-${(tier as any).name}`.toLowerCase();
-              const existingEntry = existingCombinations.get(combinationKey);
-              const isMissing = !existingEntry;
+            const combinationKey = `${(deviceType as any).name}-${(brand as any).name}-${(model as any).name}-${(service as any).name}-${tier}`.toLowerCase();
+            const existingEntry = existingCombinations.get(combinationKey);
+            const isMissing = !existingEntry;
 
-              // Debug logging for the specific combination we're tracking
-              if (service.id === 1 && model.id === 3 && tier.id === 1) {
-                apiLogger.info('Checking iPhone 15 Plus screen replacement economy combination', {
-                  combinationKey,
-                  existingEntry: !!existingEntry,
-                  isMissing,
-                  deviceType: (deviceType as any).name,
-                  brand: (brand as any).name,
-                  model: (model as any).name,
-                  service: (service as any).name,
-                  tier: (tier as any).name,
-                  serviceId: service.id,
-                  modelId: model.id,
-                  tierId: tier.id,
-                  existingCombinationsSize: existingCombinations.size
-                });
-              }
-
-              coverage.push({
-                device_type: (deviceType as any).name,
-                brand_name: (brand as any).name,
-                model_name: (model as any).name,
-                service_name: (service as any).name,
-                tier_name: (tier as any).name,
-                is_missing: isMissing,
-                existing_price: existingEntry ? existingEntry.base_price : undefined,
-                fallback_price: isMissing ? calculateFallbackPrice((deviceType as any).name, (service as any).name, (tier as any).name) : undefined,
-                service_id: service.id,
-                model_id: model.id,
-                pricing_tier_id: tier.id,
-                existing_id: existingEntry ? existingEntry.id : undefined
-              });
+            coverage.push({
+              device_type: (deviceType as any).name,
+              brand_name: (brand as any).name,
+              model_name: (model as any).name,
+              service_name: (service as any).name,
+              tier_name: tier,
+              is_missing: isMissing,
+              existing_price: existingEntry ? existingEntry.base_price : undefined,
+              fallback_price: isMissing ? calculateFallbackPrice((deviceType as any).name, (service as any).name, tier) : undefined,
+              service_id: service.id,
+              model_id: model.id,
+              pricing_tier: tier,
+              existing_id: existingEntry ? existingEntry.id : undefined
             });
-          }
+          });
         });
       });
     });
@@ -264,15 +229,12 @@ function calculateFallbackPrice(deviceType: string, serviceName: string, tierNam
   const devicePricing = basePricing[deviceType.toLowerCase()] || basePricing.mobile;
   const basePrice = devicePricing[serviceName] || devicePricing['Other Repairs'] || 99;
 
-  // Apply tier multipliers
+  // Apply tier multipliers (only standard and premium exist in the DB)
   const tierMultipliers: { [key: string]: number } = {
-    'economy': 0.85,
     'standard': 1.0,
-    'premium': 1.25,
-    'same_day': 1.4,
-    'express': 1.5
+    'premium': 1.25
   };
 
   const multiplier = tierMultipliers[tierName.toLowerCase()] || 1.0;
   return Math.round(basePrice * multiplier);
-} 
+}

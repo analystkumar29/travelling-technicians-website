@@ -39,7 +39,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             device_models (
               name,
               brand_id,
-              type_id
+              type_id,
+              device_types (name, slug)
             ),
             services (
               name,

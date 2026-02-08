@@ -61,6 +61,7 @@ interface Booking {
     name: string;
     brand_id: string;
     type_id: string;
+    device_types?: { name: string; slug: string };
   };
   services?: {
     name: string;
@@ -105,7 +106,9 @@ export default function AdminBookings() {
     }
 
     if (filters.device_type !== 'all') {
-      // TODO: Implement device type filtering once we have device_type data
+      filtered = filtered.filter(b =>
+        b.device_models?.device_types?.slug === filters.device_type
+      );
     }
 
     if (filters.date_range !== 'all') {
@@ -276,7 +279,7 @@ export default function AdminBookings() {
     await updateBookingStatus(bookingId, 'assigned', { technician_id: technicianId });
   };
 
-  const completeRepair = async (bookingId: string, technicianId: string, repairNotes: string, repairDuration: number, partsUsed: string) => {
+  const completeRepair = async (bookingId: string, technicianId: string, repairNotes: string, repairDuration: number, partsUsed: string, finalPrice?: number) => {
     try {
       const response = await authFetch('/api/repairs/complete', {
         method: 'POST',
@@ -287,6 +290,7 @@ export default function AdminBookings() {
           repair_notes: repairNotes,
           repair_duration: repairDuration,
           parts_used: partsUsed ? partsUsed.split('\n').filter(Boolean).map(p => ({ name: p.trim() })) : [],
+          ...(finalPrice != null && { final_price: finalPrice }),
         }),
       });
 
@@ -398,6 +402,7 @@ export default function AdminBookings() {
     const [repairNotes, setRepairNotes] = useState('');
     const [repairDuration, setRepairDuration] = useState(60);
     const [partsUsed, setPartsUsed] = useState('');
+    const [finalPrice, setFinalPrice] = useState<string>(booking.quoted_price ? String(booking.quoted_price) : '');
     const [completionResult, setCompletionResult] = useState<any>(null);
     const [submitting, setSubmitting] = useState(false);
     const [warrantyInfo, setWarrantyInfo] = useState<any>(null);
@@ -445,7 +450,8 @@ export default function AdminBookings() {
       }
       setSubmitting(true);
       try {
-        const result = await completeRepair(booking.id, techId, repairNotes, repairDuration, partsUsed);
+        const parsedPrice = finalPrice ? parseFloat(finalPrice) : undefined;
+        const result = await completeRepair(booking.id, techId, repairNotes, repairDuration, partsUsed, parsedPrice);
         setCompletionResult(result);
         toast.success('Repair completed successfully');
       } catch (err) {
@@ -741,6 +747,21 @@ export default function AdminBookings() {
                           min={1}
                         />
                       </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Final Price (CAD)</label>
+                        <input
+                          type="number"
+                          value={finalPrice}
+                          onChange={(e) => setFinalPrice(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                          min={0}
+                          step="0.01"
+                          placeholder={booking.quoted_price ? `Quoted: $${booking.quoted_price}` : 'Enter final price'}
+                        />
+                        {booking.quoted_price && !finalPrice && (
+                          <p className="mt-1 text-xs text-gray-500">Leave empty to use quoted price (${booking.quoted_price})</p>
+                        )}
+                      </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Parts Used (one per line)</label>
@@ -933,7 +954,6 @@ export default function AdminBookings() {
                 <option value="all">All Devices</option>
                 <option value="mobile">Mobile</option>
                 <option value="laptop">Laptop</option>
-                <option value="tablet">Tablet</option>
               </select>
             </div>
 

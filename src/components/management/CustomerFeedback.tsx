@@ -1,18 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  FaExclamationTriangle, 
-  FaCheckCircle, 
-  FaUser, 
-  FaEnvelope, 
-  FaClock,
-  FaFilter,
-  FaSort,
-  FaSyncAlt,
-  FaEye,
-  FaTimes,
-  FaThumbsUp,
-  FaThumbsDown
-} from 'react-icons/fa';
+import {
+  AlertTriangle,
+  CheckCircle,
+  User,
+  Mail,
+  Clock,
+  Filter,
+  ArrowUpDown,
+  RefreshCw,
+  Eye,
+  X,
+  ThumbsUp,
+  ThumbsDown
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { authFetch } from '@/utils/auth';
+import AdminModal from '@/components/admin/AdminModal';
 
 interface CustomerFeedback {
   id: number;
@@ -84,7 +87,7 @@ export default function CustomerFeedback() {
         sort_by: sortBy
       });
 
-      const response = await fetch(`/api/management/customer-feedback?${params}`);
+      const response = await authFetch(`/api/management/customer-feedback?${params}`);
       const data = await response.json();
       
       if (data.success) {
@@ -123,7 +126,7 @@ export default function CustomerFeedback() {
 
   const handleReviewFeedback = async (id: number, action: 'confirm' | 'reject' | 'resolve', notes: string) => {
     try {
-      const response = await fetch(`/api/management/customer-feedback/${id}`, {
+      const response = await authFetch(`/api/management/customer-feedback/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -139,11 +142,11 @@ export default function CustomerFeedback() {
         setReviewAction(null);
         setSelectedFeedback(null);
       } else {
-        alert(`Failed to ${action} feedback: ${data.message}`);
+        toast.error(`Failed to ${action} feedback: ${data.message}`);
       }
     } catch (error) {
       console.error(`Error ${action}ing feedback:`, error);
-      alert(`Error ${action}ing feedback`);
+      toast.error(`Error ${action}ing feedback`);
     }
   };
 
@@ -170,11 +173,11 @@ export default function CustomerFeedback() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'pending': return <FaClock />;
-      case 'reviewing': return <FaEye />;
-      case 'confirmed': return <FaExclamationTriangle />;
-      case 'rejected': return <FaTimes />;
-      case 'resolved': return <FaCheckCircle />;
+      case 'pending': return <Clock className="h-3 w-3" />;
+      case 'reviewing': return <Eye className="h-3 w-3" />;
+      case 'confirmed': return <AlertTriangle className="h-3 w-3" />;
+      case 'rejected': return <X className="h-3 w-3" />;
+      case 'resolved': return <CheckCircle className="h-3 w-3" />;
       default: return null;
     }
   };
@@ -182,7 +185,7 @@ export default function CustomerFeedback() {
   if (loading && feedback.length === 0) {
     return (
       <div className="p-6 text-center">
-        <FaSyncAlt className="animate-spin mx-auto h-8 w-8 text-gray-500 mb-4" />
+        <RefreshCw className="animate-spin mx-auto h-8 w-8 text-gray-500 mb-4" />
         <p>Loading customer feedback...</p>
       </div>
     );
@@ -222,7 +225,7 @@ export default function CustomerFeedback() {
       <div className="bg-white p-4 rounded-lg shadow mb-6">
         <div className="flex flex-wrap items-center gap-4 mb-4">
           <div className="flex items-center gap-2">
-            <FaFilter className="text-gray-400" />
+            <Filter className="h-4 w-4 text-gray-400" />
             <select
               value={filter.status}
               onChange={(e) => setFilter({...filter, status: e.target.value})}
@@ -261,7 +264,7 @@ export default function CustomerFeedback() {
           </select>
 
           <div className="flex items-center gap-2">
-            <FaSort className="text-gray-400" />
+            <ArrowUpDown className="h-4 w-4 text-gray-400" />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
@@ -278,7 +281,7 @@ export default function CustomerFeedback() {
             className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center gap-2"
             disabled={loading}
           >
-            <FaSyncAlt className={loading ? 'animate-spin' : ''} />
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
         </div>
@@ -318,7 +321,7 @@ export default function CustomerFeedback() {
                 <tr key={item.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <div className="flex items-center">
-                      <FaUser className="mr-2 text-gray-400" />
+                      <User className="mr-2 h-4 w-4 text-gray-400" />
                       <div>
                         <div className="text-sm font-medium text-gray-900">
                           {item.customer_email || 'Anonymous'}
@@ -363,7 +366,7 @@ export default function CustomerFeedback() {
                         className="text-blue-600 hover:text-blue-900"
                         title="View Details"
                       >
-                        <FaEye />
+                        <Eye className="h-4 w-4" />
                       </button>
                       
                       {item.status === 'pending' && (
@@ -373,14 +376,14 @@ export default function CustomerFeedback() {
                             className="text-green-600 hover:text-green-900"
                             title="Confirm Issue"
                           >
-                            <FaThumbsUp />
+                            <ThumbsUp className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => setReviewAction({ id: item.id, action: 'reject', notes: '' })}
                             className="text-red-600 hover:text-red-900"
                             title="Reject Issue"
                           >
-                            <FaThumbsDown />
+                            <ThumbsDown className="h-4 w-4" />
                           </button>
                         </>
                       )}
@@ -393,99 +396,79 @@ export default function CustomerFeedback() {
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow p-8 text-center">
-          <FaCheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
+          <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
           <p className="text-lg font-medium text-gray-900">No feedback found</p>
           <p className="text-gray-500 mt-2">No customer feedback matches your current filters.</p>
         </div>
       )}
 
       {/* Detail Modal */}
-      {selectedFeedback && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">Feedback Details</h3>
-              <button
-                onClick={() => setSelectedFeedback(null)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ×
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <strong>Customer:</strong> {selectedFeedback.customer_email || 'Anonymous'}
-                </div>
-                <div>
-                  <strong>Source:</strong> {selectedFeedback.source_type}
-                </div>
-                <div>
-                  <strong>Type:</strong> {selectedFeedback.feedback_type}
-                </div>
-                <div>
-                  <strong>Severity:</strong> {selectedFeedback.severity_reported}
-                </div>
-                <div>
-                  <strong>Status:</strong> {selectedFeedback.status}
-                </div>
-                <div>
-                  <strong>Date:</strong> {new Date(selectedFeedback.created_at).toLocaleString()}
-                </div>
-              </div>
-
+      <AdminModal
+        open={!!selectedFeedback}
+        onClose={() => setSelectedFeedback(null)}
+        title="Feedback Details"
+        size="lg"
+      >
+        {selectedFeedback && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <strong>Reported Issue:</strong>
-                <p className="mt-1 p-3 bg-gray-100 rounded">{selectedFeedback.reported_issue}</p>
+                <strong>Customer:</strong> {selectedFeedback.customer_email || 'Anonymous'}
               </div>
-
-              {selectedFeedback.suggested_correction && (
-                <div>
-                  <strong>Suggested Correction:</strong>
-                  <p className="mt-1 p-3 bg-blue-50 rounded">{selectedFeedback.suggested_correction}</p>
-                </div>
-              )}
-
-              {selectedFeedback.review_notes && (
-                <div>
-                  <strong>Review Notes:</strong>
-                  <p className="mt-1 p-3 bg-gray-100 rounded">{selectedFeedback.review_notes}</p>
-                </div>
-              )}
-
-              {selectedFeedback.action_taken && (
-                <div>
-                  <strong>Action Taken:</strong>
-                  <p className="mt-1 p-3 bg-green-50 rounded">{selectedFeedback.action_taken}</p>
-                </div>
-              )}
+              <div>
+                <strong>Source:</strong> {selectedFeedback.source_type}
+              </div>
+              <div>
+                <strong>Type:</strong> {selectedFeedback.feedback_type}
+              </div>
+              <div>
+                <strong>Severity:</strong> {selectedFeedback.severity_reported}
+              </div>
+              <div>
+                <strong>Status:</strong> {selectedFeedback.status}
+              </div>
+              <div>
+                <strong>Date:</strong> {new Date(selectedFeedback.created_at).toLocaleString()}
+              </div>
             </div>
+
+            <div>
+              <strong>Reported Issue:</strong>
+              <p className="mt-1 p-3 bg-gray-100 rounded">{selectedFeedback.reported_issue}</p>
+            </div>
+
+            {selectedFeedback.suggested_correction && (
+              <div>
+                <strong>Suggested Correction:</strong>
+                <p className="mt-1 p-3 bg-blue-50 rounded">{selectedFeedback.suggested_correction}</p>
+              </div>
+            )}
+
+            {selectedFeedback.review_notes && (
+              <div>
+                <strong>Review Notes:</strong>
+                <p className="mt-1 p-3 bg-gray-100 rounded">{selectedFeedback.review_notes}</p>
+              </div>
+            )}
+
+            {selectedFeedback.action_taken && (
+              <div>
+                <strong>Action Taken:</strong>
+                <p className="mt-1 p-3 bg-green-50 rounded">{selectedFeedback.action_taken}</p>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </AdminModal>
 
       {/* Review Action Modal */}
-      {reviewAction && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-bold mb-4">
-              {reviewAction.action.charAt(0).toUpperCase() + reviewAction.action.slice(1)} Feedback
-            </h3>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Review Notes:
-              </label>
-              <textarea
-                value={reviewAction.notes}
-                onChange={(e) => setReviewAction({...reviewAction, notes: e.target.value})}
-                className="w-full p-3 border rounded-lg"
-                rows={4}
-                placeholder="Enter your review notes..."
-              />
-            </div>
-
+      <AdminModal
+        open={!!reviewAction}
+        onClose={() => setReviewAction(null)}
+        title={reviewAction ? `${reviewAction.action.charAt(0).toUpperCase() + reviewAction.action.slice(1)} Feedback` : ''}
+        size="sm"
+        footer={
+          reviewAction ? (
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setReviewAction(null)}
@@ -502,9 +485,24 @@ export default function CustomerFeedback() {
                 {reviewAction.action.charAt(0).toUpperCase() + reviewAction.action.slice(1)}
               </button>
             </div>
+          ) : undefined
+        }
+      >
+        {reviewAction && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Review Notes:
+            </label>
+            <textarea
+              value={reviewAction.notes}
+              onChange={(e) => setReviewAction({...reviewAction, notes: e.target.value})}
+              className="w-full p-3 border rounded-lg"
+              rows={4}
+              placeholder="Enter your review notes..."
+            />
           </div>
-        </div>
-      )}
+        )}
+      </AdminModal>
     </div>
   );
 }

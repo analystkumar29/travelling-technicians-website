@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
+import { authFetch } from '@/utils/auth';
 
 interface DeviceType {
   id: string;
@@ -61,7 +62,7 @@ export default function BulkPricingManager() {
   const loadDeviceTypes = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/devices/types');
+      const response = await authFetch('/api/devices/types');
       const data = await response.json();
       if (data.success) {
         setDeviceTypes(data.types || []);
@@ -77,7 +78,7 @@ export default function BulkPricingManager() {
   const loadBrands = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(
+      const response = await authFetch(
         `/api/devices/brands?device_type_id=${selectedDeviceType}`
       );
       const data = await response.json();
@@ -95,7 +96,7 @@ export default function BulkPricingManager() {
   const loadModels = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(
+      const response = await authFetch(
         `/api/management/device-models?brand_id=${selectedBrand}`
       );
       const data = await response.json();
@@ -113,7 +114,7 @@ export default function BulkPricingManager() {
   const loadServices = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(
+      const response = await authFetch(
         `/api/pricing/services?deviceType=${deviceTypes.find(dt => dt.id === selectedDeviceType)?.name || ''}`
       );
       const data = await response.json();
@@ -134,7 +135,7 @@ export default function BulkPricingManager() {
       const modelIds = Array.from(selectedModels).join(',');
       const serviceIds = Array.from(selectedServices).join(',');
 
-      const response = await fetch(
+      const response = await authFetch(
         `/api/management/pricing-matrix?device_type_id=${selectedDeviceType}&brand_id=${selectedBrand}&model_ids=${modelIds}&service_ids=${serviceIds}`
       );
       const data = await response.json();
@@ -186,29 +187,45 @@ export default function BulkPricingManager() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/management/bulk-pricing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          device_type_id: selectedDeviceType,
-          brand_id: selectedBrand,
-          model_ids: Array.from(selectedModels),
-          service_ids: Array.from(selectedServices),
-          pricing: {
-            standard: parseFloat(pricing.standard),
-            premium: parseFloat(pricing.premium)
+      // Generate entries for each model x service x tier combination
+      const entries: any[] = [];
+      const modelIds = Array.from(selectedModels);
+      const serviceIds = Array.from(selectedServices);
+
+      for (const model_id of modelIds) {
+        for (const service_id of serviceIds) {
+          if (pricing.standard) {
+            entries.push({
+              service_id,
+              model_id,
+              pricing_tier: 'standard',
+              base_price: parseFloat(pricing.standard)
+            });
           }
-        })
+          if (pricing.premium) {
+            entries.push({
+              service_id,
+              model_id,
+              pricing_tier: 'premium',
+              base_price: parseFloat(pricing.premium)
+            });
+          }
+        }
+      }
+
+      const response = await authFetch('/api/management/dynamic-pricing-bulk', {
+        method: 'POST',
+        body: JSON.stringify({ entries })
       });
 
       const data = await response.json();
 
       if (data.success) {
-        setSuccess(`Successfully updated ${data.updated} pricing records!`);
+        setSuccess(`Successfully updated ${data.results?.succeeded || entries.length} pricing records!`);
         await loadPricingMatrix();
         setCurrentStep('matrix');
       } else {
-        setError(data.message || 'Failed to save pricing');
+        setError(data.message || data.error || 'Failed to save pricing');
       }
     } catch (err) {
       setError('Error saving pricing');

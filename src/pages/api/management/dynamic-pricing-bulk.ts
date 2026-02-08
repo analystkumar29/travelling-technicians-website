@@ -6,13 +6,12 @@ import { logger } from '@/utils/logger';
 const apiLogger = logger.createModuleLogger('api/management/dynamic-pricing-bulk');
 
 interface BulkEntry {
-  service_id: number;
-  model_id: number;
-  pricing_tier_id: number;
+  service_id: string;
+  model_id: string;
+  pricing_tier: string;
   base_price: number;
   discounted_price?: number;
-  cost_price?: number;
-  existing_id?: number; // If updating existing entry
+  existing_id?: string; // If updating existing entry
 }
 
 interface ApiResponse {
@@ -61,7 +60,7 @@ export default requireAdminAuth(async function handler(req: NextApiRequest, res:
       entriesStructure: entries.map(e => ({
         hasServiceId: !!e.service_id,
         hasModelId: !!e.model_id,
-        hasPricingTierId: !!e.pricing_tier_id,
+        hasPricingTier: !!e.pricing_tier,
         hasBasePrice: typeof e.base_price !== 'undefined',
         hasExistingId: !!e.existing_id
       }))
@@ -80,35 +79,30 @@ export default requireAdminAuth(async function handler(req: NextApiRequest, res:
       apiLogger.debug(`[${entryId}] Processing entry ${i + 1}/${entries.length}`, entry);
 
       try {
-        const { service_id, model_id, pricing_tier_id, base_price, discounted_price, cost_price, existing_id } = entry;
+        const { service_id, model_id, pricing_tier, base_price, discounted_price, existing_id } = entry;
 
         // Validate required fields
-        if (!service_id || !model_id || !pricing_tier_id || typeof base_price !== 'number') {
-          throw new Error(`Missing required fields. Got: service_id=${service_id}, model_id=${model_id}, pricing_tier_id=${pricing_tier_id}, base_price=${base_price} (type: ${typeof base_price})`);
+        if (!service_id || !model_id || !pricing_tier || typeof base_price !== 'number') {
+          throw new Error(`Missing required fields. Got: service_id=${service_id}, model_id=${model_id}, pricing_tier=${pricing_tier}, base_price=${base_price} (type: ${typeof base_price})`);
         }
 
         if (base_price <= 0) {
           throw new Error(`Base price must be greater than 0, got: ${base_price}`);
         }
 
-        // Convert to proper types
-        const serviceIdInt = parseInt(service_id.toString());
-        const modelIdInt = parseInt(model_id.toString());
-        const pricingTierIdInt = parseInt(pricing_tier_id.toString());
         const basePriceFloat = parseFloat(base_price.toString());
 
-        if (isNaN(serviceIdInt) || isNaN(modelIdInt) || isNaN(pricingTierIdInt) || isNaN(basePriceFloat)) {
-          throw new Error(`Invalid numeric values: service_id=${serviceIdInt}, model_id=${modelIdInt}, pricing_tier_id=${pricingTierIdInt}, base_price=${basePriceFloat}`);
+        if (isNaN(basePriceFloat)) {
+          throw new Error(`Invalid base_price value: ${base_price}`);
         }
 
         // Prepare the data for upsert
         const pricingData = {
-          service_id: serviceIdInt,
-          model_id: modelIdInt,
-          pricing_tier_id: pricingTierIdInt,
+          service_id: service_id,
+          model_id: model_id,
+          pricing_tier: pricing_tier,
           base_price: basePriceFloat,
           discounted_price: discounted_price ? parseFloat(discounted_price.toString()) : null,
-          cost_price: cost_price ? parseFloat(cost_price.toString()) : null,
           is_active: true,
           updated_at: new Date().toISOString()
         };
@@ -139,7 +133,7 @@ export default requireAdminAuth(async function handler(req: NextApiRequest, res:
           result = await supabase
             .from('dynamic_pricing')
             .upsert(pricingData, { 
-              onConflict: 'service_id,model_id,pricing_tier_id',
+              onConflict: 'model_id,service_id,pricing_tier',
               ignoreDuplicates: false 
             })
             .select();
@@ -166,10 +160,10 @@ export default requireAdminAuth(async function handler(req: NextApiRequest, res:
           action: existing_id ? 'updated' : 'created'
         });
         
-        apiLogger.info(`[${entryId}] Successfully processed pricing entry`, { 
-          service_id: serviceIdInt, 
-          model_id: modelIdInt, 
-          pricing_tier_id: pricingTierIdInt, 
+        apiLogger.info(`[${entryId}] Successfully processed pricing entry`, {
+          service_id,
+          model_id,
+          pricing_tier,
           base_price: basePriceFloat,
           action: existing_id ? 'updated' : 'created',
           resultId: result.data[0]?.id
@@ -205,17 +199,17 @@ export default requireAdminAuth(async function handler(req: NextApiRequest, res:
       try {
         const { data: verifyData, error: verifyError } = await supabase
           .from('dynamic_pricing')
-          .select('id, service_id, model_id, pricing_tier_id, base_price, updated_at')
+          .select('id, service_id, model_id, pricing_tier, base_price, updated_at')
           .order('updated_at', { ascending: false })
           .limit(successCount);
-          
+
         if (!verifyError && verifyData) {
           apiLogger.info(`[${requestId}] Database verification - recent entries`, {
             recentEntries: verifyData.map(d => ({
               id: d.id,
               service_id: d.service_id,
               model_id: d.model_id,
-              pricing_tier_id: d.pricing_tier_id,
+              pricing_tier: d.pricing_tier,
               base_price: d.base_price,
               updated_at: d.updated_at
             }))

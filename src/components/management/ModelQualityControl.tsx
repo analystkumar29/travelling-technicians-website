@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  FaExclamationTriangle, 
-  FaCheckCircle, 
-  FaTrash, 
-  FaEye, 
-  FaEyeSlash,
-  FaSync,
-  FaFilter
-} from 'react-icons/fa';
+import { AlertTriangle, CheckCircle, EyeOff, RefreshCw } from 'lucide-react';
+import { authFetch } from '@/utils/auth';
+import { toast } from 'sonner';
 
 interface ContaminatedModel {
   id: number;
@@ -41,7 +35,7 @@ export default function ModelQualityControl() {
   const performQualityAudit = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/management/models/quality-audit');
+      const response = await authFetch('/api/management/models/quality-audit');
       const data = await response.json();
       
       if (data.success) {
@@ -57,13 +51,13 @@ export default function ModelQualityControl() {
 
   const handleBulkOperation = async (operation: string) => {
     if (selectedModels.size === 0) {
-      alert('Please select models to perform this operation');
+      toast.error('Please select models to perform this operation');
       return;
     }
 
     setActionLoading(true);
     try {
-      const response = await fetch('/api/management/models/bulk-operations', {
+      const response = await authFetch('/api/management/models/bulk-operations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -75,28 +69,28 @@ export default function ModelQualityControl() {
       const data = await response.json();
       
       if (data.success) {
-        alert(`Successfully ${operation}d ${data.updated_count} models`);
+        toast.success(`Successfully ${operation}d ${data.updated_count} models`);
         setSelectedModels(new Set());
         performQualityAudit(); // Refresh the list
       } else {
-        alert(`Failed to ${operation} models: ${data.message}`);
+        toast.error(`Failed to ${operation} models: ${data.message}`);
       }
     } catch (error) {
       console.error(`Error performing ${operation}:`, error);
-      alert(`Error performing ${operation}`);
+      toast.error(`Error performing ${operation}`);
     } finally {
       setActionLoading(false);
     }
   };
 
   const autoFixContamination = async () => {
-    if (!confirm('This will automatically flag all contaminated models for review and lower their quality scores. Continue?')) {
+    if (!window.confirm('This will automatically flag all contaminated models for review and lower their quality scores. Continue?')) {
       return;
     }
 
     setActionLoading(true);
     try {
-      const response = await fetch('/api/management/models/quality-audit', {
+      const response = await authFetch('/api/management/models/quality-audit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -108,12 +102,12 @@ export default function ModelQualityControl() {
       const data = await response.json();
       
       if (data.success) {
-        alert('Quality scores updated successfully');
+        toast.success('Quality scores updated successfully');
         performQualityAudit();
       }
     } catch (error) {
       console.error('Error auto-fixing contamination:', error);
-      alert('Error updating quality scores');
+      toast.error('Error updating quality scores');
     } finally {
       setActionLoading(false);
     }
@@ -153,7 +147,7 @@ export default function ModelQualityControl() {
   if (loading) {
     return (
       <div className="p-6 text-center">
-        <FaSync className="animate-spin mx-auto h-8 w-8 text-gray-500 mb-4" />
+        <RefreshCw className="animate-spin mx-auto h-8 w-8 text-gray-500 mb-4" />
         <p>Performing quality audit...</p>
       </div>
     );
@@ -221,7 +215,7 @@ export default function ModelQualityControl() {
               className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center gap-2"
               disabled={loading}
             >
-              <FaSync className={loading ? 'animate-spin' : ''} />
+              <RefreshCw className={loading ? 'animate-spin' : ''} />
               Refresh
             </button>
             
@@ -246,7 +240,7 @@ export default function ModelQualityControl() {
               className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-2"
               disabled={actionLoading}
             >
-              <FaEyeSlash />
+              <EyeOff className="h-4 w-4" />
               Deactivate Selected
             </button>
             
@@ -255,7 +249,7 @@ export default function ModelQualityControl() {
               className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 flex items-center gap-2"
               disabled={actionLoading}
             >
-              <FaExclamationTriangle />
+              <AlertTriangle className="h-4 w-4" />
               Mark for Review
             </button>
             
@@ -363,7 +357,7 @@ export default function ModelQualityControl() {
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow p-8 text-center">
-          <FaCheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
+          <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
           <p className="text-lg font-medium text-gray-900">No contaminated models found!</p>
           <p className="text-gray-500 mt-2">All models appear to have clean names.</p>
         </div>

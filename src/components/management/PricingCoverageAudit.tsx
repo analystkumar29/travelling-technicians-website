@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Search, AlertTriangle, CheckCircle, Plus, Filter, X, Edit, Save, CheckSquare, Square, Check } from 'lucide-react';
+import { authFetch } from '@/utils/auth';
 
 interface PricingCoverage {
   device_type: string;
@@ -17,10 +18,10 @@ interface PricingCoverage {
   existing_price?: number;
   fallback_price?: number;
   // Database IDs for proper updates
-  service_id: number;
-  model_id: number;
-  pricing_tier_id: number;
-  existing_id?: number;
+  service_id: string;
+  model_id: string;
+  pricing_tier: string;
+  existing_id?: string;
 }
 
 interface Summary {
@@ -47,7 +48,7 @@ export default function PricingCoverageAudit() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  
+
   // Filtering and pagination
   const [filters, setFilters] = useState({
     deviceType: '',
@@ -92,9 +93,9 @@ export default function PricingCoverageAudit() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/management/pricing-coverage');
+      const response = await authFetch('/api/management/pricing-coverage');
       const data = await response.json();
-      
+
       if (data.success) {
         setCoverage(data.coverage);
         setSummary(data.summary);
@@ -118,10 +119,10 @@ export default function PricingCoverageAudit() {
     const matchesBrand = !filters.brand || item.brand_name.toLowerCase().includes(filters.brand.toLowerCase());
     const matchesService = !filters.service || item.service_name.toLowerCase().includes(filters.service.toLowerCase());
     const matchesTier = !filters.tier || item.tier_name.toLowerCase().includes(filters.tier.toLowerCase());
-    const matchesStatus = !filters.status || 
+    const matchesStatus = !filters.status ||
       (filters.status === 'missing' && item.is_missing) ||
       (filters.status === 'existing' && !item.is_missing);
-    const matchesSearch = !filters.search || 
+    const matchesSearch = !filters.search ||
       item.device_type.toLowerCase().includes(filters.search.toLowerCase()) ||
       item.brand_name.toLowerCase().includes(filters.search.toLowerCase()) ||
       item.model_name.toLowerCase().includes(filters.search.toLowerCase()) ||
@@ -136,47 +137,38 @@ export default function PricingCoverageAudit() {
   const paginatedCoverage = filteredCoverage.slice(startIndex, startIndex + itemsPerPage);
 
   // Generate unique key for each row
-  const getRowKey = (item: PricingCoverage) => 
+  const getRowKey = (item: PricingCoverage) =>
     `${item.device_type}-${item.brand_name}-${item.model_name}-${item.service_name}-${item.tier_name}`;
 
   // Handle adding missing price
   const handleAddPrice = async (item: PricingCoverage) => {
     const requestId = `add-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
     console.log(`[${requestId}] Starting price addition`, {
       item,
-      itemKeys: Object.keys(item),
-      hasServiceId: !!item.service_id,
-      hasModelId: !!item.model_id,
-      hasPricingTierId: !!item.pricing_tier_id,
-      serviceIdValue: item.service_id,
-      modelIdValue: item.model_id,
-      pricingTierIdValue: item.pricing_tier_id,
-      serviceIdType: typeof item.service_id,
-      modelIdType: typeof item.model_id,
-      pricingTierIdType: typeof item.pricing_tier_id,
+      serviceId: item.service_id,
+      modelId: item.model_id,
+      pricingTier: item.pricing_tier,
       fallbackPrice: item.fallback_price
     });
 
     try {
       setLoading(true);
-      
+
       const pricingData = {
         service_id: item.service_id,
         model_id: item.model_id,
-        pricing_tier_id: item.pricing_tier_id,
+        pricing_tier: item.pricing_tier,
         base_price: item.fallback_price || 99,
-        discounted_price: null,
-        cost_price: null
+        discounted_price: null
       };
 
       console.log(`[${requestId}] Prepared pricing data`, {
         pricingData,
-        pricingDataKeys: Object.keys(pricingData),
         requestPayload: { entries: [pricingData] }
       });
 
-      const response = await fetch('/api/management/dynamic-pricing-bulk', {
+      const response = await authFetch('/api/management/dynamic-pricing-bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ entries: [pricingData] })
@@ -184,22 +176,19 @@ export default function PricingCoverageAudit() {
 
       console.log(`[${requestId}] Response received`, {
         status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-        headers: Object.fromEntries(response.headers.entries())
+        ok: response.ok
       });
 
       const result = await response.json();
       console.log(`[${requestId}] Response data`, result);
-      
+
       if (result.success) {
         const rowKey = getRowKey(item);
         console.log(`[${requestId}] Price added successfully`, {
           rowKey,
-          resultSummary: result.results,
-          successMessage: `Added pricing for ${item.brand_name} ${item.model_name} - ${item.service_name} (${item.tier_name})`
+          resultSummary: result.results
         });
-        setSuccess(`✅ Added pricing for ${item.brand_name} ${item.model_name} - ${item.service_name} (${item.tier_name})`);
+        setSuccess(`Added pricing for ${item.brand_name} ${item.model_name} - ${item.service_name} (${item.tier_name})`);
         setRecentlyUpdated(prev => ({ ...prev, [rowKey]: true }));
         await fetchCoverage(); // Refresh the data
       } else {
@@ -245,7 +234,7 @@ export default function PricingCoverageAudit() {
   const savePrice = async (item: PricingCoverage) => {
     const rowKey = getRowKey(item);
     const editState = editingStates[rowKey];
-    
+
     if (!editState || editState.newPrice <= 0) {
       setError('Please enter a valid price greater than 0');
       return;
@@ -253,34 +242,34 @@ export default function PricingCoverageAudit() {
 
     try {
       setLoading(true);
-      
+
       const pricingData = {
         service_id: item.service_id,
         model_id: item.model_id,
-        pricing_tier_id: item.pricing_tier_id,
+        pricing_tier: item.pricing_tier,
         base_price: editState.newPrice,
         existing_id: item.existing_id
       };
 
-      const response = await fetch('/api/management/dynamic-pricing-bulk', {
-        method: 'POST', 
+      const response = await authFetch('/api/management/dynamic-pricing-bulk', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ entries: [pricingData] })
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
-        setSuccess(`✅ Updated pricing for ${item.brand_name} ${item.model_name} - ${item.service_name} (${item.tier_name})`);
+        setSuccess(`Updated pricing for ${item.brand_name} ${item.model_name} - ${item.service_name} (${item.tier_name})`);
         setRecentlyUpdated(prev => ({ ...prev, [rowKey]: true }));
-        
+
         // Clear editing state
         setEditingStates(prev => {
           const newState = { ...prev };
           delete newState[rowKey];
           return newState;
         });
-        
+
         await fetchCoverage(); // Refresh the data
       } else {
         setError(result.error || 'Failed to update pricing');
@@ -301,38 +290,38 @@ export default function PricingCoverageAudit() {
 
     try {
       setBulkLoading(true);
-      
+
       const entries = Array.from(selectedItems).map(rowKey => {
         const item = coverage.find(c => getRowKey(c) === rowKey);
         if (!item) return null;
-        
+
         return {
           service_id: item.service_id,
           model_id: item.model_id,
-          pricing_tier_id: item.pricing_tier_id,
+          pricing_tier: item.pricing_tier,
           base_price: bulkPrice,
           existing_id: item.existing_id
         };
       }).filter(Boolean);
 
-      const response = await fetch('/api/management/dynamic-pricing-bulk', {
+      const response = await authFetch('/api/management/dynamic-pricing-bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ entries })
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
-        setSuccess(`✅ Bulk update complete: ${result.results?.succeeded || 0} items updated`);
-        
+        setSuccess(`Bulk update complete: ${result.results?.succeeded || 0} items updated`);
+
         // Mark all updated items as recently updated
         const updatedItems: RecentlyUpdated = {};
         selectedItems.forEach(key => {
           updatedItems[key] = true;
         });
         setRecentlyUpdated(prev => ({ ...prev, ...updatedItems }));
-        
+
         setSelectedItems(new Set());
         setBulkPrice(0);
         await fetchCoverage(); // Refresh the data
@@ -404,9 +393,9 @@ export default function PricingCoverageAudit() {
         <Alert className="border-red-200 bg-red-50">
           <AlertTriangle className="h-4 w-4 text-red-600" />
           <AlertDescription className="text-red-800">{error}</AlertDescription>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setError(null)}
             className="ml-2"
           >
@@ -489,10 +478,8 @@ export default function PricingCoverageAudit() {
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Tiers</option>
-              <option value="economy">Economy</option>
               <option value="standard">Standard</option>
               <option value="premium">Premium</option>
-              <option value="express">Express</option>
             </select>
             <select
               value={filters.status}
@@ -526,7 +513,7 @@ export default function PricingCoverageAudit() {
                   min="0"
                   step="0.01"
                 />
-                <Button 
+                <Button
                   onClick={handleBulkUpdate}
                   disabled={bulkLoading || bulkPrice <= 0}
                   className="bg-blue-600 hover:bg-blue-700"
@@ -535,8 +522,8 @@ export default function PricingCoverageAudit() {
                   Update Selected
                 </Button>
               </div>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setSelectedItems(new Set())}
                 size="sm"
               >
@@ -573,8 +560,8 @@ export default function PricingCoverageAudit() {
                       onClick={toggleSelectAll}
                       className="flex items-center gap-2"
                     >
-                      {selectedItems.size === paginatedCoverage.length && paginatedCoverage.length > 0 ? 
-                        <CheckSquare className="h-4 w-4" /> : 
+                      {selectedItems.size === paginatedCoverage.length && paginatedCoverage.length > 0 ?
+                        <CheckSquare className="h-4 w-4" /> :
                         <Square className="h-4 w-4" />
                       }
                       Select
@@ -596,10 +583,10 @@ export default function PricingCoverageAudit() {
                   const isSelected = selectedItems.has(rowKey);
                   const isEditing = editingStates[rowKey]?.isEditing;
                   const isRecentlyUpdated = recentlyUpdated[rowKey];
-                  
+
                   return (
-                    <tr 
-                      key={rowKey} 
+                    <tr
+                      key={rowKey}
                       className={`border-b hover:bg-gray-50 ${isRecentlyUpdated ? 'bg-green-100 border-green-300' : ''} ${isSelected ? 'bg-blue-50' : ''}`}
                     >
                       <td className="p-3">
@@ -607,8 +594,8 @@ export default function PricingCoverageAudit() {
                           onClick={() => toggleRowSelection(item)}
                           className="flex items-center"
                         >
-                          {isSelected ? 
-                            <CheckSquare className="h-4 w-4 text-blue-600" /> : 
+                          {isSelected ?
+                            <CheckSquare className="h-4 w-4 text-blue-600" /> :
                             <Square className="h-4 w-4" />
                           }
                         </button>
@@ -622,13 +609,12 @@ export default function PricingCoverageAudit() {
                       <td className="p-3">{item.model_name}</td>
                       <td className="p-3">{item.service_name}</td>
                       <td className="p-3">
-                        <Badge 
+                        <Badge
                           variant="secondary"
                           className={`capitalize ${
                             item.tier_name === 'premium' ? 'bg-purple-100 text-purple-800' :
                             item.tier_name === 'standard' ? 'bg-blue-100 text-blue-800' :
-                            item.tier_name === 'economy' ? 'bg-green-100 text-green-800' :
-                            'bg-orange-100 text-orange-800'
+                            'bg-gray-100 text-gray-800'
                           }`}
                         >
                           {item.tier_name}
@@ -664,7 +650,7 @@ export default function PricingCoverageAudit() {
                           />
                         ) : (
                           <span className="font-mono">
-                            ${item.existing_price ? item.existing_price.toFixed(2) : 
+                            ${item.existing_price ? item.existing_price.toFixed(2) :
                               (item.fallback_price ? `${item.fallback_price.toFixed(2)} (est)` : 'N/A')}
                           </span>
                         )}
@@ -752,4 +738,4 @@ export default function PricingCoverageAudit() {
       </Card>
     </div>
   );
-} 
+}

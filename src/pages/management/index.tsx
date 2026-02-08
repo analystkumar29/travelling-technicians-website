@@ -51,6 +51,8 @@ interface RecentBooking {
   device_brand?: string;
   device_model?: string;
   service_type?: string;
+  final_price?: number;
+  quoted_price?: number;
 }
 
 interface UpcomingAppointment {
@@ -153,10 +155,13 @@ export default function AdminDashboard() {
     const totalWarranties = warranties.length || 0;
     const activeWarranties = warranties.filter((w: any) => w.status === 'active').length || 0;
 
-    const thisWeekBookings = bookings.filter((b: RecentBooking) =>
-      b.created_at >= oneWeekAgo && (b.status === 'completed' || !b.status)
-    ).length || 0;
-    const thisWeekRevenue = thisWeekBookings * 120;
+    const thisWeekCompletedBookings = bookings.filter((b: RecentBooking) =>
+      b.created_at >= oneWeekAgo && b.status === 'completed'
+    );
+    const thisWeekRevenue = thisWeekCompletedBookings.reduce((sum: number, b: any) => {
+      const price = b.final_price ?? b.quoted_price ?? 0;
+      return sum + (typeof price === 'number' ? price : parseFloat(price) || 0);
+    }, 0);
 
     setStats({
       totalBookings,
