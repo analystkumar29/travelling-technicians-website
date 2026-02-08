@@ -121,8 +121,9 @@ async function handleGet(_req: NextApiRequest, res: NextApiResponse) {
     ];
 
     // Compute expected route counts
+    // model-service-page uses the view count (services are paired with compatible device types, not all models)
     const expectedCounts: Record<string, number> = {
-      'model-service-page': dimensions.cities * dimensions.services * dimensions.models,
+      'model-service-page': dimensions.model_service_expected ?? (dimensions.cities * dimensions.services * dimensions.models),
       'city-model-page': dimensions.cities * dimensions.models,
       'city-service-page': dimensions.cities * dimensions.services,
       'city-page': dimensions.cities,
