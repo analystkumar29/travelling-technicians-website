@@ -20,6 +20,7 @@ interface WarrantyNotificationData {
   startDate: string;
   endDate: string;
   durationDays: number;
+  reviewUrl?: string;
 }
 
 function getBaseUrl(): string {
@@ -52,7 +53,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       technicianName,
       startDate,
       endDate,
-      durationDays
+      durationDays,
+      reviewUrl,
     }: WarrantyNotificationData = req.body;
 
     if (!to || !warrantyNumber || !bookingReference) {
@@ -81,7 +83,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       startDate,
       endDate,
       durationDays,
-      checkWarrantyUrl
+      checkWarrantyUrl,
+      reviewUrl,
     });
 
     if (!process.env.SENDGRID_API_KEY) {

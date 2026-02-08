@@ -166,6 +166,7 @@ export interface WarrantyEmailData {
   endDate: string;
   durationDays: number;
   checkWarrantyUrl: string;
+  reviewUrl?: string;
 }
 
 export function buildWarrantyNotificationEmail(data: WarrantyEmailData): string {
@@ -212,7 +213,17 @@ ${detailRow('Booking Ref', data.bookingReference)}
 <p style="margin:0;font-size:13px;color:${TEXT_LIGHT};">To file a warranty claim, call us at ${PHONE} or visit ${DOMAIN}</p>
 </td></tr>
 </table>
-</td></tr>`;
+</td></tr>${data.reviewUrl ? `
+<!-- Review CTA -->
+<tr><td style="padding:0 32px 32px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #e2e8f0;padding-top:20px;">
+<tr><td style="padding-top:20px;text-align:center;">
+<p style="margin:0 0 8px;font-size:15px;font-weight:700;color:${NAVY};">How was your experience?</p>
+<p style="margin:0 0 16px;font-size:14px;color:${TEXT_LIGHT};">We&rsquo;d love to hear your feedback. It only takes a minute.</p>
+<a href="${data.reviewUrl}" style="display:inline-block;background-color:${NAVY_LIGHT};color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:6px;">Leave a Review</a>
+</td></tr>
+</table>
+</td></tr>` : ''}`;
 
   return emailWrapper(content);
 }

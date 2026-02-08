@@ -353,6 +353,24 @@ export default function VerifyBooking() {
                           </a>
                         </div>
                       )}
+
+                      {/* Review CTA for completed bookings */}
+                      {bookingInfo.status === 'completed' && bookingInfo.reviewUrl && (
+                        <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-center">
+                          <p className="text-sm font-medium text-gray-900 mb-2">
+                            How was your experience?
+                          </p>
+                          <p className="text-xs text-gray-600 mb-3">
+                            Your feedback helps us improve our service.
+                          </p>
+                          <a
+                            href={bookingInfo.reviewUrl}
+                            className="inline-block px-5 py-2 bg-primary-800 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
+                          >
+                            Leave a Review
+                          </a>
+                        </div>
+                      )}
                     </div>
                   )}
 

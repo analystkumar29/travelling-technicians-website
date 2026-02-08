@@ -11,6 +11,8 @@ import {
   Star,
   Award,
   CheckCircle,
+  XCircle,
+  Clock,
   Plus,
   Pencil,
   Trash2,
@@ -37,7 +39,12 @@ interface Testimonial {
   neighborhood_id: number | null;
   verified: boolean;
   source: string;
+  status: string;
   device_type: string | null;
+  technician_rating: number | null;
+  service_rating: number | null;
+  booking_id: string | null;
+  customer_email: string | null;
   service_locations?: { id: string; city_name: string; slug: string } | null;
   services?: { id: string; name: string; display_name: string } | null;
 }
@@ -63,6 +70,7 @@ interface TestimonialFormData {
   rating: number | null;
   review: string;
   source: string;
+  status: string;
   is_featured: boolean;
   featured_order: number;
   verified: boolean;
@@ -79,6 +87,7 @@ const EMPTY_FORM: TestimonialFormData = {
   rating: null,
   review: '',
   source: 'manual',
+  status: 'approved',
   is_featured: false,
   featured_order: 0,
   verified: false,
@@ -93,6 +102,13 @@ const SOURCE_COLORS: Record<string, string> = {
   yelp: 'bg-red-100 text-red-800',
   manual: 'bg-green-100 text-green-800',
   synthetic: 'bg-gray-100 text-gray-700',
+  website: 'bg-purple-100 text-purple-800',
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  pending: 'bg-yellow-100 text-yellow-800',
+  approved: 'bg-green-100 text-green-800',
+  rejected: 'bg-red-100 text-red-800',
 };
 
 function StarRating({ rating }: { rating: number | null }) {
@@ -131,6 +147,7 @@ export default function TestimonialsPage() {
 
   // Filters
   const [sourceFilter, setSourceFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [featuredFilter, setFeaturedFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -142,6 +159,9 @@ export default function TestimonialsPage() {
 
   // Delete
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Approve/Reject loading
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   // Reference data
   const [serviceLocations, setServiceLocations] = useState<ServiceLocation[]>([]);
@@ -200,6 +220,10 @@ export default function TestimonialsPage() {
       result = result.filter((t) => t.source === sourceFilter);
     }
 
+    if (statusFilter !== 'all') {
+      result = result.filter((t) => t.status === statusFilter);
+    }
+
     if (featuredFilter === 'featured') {
       result = result.filter((t) => t.is_featured);
     } else if (featuredFilter === 'not_featured') {
@@ -214,12 +238,13 @@ export default function TestimonialsPage() {
     }
 
     setFiltered(result);
-  }, [testimonials, sourceFilter, featuredFilter, searchQuery]);
+  }, [testimonials, sourceFilter, statusFilter, featuredFilter, searchQuery]);
 
   // ── Stats ──────────────────────────────────────────────────
 
   const totalCount = testimonials.length;
   const featuredCount = testimonials.filter((t) => t.is_featured).length;
+  const pendingCount = testimonials.filter((t) => t.status === 'pending').length;
   const verifiedCount = testimonials.filter((t) => t.verified).length;
   const avgRating = (() => {
     const rated = testimonials.filter((t) => t.rating !== null && t.rating !== undefined);
@@ -227,6 +252,34 @@ export default function TestimonialsPage() {
     const sum = rated.reduce((acc, t) => acc + (t.rating ?? 0), 0);
     return (sum / rated.length).toFixed(1);
   })();
+
+  // ── Approve / Reject ─────────────────────────────────────
+
+  const handleStatusChange = async (id: string, newStatus: 'approved' | 'rejected') => {
+    setActionLoadingId(id);
+    try {
+      const payload: Record<string, unknown> = { status: newStatus };
+      if (newStatus === 'approved') {
+        payload.verified = true;
+      }
+
+      const response = await authFetch(
+        `/api/management/testimonials?id=${id}`,
+        { method: 'PUT', body: JSON.stringify(payload) }
+      );
+
+      if (!response.ok) throw new Error('Failed to update status');
+
+      toast.success(
+        newStatus === 'approved' ? 'Review approved' : 'Review rejected'
+      );
+      fetchTestimonials();
+    } catch {
+      toast.error('Failed to update review status');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
   // ── Modal Handlers ─────────────────────────────────────────
 
@@ -247,6 +300,7 @@ export default function TestimonialsPage() {
       rating: testimonial.rating,
       review: testimonial.review || '',
       source: testimonial.source || 'manual',
+      status: testimonial.status || 'approved',
       is_featured: testimonial.is_featured,
       featured_order: testimonial.featured_order || 0,
       verified: testimonial.verified,
@@ -279,6 +333,7 @@ export default function TestimonialsPage() {
         rating: formData.rating,
         review: formData.review || null,
         source: formData.source,
+        status: formData.status,
         is_featured: formData.is_featured,
         featured_order: formData.featured_order,
         verified: formData.verified,
@@ -420,7 +475,7 @@ export default function TestimonialsPage() {
       />
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <AdminStatsCard
           label="Total Testimonials"
           value={totalCount}
@@ -428,16 +483,22 @@ export default function TestimonialsPage() {
           color="blue"
         />
         <AdminStatsCard
+          label="Pending Reviews"
+          value={pendingCount}
+          icon={Clock}
+          color="amber"
+        />
+        <AdminStatsCard
           label="Featured"
           value={featuredCount}
           icon={Award}
-          color="amber"
+          color="purple"
         />
         <AdminStatsCard
           label="Average Rating"
           value={avgRating}
           icon={Star}
-          color="purple"
+          color="indigo"
         />
         <AdminStatsCard
           label="Verified"
@@ -449,7 +510,7 @@ export default function TestimonialsPage() {
 
       {/* Filter Bar */}
       <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Search */}
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -464,6 +525,18 @@ export default function TestimonialsPage() {
             />
           </div>
 
+          {/* Status filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+          >
+            <option value="all">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+
           {/* Source filter */}
           <select
             value={sourceFilter}
@@ -474,6 +547,7 @@ export default function TestimonialsPage() {
             <option value="google">Google</option>
             <option value="yelp">Yelp</option>
             <option value="manual">Manual</option>
+            <option value="website">Website (Customer)</option>
             <option value="synthetic">Synthetic</option>
           </select>
 
@@ -508,22 +582,16 @@ export default function TestimonialsPage() {
                   City
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Device
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Service
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Rating
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Source
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Featured
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Verified
+                  Featured
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -534,7 +602,7 @@ export default function TestimonialsPage() {
               {filtered.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={9}
+                    colSpan={7}
                     className="px-6 py-8 text-center text-sm text-gray-500"
                   >
                     No testimonials found matching your criteria.
@@ -551,21 +619,16 @@ export default function TestimonialsPage() {
                       <div className="text-xs text-gray-500">
                         {formatDate(t.created_at)}
                       </div>
+                      {t.review && (
+                        <div className="text-xs text-gray-500 mt-1 max-w-[200px] truncate" title={t.review}>
+                          {t.review}
+                        </div>
+                      )}
                     </td>
 
                     {/* City */}
                     <td className="px-4 py-3 text-sm text-gray-700">
                       {t.city || <span className="text-gray-400">--</span>}
-                    </td>
-
-                    {/* Device */}
-                    <td className="px-4 py-3 text-sm text-gray-700">
-                      {t.device_model || <span className="text-gray-400">--</span>}
-                    </td>
-
-                    {/* Service */}
-                    <td className="px-4 py-3 text-sm text-gray-700">
-                      {t.service || <span className="text-gray-400">--</span>}
                     </td>
 
                     {/* Rating */}
@@ -581,6 +644,17 @@ export default function TestimonialsPage() {
                         }`}
                       >
                         {t.source}
+                      </span>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
+                          STATUS_COLORS[t.status] || STATUS_COLORS.approved
+                        }`}
+                      >
+                        {t.status}
                       </span>
                     </td>
 
@@ -601,18 +675,34 @@ export default function TestimonialsPage() {
                       </button>
                     </td>
 
-                    {/* Verified */}
-                    <td className="px-4 py-3 text-center">
-                      {t.verified ? (
-                        <CheckCircle className="h-5 w-5 text-green-500 mx-auto" />
-                      ) : (
-                        <span className="inline-block h-5 w-5 rounded-full border-2 border-gray-300 mx-auto" />
-                      )}
-                    </td>
-
                     {/* Actions */}
                     <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {/* Approve/Reject for pending */}
+                        {t.status === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => handleStatusChange(t.id, 'approved')}
+                              disabled={actionLoadingId === t.id}
+                              className="p-1.5 rounded-lg text-green-600 hover:text-green-800 hover:bg-green-50 transition-colors disabled:opacity-50"
+                              title="Approve"
+                            >
+                              {actionLoadingId === t.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <CheckCircle className="h-4 w-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleStatusChange(t.id, 'rejected')}
+                              disabled={actionLoadingId === t.id}
+                              className="p-1.5 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors disabled:opacity-50"
+                              title="Reject"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
                         <button
                           onClick={() => openEditModal(t)}
                           className="p-1.5 rounded-lg text-gray-500 hover:text-primary-700 hover:bg-primary-50 transition-colors"
@@ -698,12 +788,55 @@ export default function TestimonialsPage() {
                 <option value="manual">Manual</option>
                 <option value="google">Google</option>
                 <option value="yelp">Yelp</option>
+                <option value="website">Website (Customer)</option>
                 <option value="synthetic">Synthetic</option>
               </select>
             </div>
           </div>
 
-          {/* Row 2: City + Device Model */}
+          {/* Row 2: Status + Rating */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
+              <select
+                value={formData.status}
+                onChange={(e) =>
+                  setFormData({ ...formData, status: e.target.value })
+                }
+                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Rating
+              </label>
+              <select
+                value={formData.rating ?? ''}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    rating: e.target.value ? Number(e.target.value) : null,
+                  })
+                }
+                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="">No rating</option>
+                <option value="5">5 Stars</option>
+                <option value="4">4 Stars</option>
+                <option value="3">3 Stars</option>
+                <option value="2">2 Stars</option>
+                <option value="1">1 Star</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Row 3: City + Device Model */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -735,7 +868,7 @@ export default function TestimonialsPage() {
             </div>
           </div>
 
-          {/* Row 3: Device Type + Service (text) */}
+          {/* Row 4: Device Type + Service (text) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -767,30 +900,8 @@ export default function TestimonialsPage() {
             </div>
           </div>
 
-          {/* Row 4: Rating + Featured Order */}
+          {/* Row 5: Featured Order */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Rating
-              </label>
-              <select
-                value={formData.rating ?? ''}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    rating: e.target.value ? Number(e.target.value) : null,
-                  })
-                }
-                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
-              >
-                <option value="">No rating</option>
-                <option value="5">5 Stars</option>
-                <option value="4">4 Stars</option>
-                <option value="3">3 Stars</option>
-                <option value="2">2 Stars</option>
-                <option value="1">1 Star</option>
-              </select>
-            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Featured Order
@@ -810,7 +921,7 @@ export default function TestimonialsPage() {
             </div>
           </div>
 
-          {/* Row 5: Location + Service (FK) */}
+          {/* Row 6: Location + Service (FK) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -867,6 +978,24 @@ export default function TestimonialsPage() {
               placeholder="Customer review text..."
             />
           </div>
+
+          {/* Technician & Service Ratings (read-only for website reviews) */}
+          {editingTestimonial && (editingTestimonial.technician_rating || editingTestimonial.service_rating) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+              <div>
+                <span className="block text-sm font-medium text-gray-500 mb-1">
+                  Technician Rating
+                </span>
+                <StarRating rating={editingTestimonial.technician_rating} />
+              </div>
+              <div>
+                <span className="block text-sm font-medium text-gray-500 mb-1">
+                  Service Rating
+                </span>
+                <StarRating rating={editingTestimonial.service_rating} />
+              </div>
+            </div>
+          )}
 
           {/* Checkboxes */}
           <div className="flex items-center gap-6 pt-2">
