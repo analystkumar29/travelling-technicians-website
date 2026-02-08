@@ -110,14 +110,11 @@ async function handler(
       .select(`
         id,
         name,
-        quality_score,
-        data_source,
-        needs_review,
         brands (
-          name,
-          device_types (
-            name
-          )
+          name
+        ),
+        device_types:type_id (
+          name
         )
       `)
       .eq('is_active', true)
@@ -146,40 +143,36 @@ async function handler(
           id: model.id,
           name: model.name,
           brand_name: model.brands?.name || 'Unknown',
-          device_type: model.brands?.device_types?.name || 'Unknown',
-          quality_score: model.quality_score || 100,
-          data_source: model.data_source || 'unknown',
+          device_type: model.device_types?.name || 'Unknown',
+          quality_score: 100,
+          data_source: 'imported',
           contamination_reasons: contaminationReasons
         });
       }
     });
 
-    // If POST request, update the quality scores
+    // If POST request, flag contaminated models by deactivating them
     if (req.method === 'POST') {
-      const { auto_update = false, threshold = 50 } = req.body;
-      
+      const { auto_update = false } = req.body;
+
       if (auto_update && contaminatedModels.length > 0) {
         const modelIdsToUpdate = contaminatedModels.map(m => m.id);
-        
+
         const { error: updateError } = await supabase
           .from('device_models')
-          .update({ 
-            quality_score: threshold,
-            needs_review: true,
-            data_source: 'scraped'
-          })
+          .update({ is_active: false })
           .in('id', modelIdsToUpdate);
 
         if (updateError) {
-          apiLogger.error('Error updating quality scores', { error: updateError });
+          apiLogger.error('Error deactivating contaminated models', { error: updateError });
           return res.status(500).json({
             success: false,
-            message: 'Failed to update quality scores',
+            message: 'Failed to deactivate contaminated models',
             error: updateError.message
           });
         }
 
-        apiLogger.info('Updated quality scores for contaminated models', { count: modelIdsToUpdate.length });
+        apiLogger.info('Deactivated contaminated models', { count: modelIdsToUpdate.length });
       }
     }
 

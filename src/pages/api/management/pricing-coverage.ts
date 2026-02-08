@@ -80,7 +80,7 @@ export default requireAdminAuth(async function handler(
       const service = servicesMap.get(pricing.service_id);
       const model = modelsMap.get(pricing.model_id);
       const brand = model ? brandsMap.get((model as any).brand_id) : null;
-      const deviceType = brand ? deviceTypesMap.get((brand as any).device_type_id) : null;
+      const deviceType = model ? deviceTypesMap.get((model as any).type_id) : null;
       const tier = pricing.pricing_tier;
 
       if (service && model && brand && deviceType && tier) {
@@ -105,10 +105,12 @@ export default requireAdminAuth(async function handler(
 
     // Generate all possible combinations
     brands.forEach((brand: any) => {
-      const deviceType = deviceTypesMap.get((brand as any).device_type_id);
       const models = modelsByBrand.get(brand.id) || [];
 
       models.forEach((model: any) => {
+        const deviceType = deviceTypesMap.get((model as any).type_id);
+        if (!deviceType) return; // Skip models with no device type
+
         services.forEach((service: any) => {
           // Include all services for all models — the DB already has only valid active entries
           tiers.forEach((tier: string) => {
