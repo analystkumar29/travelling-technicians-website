@@ -155,13 +155,6 @@
     }
   },
 
-  "crons": [
-    {
-      "path": "/api/cron/process-sitemap-queue",
-      "schedule": "0 1 * * *"
-    }
-  ],
-
   "rewrites": [
     {
       "source": "/sitemap.xml",
@@ -172,46 +165,6 @@
     {
       "source": "/contact/",
       "destination": "/contact",
-      "permanent": true
-    },
-    {
-      "source": "/service-areas/richmond/",
-      "destination": "/repair/richmond",
-      "permanent": true
-    },
-    {
-      "source": "/service-areas/new-westminster/",
-      "destination": "/repair/new-westminster",
-      "permanent": true
-    },
-    {
-      "source": "/service-areas/north-vancouver/",
-      "destination": "/repair/north-vancouver",
-      "permanent": true
-    },
-    {
-      "source": "/service-areas/vancouver/",
-      "destination": "/repair/vancouver",
-      "permanent": true
-    },
-    {
-      "source": "/service-areas/richmond",
-      "destination": "/repair/richmond",
-      "permanent": true
-    },
-    {
-      "source": "/service-areas/new-westminster",
-      "destination": "/repair/new-westminster",
-      "permanent": true
-    },
-    {
-      "source": "/service-areas/north-vancouver",
-      "destination": "/repair/north-vancouver",
-      "permanent": true
-    },
-    {
-      "source": "/service-areas/vancouver",
-      "destination": "/repair/vancouver",
       "permanent": true
     },
     {
@@ -226,12 +179,12 @@
     },
     {
       "source": "/doorstep",
-      "destination": "/doorstep-repair",
+      "destination": "/repair",
       "permanent": true
     },
     {
       "source": "/doorstep/",
-      "destination": "/doorstep-repair",
+      "destination": "/repair",
       "permanent": true
     },
     {

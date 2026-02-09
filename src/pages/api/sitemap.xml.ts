@@ -47,11 +47,6 @@ interface DynamicContent {
     neighborhoodSlug: string;
     updated_at: string;
   }>;
-  cityLocations: Array<{
-    city: string;
-    citySlug: string;
-    updated_at: string;
-  }>;
   cityServicePages: Array<{
     citySlug: string;
     serviceSlug: string;
@@ -88,9 +83,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const serviceAreaPages = getServiceAreaPages(siteUrl, dynamicContent.serviceAreas);
     sitemapLogger.info(`🏙️ Service area pages (legacy /repair/{city}): ${serviceAreaPages.length}`);
     
-    const cityLocationPages = getCityLocationPages(siteUrl, dynamicContent.cityLocations);
-    sitemapLogger.info(`📍 City location pages (/locations/{city}): ${cityLocationPages.length}`);
-    
     const neighborhoodPages = getNeighborhoodPages(siteUrl, dynamicContent.neighborhoods);
     sitemapLogger.info(`🏘️ Neighborhood pages: ${neighborhoodPages.length}`);
     
@@ -118,7 +110,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const entries: SitemapEntry[] = [
       ...staticPages,
       ...serviceAreaPages,
-      ...cityLocationPages,
       ...neighborhoodPages,
       ...cityServicePages,
       ...blogPages,
@@ -139,7 +130,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     sitemapLogger.info('BREAKDOWN:');
     sitemapLogger.info(`  - Static high-priority: ${staticPages.length}`);
     sitemapLogger.info(`  - Service areas (cities): ${serviceAreaPages.length}`);
-    sitemapLogger.info(`  - City locations: ${cityLocationPages.length}`);
     sitemapLogger.info(`  - Neighborhoods: ${neighborhoodPages.length}`);
     sitemapLogger.info(`  - Blog: ${blogPages.length}`);
     sitemapLogger.info(`  - Services: ${servicePages.length}`);
@@ -240,13 +230,6 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
 
     sitemapLogger.info(`Fetched ${allRoutesResult.modelServiceRoutes.length} model-service, ${allRoutesResult.cityModelRoutes.length} city-model, ${allRoutesResult.cityServiceRoutes.length} city-service routes`);
 
-    // Map city locations
-    const cityLocations = serviceLocations?.map(loc => {
-      const citySlug = cityNameToUrlSlug(loc.city_name);
-      logSlugTransformation(loc.city_name, citySlug, 'city-location');
-      return { city: loc.city_name, citySlug, updated_at: loc.created_at || FALLBACK_DATE };
-    }).filter(loc => isValidUrlSlug(loc.citySlug)) || [];
-
     const serviceAreas = serviceLocations?.map(loc => ({
       city: loc.city_name,
       updated_at: loc.created_at || FALLBACK_DATE
@@ -259,7 +242,6 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       cityServiceModels: allRoutesResult.modelServiceRoutes,
       cityModelPages: allRoutesResult.cityModelRoutes,
       neighborhoods: neighborhoodsResult,
-      cityLocations,
       cityServicePages: allRoutesResult.cityServiceRoutes
     };
 
@@ -272,7 +254,6 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       cityServiceModels: [],
       cityModelPages: [],
       neighborhoods: [],
-      cityLocations: [],
       cityServicePages: []
     };
   }
@@ -404,7 +385,7 @@ async function getNeighborhoodPagesFromDB(): Promise<Array<{
       
       return {
         city: locationData?.city_name || '',
-        citySlug: (locationData?.city_name || '').toLowerCase().replace(/\s+/g, '-'),
+        citySlug: cityNameToUrlSlug(locationData?.city_name || ''),
         neighborhood: item.neighborhood_name,
         neighborhoodSlug: item.slug,
         updated_at: item.updated_at || FALLBACK_DATE
@@ -514,23 +495,18 @@ function getStaticPages(siteUrl: string): SitemapEntry[] {
       lastmod: FALLBACK_DATE,
       changefreq: 'weekly',
       priority: '0.9'
+    },
+    {
+      loc: `${siteUrl}/sitemap`,
+      lastmod: FALLBACK_DATE,
+      changefreq: 'weekly',
+      priority: '0.5'
     }
     // Archived pages removed (redirected to dynamic equivalents):
     // - /mobile-screen-repair → /services/mobile-repair
     // - /laptop-screen-repair → /services/laptop-repair
     // - /mobile-repair-near-me → /repair
   ];
-}
-
-/**
- * Generate city location pages (/repair/{city})
- * Note: These duplicate serviceAreaPages — kept for backwards compatibility but
- * the service area entries at /repair/{city} are the canonical ones.
- */
-function getCityLocationPages(siteUrl: string, cityLocations: Array<{ city: string; citySlug: string; updated_at: string }>): SitemapEntry[] {
-  // City pages are already covered by getServiceAreaPages at /repair/{city}
-  // No need to emit duplicate /locations/{city} entries
-  return [];
 }
 
 /**

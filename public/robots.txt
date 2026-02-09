@@ -1,30 +1,26 @@
 User-agent: *
 Allow: /
 
-# Important pages for SEO (based on actual sitemap)
-Allow: /services/          # All service pages (e.g., /services/screen-replacement-mobile)
-Allow: /repair             # Repair landing page (without trailing slash)
-Allow: /locations/         # All location pages (e.g., /locations/vancouver)
-Allow: /service-areas      # Service areas page (without trailing slash)
-Allow: /blog              # Blog index and posts (without trailing slash)
-Allow: /contact            # Contact page
-Allow: /about              # About page
-Allow: /book-online        # Booking page
-Allow: /pricing            # Pricing page
-Allow: /faq                # FAQ page
-Allow: /privacy-policy     # Privacy policy
-Allow: /terms-conditions   # Terms & conditions
+# Important pages for SEO
+Allow: /services/
+Allow: /repair
+Allow: /service-areas
+Allow: /blog
+Allow: /contact
+Allow: /about
+Allow: /book-online
+Allow: /pricing
+Allow: /faq
+Allow: /privacy-policy
+Allow: /terms-conditions
 
 # ============================================
 # API ACCESS CONTROL - GRANULAR PERMISSIONS
 # ============================================
 
 # IMPORTANT: In robots.txt, the most specific (longest) matching rule wins
-# Order: Specific Allow rules -> Specific Disallow rules -> General rules
 
 # PUBLIC APIs - Allow search engines to access these endpoints
-# (Important for pages that fetch content via client-side API calls)
-# These specific Allow rules come BEFORE general Disallow: /api/
 Allow: /api/ping
 Allow: /api/check-postal-code
 Allow: /api/geocode
@@ -38,7 +34,6 @@ Allow: /api/devices/brands
 Allow: /api/site-settings/time-slots
 
 # PRIVATE APIs - Block sensitive endpoints
-# (Keep these blocked to prevent search engine indexing of sensitive data)
 Disallow: /api/management/
 Disallow: /api/bookings/
 Disallow: /api/login
@@ -54,7 +49,6 @@ Disallow: /api/repairs/
 Disallow: /api/cron/
 
 # General API disallow (catches any other API endpoints not explicitly allowed above)
-# This comes LAST - specific Allow rules above will override this for those paths
 Disallow: /api/
 
 # Other private/admin areas
@@ -70,21 +64,8 @@ Disallow: /minimal
 # SITEMAP
 # ============================================
 # Dynamic sitemap at root (rewrites to /api/sitemap.xml via Vercel)
-# Contains 3289+ URLs with real lastmod dates from database
-# Includes: static pages, service areas, city locations, neighborhoods,
-#           blog posts, services, and city-service-model pages
+# Contains ~4,900+ URLs with real lastmod dates from database
 Sitemap: https://www.travelling-technicians.ca/sitemap.xml
 
 # Crawl delay (be nice to servers)
 Crawl-delay: 1
-
-# ============================================
-# NOTES FOR DEVELOPERS:
-# ============================================
-# 1. Order matters in robots.txt: More specific rules should come before general ones
-# 2. If adding new public API endpoints, add them to the "PUBLIC APIs" section above
-# 3. All client-side API calls should use endpoints listed in "PUBLIC APIs"
-# 4. For pages that need dynamic content, prefer server-side rendering (getServerSideProps)
-#    or static generation (getStaticProps) over client-side API calls
-# 5. Test robots.txt changes with: https://search.google.com/search-console/robots-testing-tool
-# 6. The /sitemap.xml URL is rewritten to /api/sitemap.xml via Vercel configuration
