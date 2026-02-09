@@ -1,4 +1,4 @@
-import { MapPin, Clock, DollarSign, Smartphone, Wrench } from 'lucide-react';
+import { MapPin, Clock, DollarSign, Smartphone, Wrench, X } from 'lucide-react';
 
 export interface JobCardData {
   booking_id?: string;
@@ -32,6 +32,7 @@ interface JobCardProps {
   actionLoading?: boolean;
   onClick?: () => void;
   showStatus?: boolean;
+  onDismiss?: () => void;
 }
 
 function getStatusColor(status: string) {
@@ -80,7 +81,7 @@ function formatTime(timeStr: string) {
   }
 }
 
-export default function JobCard({ job, onAction, actionLabel, actionLoading, onClick, showStatus }: JobCardProps) {
+export default function JobCard({ job, onAction, actionLabel, actionLoading, onClick, showStatus, onDismiss }: JobCardProps) {
   // Normalize data from smart-feed vs my-jobs shape
   const deviceName = job.device_name || job.device_models?.name || 'Unknown Device';
   const brandName = job.brand_name || job.device_models?.brands?.name || '';
@@ -120,11 +121,22 @@ export default function JobCard({ job, onAction, actionLabel, actionLoading, onC
             </div>
           </div>
 
-          {showStatus && job.status && (
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${getStatusColor(job.status)}`}>
-              {job.status}
-            </span>
-          )}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {showStatus && job.status && (
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getStatusColor(job.status)}`}>
+                {job.status}
+              </span>
+            )}
+            {onDismiss && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onDismiss(); }}
+                className="p-1 text-gray-300 hover:text-gray-500 hover:bg-gray-100 rounded transition-colors"
+                aria-label="Dismiss job"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Location + Time + Price row */}
