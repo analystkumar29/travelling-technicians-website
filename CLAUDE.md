@@ -333,3 +333,49 @@ Any non-completed status can also → `cancelled`.
 ### Navigation Links
 - **Footer** (`src/components/layout/Footer.tsx`): "Check Warranty" link added to Quick Links (between "Book Online" and "Contact Us")
 - **Verify Booking** (`src/pages/verify-booking.tsx`): "Check warranty status anytime" link below warranty card
+
+## Technician Feed: Dismiss Jobs (APPLIED 2026-02-08)
+
+### JobCard Component
+- **`onDismiss`** optional prop added to `JobCardProps` in `src/components/technician/JobCard.tsx`
+- When provided, renders a subtle X button (lucide `X` icon) in the top-right corner of the card
+- `e.stopPropagation()` prevents triggering the card's `onClick` handler
+- Styling: gray (`text-gray-300`), darkens on hover (`hover:text-gray-500`), doesn't compete with the Claim button
+
+### Available Jobs Page
+- **File**: `src/pages/technician/available-jobs.tsx`
+- **localStorage key**: `tt-dismissed-jobs` — stores `{id, dismissedAt}[]` entries
+- **7-day TTL**: Expired entries auto-cleaned on page load
+- **Dismiss flow**: Click X → job hidden → toast "Job hidden from feed" with **Undo** button (5s duration)
+- **Undo**: Removes the ID from dismissed set + re-persists to localStorage
+- **"N hidden — show all"** button: Appears below job count with `EyeOff` icon when any jobs are hidden; clears all dismissed entries
+- **Empty state**: When all jobs are hidden, shows "All jobs are hidden" with "Show hidden jobs" link
+- **No DB changes**: Purely client-side; other technicians still see dismissed jobs in their feeds
+- Cleaned up unused `useRouter` import
+
+## Booking Form Fixes (APPLIED 2026-02-08)
+
+### Tier Pricing Labels
+- **File**: `src/components/booking/TierPriceComparison.tsx`
+- Standard tier: Parts Quality changed from "Quality" → **"Standard"**
+- Premium tier: Badge changed from "Express" → **"Recommended"**
+- Summary text: "faster service" → **"premium parts"**
+- **File**: `src/components/booking/steps/ScheduleConfirmStep.tsx`
+- Review section premium badge: "Express Service" → **"Recommended"**
+
+### Date/Time Input Icons Removed
+- **File**: `src/components/booking/steps/ScheduleConfirmStep.tsx`
+- Removed `Calendar` icon overlay from date input (was obstructing native date picker)
+- Removed `Clock` icon overlay from time select (was obstructing native dropdown)
+- Inputs now use `glass-input w-full` without `pl-10` left padding
+- Unused imports cleaned: `Calendar`, `Clock`, `Loader2`
+
+### Next-Day-Only Booking + Dynamic Cutoff
+- **No same-day bookings**: Date picker `min` is always tomorrow (`tomorrowDate`)
+- **Manual entry validation**: JS `onChange` handler snaps out-of-range manually-typed dates to `tomorrowDate` or `maxDate`
+- **Next-day cutoff from DB**: When the selected date is tomorrow, time slots are filtered to only show slots starting before the cutoff hour
+- **DB setting**: `site_settings.same_day_cutoff_time` = `15:00:00` (3 PM)
+- **API**: `/api/site-settings/time-slots` now fetches and returns `nextDayCutoffHour` (parsed from `same_day_cutoff_time`)
+- **`bookingTimeSlots.ts`**: `generateTimeSlotsForDate()` accepts optional `maxStartHour` param; `getTimeSlotsForDate()` accepts `isTomorrow` flag
+- **`useBookingController.ts`**: Detects if selected date equals tomorrow, passes `isTomorrow=true` to filter slots
+- **Result**: Tomorrow → slots before 3 PM only; 2+ days out → all slots available; cutoff controlled by DB setting
