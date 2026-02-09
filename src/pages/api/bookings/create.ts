@@ -160,7 +160,7 @@ export default async function handler(
     const finalBookingData = {
       ...dbBookingData,
       reference_number: referenceNumber,
-      status: 'pending',
+      status: 'confirmed',
     } as FinalDbBookingData; // Cast to the new interface
     
     // Get Supabase client for lookups
@@ -348,6 +348,9 @@ export default async function handler(
 
       // Location notes if location lookup had issues
       notes: locationNotes || null,
+
+      // Auto-confirm so bookings appear in technician smart feed immediately
+      status: 'confirmed',
     };
     
     // Log what we're about to insert
