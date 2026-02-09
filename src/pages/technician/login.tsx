@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { isTechAuthenticated, storeTechToken, storeTechInfo } from '@/utils/technicianAuth';
 import { Smartphone, Lock, Loader2, Wrench } from 'lucide-react';
+import InstallPrompt from '@/components/technician/InstallPrompt';
 
 export default function TechnicianLogin() {
   const router = useRouter();
@@ -61,6 +62,7 @@ export default function TechnicianLogin() {
         <meta name="theme-color" content="#102a43" />
       </Head>
 
+      <InstallPrompt />
       <div className="min-h-screen bg-primary-900 flex flex-col items-center justify-center px-6">
         {/* Logo area */}
         <div className="mb-8 text-center">

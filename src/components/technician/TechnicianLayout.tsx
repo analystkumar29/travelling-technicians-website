@@ -4,6 +4,7 @@ import Head from 'next/head';
 import { isTechAuthenticated } from '@/utils/technicianAuth';
 import TechnicianHeader from './TechnicianHeader';
 import TechnicianBottomNav from './TechnicianBottomNav';
+import InstallPrompt from './InstallPrompt';
 import { Loader2 } from 'lucide-react';
 
 interface TechnicianLayoutProps {
@@ -55,6 +56,7 @@ export default function TechnicianLayout({ children, title, headerTitle }: Techn
         <main className="px-4 py-4">
           {children}
         </main>
+        <InstallPrompt />
         <TechnicianBottomNav />
       </div>
     </>
