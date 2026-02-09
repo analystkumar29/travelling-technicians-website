@@ -36,6 +36,18 @@ module.exports = (phase, { defaultConfig }) => {
           destination: '/repair',
           permanent: true,
         },
+        // Fix Google 404s: old /locations/:city URLs → canonical /repair/:city
+        {
+          source: '/locations/:city',
+          destination: '/repair/:city',
+          permanent: true,
+        },
+        // Fix Google 404s: old screen-replacement (no suffix) → screen-replacement-mobile
+        {
+          source: '/repair/:city/screen-replacement/:model',
+          destination: '/repair/:city/screen-replacement-mobile/:model',
+          permanent: true,
+        },
       ];
     },
     async headers() {
