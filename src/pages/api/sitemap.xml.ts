@@ -5,11 +5,6 @@ import { logger } from '@/utils/logger';
 import {
   serviceNameToUrlSlug,
   cityNameToUrlSlug,
-  modelNameToUrlSlug,
-  generateRepairPagePath,
-  generateLocationPagePath,
-  generateNeighborhoodPagePath,
-  generateServicePagePath,
   isValidUrlSlug,
   logSlugTransformation
 } from '@/utils/slug-utils';
@@ -182,109 +177,90 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 /**
  * Fetch dynamic content from database
+ * All independent queries run in parallel to stay within Vercel's 10s timeout.
+ * All dynamic_routes types are fetched in a single paginated query.
  */
 async function fetchDynamicContent(): Promise<DynamicContent> {
   const supabase = getServiceSupabase();
-  
+  const startTime = Date.now();
+  const GLOBAL_TIMEOUT = 8000; // 8s safety margin for Vercel 10s limit
+
   try {
-    // Fetch service locations (using service_locations table instead of service_areas)
-    const { data: serviceLocations } = await supabase
-      .from('service_locations')
-      .select('city_name, created_at')
-      .eq('is_active', true)
-      .order('city_name');
-    
-    // Fetch blog posts from database
-    const { data: blogPostsData } = await supabase
-      .from('blog_posts')
-      .select('slug, updated_at, published_at')
-      .eq('is_published', true)
-      .order('published_at', { ascending: false });
+    // Run ALL independent queries in parallel
+    const [
+      serviceLocationsResult,
+      blogPostsResult,
+      servicesResult,
+      allRoutesResult,
+      neighborhoodsResult
+    ] = await Promise.all([
+      supabase
+        .from('service_locations')
+        .select('city_name, created_at')
+        .eq('is_active', true)
+        .order('city_name'),
+      supabase
+        .from('blog_posts')
+        .select('slug, updated_at, published_at')
+        .eq('is_published', true)
+        .order('published_at', { ascending: false }),
+      supabase
+        .from('services')
+        .select('name, slug, updated_at, device_type_id')
+        .eq('is_active', true)
+        .order('sort_order'),
+      fetchAllDynamicRoutes(supabase, startTime, GLOBAL_TIMEOUT),
+      getNeighborhoodPagesFromDB()
+    ]);
+
+    const serviceLocations = serviceLocationsResult.data;
+    const blogPostsData = blogPostsResult.data;
+    const servicesData = servicesResult.data;
 
     const blogPosts = (blogPostsData || []).map(post => ({
       slug: post.slug,
       updated_at: post.updated_at || post.published_at || FALLBACK_DATE,
       publishDate: post.published_at
     }));
-    
-    // Fetch services from database
-    const { data: servicesData } = await supabase
-      .from('services')
-      .select('name, slug, updated_at, device_type_id')
-      .eq('is_active', true)
-      .order('sort_order');
-    
+
     // Map services to expected format using centralized slug utilities
     const services = servicesData?.map(service => {
-      // Use stored slug if available, otherwise generate from name
       const serviceSlug = service.slug || serviceNameToUrlSlug(service.name);
       logSlugTransformation(service.name, serviceSlug, 'service-fetch');
-      
-      // Standardized lastmod fallback - use updated_at now that it exists
       const lastmod = service.updated_at || FALLBACK_DATE;
-      
-      // Map device_type_id to string (1=mobile, 2=laptop, 3=tablet)
       let deviceType = 'mobile';
       if (service.device_type_id === 2) deviceType = 'laptop';
       if (service.device_type_id === 3) deviceType = 'tablet';
-      
-      return {
-        slug: serviceSlug,
-        updated_at: lastmod,
-        device_type: deviceType
-      };
+      return { slug: serviceSlug, updated_at: lastmod, device_type: deviceType };
     }).filter(service => isValidUrlSlug(service.slug)) || [
       { slug: 'mobile-repair', updated_at: FALLBACK_DATE, device_type: 'mobile' },
       { slug: 'laptop-repair', updated_at: FALLBACK_DATE, device_type: 'laptop' },
       { slug: 'tablet-repair', updated_at: FALLBACK_DATE, device_type: 'tablet' }
     ];
-    
-    // Fetch dynamic routes from database (pre-computed routes)
-    sitemapLogger.info('DEBUG: Calling getDynamicRoutesForSitemap()...');
-    const cityServiceModels = await getDynamicRoutesForSitemap();
-    sitemapLogger.info(`DEBUG: Fetched ${cityServiceModels.length} dynamic routes for sitemap`);
-    sitemapLogger.info(`DEBUG: First few routes: ${JSON.stringify(cityServiceModels.slice(0, 3))}`);
-    
-    // Fetch city-model pages from dynamic_routes
-    const cityModelPages = await getCityModelPagesForSitemap();
-    sitemapLogger.info(`DEBUG: Fetched ${cityModelPages.length} city-model routes for sitemap`);
 
-    // Fetch neighborhood pages
-    const neighborhoods = await getNeighborhoodPagesFromDB();
+    sitemapLogger.info(`Fetched ${allRoutesResult.modelServiceRoutes.length} model-service, ${allRoutesResult.cityModelRoutes.length} city-model, ${allRoutesResult.cityServiceRoutes.length} city-service routes`);
 
-    // Fetch city-service pages from dynamic_routes
-    const cityServicePages = await getCityServicePagesForSitemap();
-    
-    // Fetch city locations for /locations/{city} pages
+    // Map city locations
     const cityLocations = serviceLocations?.map(loc => {
       const citySlug = cityNameToUrlSlug(loc.city_name);
       logSlugTransformation(loc.city_name, citySlug, 'city-location');
-      
-      // Standardized lastmod fallback
-      const lastmod = loc.created_at || FALLBACK_DATE;
-      
-      return {
-        city: loc.city_name,
-        citySlug: citySlug,
-        updated_at: lastmod
-      };
+      return { city: loc.city_name, citySlug, updated_at: loc.created_at || FALLBACK_DATE };
     }).filter(loc => isValidUrlSlug(loc.citySlug)) || [];
-    
-    // Map service areas with standardized lastmod
+
     const serviceAreas = serviceLocations?.map(loc => ({
       city: loc.city_name,
       updated_at: loc.created_at || FALLBACK_DATE
     })) || [];
-    
+
     return {
       serviceAreas,
       blogPosts,
       services,
-      cityServiceModels,
-      cityModelPages,
-      neighborhoods,
+      cityServiceModels: allRoutesResult.modelServiceRoutes,
+      cityModelPages: allRoutesResult.cityModelRoutes,
+      neighborhoods: neighborhoodsResult,
       cityLocations,
-      cityServicePages
+      cityServicePages: allRoutesResult.cityServiceRoutes
     };
 
   } catch (error) {
@@ -299,6 +275,92 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       cityLocations: [],
       cityServicePages: []
     };
+  }
+}
+
+/**
+ * Fetch ALL dynamic routes in a single paginated query (all route types at once).
+ * This replaces 3 separate sequential fetches with one consolidated pass.
+ */
+async function fetchAllDynamicRoutes(
+  supabase: ReturnType<typeof getServiceSupabase>,
+  startTime: number,
+  timeout: number
+): Promise<{
+  modelServiceRoutes: Array<{ city: string; service: string; model: string; updated_at: string }>;
+  cityModelRoutes: Array<{ city: string; model: string; updated_at: string }>;
+  cityServiceRoutes: Array<{ citySlug: string; serviceSlug: string; updated_at: string }>;
+}> {
+  const BATCH_SIZE = 1000;
+  const modelServiceRoutes: Array<{ city: string; service: string; model: string; updated_at: string }> = [];
+  const cityModelRoutes: Array<{ city: string; model: string; updated_at: string }> = [];
+  const cityServiceRoutes: Array<{ citySlug: string; serviceSlug: string; updated_at: string }> = [];
+
+  try {
+    // Single count query for all route types
+    const { count: totalRoutes, error: countError } = await supabase
+      .from('dynamic_routes')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true)
+      .in('route_type', ['model-service-page', 'city-model-page', 'city-service-page']);
+
+    if (countError) {
+      sitemapLogger.error('Error counting routes:', countError);
+      return { modelServiceRoutes: getFallbackCombinations(), cityModelRoutes: [], cityServiceRoutes: [] };
+    }
+
+    const numBatches = Math.ceil((totalRoutes || 0) / BATCH_SIZE);
+    sitemapLogger.info(`Fetching ${totalRoutes} routes in ${numBatches} batches...`);
+
+    for (let batch = 0; batch < numBatches; batch++) {
+      if (Date.now() - startTime > timeout) {
+        sitemapLogger.warn(`Timeout at batch ${batch + 1}/${numBatches}, got ${modelServiceRoutes.length + cityModelRoutes.length + cityServiceRoutes.length} routes so far`);
+        break;
+      }
+
+      const start = batch * BATCH_SIZE;
+      const end = start + BATCH_SIZE - 1;
+
+      const { data: batchRoutes, error } = await supabase
+        .from('dynamic_routes')
+        .select('slug_path, route_type, last_updated, content_updated_at')
+        .eq('is_active', true)
+        .in('route_type', ['model-service-page', 'city-model-page', 'city-service-page'])
+        .order('slug_path', { ascending: true })
+        .range(start, end);
+
+      if (error || !batchRoutes) {
+        sitemapLogger.error(`Error fetching batch ${batch + 1}:`, error);
+        continue;
+      }
+
+      for (const route of batchRoutes) {
+        const parts = route.slug_path.split('/');
+        const lastmod = route.content_updated_at || route.last_updated || FALLBACK_DATE;
+
+        if (route.route_type === 'model-service-page' && parts.length === 4 && parts[0] === 'repair') {
+          modelServiceRoutes.push({ city: parts[1], service: parts[2], model: parts[3], updated_at: lastmod });
+        } else if (route.route_type === 'city-model-page' && parts.length === 3 && parts[0] === 'repair') {
+          cityModelRoutes.push({ city: parts[1], model: parts[2], updated_at: lastmod });
+        } else if (route.route_type === 'city-service-page' && parts.length === 3 && parts[0] === 'repair') {
+          cityServiceRoutes.push({ citySlug: parts[1], serviceSlug: parts[2], updated_at: lastmod });
+        }
+      }
+
+      sitemapLogger.info(`Batch ${batch + 1}/${numBatches}: ${batchRoutes.length} routes processed`);
+    }
+
+    if (modelServiceRoutes.length === 0) {
+      sitemapLogger.warn('No model-service routes parsed, using fallback');
+      return { modelServiceRoutes: getFallbackCombinations(), cityModelRoutes, cityServiceRoutes };
+    }
+
+    sitemapLogger.info(`Route fetch complete: ${modelServiceRoutes.length} model-service, ${cityModelRoutes.length} city-model, ${cityServiceRoutes.length} city-service (${Date.now() - startTime}ms)`);
+    return { modelServiceRoutes, cityModelRoutes, cityServiceRoutes };
+
+  } catch (error) {
+    sitemapLogger.error('Error in fetchAllDynamicRoutes:', error);
+    return { modelServiceRoutes: getFallbackCombinations(), cityModelRoutes: [], cityServiceRoutes: [] };
   }
 }
 
@@ -355,227 +417,6 @@ async function getNeighborhoodPagesFromDB(): Promise<Array<{
   }
 }
 
-/**
- * Get dynamic routes from database for sitemap
- * FIXED: Simplified to fetch ALL routes and handle pagination for Vercel timeout
- * Fetches all 3,289+ routes from dynamic_routes table with pagination
- */
-async function getDynamicRoutesForSitemap(): Promise<Array<{
-  city: string;
-  service: string;
-  model: string;
-  updated_at: string;
-}>> {
-  const supabase = getServiceSupabase();
-  const startTime = Date.now();
-  const MAX_ROUTES_PER_BATCH = 1000; // Fetch in batches to avoid timeout
-  
-  try {
-    sitemapLogger.info('Fetching ALL dynamic routes for sitemap with pagination...');
-    
-    // First, get total count of active routes only
-    const { count: totalRoutes, error: countError } = await supabase
-      .from('dynamic_routes')
-      .select('*', { count: 'exact', head: true })
-      .eq('route_type', 'model-service-page')
-      .eq('is_active', true);
-    
-    if (countError) {
-      sitemapLogger.error('Error counting routes:', countError);
-      return getFallbackCombinations();
-    }
-    
-    sitemapLogger.info(`Total routes in database: ${totalRoutes}`);
-    
-    // Calculate number of batches needed
-    const numBatches = Math.ceil((totalRoutes || 0) / MAX_ROUTES_PER_BATCH);
-    sitemapLogger.info(`Fetching in ${numBatches} batches of ${MAX_ROUTES_PER_BATCH} routes each`);
-    
-    const result: Array<{
-      city: string;
-      service: string;
-      model: string;
-      updated_at: string;
-    }> = [];
-    
-    // Fetch routes in batches
-    for (let batch = 0; batch < numBatches; batch++) {
-      const start = batch * MAX_ROUTES_PER_BATCH;
-      const end = start + MAX_ROUTES_PER_BATCH - 1;
-      
-      sitemapLogger.info(`Fetching batch ${batch + 1}/${numBatches} (routes ${start}-${end})...`);
-      
-      // Fetch content_updated_at for accurate lastmod (Phase 5 SEO improvement)
-      const { data: batchRoutes, error } = await supabase
-        .from('dynamic_routes')
-        .select('slug_path, last_updated, content_updated_at')
-        .eq('route_type', 'model-service-page')
-        .eq('is_active', true)
-        .order('slug_path', { ascending: true })
-        .range(start, end);
-      
-      if (error) {
-        sitemapLogger.error(`Error fetching batch ${batch + 1}:`, error);
-        continue;
-      }
-      
-      if (!batchRoutes || batchRoutes.length === 0) {
-        sitemapLogger.warn(`Batch ${batch + 1} returned no routes`);
-        continue;
-      }
-      
-      // Process routes in this batch
-      for (const route of batchRoutes) {
-        // Parse slug_path format: "repair/{city}/{service}/{model}"
-        const parts = route.slug_path.split('/');
-        if (parts.length !== 4 || parts[0] !== 'repair') {
-          sitemapLogger.debug(`Skipping invalid slug_path: ${route.slug_path}`);
-          continue;
-        }
-        
-        const [, city, service, model] = parts;
-        
-        // Use content_updated_at if available (Phase 5 SEO improvement), fallback to last_updated
-        const lastmod = route.content_updated_at || route.last_updated || FALLBACK_DATE;
-        
-        result.push({
-          city,
-          service,
-          model,
-          updated_at: lastmod
-        });
-      }
-      
-      sitemapLogger.info(`Batch ${batch + 1} processed: ${batchRoutes.length} routes`);
-      
-      // Check timeout - if we're taking too long, return what we have
-      if (Date.now() - startTime > 8000) { // 8 second timeout for Vercel 10s limit
-        sitemapLogger.warn(`Timeout approaching, returning ${result.length} routes so far`);
-        break;
-      }
-    }
-    
-    const executionTime = Date.now() - startTime;
-    sitemapLogger.info(`✅ Processed ${result.length} valid dynamic routes in ${executionTime}ms`);
-    
-    if (result.length === 0) {
-      sitemapLogger.warn('No valid routes parsed, using fallback');
-      return getFallbackCombinations();
-    }
-    
-    // Log coverage
-    const coverage = totalRoutes ? ((result.length / totalRoutes) * 100).toFixed(1) : '0';
-    sitemapLogger.info(`Sitemap coverage: ${result.length}/${totalRoutes} routes (${coverage}%)`);
-    
-    return result;
-    
-  } catch (error) {
-    sitemapLogger.error('Error fetching dynamic routes for sitemap:', error);
-    return getFallbackCombinations();
-  }
-}
-
-/**
- * Fetch city-model-page routes from dynamic_routes for sitemap
- * These are 2-segment routes like /repair/vancouver/iphone-14
- */
-async function getCityModelPagesForSitemap(): Promise<Array<{
-  city: string;
-  model: string;
-  updated_at: string;
-}>> {
-  const supabase = getServiceSupabase();
-
-  try {
-    const BATCH_SIZE = 1000;
-    const result: Array<{ city: string; model: string; updated_at: string }> = [];
-
-    // Get total count
-    const { count: totalRoutes } = await supabase
-      .from('dynamic_routes')
-      .select('*', { count: 'exact', head: true })
-      .eq('route_type', 'city-model-page')
-      .eq('is_active', true);
-
-    const numBatches = Math.ceil((totalRoutes || 0) / BATCH_SIZE);
-
-    for (let batch = 0; batch < numBatches; batch++) {
-      const start = batch * BATCH_SIZE;
-      const end = start + BATCH_SIZE - 1;
-
-      const { data: batchRoutes, error } = await supabase
-        .from('dynamic_routes')
-        .select('slug_path, last_updated, content_updated_at')
-        .eq('route_type', 'city-model-page')
-        .eq('is_active', true)
-        .order('slug_path', { ascending: true })
-        .range(start, end);
-
-      if (error || !batchRoutes) continue;
-
-      for (const route of batchRoutes) {
-        // Parse: "repair/{city}/{model}"
-        const parts = route.slug_path.split('/');
-        if (parts.length !== 3 || parts[0] !== 'repair') continue;
-
-        result.push({
-          city: parts[1],
-          model: parts[2],
-          updated_at: route.content_updated_at || route.last_updated || FALLBACK_DATE
-        });
-      }
-    }
-
-    sitemapLogger.info(`Processed ${result.length} city-model routes for sitemap`);
-    return result;
-
-  } catch (error) {
-    sitemapLogger.error('Error fetching city-model pages for sitemap:', error);
-    return [];
-  }
-}
-
-/**
- * Fetch city-service-page routes from dynamic_routes for sitemap
- * These are 2-segment routes like /repair/vancouver/screen-replacement-mobile
- */
-async function getCityServicePagesForSitemap(): Promise<Array<{
-  citySlug: string;
-  serviceSlug: string;
-  updated_at: string;
-}>> {
-  const supabase = getServiceSupabase();
-
-  try {
-    const { data: routes, error } = await supabase
-      .from('dynamic_routes')
-      .select('slug_path, last_updated, content_updated_at')
-      .eq('route_type', 'city-service-page')
-      .eq('is_active', true)
-      .order('slug_path');
-
-    if (error || !routes) {
-      sitemapLogger.error('Error fetching city-service pages:', error);
-      return [];
-    }
-
-    return routes.map(route => {
-      const parts = route.slug_path.split('/');
-      // Format: "repair/{city}/{service}"
-      if (parts.length !== 3 || parts[0] !== 'repair') return null;
-
-      return {
-        citySlug: parts[1],
-        serviceSlug: parts[2],
-        updated_at: route.content_updated_at || route.last_updated || FALLBACK_DATE
-      };
-    }).filter(Boolean) as Array<{ citySlug: string; serviceSlug: string; updated_at: string }>;
-
-  } catch (error) {
-    sitemapLogger.error('Error in getCityServicePagesForSitemap:', error);
-    return [];
-  }
-}
 
 /**
  * Generate sitemap entries for city-service pages
@@ -609,213 +450,6 @@ function getCityModelSitemapEntries(siteUrl: string, cityModelPages: Array<{
   }));
 }
 
-/**
- * Get popular city-service-model combinations for sitemap
- * Queries database with safety limits to prevent Vercel timeout (10s)
- * Focuses on combinations with actual price data in dynamic_pricing table
- */
-async function getPopularCityServiceModels(): Promise<Array<{
-  city: string;
-  service: string;
-  model: string;
-  updated_at: string;
-}>> {
-  const supabase = getServiceSupabase();
-  const startTime = Date.now();
-  const MAX_EXECUTION_TIME = 8000; // 8 seconds (leaving 2s buffer for Vercel 10s timeout)
-  const MAX_COMBINATIONS = 10000; // Increased from 2000 to allow full coverage (still under 50k sitemap limit)
-  const MAX_COMBINATIONS_PER_SERVICE = 500; // Increased from 100 to allow more model coverage per service
-  
-  try {
-    // Start timeout protection
-    const checkTimeout = () => {
-      if (Date.now() - startTime > MAX_EXECUTION_TIME) {
-        throw new Error('Sitemap generation timeout - exceeded 8 second limit');
-      }
-    };
-    
-    checkTimeout();
-    
-    // Get active service locations first (cities)
-    const { data: locations, error: locationsError } = await supabase
-      .from('service_locations')
-      .select('city_name, created_at')
-      .eq('is_active', true)
-      .order('city_name')
-      .limit(20); // Limit to top 20 cities for safety
-
-    if (locationsError || !locations || locations.length === 0) {
-      sitemapLogger.error('Error fetching service locations:', locationsError);
-      return getFallbackCombinations();
-    }
-
-    sitemapLogger.info(`Found ${locations.length} active service locations`);
-    checkTimeout();
-    
-    // Query dynamic pricing with proper join handling and limits
-    // Use a more efficient query with explicit limits
-    const { data: combinations, error } = await supabase
-      .from('dynamic_pricing')
-      .select(`
-        service_id,
-        model_id,
-        created_at,
-        services!inner (
-          name,
-          slug,
-          is_active,
-          updated_at
-        ),
-        device_models!inner (
-          name,
-          slug,
-          is_active,
-          updated_at,
-          popularity_score
-        )
-      `)
-      .eq('is_active', true)
-      .eq('services.is_active', true)
-      .eq('device_models.is_active', true)
-      .order('popularity_score', { ascending: false, foreignTable: 'device_models' })
-      .limit(500); // Limit initial query to prevent overwhelming response
-
-    checkTimeout();
-
-    if (error || !combinations) {
-      sitemapLogger.error('Error fetching dynamic pricing combinations:', error);
-      return getFallbackCombinations();
-    }
-
-    if (combinations.length === 0) {
-      sitemapLogger.warn('No dynamic pricing combinations found, using fallback');
-      return getFallbackCombinations();
-    }
-
-    sitemapLogger.info(`Found ${combinations.length} dynamic pricing combinations`);
-    sitemapLogger.debug('Sample combination:', combinations[0]);
-    
-    // Group combinations by service to ensure diversity
-    const combinationsByService = new Map<string, typeof combinations>();
-    
-    for (const combo of combinations) {
-      checkTimeout();
-      
-      // Robust join handling with null checks
-      const serviceData = Array.isArray(combo.services) ? combo.services[0] : combo.services;
-      const modelData = Array.isArray(combo.device_models) ? combo.device_models[0] : combo.device_models;
-      
-      if (!serviceData?.name || !modelData?.name) {
-        sitemapLogger.debug('Skipping combination with missing service or model data');
-        continue;
-      }
-      
-      const serviceName = serviceData.name;
-      if (!combinationsByService.has(serviceName)) {
-        combinationsByService.set(serviceName, []);
-      }
-      combinationsByService.get(serviceName)!.push(combo);
-    }
-    
-    checkTimeout();
-    
-    // Generate city-service-model combinations with limits
-    const result: Array<{
-      city: string;
-      service: string;
-      model: string;
-      updated_at: string;
-    }> = [];
-    
-    let totalCombinationCount = 0;
-    
-    // Process each service type with limits
-    for (const [serviceName, serviceCombinations] of combinationsByService) {
-      if (totalCombinationCount >= MAX_COMBINATIONS) break;
-      
-      // Take top N models for this service
-      const topModels = serviceCombinations
-        .slice(0, MAX_COMBINATIONS_PER_SERVICE)
-        .map(combo => {
-          const serviceData = Array.isArray(combo.services) ? combo.services[0] : combo.services;
-          const modelData = Array.isArray(combo.device_models) ? combo.device_models[0] : combo.device_models;
-          
-          return {
-            serviceName: serviceData?.name || '',
-            serviceSlug: serviceData?.slug || '',
-            modelName: modelData?.name || '',
-            modelSlug: modelData?.slug || '',
-            updated_at: combo.created_at || 
-                       serviceData?.updated_at || 
-                       modelData?.updated_at || 
-                       FALLBACK_DATE,
-            popularity: modelData?.popularity_score || 0
-          };
-        })
-        .filter(item => item.serviceName && item.modelName);
-      
-      // Generate URLs for each city
-      for (const location of locations) {
-        if (totalCombinationCount >= MAX_COMBINATIONS) break;
-        
-        const citySlug = cityNameToUrlSlug(location.city_name);
-        if (!isValidUrlSlug(citySlug)) {
-          sitemapLogger.warn(`Invalid city slug generated: ${citySlug} from ${location.city_name}`);
-          continue;
-        }
-        
-        for (const model of topModels) {
-          if (totalCombinationCount >= MAX_COMBINATIONS) break;
-          
-          // Use centralized slug utilities for consistency
-          const serviceSlug = serviceNameToUrlSlug(model.serviceName);
-          const modelSlug = modelNameToUrlSlug(model.modelName);
-          
-          if (!isValidUrlSlug(serviceSlug) || !isValidUrlSlug(modelSlug)) {
-            sitemapLogger.warn(`Invalid slug generated: service=${serviceSlug}, model=${modelSlug}`);
-            continue;
-          }
-          
-          // Log slug transformations for debugging
-          logSlugTransformation(model.serviceName, serviceSlug, 'service');
-          logSlugTransformation(model.modelName, modelSlug, 'model');
-          
-          result.push({
-            city: citySlug,
-            service: serviceSlug,
-            model: modelSlug,
-            updated_at: model.updated_at
-          });
-          
-          totalCombinationCount++;
-        }
-      }
-      
-      checkTimeout();
-    }
-    
-    const executionTime = Date.now() - startTime;
-    sitemapLogger.info(`Generated ${result.length} city-service-model combinations (cap: ${MAX_COMBINATIONS}, time: ${executionTime}ms)`);
-    
-    // If we have no results, return fallback
-    if (result.length === 0) {
-      sitemapLogger.warn('No valid combinations generated, using fallback');
-      return getFallbackCombinations();
-    }
-    
-    // Log coverage statistics
-    const coverage = ((result.length / MAX_COMBINATIONS) * 100).toFixed(1);
-    sitemapLogger.info(`Sitemap coverage: ${result.length}/${MAX_COMBINATIONS} URLs (${coverage}%)`);
-    
-    return result;
-    
-  } catch (error) {
-    sitemapLogger.error('Error fetching city-service-model combinations:', error);
-    
-    // Return fallback combinations on error or timeout
-    return getFallbackCombinations();
-  }
-}
 
 /**
  * Fallback combinations for when database queries fail
@@ -987,17 +621,6 @@ function getBlogPages(siteUrl: string, blogPosts: Array<{ slug: string; updated_
       lastmod: post.updated_at,
       changefreq: 'monthly',
       priority: '0.6'
-    });
-  });
-  
-  // Blog categories (if you have them)
-  const categories = ['mobile-repair-tips', 'laptop-maintenance', 'device-protection'];
-  categories.forEach(category => {
-    entries.push({
-      loc: `${siteUrl}/blog/category/${category}`,
-      lastmod: FALLBACK_DATE,
-      changefreq: 'weekly',
-      priority: '0.7'
     });
   });
   
