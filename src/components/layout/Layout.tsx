@@ -9,9 +9,10 @@ export interface LayoutProps {
   children: ReactNode;
   title?: string;
   metaDescription?: string;
+  canonical?: string;
 }
 
-export default function Layout({ children, title, metaDescription }: LayoutProps) {
+export default function Layout({ children, title, metaDescription, canonical }: LayoutProps) {
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
@@ -54,6 +55,7 @@ export default function Layout({ children, title, metaDescription }: LayoutProps
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content={pageTitle} />
         <meta name="twitter:description" content={description} />
+        {canonical && <link rel="canonical" href={canonical} />}
       </Head>
       <Header />
       <main className="flex-grow">{children}</main>

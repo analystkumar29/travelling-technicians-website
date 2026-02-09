@@ -48,6 +48,23 @@ module.exports = (phase, { defaultConfig }) => {
           destination: '/repair/:city/screen-replacement-mobile/:model',
           permanent: true,
         },
+        // Fix Google 404s: old /service-areas/:city URLs → canonical /repair/:city
+        {
+          source: '/service-areas/:city',
+          destination: '/repair/:city',
+          permanent: true,
+        },
+        // Fix Google 404s: old /doorstep-repair page consolidated into /repair
+        {
+          source: '/doorstep-repair',
+          destination: '/repair',
+          permanent: true,
+        },
+        {
+          source: '/doorstep',
+          destination: '/repair',
+          permanent: true,
+        },
       ];
     },
     async headers() {

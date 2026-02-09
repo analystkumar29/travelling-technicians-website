@@ -294,7 +294,7 @@ export default function FAQPage() {
         {/* FAQ Page Structured Data */}
         <FAQSchema faqs={allFaqs} />
       </Head>
-      <Layout>
+      <Layout canonical="https://www.travelling-technicians.ca/faq">
       {/* Hero Section */}
       <section className="pt-16 pb-20 bg-gradient-to-br from-primary-900 to-primary-800 text-white">
         <div className="container-custom">

@@ -9,6 +9,7 @@ export default function TermsConditionsPage() {
     <Layout
       title="Terms and Conditions"
       metaDescription="Terms and conditions for The Travelling Technicians mobile and laptop repair services. Compliant with PIPEDA, BC BPCPA, and applicable Canadian consumer protection laws."
+      canonical="https://www.travelling-technicians.ca/terms-conditions"
     >
       <div className="py-16 bg-white">
         <div className="container-custom max-w-4xl">

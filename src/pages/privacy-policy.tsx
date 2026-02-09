@@ -9,6 +9,7 @@ export default function PrivacyPolicyPage() {
     <Layout
       title="Privacy Policy"
       metaDescription="Privacy policy for The Travelling Technicians. Compliant with PIPEDA and BC PIPA. Learn how we collect, use, and protect your personal information."
+      canonical="https://www.travelling-technicians.ca/privacy-policy"
     >
       <div className="py-16 bg-white">
         <div className="container-custom max-w-4xl">

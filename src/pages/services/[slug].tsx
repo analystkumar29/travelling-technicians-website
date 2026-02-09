@@ -91,6 +91,7 @@ export default function ServicePage({ slug, services, brands, config }: ServiceP
           warranty="up to 6 months"
         />
         <LocalBusinessSchema />
+        <link rel="canonical" href={`https://www.travelling-technicians.ca/services/${slug}`} />
       </Head>
       <Layout title={`${config.title} | The Travelling Technicians`}>
         {/* Hero Section */}

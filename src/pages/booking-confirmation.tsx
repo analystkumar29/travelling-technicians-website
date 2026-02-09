@@ -115,7 +115,7 @@ export default function BookingConfirmation() {
   }, [router.isReady, router.query, fetchBookingByReference]);
 
   return (
-    <Layout title="Booking Confirmation" metaDescription="Your booking has been confirmed with The Travelling Technicians.">
+    <Layout title="Booking Confirmation" metaDescription="Your booking has been confirmed with The Travelling Technicians." canonical="https://www.travelling-technicians.ca/booking-confirmation">
       <section className="pt-24 pb-16 bg-gradient-to-b from-primary-50 to-white">
         <div className="container-custom">
           {isLoading ? (

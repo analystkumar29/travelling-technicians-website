@@ -105,7 +105,7 @@ const BookOnlinePage: NextPage = () => {
   };
 
   return (
-    <Layout title="Book Online | The Travelling Technicians">
+    <Layout title="Book Online | The Travelling Technicians" canonical="https://www.travelling-technicians.ca/book-online">
       <div className="py-16 bg-gradient-to-b from-primary-50 to-white">
         <div className="container-custom">
           <div className="text-center mb-12">

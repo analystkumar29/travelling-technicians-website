@@ -141,7 +141,7 @@ const repairServices: RepairService[] = [
 
 export default function PricingPage() {
   return (
-    <Layout>
+    <Layout canonical="https://www.travelling-technicians.ca/pricing">
       {/* Hero Section */}
       <section className="pt-16 pb-20 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
         <div className="container-custom">

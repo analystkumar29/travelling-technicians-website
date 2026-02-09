@@ -99,6 +99,7 @@ export default function CheckWarranty() {
     <Layout
       title="Check Warranty Status | The Travelling Technicians"
       metaDescription="Look up your repair warranty status. Enter your warranty number or booking reference to check coverage details."
+      canonical="https://www.travelling-technicians.ca/check-warranty"
     >
       <div className="max-w-2xl mx-auto px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
         {/* Hero */}
