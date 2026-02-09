@@ -60,6 +60,11 @@ export default function TechnicianLogin() {
         <meta name="robots" content="noindex, nofollow" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <meta name="theme-color" content="#102a43" />
+        <link key="manifest" rel="manifest" href="/manifest-technician.json" />
+        <meta key="apple-wac" name="apple-mobile-web-app-capable" content="yes" />
+        <meta key="apple-wac-status" name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta key="apple-wac-title" name="apple-mobile-web-app-title" content="TT Tech" />
+        <link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png" />
       </Head>
 
       <InstallPrompt />

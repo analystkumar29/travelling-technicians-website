@@ -1,4 +1,5 @@
 import { getTechInfo } from '@/utils/technicianAuth';
+import TechnicianNotificationBell from './TechnicianNotificationBell';
 
 interface TechnicianHeaderProps {
   title?: string;
@@ -22,6 +23,7 @@ export default function TechnicianHeader({ title }: TechnicianHeaderProps) {
             <p className="text-[10px] text-primary-300">Travelling Technicians</p>
           </div>
         </div>
+        <TechnicianNotificationBell />
       </div>
     </header>
   );

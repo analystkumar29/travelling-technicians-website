@@ -43,8 +43,10 @@ export default function AvailableJobs() {
         event: 'INSERT',
         schema: 'public',
         table: 'bookings',
-      }, () => {
-        // New booking — refresh feed
+      }, (payload) => {
+        const booking = payload.new as Record<string, unknown>;
+        const ref = (booking.booking_ref as string) || 'New job';
+        toast.info('New job just posted!', { description: ref, duration: 5000 });
         fetchJobs(false);
       })
       .on('postgres_changes', {
@@ -54,6 +56,8 @@ export default function AvailableJobs() {
       }, (payload) => {
         // If a booking was claimed by someone else, remove from feed
         if (payload.new && (payload.new as any).status === 'assigned') {
+          const ref = (payload.new as any).booking_ref || 'A job';
+          toast(`${ref} was claimed`, { duration: 4000 });
           setJobs(prev => prev.filter(j => (j.booking_id || j.id) !== (payload.new as any).id));
         }
       })

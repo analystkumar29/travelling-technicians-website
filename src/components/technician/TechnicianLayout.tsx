@@ -6,6 +6,7 @@ import TechnicianHeader from './TechnicianHeader';
 import TechnicianBottomNav from './TechnicianBottomNav';
 import InstallPrompt from './InstallPrompt';
 import { Loader2 } from 'lucide-react';
+import { useTechnicianRealtimeJobs } from '@/hooks/useTechnicianRealtimeJobs';
 
 interface TechnicianLayoutProps {
   children: ReactNode;
@@ -27,6 +28,9 @@ export default function TechnicianLayout({ children, title, headerTitle }: Techn
     setAuthChecked(true);
   }, [router]);
 
+  // Global realtime notifications — runs on all technician pages
+  useTechnicianRealtimeJobs({ enabled: authorized });
+
   if (!authChecked) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -45,10 +49,12 @@ export default function TechnicianLayout({ children, title, headerTitle }: Techn
         <title>{pageTitle} | The Travelling Technicians</title>
         <meta name="robots" content="noindex, nofollow" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-        <link rel="manifest" href="/manifest-technician.json" />
+        <link key="manifest" rel="manifest" href="/manifest-technician.json" />
         <meta name="theme-color" content="#102a43" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta key="apple-wac" name="apple-mobile-web-app-capable" content="yes" />
+        <meta key="apple-wac-status" name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta key="apple-wac-title" name="apple-mobile-web-app-title" content="TT Tech" />
+        <link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png" />
       </Head>
 
       <div className="min-h-screen bg-gray-50 pb-20">
