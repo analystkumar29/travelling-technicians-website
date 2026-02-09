@@ -17,7 +17,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       .from('bookings')
       .select(`
         id, booking_ref, status, booking_date, booking_time, slot_duration,
-        customer_name, customer_phone, customer_email, address, postal_code,
+        customer_name, customer_phone, customer_email, customer_address,
         issue_description, quoted_price, final_price, pricing_tier,
         created_at, updated_at,
         device_models:model_id (name, slug, brands:brand_id (name)),

@@ -159,7 +159,7 @@ export default function JobDetail() {
               <MapPin className="h-4 w-4 text-primary-600 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium text-gray-900">{cityName}</p>
-                {job.address && <p className="text-xs text-gray-500">{job.address}</p>}
+                {job.customer_address && <p className="text-xs text-gray-500">{job.customer_address}</p>}
               </div>
             </div>
           )}
@@ -233,10 +233,10 @@ export default function JobDetail() {
             </a>
           )}
 
-          {job.address && (
+          {job.customer_address && (
             <a
               href={`https://maps.google.com/maps?q=${encodeURIComponent(
-                `${job.address}, ${job.city || ''}, ${job.province || 'BC'}`
+                `${job.customer_address}, ${job.city || ''}, ${job.province || 'BC'}`
               )}`}
               target="_blank"
               rel="noopener noreferrer"
