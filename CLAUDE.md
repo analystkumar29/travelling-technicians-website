@@ -379,3 +379,35 @@ Any non-completed status can also → `cancelled`.
 - **`bookingTimeSlots.ts`**: `generateTimeSlotsForDate()` accepts optional `maxStartHour` param; `getTimeSlotsForDate()` accepts `isTomorrow` flag
 - **`useBookingController.ts`**: Detects if selected date equals tomorrow, passes `isTomorrow=true` to filter slots
 - **Result**: Tomorrow → slots before 3 PM only; 2+ days out → all slots available; cutoff controlled by DB setting
+
+## GSC Coverage Fixes (APPLIED 2026-02-09)
+
+### Context (from GSC Coverage export Feb 9)
+- **2 pages indexed** out of ~4,920 (up from 1 on Jan 27)
+- **139 pages discovered but not indexed** (up from 40 — Google actively discovering new content post-overhaul)
+- **8 Not Found (404)** — fixed with redirects
+- **43 Duplicate without user-selected canonical** — fixed with canonical tags
+- **3 Redirect errors** — no URL data (monitoring)
+- **61 Alternate pages with canonical** — working correctly
+- Crawl volume up 44% (798 → 1,152 requests), discovery purpose nearly doubled (22.81% → 41.75%)
+
+### New Redirects in `next.config.js`
+- `/service-areas/:city` → `/repair/:city` (301) — fixes 4 old service-area sub-page 404s
+- `/doorstep-repair` → `/repair` (301) — consolidated page, was genuine 404
+- `/doorstep` → `/repair` (301) — same
+
+### Canonical Tags
+- **`Layout` component** (`src/components/layout/Layout.tsx`): Added optional `canonical` prop, renders `<link rel="canonical">` in `<Head>`
+- **10 pages updated** with canonical URLs: `/pricing`, `/faq`, `/privacy-policy`, `/terms-conditions`, `/book-online`, `/check-warranty`, `/leave-review`, `/verify-booking`, `/booking-confirmation`, `/services/[slug]` (dynamic)
+- Pages that already had canonicals (no changes): `/`, `/about`, `/contact`, `/blog`, `/sitemap`, `/service-areas`, `/repair` (index), all `repair/[[...slug]]` route types
+
+### Full Redirect Inventory (`next.config.js`, 8 rules)
+1. Non-www → `www.travelling-technicians.ca` (host-based)
+2. `/mobile-screen-repair` → `/services/mobile-repair`
+3. `/laptop-screen-repair` → `/services/laptop-repair`
+4. `/mobile-repair-near-me` → `/repair`
+5. `/locations/:city` → `/repair/:city`
+6. `/repair/:city/screen-replacement/:model` → `/repair/:city/screen-replacement-mobile/:model`
+7. `/service-areas/:city` → `/repair/:city`
+8. `/doorstep-repair` → `/repair`
+9. `/doorstep` → `/repair`
