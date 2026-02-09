@@ -18,7 +18,10 @@ import {
   MapPin,
   Pencil,
   Calendar,
-  Trash2
+  Trash2,
+  Key,
+  Wrench,
+  Shield
 } from 'lucide-react';
 import {
   TechnicianRecord,
@@ -27,6 +30,27 @@ import {
   ServiceLocationRecord
 } from '@/types/admin';
 import { toast } from 'sonner';
+
+interface TechnicianSpecialization {
+  id: string;
+  service_id: string | null;
+  category_id: string | null;
+  skill_level: string;
+  services?: { name: string; display_name: string } | null;
+  service_categories?: { name: string } | null;
+}
+
+interface ServiceOption {
+  id: string;
+  name: string;
+  display_name: string | null;
+  category_id: string | null;
+}
+
+interface CategoryOption {
+  id: string;
+  name: string;
+}
 
 interface TechnicianWithZones extends TechnicianRecord {
   service_zones?: TechnicianServiceZoneRecord[];
@@ -80,9 +104,26 @@ export default function AdminTechnicians() {
     end_time: '17:00'
   });
 
+  // PIN state
+  const [showPinModal, setShowPinModal] = useState<string | null>(null);
+  const [pinValue, setPinValue] = useState('');
+  const [settingPin, setSettingPin] = useState(false);
+
+  // Specializations state
+  const [showSpecializations, setShowSpecializations] = useState<string | null>(null);
+  const [specializations, setSpecializations] = useState<TechnicianSpecialization[]>([]);
+  const [loadingSpecs, setLoadingSpecs] = useState(false);
+  const [allServices, setAllServices] = useState<ServiceOption[]>([]);
+  const [allCategories, setAllCategories] = useState<CategoryOption[]>([]);
+  const [newSpecType, setNewSpecType] = useState<'service' | 'category'>('category');
+  const [newSpecId, setNewSpecId] = useState('');
+  const [newSpecLevel, setNewSpecLevel] = useState('standard');
+  const [addingSpec, setAddingSpec] = useState(false);
+
   useEffect(() => {
     fetchTechnicians();
     fetchLocations();
+    fetchServicesAndCategories();
   }, []);
 
   const fetchTechnicians = async () => {
@@ -181,6 +222,138 @@ export default function AdminTechnicians() {
       setAvailability([]);
     }
   }, [showAvailability, fetchAvailability]);
+
+  const fetchServicesAndCategories = async () => {
+    try {
+      const { data: svcData } = await supabase
+        .from('services')
+        .select('id, name, display_name, category_id')
+        .eq('is_active', true)
+        .order('display_name');
+
+      const { data: catData } = await supabase
+        .from('service_categories')
+        .select('id, name')
+        .eq('is_active', true)
+        .order('name');
+
+      setAllServices((svcData as ServiceOption[]) || []);
+      setAllCategories((catData as CategoryOption[]) || []);
+    } catch (err) {
+      console.error('Failed to fetch services/categories:', err);
+    }
+  };
+
+  const fetchSpecializations = useCallback(async (technicianId: string) => {
+    try {
+      setLoadingSpecs(true);
+      const response = await authFetch(`/api/management/technicians/${technicianId}/specializations`);
+      if (response.ok) {
+        setSpecializations(await response.json());
+      }
+    } catch (err) {
+      console.error('Error fetching specializations:', err);
+      toast.error('Failed to load specializations');
+    } finally {
+      setLoadingSpecs(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showSpecializations) {
+      fetchSpecializations(showSpecializations);
+    } else {
+      setSpecializations([]);
+    }
+  }, [showSpecializations, fetchSpecializations]);
+
+  const addSpecialization = async () => {
+    if (!showSpecializations || !newSpecId) return;
+    setAddingSpec(true);
+    try {
+      const updated = [
+        ...specializations.map(s => ({
+          service_id: s.service_id,
+          category_id: s.category_id,
+          skill_level: s.skill_level,
+        })),
+        {
+          service_id: newSpecType === 'service' ? newSpecId : null,
+          category_id: newSpecType === 'category' ? newSpecId : null,
+          skill_level: newSpecLevel,
+        },
+      ];
+
+      const response = await authFetch(`/api/management/technicians/${showSpecializations}/specializations`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ specializations: updated }),
+      });
+
+      if (response.ok) {
+        toast.success('Specialization added');
+        setNewSpecId('');
+        await fetchSpecializations(showSpecializations);
+      } else {
+        toast.error('Failed to add specialization');
+      }
+    } catch {
+      toast.error('Error adding specialization');
+    } finally {
+      setAddingSpec(false);
+    }
+  };
+
+  const removeSpecialization = async (specId: string) => {
+    if (!showSpecializations) return;
+    try {
+      const updated = specializations
+        .filter(s => s.id !== specId)
+        .map(s => ({
+          service_id: s.service_id,
+          category_id: s.category_id,
+          skill_level: s.skill_level,
+        }));
+
+      const response = await authFetch(`/api/management/technicians/${showSpecializations}/specializations`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ specializations: updated }),
+      });
+
+      if (response.ok) {
+        toast.success('Specialization removed');
+        await fetchSpecializations(showSpecializations);
+      }
+    } catch {
+      toast.error('Error removing specialization');
+    }
+  };
+
+  const setTechnicianPin = async () => {
+    if (!showPinModal || !pinValue) return;
+    setSettingPin(true);
+    try {
+      const response = await authFetch(`/api/management/technicians/${showPinModal}/pin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: pinValue }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        toast.success(data.message || 'PIN set successfully');
+        setShowPinModal(null);
+        setPinValue('');
+      } else {
+        toast.error(data.error || 'Failed to set PIN');
+      }
+    } catch {
+      toast.error('Error setting PIN');
+    } finally {
+      setSettingPin(false);
+    }
+  };
 
   const toggleTechnicianStatus = async (id: string, currentStatus: boolean) => {
     try {
@@ -784,6 +957,24 @@ export default function AdminTechnicians() {
                             <Calendar className="h-4 w-4 inline mr-1" />
                             Schedule
                           </button>
+                          <button
+                            onClick={() => {
+                              setShowSpecializations(technician.id === showSpecializations ? null : technician.id);
+                              setShowServiceZones(null);
+                              setShowAvailability(null);
+                            }}
+                            className={`px-3 py-1 rounded text-sm ${showSpecializations === technician.id ? 'bg-indigo-200 text-indigo-800' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'}`}
+                          >
+                            <Wrench className="h-4 w-4 inline mr-1" />
+                            Skills
+                          </button>
+                          <button
+                            onClick={() => { setShowPinModal(technician.id); setPinValue(''); }}
+                            className="px-3 py-1 rounded text-sm bg-amber-100 text-amber-700 hover:bg-amber-200"
+                          >
+                            <Key className="h-4 w-4 inline mr-1" />
+                            PIN
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -1050,6 +1241,177 @@ export default function AdminTechnicians() {
           </div>
         </div>
       )}
+
+      {/* Specializations Panel */}
+      {showSpecializations && (
+        <div className="bg-white shadow rounded-lg mt-8">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900">
+              <Wrench className="h-5 w-5 inline mr-2 text-indigo-600" />
+              Specializations — {getSelectedTechnicianName(showSpecializations)}
+            </h3>
+          </div>
+          <div className="px-6 py-4">
+            {loadingSpecs ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                <span className="ml-3 text-gray-600">Loading specializations...</span>
+              </div>
+            ) : (
+              <>
+                {specializations.length === 0 ? (
+                  <p className="text-gray-500 mb-4">No specializations assigned (generalist — can claim any job).</p>
+                ) : (
+                  <div className="mb-6">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Skill Level</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {specializations.map((spec) => (
+                          <tr key={spec.id}>
+                            <td className="px-4 py-3 text-sm text-gray-600">
+                              {spec.service_id ? 'Service' : 'Category'}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {spec.services?.display_name || spec.services?.name || spec.service_categories?.name || 'Unknown'}
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                spec.skill_level === 'expert' ? 'bg-purple-100 text-purple-800' :
+                                spec.skill_level === 'standard' ? 'bg-blue-100 text-blue-800' :
+                                'bg-gray-100 text-gray-600'
+                              }`}>
+                                {spec.skill_level}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-right">
+                              <button
+                                onClick={() => removeSpecialization(spec.id)}
+                                className="text-red-600 hover:text-red-800"
+                                title="Remove specialization"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Add specialization form */}
+                <div className="flex items-end gap-3 border-t border-gray-200 pt-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                    <select
+                      value={newSpecType}
+                      onChange={(e) => { setNewSpecType(e.target.value as 'service' | 'category'); setNewSpecId(''); }}
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    >
+                      <option value="category">Category</option>
+                      <option value="service">Service</option>
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {newSpecType === 'category' ? 'Category' : 'Service'}
+                    </label>
+                    <select
+                      value={newSpecId}
+                      onChange={(e) => setNewSpecId(e.target.value)}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    >
+                      <option value="">Select...</option>
+                      {newSpecType === 'category'
+                        ? allCategories
+                            .filter(c => !specializations.some(s => s.category_id === c.id))
+                            .map(c => <option key={c.id} value={c.id}>{c.name}</option>)
+                        : allServices
+                            .filter(s => !specializations.some(sp => sp.service_id === s.id))
+                            .map(s => <option key={s.id} value={s.id}>{s.display_name || s.name}</option>)
+                      }
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Level</label>
+                    <select
+                      value={newSpecLevel}
+                      onChange={(e) => setNewSpecLevel(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    >
+                      <option value="basic">Basic</option>
+                      <option value="standard">Standard</option>
+                      <option value="expert">Expert</option>
+                    </select>
+                  </div>
+                  <button
+                    onClick={addSpecialization}
+                    disabled={!newSpecId || addingSpec}
+                    className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  >
+                    {addingSpec ? 'Adding...' : 'Add'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* PIN Setup Modal */}
+      <AdminModal
+        open={!!showPinModal}
+        onClose={() => { setShowPinModal(null); setPinValue(''); }}
+        title={`Set PIN — ${getSelectedTechnicianName(showPinModal)}`}
+        size="sm"
+        footer={
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={() => { setShowPinModal(null); setPinValue(''); }}
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={setTechnicianPin}
+              disabled={settingPin || pinValue.length < 4}
+              className="px-4 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 disabled:opacity-50"
+            >
+              {settingPin ? 'Setting...' : 'Set PIN'}
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Set a 4-6 digit PIN for this technician to log into the Technician Portal from their mobile device.
+          </p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">PIN (4-6 digits)</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={6}
+              value={pinValue}
+              onChange={(e) => setPinValue(e.target.value.replace(/\D/g, ''))}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md text-center text-2xl tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              placeholder="****"
+              autoFocus
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              The technician will use this PIN with their phone number to log in.
+            </p>
+          </div>
+        </div>
+      </AdminModal>
 
       {/* Edit Technician Modal */}
       <AdminModal

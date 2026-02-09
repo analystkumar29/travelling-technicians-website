@@ -26,7 +26,7 @@
 | `service_locations` | 13 | **340,094** | 426,393 | 169 |
 | `testimonials` | 63 | **10,608** | 5 | 5 |
 
-**Auth**: Custom hand-rolled JWT (NOT Supabase Auth). PBKDF2-SHA512 password hash, HMAC-SHA256 token signing. Admin-only; no end-user auth. Token stored in `localStorage`. 7-day expiry.
+**Auth**: Custom hand-rolled JWT (NOT Supabase Auth). PBKDF2-SHA512 password hash, HMAC-SHA256 token signing. Admin (7-day expiry) + Technician (30-day, role='technician' in JWT). Tokens stored in `localStorage`. Shared `ADMIN_JWT_SECRET` key.
 
 ## Section 2: Command Center
 
@@ -79,6 +79,9 @@ npm run test:cache-full        # Cache performance + API response benchmarks
 | `/check-warranty` | Client SPA | `/api/warranties/lookup` | N/A |
 | `/book-online` `/booking-confirmation` `/verify-booking` | Client SPA | API calls | N/A |
 | `/management/*` | Client SPA (auth-gated) | API calls with Bearer JWT | N/A |
+| `/technician/login` | Client SPA | `/api/technician/login` | N/A |
+| `/technician` `/technician/available-jobs` `/technician/my-jobs` `/technician/profile` | Client SPA (tech-auth-gated) | `/api/technician/*` with Bearer JWT | N/A |
+| `/technician/jobs/[id]` | Client SPA (tech-auth-gated) | `/api/technician/jobs/[id]` | N/A |
 | `/blog/*` | Static (hardcoded TSX) | None | Build-time |
 | `/api/sitemap.xml` | API (XML) | `dynamic_routes` (paginated) | 24h cache header |
 
@@ -126,6 +129,9 @@ Repair completed → repair_completions INSERT
 | `/api/warranties/lookup` | None (public, rate-limited) | Service Role | `warranties`, `bookings`, `device_models`, `services` |
 | `/api/warranties/*` (other) | JWT Bearer | Service Role | `warranties`, `bookings`, `device_models`, `services` |
 | `/api/send-warranty-notification` | None (internal) | N/A | N/A (sends email via SendGrid) |
+| `/api/technician/login` | None (public) | Service Role | `technicians` |
+| `/api/technician/*` (other) | Technician JWT | Service Role | `bookings`, `technicians`, `technician_specializations`, `repair_completions` |
+| `/api/management/technicians/[id]/*` | Admin JWT | Service Role | `technician_specializations`, `technician_service_zones`, `technicians` |
 | `/api/sitemap.xml` | None | Anon | `dynamic_routes` |
 
 ## Section 4: Rules of Engagement
