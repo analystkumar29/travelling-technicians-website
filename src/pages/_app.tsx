@@ -10,6 +10,7 @@ import { useEffect, useState, ReactNode } from 'react';
 import { useRouter } from 'next/router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 // next-seo imports REMOVED - they were causing side effects that overwrote page-specific title tags
 // Environment validation temporarily disabled
 
@@ -116,6 +117,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <SafeHydrate>
           <QueryClientProvider client={queryClient}>
             <Component {...pageProps} />
+            <SpeedInsights />
             <Toaster position="bottom-right" richColors />
           </QueryClientProvider>
         </SafeHydrate>
