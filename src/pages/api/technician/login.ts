@@ -50,31 +50,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Normalize phone: strip non-digits
-    const normalizedPhone = phone.replace(/\D/g, '');
+    const digitsOnly = phone.replace(/\D/g, '');
+    // Build candidate phone formats to match against DB
+    // DB stores phones as +16048495329 or 16728221022
+    const phoneCandidates = new Set<string>([phone, digitsOnly]);
+    if (digitsOnly.length === 10) {
+      // User entered local number without country code — try with +1 and 1 prefix
+      phoneCandidates.add(`+1${digitsOnly}`);
+      phoneCandidates.add(`1${digitsOnly}`);
+    } else if (digitsOnly.length === 11 && digitsOnly.startsWith('1')) {
+      // User entered 16048495329 — also try with +
+      phoneCandidates.add(`+${digitsOnly}`);
+    }
 
     const supabase = getServiceSupabase();
 
-    // Find technician by phone (check both phone and whatsapp_number)
-    const { data: technician, error: techError } = await supabase
-      .from('technicians')
-      .select('id, full_name, phone, whatsapp_number, pin_code, is_active')
-      .or(`phone.eq.${phone},whatsapp_number.eq.${phone}`)
-      .maybeSingle();
-
-    if (techError) {
-      authLogger.error('DB error during technician lookup:', techError);
-      return res.status(500).json({ error: 'Internal server error' });
-    }
-
-    // Also try normalized phone if no match
-    let tech = technician;
-    if (!tech) {
-      const { data: techByNorm } = await supabase
+    // Try all phone format candidates
+    let tech = null;
+    for (const candidate of phoneCandidates) {
+      const { data: techByCandidate, error: techError } = await supabase
         .from('technicians')
         .select('id, full_name, phone, whatsapp_number, pin_code, is_active')
-        .or(`phone.eq.${normalizedPhone},whatsapp_number.eq.${normalizedPhone}`)
+        .or(`phone.eq.${candidate},whatsapp_number.eq.${candidate}`)
         .maybeSingle();
-      tech = techByNorm;
+
+      if (techError) {
+        authLogger.error('DB error during technician lookup:', techError);
+        return res.status(500).json({ error: 'Internal server error' });
+      }
+
+      if (techByCandidate) {
+        tech = techByCandidate;
+        break;
+      }
     }
 
     if (!tech) {

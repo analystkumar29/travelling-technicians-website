@@ -58,7 +58,7 @@ export default function JobDetail() {
     }
   };
 
-  const completeRepair = async (formData: { repair_notes: string; repair_duration: number; parts_used: string[] }) => {
+  const completeRepair = async (formData: { repair_notes: string; repair_duration: number; parts_used: string[]; final_price?: number }) => {
     setActionLoading(true);
     try {
       const res = await techFetch(`/api/technician/jobs/${id}/complete`, {
@@ -308,6 +308,7 @@ export default function JobDetail() {
             <RepairCompletionForm
               onSubmit={completeRepair}
               loading={actionLoading}
+              quotedPrice={job?.quoted_price}
             />
           </div>
         )}

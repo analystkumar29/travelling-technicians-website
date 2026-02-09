@@ -7,7 +7,7 @@ import InstallPrompt from '@/components/technician/InstallPrompt';
 
 export default function TechnicianLogin() {
   const router = useRouter();
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState('+1');
   const [pin, setPin] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);

@@ -1,19 +1,22 @@
 import { useState } from 'react';
-import { CheckCircle, Clock, FileText, Wrench } from 'lucide-react';
+import { CheckCircle, Clock, DollarSign, FileText, Wrench } from 'lucide-react';
 
 interface RepairCompletionFormProps {
   onSubmit: (data: {
     repair_notes: string;
     repair_duration: number;
     parts_used: string[];
+    final_price?: number;
   }) => void;
   loading?: boolean;
+  quotedPrice?: number | null;
 }
 
-export default function RepairCompletionForm({ onSubmit, loading }: RepairCompletionFormProps) {
+export default function RepairCompletionForm({ onSubmit, loading, quotedPrice }: RepairCompletionFormProps) {
   const [repairNotes, setRepairNotes] = useState('');
   const [duration, setDuration] = useState('60');
   const [partsInput, setPartsInput] = useState('');
+  const [finalPrice, setFinalPrice] = useState(quotedPrice != null ? String(quotedPrice) : '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,6 +30,7 @@ export default function RepairCompletionForm({ onSubmit, loading }: RepairComple
       repair_notes: repairNotes,
       repair_duration: parseInt(duration) || 60,
       parts_used: parts,
+      ...(finalPrice.trim() ? { final_price: parseFloat(finalPrice) } : {}),
     });
   };
 
@@ -77,6 +81,26 @@ export default function RepairCompletionForm({ onSubmit, loading }: RepairComple
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
           placeholder="OEM Screen Assembly&#10;Adhesive Kit"
         />
+      </div>
+
+      {/* Final Price */}
+      <div>
+        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+          <DollarSign className="h-4 w-4" />
+          Final Price ($)
+        </label>
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          value={finalPrice}
+          onChange={(e) => setFinalPrice(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
+          placeholder={quotedPrice != null ? `Quoted: $${quotedPrice}` : 'Enter final price'}
+        />
+        {quotedPrice != null && (
+          <p className="text-xs text-gray-500 mt-1">Quoted price: ${quotedPrice.toFixed(2)}</p>
+        )}
       </div>
 
       {/* Submit */}
