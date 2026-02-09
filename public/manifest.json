@@ -3,6 +3,7 @@
   "short_name": "TT Repair",
   "description": "Mobile phone and laptop repair with doorstep service in Lower Mainland, BC",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#075985",

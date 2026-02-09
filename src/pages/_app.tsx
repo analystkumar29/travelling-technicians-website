@@ -94,11 +94,23 @@ export default function App({ Component, pageProps }: AppProps) {
   // generateDefaultSeo removed - each page now defines its own title/description
   // This prevents default SEO from overriding page-specific SEO tags
 
+  const isTechnicianRoute = router.pathname.startsWith('/technician');
+
   return (
     <>
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
+
+      {/* Main site PWA manifest — technician routes use their own via TechnicianLayout */}
+      {!isTechnicianRoute && (
+        <Head>
+          <link key="manifest" rel="manifest" href="/manifest.json" />
+          <meta key="apple-wac-status" name="apple-mobile-web-app-status-bar-style" content="default" />
+          <meta key="apple-wac" name="apple-mobile-web-app-capable" content="yes" />
+          <meta key="apple-wac-title" name="apple-mobile-web-app-title" content="TT Repair" />
+        </Head>
+      )}
 
       <EnvironmentGuard>
         <SafeHydrate>

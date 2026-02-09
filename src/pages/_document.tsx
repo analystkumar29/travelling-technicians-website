@@ -173,16 +173,12 @@ class MyDocument extends Document {
             rel="stylesheet"
           />
           
-          {/* Web App Manifest */}
-          <link key="manifest" rel="manifest" href={`/manifest.json?v=${assetVersion}`} />
+          {/* Web App Manifest + apple-mobile-web-app tags moved to _app.tsx for route-conditional rendering */}
 
           {/* Theme Color */}
           <meta name="theme-color" content="#102a43" />
           <meta name="msapplication-TileColor" content="#102a43" />
           <meta name="msapplication-navbutton-color" content="#102a43" />
-          <meta key="apple-wac-status" name="apple-mobile-web-app-status-bar-style" content="default" />
-          <meta key="apple-wac" name="apple-mobile-web-app-capable" content="yes" />
-          <meta key="apple-wac-title" name="apple-mobile-web-app-title" content="TT Repair" />
           
           {/* PWA Splash Screens for iOS */}
           <link rel="apple-touch-startup-image" href={`/favicons/android-chrome-512x512.png?v=${assetVersion}`} />

@@ -3,6 +3,7 @@
   "short_name": "TT Tech",
   "description": "Technician job management portal for The Travelling Technicians",
   "start_url": "/technician",
+  "scope": "/technician",
   "display": "standalone",
   "background_color": "#f8fafc",
   "theme_color": "#102a43",
