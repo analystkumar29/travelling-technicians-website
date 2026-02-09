@@ -1,8 +1,8 @@
 // Service Worker for Offline Caching
 // Implements caching strategies for different types of content
 
-const CACHE_NAME = 'travelling-technicians-v1.0.0';
-const OFFLINE_CACHE = 'offline-v1.0.0';
+const CACHE_NAME = 'travelling-technicians-v1.1.0';
+const OFFLINE_CACHE = 'offline-v1.1.0';
 
 // URLs to cache on install
 const STATIC_CACHE_URLS = [
@@ -328,3 +328,50 @@ setInterval(async () => {
     }
   }
 }, 60 * 60 * 1000); // Run every hour
+
+// Push notification handler
+self.addEventListener('push', (event) => {
+  let data = { title: 'New Job Available', body: 'A new repair job is available.', tag: 'new-job' };
+
+  if (event.data) {
+    try {
+      data = { ...data, ...event.data.json() };
+    } catch (e) {
+      data.body = event.data.text();
+    }
+  }
+
+  const options = {
+    body: data.body,
+    icon: '/favicons/android-chrome-192x192.png',
+    badge: '/favicons/favicon-32x32.png',
+    tag: data.tag || 'new-job',
+    renotify: true,
+    requireInteraction: true,
+    vibrate: [200, 100, 200],
+    data: { url: data.url || '/technician/available-jobs' },
+  };
+
+  event.waitUntil(self.registration.showNotification(data.title, options));
+});
+
+// Notification click handler
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const targetUrl = event.notification.data?.url || '/technician/available-jobs';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Focus existing technician tab if found
+      for (const client of clientList) {
+        if (client.url.includes('/technician') && 'focus' in client) {
+          client.navigate(targetUrl);
+          return client.focus();
+        }
+      }
+      // Otherwise open a new tab
+      return clients.openWindow(targetUrl);
+    })
+  );
+});

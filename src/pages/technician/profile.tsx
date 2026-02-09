@@ -3,15 +3,37 @@ import { useRouter } from 'next/router';
 import TechnicianLayout from '@/components/technician/TechnicianLayout';
 import { techFetch, removeTechAuth } from '@/utils/technicianAuth';
 import {
-  Loader2, LogOut, MapPin, Star, Briefcase, Wrench, Phone, Mail, Clock
+  Loader2, LogOut, MapPin, Star, Briefcase, Wrench, Phone, Mail, Clock, Bell, BellOff
 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  isPushSupported,
+  subscribeToPush,
+  unsubscribeFromPush,
+  hasActivePushSubscription,
+  getNotificationPermission,
+} from '@/utils/pushSubscription';
 
 export default function TechnicianProfile() {
   const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [statusLoading, setStatusLoading] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
+  const [pushSupported, setPushSupported] = useState(false);
+
+  useEffect(() => {
+    const checkPush = async () => {
+      const supported = isPushSupported();
+      setPushSupported(supported);
+      if (supported) {
+        const active = await hasActivePushSubscription();
+        setPushEnabled(active);
+      }
+    };
+    checkPush();
+  }, []);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -47,6 +69,38 @@ export default function TechnicianProfile() {
       toast.error('Network error');
     } finally {
       setStatusLoading(false);
+    }
+  };
+
+  const togglePush = async () => {
+    setPushLoading(true);
+    try {
+      if (pushEnabled) {
+        const ok = await unsubscribeFromPush();
+        if (ok) {
+          setPushEnabled(false);
+          toast.success('Notifications disabled');
+        } else {
+          toast.error('Failed to disable notifications');
+        }
+      } else {
+        const permission = getNotificationPermission();
+        if (permission === 'denied') {
+          toast.error('Notifications are blocked. Please enable them in your browser settings.');
+          return;
+        }
+        const ok = await subscribeToPush();
+        if (ok) {
+          setPushEnabled(true);
+          toast.success('Notifications enabled');
+        } else {
+          toast.error('Failed to enable notifications');
+        }
+      }
+    } catch {
+      toast.error('Something went wrong');
+    } finally {
+      setPushLoading(false);
     }
   };
 
@@ -187,6 +241,45 @@ export default function TechnicianProfile() {
                 <span className="opacity-60">({spec.skill_level})</span>
               </span>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Notifications */}
+      {pushSupported && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
+          <h3 className="font-semibold text-gray-900 mb-3">Notifications</h3>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {pushEnabled ? (
+                <Bell className="h-5 w-5 text-primary-600" />
+              ) : (
+                <BellOff className="h-5 w-5 text-gray-400" />
+              )}
+              <div>
+                <p className="text-sm font-medium text-gray-900">Push Notifications</p>
+                <p className="text-xs text-gray-500">
+                  {getNotificationPermission() === 'denied'
+                    ? 'Blocked in browser settings'
+                    : pushEnabled
+                      ? 'You\'ll be notified of new jobs'
+                      : 'Get alerts when new jobs are available'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={togglePush}
+              disabled={pushLoading || getNotificationPermission() === 'denied'}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                pushEnabled ? 'bg-primary-600' : 'bg-gray-300'
+              } ${(pushLoading || getNotificationPermission() === 'denied') ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  pushEnabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
           </div>
         </div>
       )}

@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode, useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { isTechAuthenticated } from '@/utils/technicianAuth';
@@ -7,6 +7,7 @@ import TechnicianBottomNav from './TechnicianBottomNav';
 import InstallPrompt from './InstallPrompt';
 import { Loader2 } from 'lucide-react';
 import { useTechnicianRealtimeJobs } from '@/hooks/useTechnicianRealtimeJobs';
+import { isPushSupported, subscribeToPush, hasActivePushSubscription } from '@/utils/pushSubscription';
 
 interface TechnicianLayoutProps {
   children: ReactNode;
@@ -30,6 +31,30 @@ export default function TechnicianLayout({ children, title, headerTitle }: Techn
 
   // Global realtime notifications — runs on all technician pages
   useTechnicianRealtimeJobs({ enabled: authorized });
+
+  // Auto-subscribe to push notifications after auth
+  const pushAttempted = useRef(false);
+  useEffect(() => {
+    if (!authorized || pushAttempted.current || !isPushSupported()) return;
+    pushAttempted.current = true;
+
+    const timer = setTimeout(async () => {
+      try {
+        const permission = Notification.permission;
+        if (permission === 'denied') return;
+
+        const hasSubscription = await hasActivePushSubscription();
+        if (hasSubscription) return;
+
+        // permission is 'default' or 'granted' but no subscription
+        await subscribeToPush();
+      } catch (e) {
+        console.error('Push auto-subscribe failed:', e);
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [authorized]);
 
   if (!authChecked) {
     return (

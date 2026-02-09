@@ -587,6 +587,33 @@ export default async function handler(
       apiLogger.error('Admin notification failed (non-blocking)', { error: String(e) });
     }
 
+    // Send push notification to technicians (non-blocking)
+    try {
+      const pushBaseUrl = (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production')
+        ? 'https://www.travelling-technicians.ca'
+        : (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+
+      const serviceName = normalizedBookingData.serviceType
+        ? (Array.isArray(normalizedBookingData.serviceType)
+            ? normalizedBookingData.serviceType[0]
+            : normalizedBookingData.serviceType
+          ).replace(/-/g, ' ')
+        : 'Repair';
+
+      await fetch(`${pushBaseUrl}/api/technician/push-notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'New Job Available',
+          body: `${serviceName} in ${normalizedBookingData.city || 'Vancouver'} — ${referenceNumber}`,
+          tag: `new-booking-${referenceNumber}`,
+        }),
+      });
+      apiLogger.info('Technician push notification sent', { reference: referenceNumber });
+    } catch (e) {
+      apiLogger.error('Technician push notification failed (non-blocking)', { error: String(e) });
+    }
+
     // Return successful response
     return res.status(200).json({
       success: true,
