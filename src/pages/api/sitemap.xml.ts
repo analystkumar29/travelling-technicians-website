@@ -20,6 +20,9 @@ const sitemapLogger = logger.createModuleLogger('sitemap');
 // Cache sitemap for 24 hours
 const CACHE_DURATION = 24 * 60 * 60; // 24 hours in seconds
 
+// Static fallback date for lastmod — avoids "now" which makes Google distrust lastmod
+const FALLBACK_DATE = '2026-02-06T00:00:00Z';
+
 interface SitemapEntry {
   loc: string;
   lastmod: string;
@@ -70,11 +73,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.setHeader('Content-Type', 'text/xml; charset=utf-8');
     
     const siteUrl = getSiteUrl();
-    const now = new Date().toISOString();
-    
+    const generatedAt = new Date().toISOString();
+
     sitemapLogger.info('========================================');
     sitemapLogger.info('🚀 SITEMAP GENERATION STARTED');
-    sitemapLogger.info(`📅 Timestamp: ${now}`);
+    sitemapLogger.info(`📅 Timestamp: ${generatedAt}`);
     sitemapLogger.info('========================================');
     
     // Get dynamic content from database
@@ -84,7 +87,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     sitemapLogger.info(`⏱️ Dynamic content fetch took: ${fetchDuration}ms`);
     
     // Build sitemap entries with detailed logging
-    const staticPages = getStaticPages(siteUrl, now);
+    const staticPages = getStaticPages(siteUrl);
     sitemapLogger.info(`📄 Static high-priority pages: ${staticPages.length}`);
     
     const serviceAreaPages = getServiceAreaPages(siteUrl, dynamicContent.serviceAreas);
@@ -111,10 +114,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const cityServicePages = getCityServiceSitemapEntries(siteUrl, dynamicContent.cityServicePages);
     sitemapLogger.info(`🔧 City-service pages (/repair/{city}/{service}): ${cityServicePages.length}`);
 
-    const informationalPages = getInformationalPages(siteUrl, now);
+    const informationalPages = getInformationalPages(siteUrl);
     sitemapLogger.info(`ℹ️ Informational pages: ${informationalPages.length}`);
     
-    const legalPages = getLegalPages(siteUrl, now);
+    const legalPages = getLegalPages(siteUrl);
     sitemapLogger.info(`⚖️ Legal pages: ${legalPages.length}`);
     
     const entries: SitemapEntry[] = [
@@ -191,29 +194,18 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       .eq('is_active', true)
       .order('city_name');
     
-    // Fetch blog posts (simulated - you can add a blog table later)
-    const blogPosts = [
-      {
-        slug: 'signs-your-phone-needs-repair',
-        updated_at: '2024-12-15T10:00:00Z',
-        publishDate: '2024-12-01T10:00:00Z'
-      },
-      {
-        slug: 'how-to-extend-your-laptop-battery-life',
-        updated_at: '2024-12-10T10:00:00Z',
-        publishDate: '2024-11-25T10:00:00Z'
-      },
-      {
-        slug: 'ultimate-guide-to-screen-protection',
-        updated_at: '2024-12-05T10:00:00Z',
-        publishDate: '2024-11-20T10:00:00Z'
-      },
-      {
-        slug: 'water-damage-first-aid-for-devices',
-        updated_at: '2024-12-01T10:00:00Z',
-        publishDate: '2024-11-15T10:00:00Z'
-      }
-    ];
+    // Fetch blog posts from database
+    const { data: blogPostsData } = await supabase
+      .from('blog_posts')
+      .select('slug, updated_at, published_at')
+      .eq('is_published', true)
+      .order('published_at', { ascending: false });
+
+    const blogPosts = (blogPostsData || []).map(post => ({
+      slug: post.slug,
+      updated_at: post.updated_at || post.published_at || FALLBACK_DATE,
+      publishDate: post.published_at
+    }));
     
     // Fetch services from database
     const { data: servicesData } = await supabase
@@ -229,7 +221,7 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       logSlugTransformation(service.name, serviceSlug, 'service-fetch');
       
       // Standardized lastmod fallback - use updated_at now that it exists
-      const lastmod = service.updated_at || new Date().toISOString();
+      const lastmod = service.updated_at || FALLBACK_DATE;
       
       // Map device_type_id to string (1=mobile, 2=laptop, 3=tablet)
       let deviceType = 'mobile';
@@ -242,9 +234,9 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
         device_type: deviceType
       };
     }).filter(service => isValidUrlSlug(service.slug)) || [
-      { slug: 'mobile-repair', updated_at: new Date().toISOString(), device_type: 'mobile' },
-      { slug: 'laptop-repair', updated_at: new Date().toISOString(), device_type: 'laptop' },
-      { slug: 'tablet-repair', updated_at: new Date().toISOString(), device_type: 'tablet' }
+      { slug: 'mobile-repair', updated_at: FALLBACK_DATE, device_type: 'mobile' },
+      { slug: 'laptop-repair', updated_at: FALLBACK_DATE, device_type: 'laptop' },
+      { slug: 'tablet-repair', updated_at: FALLBACK_DATE, device_type: 'tablet' }
     ];
     
     // Fetch dynamic routes from database (pre-computed routes)
@@ -269,7 +261,7 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       logSlugTransformation(loc.city_name, citySlug, 'city-location');
       
       // Standardized lastmod fallback
-      const lastmod = loc.created_at || new Date().toISOString();
+      const lastmod = loc.created_at || FALLBACK_DATE;
       
       return {
         city: loc.city_name,
@@ -281,7 +273,7 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
     // Map service areas with standardized lastmod
     const serviceAreas = serviceLocations?.map(loc => ({
       city: loc.city_name,
-      updated_at: loc.created_at || new Date().toISOString()
+      updated_at: loc.created_at || FALLBACK_DATE
     })) || [];
     
     return {
@@ -353,7 +345,7 @@ async function getNeighborhoodPagesFromDB(): Promise<Array<{
         citySlug: (locationData?.city_name || '').toLowerCase().replace(/\s+/g, '-'),
         neighborhood: item.neighborhood_name,
         neighborhoodSlug: item.slug,
-        updated_at: item.updated_at || new Date().toISOString()
+        updated_at: item.updated_at || FALLBACK_DATE
       };
     }).filter(n => n.city); // Filter out items without city data
     
@@ -444,7 +436,7 @@ async function getDynamicRoutesForSitemap(): Promise<Array<{
         const [, city, service, model] = parts;
         
         // Use content_updated_at if available (Phase 5 SEO improvement), fallback to last_updated
-        const lastmod = route.content_updated_at || route.last_updated || new Date().toISOString();
+        const lastmod = route.content_updated_at || route.last_updated || FALLBACK_DATE;
         
         result.push({
           city,
@@ -529,7 +521,7 @@ async function getCityModelPagesForSitemap(): Promise<Array<{
         result.push({
           city: parts[1],
           model: parts[2],
-          updated_at: route.content_updated_at || route.last_updated || new Date().toISOString()
+          updated_at: route.content_updated_at || route.last_updated || FALLBACK_DATE
         });
       }
     }
@@ -575,7 +567,7 @@ async function getCityServicePagesForSitemap(): Promise<Array<{
       return {
         citySlug: parts[1],
         serviceSlug: parts[2],
-        updated_at: route.content_updated_at || route.last_updated || new Date().toISOString()
+        updated_at: route.content_updated_at || route.last_updated || FALLBACK_DATE
       };
     }).filter(Boolean) as Array<{ citySlug: string; serviceSlug: string; updated_at: string }>;
 
@@ -756,7 +748,7 @@ async function getPopularCityServiceModels(): Promise<Array<{
             updated_at: combo.created_at || 
                        serviceData?.updated_at || 
                        modelData?.updated_at || 
-                       new Date().toISOString(),
+                       FALLBACK_DATE,
             popularity: modelData?.popularity_score || 0
           };
         })
@@ -834,7 +826,7 @@ function getFallbackCombinations(): Array<{
   model: string;
   updated_at: string;
 }> {
-  const now = new Date().toISOString();
+  const now = FALLBACK_DATE;
   
   // Essential fallback combinations that maintain SEO value
   return [
@@ -869,23 +861,23 @@ function getFallbackCombinations(): Array<{
 /**
  * Generate static high-priority pages
  */
-function getStaticPages(siteUrl: string, now: string): SitemapEntry[] {
+function getStaticPages(siteUrl: string): SitemapEntry[] {
   return [
     {
       loc: `${siteUrl}/`,
-      lastmod: now,
+      lastmod: FALLBACK_DATE,
       changefreq: 'daily',
       priority: '1.0'
     },
     {
       loc: `${siteUrl}/book-online`,
-      lastmod: now,
+      lastmod: FALLBACK_DATE,
       changefreq: 'weekly',
       priority: '0.95'
     },
     {
       loc: `${siteUrl}/repair`,
-      lastmod: now,
+      lastmod: FALLBACK_DATE,
       changefreq: 'weekly',
       priority: '0.9'
     }
@@ -966,7 +958,7 @@ function getServiceAreaPages(siteUrl: string, serviceAreas: Array<{ city: string
   // Service areas main page
   entries.push({
     loc: `${siteUrl}/service-areas`,
-    lastmod: new Date().toISOString(),
+    lastmod: FALLBACK_DATE,
     changefreq: 'monthly',
     priority: '0.8'
   });
@@ -983,7 +975,7 @@ function getBlogPages(siteUrl: string, blogPosts: Array<{ slug: string; updated_
   // Blog main page
   entries.push({
     loc: `${siteUrl}/blog`,
-    lastmod: new Date().toISOString(),
+    lastmod: FALLBACK_DATE,
     changefreq: 'weekly',
     priority: '0.8'
   });
@@ -1003,7 +995,7 @@ function getBlogPages(siteUrl: string, blogPosts: Array<{ slug: string; updated_
   categories.forEach(category => {
     entries.push({
       loc: `${siteUrl}/blog/category/${category}`,
-      lastmod: new Date().toISOString(),
+      lastmod: FALLBACK_DATE,
       changefreq: 'weekly',
       priority: '0.7'
     });
@@ -1056,29 +1048,29 @@ function getCityServiceModelPages(siteUrl: string, cityServiceModels: Array<{
 /**
  * Generate informational pages
  */
-function getInformationalPages(siteUrl: string, now: string): SitemapEntry[] {
+function getInformationalPages(siteUrl: string): SitemapEntry[] {
   return [
     {
       loc: `${siteUrl}/about`,
-      lastmod: now,
+      lastmod: FALLBACK_DATE,
       changefreq: 'monthly',
       priority: '0.8'
     },
     {
       loc: `${siteUrl}/contact`,
-      lastmod: now,
+      lastmod: FALLBACK_DATE,
       changefreq: 'monthly',
       priority: '0.8'
     },
     {
       loc: `${siteUrl}/pricing`,
-      lastmod: now,
+      lastmod: FALLBACK_DATE,
       changefreq: 'weekly',
       priority: '0.8'
     },
     {
       loc: `${siteUrl}/faq`,
-      lastmod: now,
+      lastmod: FALLBACK_DATE,
       changefreq: 'monthly',
       priority: '0.7'
     }
@@ -1088,17 +1080,17 @@ function getInformationalPages(siteUrl: string, now: string): SitemapEntry[] {
 /**
  * Generate legal pages
  */
-function getLegalPages(siteUrl: string, now: string): SitemapEntry[] {
+function getLegalPages(siteUrl: string): SitemapEntry[] {
   return [
     {
       loc: `${siteUrl}/privacy-policy`,
-      lastmod: now,
+      lastmod: FALLBACK_DATE,
       changefreq: 'yearly',
       priority: '0.3'
     },
     {
       loc: `${siteUrl}/terms-conditions`,
-      lastmod: now,
+      lastmod: FALLBACK_DATE,
       changefreq: 'yearly',
       priority: '0.3'
     }
@@ -1157,21 +1149,19 @@ ${sitemapEntries}
  * Generate fallback sitemap in case of errors
  */
 function generateFallbackSitemap(siteUrl: string): string {
-  const now = new Date().toISOString();
-  
-  // Basic essential URLs for fallback
+  // Basic essential URLs for fallback — use FALLBACK_DATE, never current timestamp
   const fallbackUrls = [
-    { loc: `${siteUrl}/`, lastmod: now, changefreq: 'daily', priority: '1.0' },
-    { loc: `${siteUrl}/book-online`, lastmod: now, changefreq: 'weekly', priority: '0.95' },
-    { loc: `${siteUrl}/repair`, lastmod: now, changefreq: 'weekly', priority: '0.9' },
-    { loc: `${siteUrl}/about`, lastmod: now, changefreq: 'monthly', priority: '0.8' },
-    { loc: `${siteUrl}/contact`, lastmod: now, changefreq: 'monthly', priority: '0.8' },
-    { loc: `${siteUrl}/pricing`, lastmod: now, changefreq: 'weekly', priority: '0.8' },
-    { loc: `${siteUrl}/faq`, lastmod: now, changefreq: 'monthly', priority: '0.7' },
-    { loc: `${siteUrl}/privacy-policy`, lastmod: now, changefreq: 'yearly', priority: '0.3' },
-    { loc: `${siteUrl}/terms-conditions`, lastmod: now, changefreq: 'yearly', priority: '0.3' },
-    { loc: `${siteUrl}/blog`, lastmod: now, changefreq: 'weekly', priority: '0.8' },
-    { loc: `${siteUrl}/service-areas`, lastmod: now, changefreq: 'monthly', priority: '0.8' },
+    { loc: `${siteUrl}/`, lastmod: FALLBACK_DATE, changefreq: 'daily', priority: '1.0' },
+    { loc: `${siteUrl}/book-online`, lastmod: FALLBACK_DATE, changefreq: 'weekly', priority: '0.95' },
+    { loc: `${siteUrl}/repair`, lastmod: FALLBACK_DATE, changefreq: 'weekly', priority: '0.9' },
+    { loc: `${siteUrl}/about`, lastmod: FALLBACK_DATE, changefreq: 'monthly', priority: '0.8' },
+    { loc: `${siteUrl}/contact`, lastmod: FALLBACK_DATE, changefreq: 'monthly', priority: '0.8' },
+    { loc: `${siteUrl}/pricing`, lastmod: FALLBACK_DATE, changefreq: 'weekly', priority: '0.8' },
+    { loc: `${siteUrl}/faq`, lastmod: FALLBACK_DATE, changefreq: 'monthly', priority: '0.7' },
+    { loc: `${siteUrl}/privacy-policy`, lastmod: FALLBACK_DATE, changefreq: 'yearly', priority: '0.3' },
+    { loc: `${siteUrl}/terms-conditions`, lastmod: FALLBACK_DATE, changefreq: 'yearly', priority: '0.3' },
+    { loc: `${siteUrl}/blog`, lastmod: FALLBACK_DATE, changefreq: 'weekly', priority: '0.8' },
+    { loc: `${siteUrl}/service-areas`, lastmod: FALLBACK_DATE, changefreq: 'monthly', priority: '0.8' },
   ];
 
   // Add essential city pages
@@ -1179,7 +1169,7 @@ function generateFallbackSitemap(siteUrl: string): string {
   essentialCities.forEach(city => {
     fallbackUrls.push({
       loc: `${siteUrl}/repair/${city}`,
-      lastmod: now,
+      lastmod: FALLBACK_DATE,
       changefreq: 'weekly',
       priority: '0.8'
     });
