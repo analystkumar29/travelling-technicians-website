@@ -18,7 +18,11 @@ function generateJWTSecret() {
   return crypto.randomBytes(32).toString('hex');
 }
 
-const password = process.argv[2] || 'TravellingTech2024!';
+const password = process.argv[2];
+if (!password) {
+  console.error('Usage: node generate-admin-hash.js "YourPassword"');
+  process.exit(1);
+}
 const passwordHash = hashPassword(password);
 const jwtSecret = generateJWTSecret();
 

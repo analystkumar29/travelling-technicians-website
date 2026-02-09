@@ -1,8 +1,12 @@
 // Test script for getNearbyLocations function
 
-// Set environment variables BEFORE importing any modules that depend on them
-process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://ussjnyphwtmhpovmahnb.supabase.co';
-process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVzc2pueXBod3RtaHBvdm1haG5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYwODUwMjAsImV4cCI6MjA2MTY2MTAyMH0.xmIAusOJU-y75vKhFD4zk4O9hdqX-u2jeSSrUBh8MoA';
+// Load environment variables from .env.local
+require('dotenv').config({ path: '.env.local' });
+
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  console.error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local');
+  process.exit(1);
+}
 
 async function testNearbyLocations() {
   console.log('Testing getNearbyLocations function...');
