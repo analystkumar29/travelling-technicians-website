@@ -14,40 +14,38 @@ export interface TimeSlot {
  * Fetches time slot configuration from site_settings
  * Returns weekday and weekend slots in 24h format
  */
-export async function fetchTimeSlotConfig(): Promise<{
+export interface TimeSlotConfig {
   weekdaySlots: string[];
   weekendSlots: string[];
   slotDuration: number;
-}> {
-  try {
-    // Default configuration if API fails
-    const defaultConfig = {
-      weekdaySlots: ['8:00', '10:00', '12:00', '14:00', '16:00', '18:00'],
-      weekendSlots: ['9:00', '11:00', '13:00', '15:00', '17:00'],
-      slotDuration: 120 // 2 hours in minutes
-    };
+  nextDayCutoffHour: number;
+}
 
-    // Try to fetch from API
+export async function fetchTimeSlotConfig(): Promise<TimeSlotConfig> {
+  const defaultConfig: TimeSlotConfig = {
+    weekdaySlots: ['8:00', '10:00', '12:00', '14:00', '16:00', '18:00'],
+    weekendSlots: ['9:00', '11:00', '13:00', '15:00', '17:00'],
+    slotDuration: 120,
+    nextDayCutoffHour: 15
+  };
+
+  try {
     const response = await fetch('/api/site-settings/time-slots');
-    
+
     if (response.ok) {
       const data = await response.json();
       return {
         weekdaySlots: data.weekdaySlots || defaultConfig.weekdaySlots,
         weekendSlots: data.weekendSlots || defaultConfig.weekendSlots,
-        slotDuration: data.slotDuration || defaultConfig.slotDuration
+        slotDuration: data.slotDuration || defaultConfig.slotDuration,
+        nextDayCutoffHour: data.nextDayCutoffHour ?? defaultConfig.nextDayCutoffHour
       };
     }
-    
+
     return defaultConfig;
   } catch (error) {
     console.error('Error fetching time slot config:', error);
-    // Return default configuration
-    return {
-      weekdaySlots: ['8:00', '10:00', '12:00', '14:00', '16:00', '18:00'],
-      weekendSlots: ['9:00', '11:00', '13:00', '15:00', '17:00'],
-      slotDuration: 120
-    };
+    return defaultConfig;
   }
 }
 
@@ -58,11 +56,16 @@ export async function fetchTimeSlotConfig(): Promise<{
  * @param weekendSlots Array of start times for weekends (24h format)
  * @param slotDuration Duration of each slot in minutes
  */
+/**
+ * @param maxStartHour If provided, only slots with startHour < maxStartHour are returned.
+ *   Used to enforce next-day cutoff (e.g., 15 means last bookable slot starts before 3 PM).
+ */
 export function generateTimeSlotsForDate(
   date: Date | string,
   weekdaySlots: string[],
   weekendSlots: string[],
-  slotDuration: number = 120
+  slotDuration: number = 120,
+  maxStartHour?: number
 ): TimeSlot[] {
   // Parse date correctly - handle both Date objects and date strings
   // Always extract the date components safely to avoid timezone issues
@@ -86,15 +89,15 @@ export function generateTimeSlotsForDate(
   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
   const startTimes = isWeekend ? weekendSlots : weekdaySlots;
   
-  return startTimes.map(startTime => {
+  const slots = startTimes.map(startTime => {
     const [hours, minutes] = startTime.split(':').map(Number);
     const startHour = hours;
     const endHour = startHour + (slotDuration / 60);
-    
+
     // Format for display
     const startLabel = formatTimeForDisplay(startHour, minutes);
     const endLabel = formatTimeForDisplay(endHour, minutes);
-    
+
     return {
       value: startTime, // e.g., "8:00"
       label: `${startLabel} - ${endLabel}`, // e.g., "8:00 AM - 10:00 AM"
@@ -102,6 +105,13 @@ export function generateTimeSlotsForDate(
       endHour
     };
   });
+
+  // Filter by cutoff hour for next-day bookings
+  if (maxStartHour != null) {
+    return slots.filter(s => s.startHour < maxStartHour);
+  }
+
+  return slots;
 }
 
 /**
@@ -141,15 +151,17 @@ export function calculateEndTime(startDate: Date, slotDuration: number = 120): D
 }
 
 /**
- * Gets time slots for a specific date (convenience function)
+ * Gets time slots for a specific date (convenience function).
+ * When isTomorrow is true, slots are filtered by the DB-driven cutoff hour.
  */
-export async function getTimeSlotsForDate(date: Date): Promise<TimeSlot[]> {
+export async function getTimeSlotsForDate(date: Date | string, isTomorrow?: boolean): Promise<TimeSlot[]> {
   const config = await fetchTimeSlotConfig();
   return generateTimeSlotsForDate(
     date,
     config.weekdaySlots,
     config.weekendSlots,
-    config.slotDuration
+    config.slotDuration,
+    isTomorrow ? config.nextDayCutoffHour : undefined
   );
 }
 

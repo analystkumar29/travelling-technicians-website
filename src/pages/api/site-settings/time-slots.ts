@@ -20,7 +20,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .in('key', [
         'booking_time_slots_weekday',
         'booking_time_slots_weekend',
-        'booking_slot_duration'
+        'booking_slot_duration',
+        'same_day_cutoff_time'
       ]);
 
     if (error) {
@@ -35,6 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const weekdaySlotsSetting = settings.find(s => s.key === 'booking_time_slots_weekday');
     const weekendSlotsSetting = settings.find(s => s.key === 'booking_time_slots_weekend');
     const slotDurationSetting = settings.find(s => s.key === 'booking_slot_duration');
+    const cutoffSetting = settings.find(s => s.key === 'same_day_cutoff_time');
 
     // Parse JSON values or use defaults
     let weekdaySlots: string[] = ['8:00', '10:00', '12:00', '14:00', '16:00', '18:00'];
@@ -88,11 +90,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const validatedWeekdaySlots = validateTimeSlots(weekdaySlots);
     const validatedWeekendSlots = validateTimeSlots(weekendSlots);
 
+    // Parse cutoff hour from "HH:MM:SS" format (default 15 = 3 PM)
+    let nextDayCutoffHour = 15;
+    if (cutoffSetting?.value) {
+      const parsed = parseInt(cutoffSetting.value.split(':')[0], 10);
+      if (!isNaN(parsed) && parsed >= 0 && parsed <= 23) {
+        nextDayCutoffHour = parsed;
+      }
+    }
+
     // Return the configuration
     return res.status(200).json({
       weekdaySlots: validatedWeekdaySlots.length > 0 ? validatedWeekdaySlots : weekdaySlots,
       weekendSlots: validatedWeekendSlots.length > 0 ? validatedWeekendSlots : weekendSlots,
       slotDuration,
+      nextDayCutoffHour,
       lastUpdated: new Date().toISOString()
     });
 

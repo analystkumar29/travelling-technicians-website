@@ -119,7 +119,7 @@ export default function TierPriceComparison({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-gray-600">Parts Quality:</span>
-              <span className="font-medium text-gray-900">Quality</span>
+              <span className="font-medium text-gray-900">Standard</span>
             </div>
           </div>
 
@@ -154,7 +154,7 @@ export default function TierPriceComparison({
         >
           <div className="flex items-center justify-between mb-3">
             <h5 className="font-semibold text-gray-900">Premium Service</h5>
-            <span className="text-sm bg-orange-100 text-orange-800 px-2 py-1 rounded">Express</span>
+            <span className="text-sm bg-orange-100 text-orange-800 px-2 py-1 rounded">Recommended</span>
           </div>
           
           <div className="text-center mb-3">
@@ -202,7 +202,7 @@ export default function TierPriceComparison({
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <div className="flex items-center justify-between">
           <div className="text-sm text-gray-600">
-            <span className="font-medium">Premium vs Standard:</span> {formatPrice(savings)} extra for 2x longer warranty + faster service
+            <span className="font-medium">Premium vs Standard:</span> {formatPrice(savings)} extra for 2x longer warranty + premium parts
           </div>
           <div className="text-right">
             <div className="text-lg font-semibold text-gray-900">

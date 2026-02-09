@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Controller, UseFormReturn } from 'react-hook-form';
-import { Calendar, Clock, Check, Info, Loader2 } from 'lucide-react';
+import { Check, Info } from 'lucide-react';
 import type { CreateBookingRequest } from '@/types/booking';
 import type { Brand, DeviceModel, Service, PricingData } from '@/hooks/useBookingData';
 import type { TimeSlot } from '@/utils/bookingTimeSlots';
@@ -112,20 +112,27 @@ export default function ScheduleConfirmStep({
               rules={{ required: 'Date is required' }}
               render={({ field, fieldState }) => (
                 <>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-primary-400 pointer-events-none" />
-                    <input
-                      type="date"
-                      className={`glass-input w-full pl-10 ${fieldState.error ? 'invalid' : ''}`}
-                      min={tomorrowDate}
-                      max={maxDate}
-                      {...field}
-                      onChange={(e) => {
+                  <input
+                    type="date"
+                    className={`glass-input w-full ${fieldState.error ? 'invalid' : ''}`}
+                    min={tomorrowDate}
+                    max={maxDate}
+                    {...field}
+                    onChange={(e) => {
+                      // Validate manually entered dates
+                      const val = e.target.value;
+                      if (val && val < tomorrowDate) {
+                        e.target.value = tomorrowDate;
+                        field.onChange({ ...e, target: { ...e.target, value: tomorrowDate } });
+                      } else if (val && val > maxDate) {
+                        e.target.value = maxDate;
+                        field.onChange({ ...e, target: { ...e.target, value: maxDate } });
+                      } else {
                         field.onChange(e);
-                        if (e.target.value) scrollToElement('#time-slot-selection', 400);
-                      }}
-                    />
-                  </div>
+                      }
+                      if (e.target.value) scrollToElement('#time-slot-selection', 400);
+                    }}
+                  />
                   <p className="mt-1 text-xs text-primary-500">We accept bookings up to 60 days in advance.</p>
                   {fieldState.error && showValidationErrors && (
                     <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
@@ -146,34 +153,31 @@ export default function ScheduleConfirmStep({
               rules={{ required: 'Time slot is required' }}
               render={({ field, fieldState }) => (
                 <>
-                  <div className="relative">
-                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-primary-400 pointer-events-none" />
-                    <select
-                      className={`glass-input w-full pl-10 appearance-none ${fieldState.error ? 'invalid' : ''}`}
-                      {...field}
-                      value={field.value || ''}
-                      disabled={isLoadingTimeSlots || !watchedAppointmentDate}
-                      onChange={(e) => {
-                        field.onChange(e);
-                        if (e.target.value) scrollToElement('#terms-section', 500);
-                      }}
-                    >
-                      <option value="">
-                        {!watchedAppointmentDate
-                          ? 'Select a date first'
-                          : isLoadingTimeSlots
-                          ? 'Loading available slots...'
-                          : timeSlots.length === 0
-                          ? 'No slots available for this date'
-                          : 'Select a time slot...'}
+                  <select
+                    className={`glass-input w-full ${fieldState.error ? 'invalid' : ''}`}
+                    {...field}
+                    value={field.value || ''}
+                    disabled={isLoadingTimeSlots || !watchedAppointmentDate}
+                    onChange={(e) => {
+                      field.onChange(e);
+                      if (e.target.value) scrollToElement('#terms-section', 500);
+                    }}
+                  >
+                    <option value="">
+                      {!watchedAppointmentDate
+                        ? 'Select a date first'
+                        : isLoadingTimeSlots
+                        ? 'Loading available slots...'
+                        : timeSlots.length === 0
+                        ? 'No slots available for this date'
+                        : 'Select a time slot...'}
+                    </option>
+                    {timeSlots.map((slot) => (
+                      <option key={slot.value} value={slot.value}>
+                        {slot.label}
                       </option>
-                      {timeSlots.map((slot) => (
-                        <option key={slot.value} value={slot.value}>
-                          {slot.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                    ))}
+                  </select>
                   <p className="mt-1 text-xs text-primary-500">Our technicians work 7 days a week.</p>
                   {fieldState.error && showValidationErrors && (
                     <p className="mt-1 text-sm text-red-600">{fieldState.error.message}</p>
@@ -269,7 +273,7 @@ export default function ScheduleConfirmStep({
                             : 'bg-primary-100/80 text-primary-900'
                         }`}
                       >
-                        {formData.pricingTier === 'premium' ? 'Express Service' : 'Most Popular'}
+                        {formData.pricingTier === 'premium' ? 'Recommended' : 'Most Popular'}
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm">

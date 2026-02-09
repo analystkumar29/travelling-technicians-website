@@ -472,8 +472,12 @@ export function useBookingController({
       const fetchSlots = async () => {
         setIsLoadingTimeSlots(true);
         try {
-          const date = new Date(appointmentDate);
-          const slots = await getTimeSlotsForDate(date);
+          // Check if selected date is tomorrow to apply cutoff
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          const tomorrowStr = tomorrow.toISOString().split('T')[0];
+          const isTomorrow = appointmentDate === tomorrowStr;
+          const slots = await getTimeSlotsForDate(appointmentDate, isTomorrow);
           setTimeSlots(slots);
           const currentTime = methods.watch('appointmentTime');
           if (currentTime && !slots.some((s) => s.value === currentTime)) {
