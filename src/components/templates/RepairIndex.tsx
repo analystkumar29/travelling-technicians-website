@@ -308,7 +308,7 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
               <div className="relative">
                 <div className="relative h-[350px] w-full rounded-lg overflow-hidden shadow-custom-lg">
                   <OptimizedImage
-                    src="/images/services/doorstep-repair-tech.jpg"
+                    src="/images/services/doorstep-repair-tech-optimized.webp"
                     alt="Technician providing professional device repair services at customer location"
                     fill
                     className="object-cover"
