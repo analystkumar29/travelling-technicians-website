@@ -401,7 +401,7 @@ Any non-completed status can also → `cancelled`.
 - **10 pages updated** with canonical URLs: `/pricing`, `/faq`, `/privacy-policy`, `/terms-conditions`, `/book-online`, `/check-warranty`, `/leave-review`, `/verify-booking`, `/booking-confirmation`, `/services/[slug]` (dynamic)
 - Pages that already had canonicals (no changes): `/`, `/about`, `/contact`, `/blog`, `/sitemap`, `/service-areas`, `/repair` (index), all `repair/[[...slug]]` route types
 
-### Full Redirect Inventory (`next.config.js`, 8 rules)
+### Full Redirect Inventory (`next.config.js`, 11 rules)
 1. Non-www → `www.travelling-technicians.ca` (host-based)
 2. `/mobile-screen-repair` → `/services/mobile-repair`
 3. `/laptop-screen-repair` → `/services/laptop-repair`
@@ -411,3 +411,70 @@ Any non-completed status can also → `cancelled`.
 7. `/service-areas/:city` → `/repair/:city`
 8. `/doorstep-repair` → `/repair`
 9. `/doorstep` → `/repair`
+10. `/services/mobile/:path*` → `/services/mobile-repair`
+11. `/services/laptop/:path*` → `/services/laptop-repair`
+
+## Cross-Linking & Conversion Optimization (APPLIED 2026-02-09)
+
+### Phone Number Fix
+- `_document.tsx`: replaced wrong `+1-778-389-9251` with `+1-604-849-5329` (LocalBusiness, Organization, noscript)
+
+### Blog Dead Links Fix
+- `signs-your-phone-needs-repair.tsx`: 5 broken `/services/mobile/...` links → valid service slugs
+
+### Schema Fix
+- `ModelServicePage.tsx` Service schema `validFrom`: static `"2025-01-01"` (was `new Date()` — changed on every ISR revalidation)
+
+### DB Migrations
+- **`create_crosslinks_function`**: `enrich_model_service_crosslinks()` — populates `sibling_services` + `same_city_popular_models` on all model-service routes
+- **`create_nearby_cities_function`**: `enrich_nearby_cities_crosslinks()` — populates `nearby_cities` using `city_adjacency` table (29 city pairs)
+
+### New Tables
+- **`city_adjacency`** (city_slug, neighbor_slug PK) — 29 rows mapping adjacent cities. RLS enabled, service-role only.
+
+### Cross-Linking Data (in `dynamic_routes.payload`)
+All 3,172 `model-service-page` routes now have:
+- **`sibling_services`** — other services for same model in same city (1 link; e.g. screen ↔ battery)
+- **`nearby_cities`** — same model+service in adjacent cities (2-4 links)
+- **`same_city_popular_models`** — other models for same service in same city, brand-diverse (3-5 links)
+
+### Route Rebuild Pipeline
+`rebuild_all_routes()` now has 5 steps:
+1. `refresh_dynamic_routes_logic('manual_rebuild')` — refresh + enrich model-service routes
+2. `generate_city_model_routes()` — city-model routes
+3. `generate_city_landing_routes()` — city landing pages
+4. `enrich_model_service_crosslinks()` — sibling_services + same_city_popular_models
+5. `enrich_nearby_cities_crosslinks()` — nearby_cities
+
+### ModelServicePage Enhancements
+- **Urgency banner**: "Appointments available for {city} — Book before 3 PM for next-day service" (above pricing)
+- **Nearby Cities section**: Grid of adjacent city links
+- **Popular Models section**: Brand-diverse model links for same service
+- **FAQ accordion**: 4 contextual Qs (cost, duration, doorstep, warranty) with collapsible answers
+- **FAQPage JSON-LD**: In `<Head>` for rich results eligibility
+- **WhatsApp CTA**: Third button in CTA block (green, opens wa.me with pre-filled message)
+- **Google Review badge**: Below testimonials grid
+- **InternalLinkingFooter**: Added with `currentCity`/`currentService` context props
+
+### InternalLinkingFooter
+- Now accepts optional `currentCity`/`currentService` props
+- When `currentCity` is set: service links go to `/repair/{city}/{service}` instead of `/services/{slug}`
+- Current city is highlighted with bold text
+- Currently only imported in `ModelServicePage.tsx`
+
+### WhatsApp Integration
+- **`WhatsAppButton.tsx`** (`src/components/common/`): Mobile FAB (bottom-left, green, `md:hidden`), scroll-triggered
+- **StickyBookingWidget.tsx**: Third "Chat" button alongside Book and Call
+- **Footer.tsx**: WhatsApp Us link in contact section (uses `MessageCircle` icon)
+- **ModelServicePage CTA**: Third button with pre-filled message: "Hi, I need {service} for my {model} in {city}"
+- All links point to `wa.me/16048495329` with context-aware pre-filled text
+
+### Google Business Profile
+- **`GoogleReviewBadge.tsx`** (`src/components/common/`): Google logo + 5 stars + "Rate us on Google" link
+- **GBP review URL**: `https://g.page/r/CXBAlSwIpGMSEAE/review` (stored in `site_settings.google_review_url`)
+- Added to ModelServicePage testimonials section and Footer business hours section
+
+### Net Impact on Internal Linking
+- Each model-service page: ~19 links (footer only) → ~30-35 contextual links
+- ~34,000+ new internal links across all 3,172 model-service pages
+- FAQ schema on 3,172 pages for rich results eligibility

@@ -278,7 +278,7 @@ class MyDocument extends Document {
                 "name": "The Travelling Technicians",
                 "description": "Professional mobile phone and laptop repair services with same-day doorstep service across Vancouver, Burnaby, Richmond, and surrounding Lower Mainland areas.",
                 "url": siteUrl,
-                "telephone": "+1-778-389-9251",
+                "telephone": "+1-604-849-5329",
                 "email": "info@travelling-technicians.ca",
                 "priceRange": "$79-$249",
                 "openingHours": "Mo-Fr 08:00-20:00, Sa 09:00-18:00, Su 10:00-17:00",
@@ -598,7 +598,7 @@ class MyDocument extends Document {
                 },
                 contactPoint: {
                   "@type": "ContactPoint",
-                  telephone: "+1-778-389-9251",
+                  telephone: "+1-604-849-5329",
                   contactType: "customer service",
                   areaServed: "CA-BC",
                   availableLanguage: ["en", "fr"]
@@ -640,7 +640,7 @@ class MyDocument extends Document {
             }}>
               <h1>The Travelling Technicians</h1>
               <p>Please enable JavaScript to view this website. We provide doorstep mobile and laptop repair services across the Lower Mainland.</p>
-              <p>Contact us: (604) 555-1234 | contact@travellingtechnicians.ca</p>
+              <p>Contact us: (604) 849-5329 | info@travelling-technicians.ca</p>
             </div>
           </noscript>
           

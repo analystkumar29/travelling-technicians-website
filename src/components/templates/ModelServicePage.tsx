@@ -11,7 +11,7 @@
  * - Booking CTA integration
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { getSiteUrl } from '@/utils/supabaseClient';
@@ -19,6 +19,9 @@ import Link from 'next/link';
 import { formatPhoneNumberForDisplay, formatPhoneNumberForHref } from '@/utils/phone-formatter';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import InternalLinkingFooter from '@/components/seo/InternalLinkingFooter';
+import WhatsAppButton from '@/components/common/WhatsAppButton';
+import GoogleReviewBadge from '@/components/common/GoogleReviewBadge';
 
 // Types - Updated to match actual database payload structure
 interface PricingTier {
@@ -101,11 +104,60 @@ interface RouteData {
       service_name: string;
       service_slug: string;
     }>;
+    nearby_cities?: Array<{
+      slug_path: string;
+      city_name: string;
+      city_slug: string;
+    }>;
+    same_city_popular_models?: Array<{
+      slug_path: string;
+      model_name: string;
+      model_slug: string;
+      brand_name: string;
+    }>;
   };
 }
 
 interface ModelServicePageProps {
   routeData: RouteData;
+}
+
+function FaqAccordion({ items, service, model, city }: {
+  items: Array<{ question: string; answer: string }>;
+  service: string;
+  model: string;
+  city: string;
+}) {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  return (
+    <div className="bg-white rounded-xl shadow p-6 mb-8">
+      <h2 className="text-2xl font-bold text-primary-900 mb-6">Frequently Asked Questions</h2>
+      <div className="space-y-3">
+        {items.map((item, index) => (
+          <div key={index} className="border border-gray-100 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setOpenIndex(openIndex === index ? null : index)}
+              className="w-full flex items-center justify-between p-4 text-left hover:bg-primary-50 transition-colors"
+            >
+              <span className="font-medium text-primary-900 pr-4">{item.question}</span>
+              <svg
+                className={`h-5 w-5 text-primary-400 flex-shrink-0 transition-transform ${openIndex === index ? 'rotate-180' : ''}`}
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+            {openIndex === index && (
+              <div className="px-4 pb-4 text-primary-600">
+                {item.answer}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function ModelServicePage({ routeData }: ModelServicePageProps) {
@@ -261,7 +313,7 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
         "valueAddedTaxIncluded": true
       },
       "availability": "https://schema.org/InStock",
-      "validFrom": new Date().toISOString().split('T')[0]
+      "validFrom": "2025-01-01"
     },
     ...(aggregateRating && { aggregateRating }),  // ✅ Only include if testimonials exist
     "additionalProperty": [
@@ -303,6 +355,43 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
     ]
   }), [pricing, city.name, operatingHoursString, service.display_name, model.display_name, brand.display_name, service.is_doorstep_eligible, schemaPhone, aggregateRating]);
 
+  // Generate FAQ items for this page
+  const faqItems = useMemo(() => {
+    const neighborhoodNames = routeData.payload.neighborhoods?.slice(0, 3).join(', ') || city.name;
+    return [
+      {
+        question: `How much does ${service.display_name} cost for ${model.display_name} in ${city.name}?`,
+        answer: `${service.display_name} for ${model.display_name} in ${city.name} starts at $${pricing.basePrice} (standard) or $${pricing.premiumPrice} (premium). Standard service includes a ${pricing.standardWarrantyMonths}-month warranty, while premium includes a ${pricing.premiumWarrantyMonths}-month warranty with higher-quality parts.`
+      },
+      {
+        question: `How long does ${model.display_name} ${service.display_name} take?`,
+        answer: `Most ${model.display_name} ${service.display_name.toLowerCase()} repairs are completed in approximately ${pricing.serviceTime} minutes. Our technician comes directly to your location in ${city.name} — no need to visit a repair shop.`
+      },
+      {
+        question: `Do you offer doorstep ${service.display_name} in ${city.name}?`,
+        answer: `Yes! We provide doorstep ${service.display_name.toLowerCase()} service throughout ${city.name}, including ${neighborhoodNames}. Our certified technician will come to your home, office, or any convenient location.`
+      },
+      {
+        question: `What warranty do you offer on ${model.display_name} repairs?`,
+        answer: `We offer a ${pricing.standardWarrantyMonths}-month warranty on standard repairs and a ${pricing.premiumWarrantyMonths}-month warranty on premium repairs. The warranty covers both parts and labour. You can check your warranty status anytime at travelling-technicians.ca/check-warranty.`
+      }
+    ];
+  }, [service.display_name, model.display_name, city.name, pricing, routeData.payload.neighborhoods]);
+
+  // FAQ JSON-LD schema
+  const faqLd = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": faqItems.map(item => ({
+      "@type": "Question",
+      "name": item.question,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": item.answer
+      }
+    }))
+  }), [faqItems]);
+
   // Handle booking CTA
   const handleBookNow = () => {
     router.push({
@@ -333,6 +422,7 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
         <link rel="alternate" hrefLang="en-CA" href={fullUrl} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
       </Head>
 
       <Header />
@@ -373,6 +463,16 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
                   🛡️ {pricing.warrantyRange} Warranty
                 </span>
               </div>
+            </div>
+
+            {/* Urgency Banner */}
+            <div className="bg-accent-50 border border-accent-200 rounded-xl p-4 mb-8 flex items-center gap-3">
+              <svg className="h-6 w-6 text-accent-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.828a1 1 0 101.415-1.414L11 9.586V6z" clipRule="evenodd" />
+              </svg>
+              <p className="text-sm text-accent-800">
+                <span className="font-semibold">Appointments available for {city.name}</span> — Book before 3 PM for next-day service
+              </p>
             </div>
 
             {/* Dual Pricing Cards */}
@@ -632,6 +732,9 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
                     </div>
                   ))}
                 </div>
+                <div className="mt-6 text-center">
+                  <GoogleReviewBadge />
+                </div>
               </div>
             )}
 
@@ -720,6 +823,55 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
               </div>
             )}
 
+            {/* Available in Nearby Cities */}
+            {routeData.payload.nearby_cities && routeData.payload.nearby_cities.length > 0 && (
+              <div className="bg-white rounded-xl shadow p-6 mb-8">
+                <h3 className="text-xl font-bold text-primary-900 mb-4">Also Available Nearby</h3>
+                <p className="text-primary-500 mb-4">Get {service.display_name} for your {model.display_name} in these nearby cities:</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {routeData.payload.nearby_cities.map((nc, index) => (
+                    <Link
+                      key={index}
+                      href={`/${nc.slug_path}`}
+                      className="flex items-center gap-2 p-3 rounded-lg border border-gray-100 hover:border-primary-200 hover:shadow-sm transition-all group"
+                    >
+                      <svg className="h-4 w-4 text-primary-400 group-hover:text-primary-800 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-primary-800 font-medium group-hover:text-primary-900">{nc.city_name}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Popular Devices for Same Service */}
+            {routeData.payload.same_city_popular_models && routeData.payload.same_city_popular_models.length > 0 && (
+              <div className="bg-white rounded-xl shadow p-6 mb-8">
+                <h3 className="text-xl font-bold text-primary-900 mb-4">Popular {service.display_name} in {city.name}</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {routeData.payload.same_city_popular_models.map((pm, index) => (
+                    <Link
+                      key={index}
+                      href={`/${pm.slug_path}`}
+                      className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-primary-200 hover:shadow-sm transition-all group"
+                    >
+                      <div>
+                        <span className="text-primary-800 font-medium group-hover:text-primary-900 block">{pm.model_name}</span>
+                        <span className="text-xs text-primary-400">{pm.brand_name}</span>
+                      </div>
+                      <svg className="h-4 w-4 text-primary-400 group-hover:text-primary-800 group-hover:translate-x-0.5 transition-all flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* FAQ Section */}
+            <FaqAccordion items={faqItems} service={service.display_name} model={model.display_name} city={city.name} />
+
             {/* CTA Section */}
             <div className="text-center bg-gradient-to-r from-primary-800 to-primary-900 rounded-xl shadow-lg p-8 text-white mb-8">
               <h2 className="text-3xl font-bold mb-4">Ready to Repair Your {model.display_name}?</h2>
@@ -730,6 +882,15 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
                 </button>
                 <a href={formatPhoneNumberForHref(cleanPhone)} className="bg-transparent border-2 border-white hover:bg-white hover:text-primary-800 text-white font-bold py-3 px-8 rounded-lg transition duration-300">
                   Call {formatPhoneNumberForDisplay(cleanPhone)}
+                </a>
+                <a
+                  href={`https://wa.me/16048495329?text=${encodeURIComponent(`Hi, I need ${service.display_name} for my ${model.display_name} in ${city.name}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-[#25D366] hover:bg-[#1ebe57] text-white font-bold py-3 px-8 rounded-lg transition duration-300 flex items-center justify-center gap-2"
+                >
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                  WhatsApp
                 </a>
               </div>
               <p className="mt-4 text-sm opacity-80">Same-day appointments available • Free diagnosis • {pricing.warrantyRange} warranty</p>
@@ -743,7 +904,9 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
         </main>
       </div>
 
+      <InternalLinkingFooter currentCity={city.slug} currentService={service.slug} />
       <Footer />
+      <WhatsAppButton message={`Hi, I need ${service.display_name} for my ${model.display_name} in ${city.name}`} />
     </>
   );
 }

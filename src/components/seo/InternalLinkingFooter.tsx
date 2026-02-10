@@ -50,7 +50,12 @@ const FALLBACK_SERVICES: PopularService[] = [
   { slug: 'charging-port-repair', display_name: 'Charging Port Repair' }
 ];
 
-export default function InternalLinkingFooter() {
+interface InternalLinkingFooterProps {
+  currentCity?: string;  // city slug
+  currentService?: string;  // service slug
+}
+
+export default function InternalLinkingFooter({ currentCity, currentService }: InternalLinkingFooterProps = {}) {
   return (
     <section className="bg-gray-50 border-t border-gray-200 py-12">
       <div className="container-custom">
@@ -68,7 +73,9 @@ export default function InternalLinkingFooter() {
                 <Link
                   key={city.slug}
                   href={`/repair/${city.slug}`}
-                  className="text-sm text-primary-600 hover:text-primary-700 hover:underline transition-colors"
+                  className={`text-sm hover:text-primary-700 hover:underline transition-colors ${
+                    currentCity === city.slug ? 'text-primary-800 font-semibold' : 'text-primary-600'
+                  }`}
                 >
                   {city.name} Repair
                 </Link>
@@ -94,7 +101,7 @@ export default function InternalLinkingFooter() {
               {FALLBACK_SERVICES.map((service: PopularService) => (
                 <Link
                   key={service.slug}
-                  href={`/services/${service.slug}`}
+                  href={currentCity ? `/repair/${currentCity}/${service.slug}` : `/services/${service.slug}`}
                   className="text-sm text-primary-600 hover:text-primary-700 hover:underline transition-colors"
                   title={service.display_name}
                 >

@@ -65,6 +65,17 @@ module.exports = (phase, { defaultConfig }) => {
           destination: '/repair',
           permanent: true,
         },
+        // Catch-all for old /services/mobile/... and /services/laptop/... patterns
+        {
+          source: '/services/mobile/:path*',
+          destination: '/services/mobile-repair',
+          permanent: true,
+        },
+        {
+          source: '/services/laptop/:path*',
+          destination: '/services/laptop-repair',
+          permanent: true,
+        },
       ];
     },
     async headers() {

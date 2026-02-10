@@ -197,19 +197,19 @@ export default function SignsYourPhoneNeedsRepairPost() {
                   <h3 className="text-lg font-bold mb-4">Services</h3>
                   <ul className="space-y-2 text-gray-700">
                     <li>
-                      <Link href="/services/mobile/screen-replacement" className="hover:text-primary-600 transition-colors">Screen Replacement</Link>
+                      <Link href="/services/screen-replacement-mobile" className="hover:text-primary-600 transition-colors">Screen Replacement</Link>
                     </li>
                     <li>
-                      <Link href="/services/mobile/battery-replacement" className="hover:text-primary-600 transition-colors">Battery Replacement</Link>
+                      <Link href="/services/battery-replacement-mobile" className="hover:text-primary-600 transition-colors">Battery Replacement</Link>
                     </li>
                     <li>
-                      <Link href="/services/mobile/charging-port-repair" className="hover:text-primary-600 transition-colors">Charging Port Repair</Link>
+                      <Link href="/services/charging-port-repair" className="hover:text-primary-600 transition-colors">Charging Port Repair</Link>
                     </li>
                     <li>
-                      <Link href="/services/mobile/camera-repair" className="hover:text-primary-600 transition-colors">Camera Repair</Link>
+                      <Link href="/services/mobile-repair" className="hover:text-primary-600 transition-colors">Camera Repair</Link>
                     </li>
                     <li>
-                      <Link href="/services/mobile/water-damage" className="hover:text-primary-600 transition-colors">Water Damage Repair</Link>
+                      <Link href="/services/water-damage-repair" className="hover:text-primary-600 transition-colors">Water Damage Repair</Link>
                     </li>
                   </ul>
                 </div>
