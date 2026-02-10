@@ -1,5 +1,5 @@
 /**
- * Parse product data from MobileSentrix pages
+ * Parse product data from MobileSentrix Magento pages
  */
 
 const { detectCategory, detectQuality } = require('./config');
@@ -7,7 +7,7 @@ const { logger } = require('./logger');
 
 /**
  * Parse price string to numeric value
- * Handles: "$49.99", "CA$49.99", "$49.99 CAD", "49.99"
+ * Handles: "CA$966.96", "$49.99", "CA$49.99 CAD", "49.99"
  */
 function parsePrice(priceStr) {
   if (!priceStr) return null;
@@ -17,38 +17,22 @@ function parsePrice(priceStr) {
 }
 
 /**
- * Detect stock status from text or class names
- */
-function parseStockStatus(text, classNames) {
-  if (!text && !classNames) return false;
-  const combined = `${text || ''} ${classNames || ''}`.toLowerCase();
-  if (combined.includes('sold out') || combined.includes('out of stock') || combined.includes('out-of-stock')) {
-    return false;
-  }
-  if (combined.includes('in stock') || combined.includes('in-stock') || combined.includes('available')) {
-    return true;
-  }
-  return false;
-}
-
-/**
  * Extract model compatibility from product name
- * e.g., "MacBook Pro 16 A2991 (2023)" from "LCD Screen for MacBook Pro 16 A2991 (2023)"
+ * e.g., "MacBook Pro 14 A2779 (2023)" from title
  */
 function extractModelCompatibility(name) {
-  // Try to match common patterns
   const patterns = [
-    // "for MacBook Pro 16 A2991 (2023)"
-    /for\s+(MacBook\s+(?:Pro|Air)\s+[\d."]+(?:\s+[A-Z]\d{4})?(?:\s*\([^)]+\))?)/i,
-    // "MacBook Pro 16" A2991 / A2992 (2023)"
-    /(?:MacBook\s+(?:Pro|Air)\s+[\d."]+(?:\s+[A-Z]\d{4}(?:\s*\/\s*[A-Z]\d{4})*)?(?:\s*\([^)]+\))?)/i,
-    // Just model number pattern "A2991"
+    // "MacBook Pro 14" (A2442 / Late 2021) / Pro 14" (A2779 / Early 2023)"
+    /MacBook\s+(?:Pro|Air)\s+[\d."]+\s*["""]?\s*\(?([A-Z]\d{4}(?:\s*\/\s*[A-Z]\d{4})*)\)?/i,
+    // "For MacBook Pro 14" A2779 (2023)"
+    /(?:MacBook\s+(?:Pro|Air)\s+[\d."]+["""]?\s*(?:\([^)]+\)\s*)?)/i,
+    // Just model numbers "A2442 / A2779"
     /([A-Z]\d{4}(?:\s*\/\s*[A-Z]\d{4})*)/,
   ];
 
   for (const pattern of patterns) {
     const match = name.match(pattern);
-    if (match) return match[1] || match[0];
+    if (match) return match[0].trim();
   }
   return null;
 }
@@ -60,125 +44,100 @@ function detectDeviceLine(name, pageContext) {
   const lower = name.toLowerCase();
   if (lower.includes('macbook pro')) return 'MacBook Pro';
   if (lower.includes('macbook air')) return 'MacBook Air';
-  // Fall back to page context
   return pageContext || null;
 }
 
 /**
- * Parse a single product card element in the browser context
- * Returns the extracted data via page.evaluate
+ * Detect quality from badge alt text (more reliable than product name)
+ */
+function detectQualityFromBadge(badgeAlt) {
+  if (!badgeAlt) return null;
+  const lower = badgeAlt.toLowerCase();
+  if (lower.includes('genuine') || lower.includes('oem')) return 'oem';
+  if (lower.includes('aftermarket plus') || lower.includes('premium')) return 'premium';
+  if (lower.includes('aftermarket') || lower.includes('refurbished')) return 'standard';
+  return null;
+}
+
+/**
+ * Parse all product cards from a MobileSentrix listing page
+ * Runs page.evaluate to extract from Magento's ul.product-listing > li.item structure
  */
 async function parseProductCards(page, pageContext) {
-  const products = await page.evaluate(
-    ({ pageCtx }) => {
-      const cards = document.querySelectorAll(
-        '.snize-product, .product-card, .product-item, .grid-product, .boost-pfs-filter-product-item'
-      );
-      const results = [];
+  const products = await page.evaluate((pageCtx) => {
+    const items = document.querySelectorAll('ul.product-listing > li.item');
+    const results = [];
 
-      cards.forEach((card) => {
-        try {
-          // Product name
-          const nameEl =
-            card.querySelector('.snize-title, .product-title, .product-card__title, .product-item__title') ||
-            card.querySelector('h3 a, h2 a, .product-card__name a, a.product-link');
-          const name = nameEl ? nameEl.textContent.trim() : '';
-          if (!name) return;
+    items.forEach((li) => {
+      try {
+        // Product link + title
+        const linkEl = li.querySelector('a.product-image');
+        const url = linkEl ? linkEl.getAttribute('href') : '';
+        const title = linkEl ? linkEl.getAttribute('title') : '';
 
-          // Price
-          const priceEl = card.querySelector(
-            '.snize-price, .product-price, .price, .product-card__price, .money'
-          );
-          const priceText = priceEl ? priceEl.textContent.trim() : '';
+        // Product name (h2.product-name inside the link)
+        const nameEl = li.querySelector('h2.product-name');
+        const name = nameEl ? nameEl.textContent.trim() : title || '';
+        if (!name) return;
 
-          // SKU
-          const skuEl = card.querySelector('.snize-sku, .product-sku, [data-sku]');
-          let sku = skuEl ? (skuEl.getAttribute('data-sku') || skuEl.textContent.trim()) : '';
-          // Clean SKU prefix
-          sku = sku.replace(/^SKU:\s*/i, '').trim();
+        // Price — prefer regular-price, fall back to any .price span
+        const priceEl = li.querySelector('span.regular-price.price') || li.querySelector('.price-box .price');
+        const priceText = priceEl ? priceEl.textContent.trim() : '';
 
-          // Stock
-          const stockEl = card.querySelector(
-            '.snize-in-stock, .product-availability, .in-stock, .out-of-stock, .sold-out'
-          );
-          const stockText = stockEl ? stockEl.textContent.trim() : '';
-          const stockClass = stockEl ? stockEl.className : '';
+        // Quality badge (img.product-badges alt text)
+        const badgeEl = li.querySelector('img.product-badges');
+        const badgeAlt = badgeEl ? badgeEl.getAttribute('alt') || badgeEl.getAttribute('title') || '' : '';
 
-          // Product URL
-          const linkEl =
-            card.querySelector('a.snize-view-link, a.product-link') ||
-            card.querySelector('h3 a, h2 a, .product-card__name a') ||
-            card.querySelector('a');
-          let url = linkEl ? linkEl.getAttribute('href') : '';
-          if (url && !url.startsWith('http')) {
-            url = `${window.location.origin}${url.startsWith('/') ? '' : '/'}${url}`;
-          }
+        // Product ID from price span id (e.g., "product-price-223768")
+        const priceId = priceEl ? priceEl.getAttribute('id') || '' : '';
+        const productId = priceId.replace('product-price-', '');
 
-          results.push({
-            name,
-            priceText,
-            sku,
-            stockText,
-            stockClass,
-            url,
-            pageContext: pageCtx,
-          });
-        } catch (err) {
-          // Skip unparseable cards
-        }
-      });
+        // Stock: if there's a custom-add-to-cart section with qty input, it's in stock
+        const addToCart = li.querySelector('.custom-add-to-cart');
+        const outOfStockEl = li.querySelector('.out-of-stock, .sold-out');
+        const isInStock = addToCart ? true : (outOfStockEl ? false : true);
 
-      return results;
-    },
-    { pageCtx: pageContext }
-  );
+        results.push({
+          name,
+          fullTitle: title,
+          priceText,
+          productId,
+          badgeAlt,
+          isInStock,
+          url,
+          pageContext: pageCtx,
+        });
+      } catch (err) {
+        // Skip unparseable items
+      }
+    });
+
+    return results;
+  }, pageContext);
 
   // Post-process in Node context
   return products
     .filter((p) => p.name)
-    .map((p) => ({
-      name: p.name,
-      sku: p.sku || generateSkuFromName(p.name),
-      brand: 'Apple',
-      device_line: detectDeviceLine(p.name, p.pageContext),
-      model_compatibility: extractModelCompatibility(p.name),
-      category: detectCategory(p.name),
-      quality_tier: detectQuality(p.name),
-      wholesale_price: parsePrice(p.priceText),
-      is_in_stock: parseStockStatus(p.stockText, p.stockClass),
-      source_url: p.url,
-    }));
+    .map((p) => {
+      const badgeQuality = detectQualityFromBadge(p.badgeAlt);
+      return {
+        name: p.name,
+        sku: p.productId ? `MSX-${p.productId}` : generateSkuFromName(p.name),
+        brand: 'Apple',
+        device_line: detectDeviceLine(p.name, p.pageContext),
+        model_compatibility: extractModelCompatibility(p.fullTitle || p.name),
+        category: detectCategory(p.name),
+        quality_tier: badgeQuality || detectQuality(p.name),
+        wholesale_price: parsePrice(p.priceText),
+        is_in_stock: p.isInStock,
+        warranty_info: p.badgeAlt || null,
+        source_url: p.url,
+      };
+    });
 }
 
 /**
- * Parse product detail page for additional info
- */
-async function parseProductDetail(page) {
-  return page.evaluate(() => {
-    const title =
-      document.querySelector('.product-single__title, h1.product__title, h1')?.textContent?.trim() || '';
-    const priceEl = document.querySelector('.product__price, .product-single__price, .price--main, .price');
-    const price = priceEl ? priceEl.textContent.trim() : '';
-    const skuEl = document.querySelector('.product-single__sku, .product__sku, .sku');
-    const sku = skuEl ? skuEl.textContent.replace(/^SKU:\s*/i, '').trim() : '';
-    const stockEl = document.querySelector('.product-form__inventory, .product-single__availability');
-    const stock = stockEl ? stockEl.textContent.trim() : '';
-    const descEl = document.querySelector(
-      '.product-single__description, .product__description, .product-description'
-    );
-    const description = descEl ? descEl.textContent.trim() : '';
-
-    // Look for warranty info in description
-    let warranty = '';
-    const warrantyMatch = description.match(/warranty[:\s]+([^\n.]+)/i);
-    if (warrantyMatch) warranty = warrantyMatch[1].trim();
-
-    return { title, price, sku, stock, description, warranty };
-  });
-}
-
-/**
- * Generate a fallback SKU from product name when no SKU is found
+ * Generate a fallback SKU from product name when no product ID is found
  */
 function generateSkuFromName(name) {
   return (
@@ -194,10 +153,9 @@ function generateSkuFromName(name) {
 
 module.exports = {
   parseProductCards,
-  parseProductDetail,
   parsePrice,
-  parseStockStatus,
   extractModelCompatibility,
   detectDeviceLine,
+  detectQualityFromBadge,
   generateSkuFromName,
 };

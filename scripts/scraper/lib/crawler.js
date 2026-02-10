@@ -1,9 +1,10 @@
 /**
  * Navigate MobileSentrix category pages and extract product data
+ * MobileSentrix is Magento-based with server-rendered product listings.
  */
 
-const { CATEGORY_URLS, DELAYS, MAX_RETRIES, SELECTORS, BASE_URL } = require('./config');
-const { parseProductCards, parseProductDetail } = require('./parser');
+const { CATEGORY_URLS, DELAYS, MAX_RETRIES, BASE_URL } = require('./config');
+const { parseProductCards } = require('./parser');
 const { logger } = require('./logger');
 
 /**
@@ -34,54 +35,37 @@ async function withRetry(fn, label, maxRetries = MAX_RETRIES) {
 
 /**
  * Extract sub-model page links from a category page
- * e.g., /collections/macbook-pro-16-a2991-2023
+ * MobileSentrix uses links like /replacement-parts/apple/macbook-pro/pro-14-a2779
  */
-async function getSubModelLinks(page, categoryUrl) {
+async function getSubModelLinks(page, categoryUrl, lineKey) {
   logger.info(`Fetching sub-model links from: ${categoryUrl}`);
 
   await withRetry(async () => {
-    await page.goto(categoryUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await delay(2000); // Wait for JS rendering
+    await page.goto(categoryUrl, { waitUntil: 'networkidle', timeout: 30000 });
+    await delay(2000);
   }, `Navigate to ${categoryUrl}`);
 
-  // Try multiple selector strategies to find sub-model/sub-category links
-  const links = await page.evaluate(
-    ({ baseUrl, catUrl }) => {
-      const results = new Set();
+  const pathPrefix = lineKey === 'pro' ? 'macbook-pro/' : 'macbook-air/';
 
-      // Strategy 1: Look for collection/category links in the page
-      const allLinks = document.querySelectorAll('a[href]');
-      for (const a of allLinks) {
+  const links = await page.evaluate(
+    ({ baseUrl, prefix }) => {
+      const results = new Set();
+      // Find all links to sub-model pages
+      // Category URL = /replacement-parts/apple/macbook-pro (3 segments)
+      // Sub-model  = /replacement-parts/apple/macbook-pro/pro-14-a2779 (4 segments)
+      document.querySelectorAll(`a[href*="${prefix}"]`).forEach((a) => {
         const href = a.getAttribute('href') || '';
         const fullUrl = href.startsWith('http') ? href : `${baseUrl}${href.startsWith('/') ? '' : '/'}${href}`;
-
-        // Match sub-model collection links
-        if (
-          (href.includes('/macbook-pro') || href.includes('/macbook-air')) &&
-          href !== catUrl.replace(baseUrl, '') &&
-          !href.includes('?') &&
-          !href.includes('#') &&
-          href.split('/').length > catUrl.replace(baseUrl, '').split('/').length
-        ) {
+        const pathPart = new URL(fullUrl).pathname;
+        const segments = pathPart.split('/').filter(Boolean);
+        // Sub-model pages have 4+ segments (replacement-parts/apple/macbook-pro/MODEL)
+        if (segments.length >= 4 && segments[2].startsWith('macbook-')) {
           results.add(fullUrl);
         }
-      }
-
-      // Strategy 2: Look for collection grid items
-      const gridLinks = document.querySelectorAll(
-        '.collection-list a, .sub-categories a, .subcategories a, .category-grid a, .collection-grid-item a'
-      );
-      for (const a of gridLinks) {
-        const href = a.getAttribute('href') || '';
-        if (href && !href.includes('#')) {
-          const fullUrl = href.startsWith('http') ? href : `${baseUrl}${href.startsWith('/') ? '' : '/'}${href}`;
-          results.add(fullUrl);
-        }
-      }
-
+      });
       return [...results];
     },
-    { baseUrl: BASE_URL, catUrl: categoryUrl }
+    { baseUrl: BASE_URL, prefix: pathPrefix }
   );
 
   logger.info(`Found ${links.length} sub-model pages`);
@@ -89,24 +73,32 @@ async function getSubModelLinks(page, categoryUrl) {
 }
 
 /**
- * Wait for products to load on a page (Searchanise or native)
+ * Wait for products to load on a page
+ * MobileSentrix uses server-rendered Magento product grids
  */
 async function waitForProducts(page) {
   try {
-    // Try Searchanise widget first
-    await page.waitForSelector('.snize-product, .product-card, .product-item, .grid-product, .boost-pfs-filter-product-item', {
-      timeout: DELAYS.widgetLoad,
+    await page.waitForSelector('ul.product-listing > li.item', {
+      timeout: 8000,
     });
     return true;
   } catch {
-    logger.warn('No product cards found on page (Searchanise may not have loaded)');
+    // Check if this is a "no products" page
+    const hasNoProducts = await page.evaluate(() => {
+      const note = document.querySelector('.note-msg, .category-empty, .empty');
+      return !!note;
+    });
+    if (hasNoProducts) {
+      logger.info('  Page has no products (empty category)');
+    } else {
+      logger.warn('  No product cards found on page');
+    }
     return false;
   }
 }
 
 /**
  * Handle pagination on a product listing page
- * Returns all product URLs or cards across pages
  */
 async function scrapeAllPagesOfListing(page, pageUrl, pageContext) {
   let allProducts = [];
@@ -116,7 +108,7 @@ async function scrapeAllPagesOfListing(page, pageUrl, pageContext) {
   while (currentUrl) {
     if (pageNum > 1) {
       await withRetry(async () => {
-        await page.goto(currentUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await page.goto(currentUrl, { waitUntil: 'networkidle', timeout: 30000 });
       }, `Navigate to page ${pageNum}`);
       await delay(DELAYS.betweenPages);
     }
@@ -125,19 +117,21 @@ async function scrapeAllPagesOfListing(page, pageUrl, pageContext) {
     if (!hasProducts) break;
 
     const products = await parseProductCards(page, pageContext);
-    logger.info(`  Page ${pageNum}: found ${products.length} products`);
+    if (pageNum > 1 || products.length > 0) {
+      logger.info(`  Page ${pageNum}: ${products.length} products`);
+    }
     allProducts = allProducts.concat(products);
 
-    // Check for next page
+    // Check for next page (Magento pagination)
     const nextUrl = await page.evaluate(() => {
-      const nextLink =
-        document.querySelector('.pagination .next a, a.next, a[rel="next"], .pagination__next a') ||
-        document.querySelector('link[rel="next"]');
+      const nextLink = document.querySelector('.pages li.next a, a.next.i-next');
       return nextLink ? nextLink.getAttribute('href') : null;
     });
 
     if (nextUrl && nextUrl !== currentUrl) {
-      currentUrl = nextUrl.startsWith('http') ? nextUrl : `${BASE_URL}${nextUrl.startsWith('/') ? '' : '/'}${nextUrl}`;
+      currentUrl = nextUrl.startsWith('http')
+        ? nextUrl
+        : `${window.location.origin}${nextUrl.startsWith('/') ? '' : '/'}${nextUrl}`;
       pageNum++;
       await delay(DELAYS.betweenPages);
     } else {
@@ -152,16 +146,13 @@ async function scrapeAllPagesOfListing(page, pageUrl, pageContext) {
  * Scrape a single sub-model page
  */
 async function scrapeSubModelPage(page, url, deviceLine) {
-  logger.info(`Scraping: ${url}`);
-
   await withRetry(async () => {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
   }, `Navigate to ${url}`);
 
   await delay(DELAYS.betweenPages);
 
   const products = await scrapeAllPagesOfListing(page, url, deviceLine);
-  logger.success(`  Extracted ${products.length} products from ${url}`);
   return products;
 }
 
@@ -175,10 +166,10 @@ async function scrapeDeviceLine(page, lineKey) {
   logger.section(`Scraping ${deviceLine}`);
 
   // Get sub-model page links
-  const subModelLinks = await getSubModelLinks(page, categoryUrl);
+  const subModelLinks = await getSubModelLinks(page, categoryUrl, lineKey);
 
   if (subModelLinks.length === 0) {
-    logger.warn(`No sub-model pages found for ${deviceLine}. Trying to scrape category page directly...`);
+    logger.warn(`No sub-model pages found for ${deviceLine}. Trying category page directly...`);
     return await scrapeAllPagesOfListing(page, categoryUrl, deviceLine);
   }
 
@@ -189,6 +180,9 @@ async function scrapeDeviceLine(page, lineKey) {
 
     try {
       const products = await scrapeSubModelPage(page, link, deviceLine);
+      if (products.length > 0) {
+        logger.success(`  ${products.length} products from ${link.split('/').pop()}`);
+      }
       allProducts = allProducts.concat(products);
     } catch (err) {
       logger.error(`Failed to scrape ${link}: ${err.message}`);
@@ -227,7 +221,7 @@ async function crawlAll(page, categories) {
     }
   }
 
-  logger.info(`Total unique products: ${unique.length} (from ${allProducts.length} total)`);
+  logger.info(`Total unique products: ${unique.length} (from ${allProducts.length} total with dupes)`);
   return unique;
 }
 

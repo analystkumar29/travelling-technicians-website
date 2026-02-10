@@ -9,13 +9,13 @@
  *   npm run scrape:parts -- --category=air    MacBook Air only
  *   npm run scrape:parts -- --category=pro    MacBook Pro only
  *
- * Requires MSX_EMAIL and MSX_PASSWORD in .env.local
+ * Requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local
  */
 
 // Load env vars from .env.local
 require('dotenv').config({ path: '.env.local' });
 
-const { launchBrowser, login, closeBrowser } = require('./lib/browser');
+const { launchBrowser, closeBrowser } = require('./lib/browser');
 const { crawlAll } = require('./lib/crawler');
 const { createScrapeLog, updateScrapeLog, upsertProducts, getCatalogStats } = require('./lib/db');
 const { logger } = require('./lib/logger');
@@ -75,11 +75,9 @@ async function main() {
       }
     }
 
-    // Launch browser and login
+    // Launch browser (no login needed — prices are public on MobileSentrix)
     const { browser: b, context, page } = await launchBrowser();
     browser = b;
-
-    await login(page, context);
 
     // Crawl categories
     const products = await crawlAll(page, opts.categories);

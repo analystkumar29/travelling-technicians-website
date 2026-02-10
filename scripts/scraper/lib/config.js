@@ -20,31 +20,19 @@ const DELAYS = {
 
 const MAX_RETRIES = 3;
 
-// CSS selectors for MobileSentrix pages
+// CSS selectors for MobileSentrix pages (Magento-based, not Shopify)
 const SELECTORS = {
-  // Login page
-  loginEmail: '#customer_email, input[name="customer[email]"], input[type="email"]',
-  loginPassword: '#customer_password, input[name="customer[password]"], input[type="password"]',
-  loginButton: 'input[type="submit"][value*="Sign"], button[type="submit"]',
-  loginSuccess: '.account-links, .customer-logged-in, a[href*="logout"], a[href*="account"]',
+  // Product grid — Magento structure: ul.product-listing > li.item
+  productList: 'ul.product-listing',
+  productCard: 'ul.product-listing > li.item',
+  productName: 'h2.product-name',
+  productPrice: 'span.regular-price.price',
+  productLink: 'a.product-image',
+  productQualityBadge: 'img.product-badges',
+  productAddToCart: '.custom-add-to-cart',  // presence = in stock
 
-  // Category/sub-model listing
-  subModelLinks: '.collection-list a, .sub-categories a, .category-list a, .collection-grid a',
-
-  // Product grid (Searchanise-rendered or native)
-  productCard: '.snize-product, .product-card, .product-item, .grid-product',
-  productName: '.snize-title, .product-title, .product-card__title, .product-item__title, h3 a, h2 a',
-  productPrice: '.snize-price, .product-price, .price, .product-card__price, .money',
-  productSku: '.snize-sku, .product-sku, [data-sku]',
-  productStock: '.snize-in-stock, .product-availability, .in-stock, .out-of-stock, .sold-out',
-  productLink: 'a.snize-view-link, a.product-link, .product-card a, .product-item a, h3 a, h2 a',
-
-  // Product detail page
-  detailTitle: '.product-single__title, h1.product__title, h1',
-  detailPrice: '.product__price, .product-single__price, .price--main, .price',
-  detailSku: '.product-single__sku, .product__sku, .sku',
-  detailStock: '.product-form__inventory, .product-single__availability',
-  detailDescription: '.product-single__description, .product__description, .product-description',
+  // Pagination
+  nextPage: '.pages li.next a, a.next.i-next',
 };
 
 // Category detection keywords
@@ -65,11 +53,11 @@ const CATEGORY_MAP = {
   other: [],
 };
 
-// Quality tier keywords
+// Quality tier keywords (based on MobileSentrix badge labels)
 const QUALITY_MAP = {
-  oem: ['oem', 'original', 'genuine', 'apple original'],
-  premium: ['premium', 'high quality', 'grade a', 'grade-a', 'a+'],
-  standard: ['aftermarket', 'compatible', 'replacement'],
+  oem: ['genuine oem', 'apple genuine', 'genuine'],
+  premium: ['aftermarket plus', 'premium', 'high quality', 'grade a', 'grade-a'],
+  standard: ['aftermarket', 'compatible', 'replacement', 'refurbished'],
 };
 
 /**
