@@ -22,6 +22,8 @@ interface DynamicPricing {
   model_name?: string;
   brand_name?: string;
   device_type?: string;
+  wholesale_cost?: number | null;
+  wholesale_part_name?: string | null;
 }
 
 export default function PricingAdmin() {
@@ -791,7 +793,9 @@ export default function PricingAdmin() {
                     <th className="px-4 py-3 text-left font-medium">Device</th>
                     <th className="px-4 py-3 text-left font-medium">Service</th>
                     <th className="px-4 py-3 text-left font-medium">Tier</th>
-                    <th className="px-4 py-3 text-left font-medium">Base Price</th>
+                    <th className="px-4 py-3 text-right font-medium">Wholesale</th>
+                    <th className="px-4 py-3 text-right font-medium">Base Price</th>
+                    <th className="px-4 py-3 text-right font-medium">Margin</th>
                     <th className="px-4 py-3 text-left font-medium">Status</th>
                     <th className="px-4 py-3 text-left font-medium">Actions</th>
                   </tr>
@@ -818,7 +822,19 @@ export default function PricingAdmin() {
                         <td className="px-4 py-3">{pricing.brand_name} {pricing.model_name}</td>
                         <td className="px-4 py-3">{pricing.service_name}</td>
                         <td className="px-4 py-3 capitalize">{pricing.pricing_tier}</td>
-                        <td className="px-4 py-3 font-semibold">
+                        <td className="px-4 py-3 text-right">
+                          {pricing.wholesale_cost != null ? (
+                            <span
+                              className="text-gray-600 cursor-help"
+                              title={pricing.wholesale_part_name || ''}
+                            >
+                              ${pricing.wholesale_cost.toFixed(2)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-300">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold">
                           {isEditing ? (
                             <input
                               type="number"
@@ -829,10 +845,25 @@ export default function PricingAdmin() {
                                 ...prev,
                                 [pricing.id]: { base_price: e.target.value }
                               }))}
-                              className="w-24 px-2 py-1 border border-gray-300 rounded"
+                              className="w-24 px-2 py-1 border border-gray-300 rounded text-right"
                             />
                           ) : (
                             `$${pricing.base_price.toFixed(2)}`
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {pricing.wholesale_cost != null ? (() => {
+                            const margin = pricing.base_price - pricing.wholesale_cost;
+                            const marginPct = pricing.wholesale_cost > 0
+                              ? ((margin / pricing.wholesale_cost) * 100).toFixed(0)
+                              : '—';
+                            return (
+                              <span className={`font-medium ${margin < 0 ? 'text-red-600' : margin < 50 ? 'text-amber-600' : 'text-green-600'}`}>
+                                ${margin.toFixed(0)} ({marginPct}%)
+                              </span>
+                            );
+                          })() : (
+                            <span className="text-gray-300">—</span>
                           )}
                         </td>
                         <td className="px-4 py-3">

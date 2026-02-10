@@ -99,16 +99,16 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
     // Fetch related data separately (no JOINs with non-existent fields)
     const { data: services } = await supabase
       .from('services')
-      .select('id, name, display_name, device_type_id');
-    
+      .select('id, name, display_name, slug, device_type_id');
+
     const { data: deviceModels } = await supabase
       .from('device_models')
       .select('id, name, slug, brand_id, type_id');
-    
+
     const { data: brands } = await supabase
       .from('brands')
       .select('id, name, slug, logo_url');
-    
+
     const { data: deviceTypes } = await supabase
       .from('device_types')
       .select('id, name, slug, icon_name');
@@ -119,12 +119,73 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
     const brandsMap = new Map((brands || []).map((b: any) => [b.id, b]));
     const deviceTypesMap = new Map((deviceTypes || []).map((dt: any) => [dt.id, dt]));
 
+    // Fetch wholesale costs from MSX for MacBook models
+    const wholesaleCosts = new Map<string, { wholesale_price: number; part_name: string }>();
+    const macbookModelIds = (deviceModels || [])
+      .filter((m: any) => m.name?.toLowerCase().includes('macbook'))
+      .map((m: any) => m.id);
+
+    if (macbookModelIds.length > 0) {
+      // Service slug → MSX category mapping
+      const serviceSlugToCategory: Record<string, string> = {
+        'battery-replacement-laptop': 'battery',
+        'screen-replacement-laptop': 'screen',
+      };
+
+      for (const entry of (pricing || [])) {
+        const model: any = modelsMap.get(entry.model_id);
+        const service: any = servicesMap.get(entry.service_id);
+        if (!model || !service) continue;
+        if (!macbookModelIds.includes(entry.model_id)) continue;
+
+        const msxCategory = serviceSlugToCategory[service.slug];
+        if (!msxCategory) continue;
+
+        const msxQuality = entry.pricing_tier === 'premium' ? 'oem' : 'standard';
+        const cacheKey = `${entry.model_id}:${msxCategory}:${msxQuality}`;
+
+        if (!wholesaleCosts.has(cacheKey)) {
+          const { data: wsData } = await supabase.rpc('get_wholesale_cost', {
+            p_device_model_id: entry.model_id,
+            p_service_category: msxCategory,
+            p_quality: msxQuality,
+          });
+          if (wsData && wsData.length > 0) {
+            wholesaleCosts.set(cacheKey, {
+              wholesale_price: parseFloat(wsData[0].wholesale_price),
+              part_name: wsData[0].part_name,
+            });
+          }
+        }
+      }
+    }
+
     // Transform the data to include related information
     const transformedPricing = (pricing || []).map((entry: any) => {
       const service: any = servicesMap.get(entry.service_id);
       const model: any = modelsMap.get(entry.model_id);
       const brand: any = model ? brandsMap.get(model.brand_id) : null;
       const deviceType: any = model ? deviceTypesMap.get(model.type_id) : null;
+
+      // Look up wholesale cost
+      let wholesale_cost = null;
+      let wholesale_part_name = null;
+      if (service && model && macbookModelIds.includes(entry.model_id)) {
+        const serviceSlugToCategory: Record<string, string> = {
+          'battery-replacement-laptop': 'battery',
+          'screen-replacement-laptop': 'screen',
+        };
+        const msxCategory = serviceSlugToCategory[service.slug];
+        if (msxCategory) {
+          const msxQuality = entry.pricing_tier === 'premium' ? 'oem' : 'standard';
+          const cacheKey = `${entry.model_id}:${msxCategory}:${msxQuality}`;
+          const ws = wholesaleCosts.get(cacheKey);
+          if (ws) {
+            wholesale_cost = ws.wholesale_price;
+            wholesale_part_name = ws.part_name;
+          }
+        }
+      }
 
       return {
         id: entry.id,
@@ -143,7 +204,10 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
         model_name: model?.name,
         brand_name: brand?.name,
         tier_name: entry.pricing_tier === 'premium' ? 'Premium' : 'Standard',
-        device_type: deviceType?.name
+        device_type: deviceType?.name,
+        // Wholesale cost from MSX (MacBooks only)
+        wholesale_cost,
+        wholesale_part_name,
       };
     });
 
