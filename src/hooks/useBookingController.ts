@@ -160,7 +160,13 @@ export function useBookingController({
   const [showSwipeIndicator, setShowSwipeIndicator] = useState(false);
   const [showBrandWarning, setShowBrandWarning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [paymentMode, setPaymentMode] = useState<'pay-later' | 'upfront'>('pay-later');
+  const [paymentMode, setPaymentModeState] = useState<'pay-later' | 'upfront'>('pay-later');
+
+  // Reset isSubmitting when payment mode changes (handles back-from-Stripe scenario)
+  const setPaymentMode = useCallback((mode: 'pay-later' | 'upfront') => {
+    setPaymentModeState(mode);
+    setIsSubmitting(false);
+  }, []);
 
   // UUID tracking
   const [selectedBrandId, setSelectedBrandId] = useState('');
@@ -424,6 +430,17 @@ export function useBookingController({
 
   // ── Effects ──────────────────────────────────────────────────────────────
 
+  // Reset isSubmitting when page is restored from bfcache (browser back from Stripe)
+  useEffect(() => {
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        setIsSubmitting(false);
+      }
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, []);
+
   // Sync service IDs
   useEffect(() => {
     if (serviceType && servicesData && servicesData.length > 0) {
@@ -631,14 +648,10 @@ export function useBookingController({
       // Pay-later: use existing booking flow
       await onSubmit(processedData);
     } catch (err: any) {
-      // Re-throw so the parent can handle the error
       setIsSubmitting(false);
       throw err;
     } finally {
-      // Only reset if not redirecting
-      if (paymentMode !== 'upfront') {
-        setIsSubmitting(false);
-      }
+      setIsSubmitting(false);
     }
   }, [agreeToTerms, isSubmitting, methods, quotedPrice, onSubmit, paymentMode]);
 

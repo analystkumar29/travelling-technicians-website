@@ -149,7 +149,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
       success_url: `${baseUrl}/verify-booking?reference=${booking.booking_ref}&payment=success`,
       cancel_url: `${baseUrl}/verify-booking?reference=${booking.booking_ref}&payment=cancelled`,
-      expires_at: Math.floor(Date.now() / 1000) + 72 * 60 * 60, // 72 hours
+      expires_at: Math.floor(Date.now() / 1000) + 23 * 60 * 60, // 23 hours (Stripe max is 24h)
     });
 
     // Store payment link on booking
