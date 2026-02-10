@@ -74,6 +74,9 @@ interface Booking {
     full_name: string;
     phone: string;
   };
+  payment_status?: string;
+  payment_link_url?: string;
+  stripe_invoice_id?: string;
 }
 
 interface BookingFilter {
@@ -1002,6 +1005,19 @@ export default function AdminBookings() {
                       </div>
                       <div className="flex items-center space-x-2">
                         <AdminStatusBadge status={booking.status || 'pending'} />
+                        {booking.payment_status && booking.payment_status !== 'unpaid' && (
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            booking.payment_status === 'paid' ? 'bg-green-100 text-green-800' :
+                            booking.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            booking.payment_status === 'refunded' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {booking.payment_status === 'paid' ? '$ Paid' :
+                             booking.payment_status === 'pending' ? '$ Pending' :
+                             booking.payment_status === 'refunded' ? '$ Refunded' :
+                             `$ ${booking.payment_status}`}
+                          </span>
+                        )}
                       </div>
                     </div>
 

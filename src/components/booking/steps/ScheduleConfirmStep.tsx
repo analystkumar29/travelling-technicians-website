@@ -6,6 +6,7 @@ import type { Brand, DeviceModel, Service, PricingData } from '@/hooks/useBookin
 import type { TimeSlot } from '@/utils/bookingTimeSlots';
 import { formatDate, formatTimeSlot } from '@/utils/formatters';
 import PriceDisplay from '../PriceDisplay';
+import PaymentModeSelector from '../PaymentModeSelector';
 
 interface ScheduleConfirmStepProps {
   methods: UseFormReturn<CreateBookingRequest>;
@@ -22,6 +23,8 @@ interface ScheduleConfirmStepProps {
   validatedSteps: number[];
   scrollToElement: (selector: string, delay?: number) => void;
   watchedAppointmentDate: string;
+  paymentMode?: 'pay-later' | 'upfront';
+  onPaymentModeChange?: (mode: 'pay-later' | 'upfront') => void;
 }
 
 // Service display name mapping
@@ -62,6 +65,8 @@ export default function ScheduleConfirmStep({
   validatedSteps,
   scrollToElement,
   watchedAppointmentDate,
+  paymentMode = 'pay-later',
+  onPaymentModeChange,
 }: ScheduleConfirmStepProps) {
   const showValidationErrors = validatedSteps.includes(2);
 
@@ -369,6 +374,18 @@ export default function ScheduleConfirmStep({
           enabled={true}
           className="mt-6"
         />
+
+        {/* Payment Mode */}
+        {onPaymentModeChange && quotedPrice && quotedPrice > 0 && (
+          <div className="border-t border-primary-200/50 pt-6">
+            <PaymentModeSelector
+              paymentMode={paymentMode}
+              onSelect={onPaymentModeChange}
+              quotedPrice={quotedPrice}
+              province={formData.province || 'BC'}
+            />
+          </div>
+        )}
 
         {/* Terms */}
         <div id="terms-section" className="border-t border-primary-200/50 pt-6">

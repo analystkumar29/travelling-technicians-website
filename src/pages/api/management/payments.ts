@@ -5,7 +5,7 @@ import { logger } from '@/utils/logger';
 
 const apiLogger = logger.createModuleLogger('api/management/payments');
 
-const VALID_PAYMENT_METHODS = ['cash', 'debit', 'credit', 'etransfer', 'paypal'] as const;
+const VALID_PAYMENT_METHODS = ['cash', 'debit', 'credit', 'etransfer', 'paypal', 'stripe'] as const;
 const VALID_STATUSES = ['pending', 'completed', 'failed', 'refunded'] as const;
 const VALID_CURRENCIES = ['CAD', 'USD'] as const;
 
@@ -24,6 +24,14 @@ interface Payment {
   notes: string | null;
   created_at: string;
   currency: PaymentCurrency;
+  subtotal: number | null;
+  gst_amount: number | null;
+  pst_amount: number | null;
+  tax_province: string | null;
+  payment_type: string;
+  stripe_payment_intent_id: string | null;
+  stripe_charge_id: string | null;
+  stripe_refund_id: string | null;
   bookings?: {
     id: string;
     booking_ref: string;
@@ -145,6 +153,11 @@ async function handlePost(
       notes,
       status = 'completed',
       currency = 'CAD',
+      subtotal,
+      gst_amount,
+      pst_amount,
+      tax_province,
+      payment_type = 'full',
     } = req.body;
 
     // Validate required fields
@@ -195,28 +208,6 @@ async function handlePost(
       });
     }
 
-    // Check one_payment_per_booking constraint — verify no existing payment for this booking
-    const { data: existing, error: checkError } = await supabase
-      .from('payments')
-      .select('id')
-      .eq('booking_id', booking_id)
-      .maybeSingle();
-
-    if (checkError) {
-      apiLogger.error('Error checking existing payment', { error: checkError });
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to check existing payment',
-      });
-    }
-
-    if (existing) {
-      return res.status(409).json({
-        success: false,
-        error: 'A payment already exists for this booking. Only one payment per booking is allowed.',
-      });
-    }
-
     // Verify booking exists
     const { data: bookingData, error: bookingError } = await supabase
       .from('bookings')
@@ -246,6 +237,11 @@ async function handlePost(
       currency,
       transaction_id: transaction_id || null,
       notes: notes || null,
+      subtotal: subtotal != null ? parseFloat(subtotal) : null,
+      gst_amount: gst_amount != null ? parseFloat(gst_amount) : null,
+      pst_amount: pst_amount != null ? parseFloat(pst_amount) : null,
+      tax_province: tax_province || 'BC',
+      payment_type: payment_type || 'full',
     };
 
     // Set processed_at if status is completed

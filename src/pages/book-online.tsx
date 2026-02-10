@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NextPage } from 'next';
+import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
 import BookingForm from '@/components/booking/BookingForm';
 import BookingComplete from '@/components/booking/BookingComplete';
 import Link from 'next/link';
 import Image from 'next/image';
-import { DollarSign, Clock, Shield } from 'lucide-react';
+import { DollarSign, Clock, Shield, AlertCircle } from 'lucide-react';
 import { bookingService } from '@/services/bookingService';
 import type { CreateBookingRequest } from '@/types/booking';
 import { logger } from '@/utils/logger';
@@ -17,17 +18,21 @@ import { formatDate, formatTimeSlot } from '@/utils/formatters';
 const pageLogger = logger.createModuleLogger('BookOnlinePage');
 
 const BookOnlinePage: NextPage = () => {
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bookingData, setBookingData] = useState<any>(null);
+  const [paymentCancelled, setPaymentCancelled] = useState(false);
 
-  // useEffect cleanup for any potential state updates that might happen after unmounting
+  // Handle ?cancelled=true from Stripe Checkout
   useEffect(() => {
-    return () => {
-      // Cleanup function to prevent state updates after unmounting
-    };
-  }, []);
+    if (router.query.cancelled === 'true') {
+      setPaymentCancelled(true);
+      // Clean up the URL
+      router.replace('/book-online', undefined, { shallow: true });
+    }
+  }, [router.query.cancelled, router]);
 
   const handleSubmit = async (data: CreateBookingRequest) => {
     try {
@@ -115,6 +120,28 @@ const BookOnlinePage: NextPage = () => {
             </p>
           </div>
           
+          {paymentCancelled && (
+            <div className="max-w-3xl mx-auto mb-8">
+              <div className="bg-amber-50 border-l-4 border-amber-400 p-4">
+                <div className="flex items-start">
+                  <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <div className="ml-3">
+                    <p className="text-sm text-amber-800 font-medium">Payment was cancelled</p>
+                    <p className="text-sm text-amber-700 mt-1">
+                      Your booking was not created. You can try again or choose &quot;Pay After Repair&quot; below.
+                    </p>
+                    <button
+                      onClick={() => setPaymentCancelled(false)}
+                      className="mt-2 text-sm text-amber-800 font-medium underline hover:text-amber-900"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="max-w-3xl mx-auto mb-8">
               <div className="bg-red-50 border-l-4 border-red-400 p-4">

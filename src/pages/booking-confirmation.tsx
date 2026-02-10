@@ -13,18 +13,43 @@ export default function BookingConfirmation() {
   const [bookingData, setBookingData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [paymentInfo, setPaymentInfo] = useState<{
+    amount: number | null;
+    currency: string | null;
+    paid: boolean;
+  } | null>(null);
+
   useEffect(() => {
     async function fetchBookingData() {
       try {
         setIsLoading(true);
-        
-        // Get reference from URL query params
-        const { reference } = router.query;
-        
+
+        // Get reference and session_id from URL query params
+        const { reference, session_id } = router.query;
+
+        // If we have a session_id from Stripe, verify it
+        if (session_id && typeof session_id === 'string') {
+          try {
+            const verifyRes = await fetch(`/api/stripe/verify-session?session_id=${session_id}`);
+            if (verifyRes.ok) {
+              const verifyData = await verifyRes.json();
+              if (verifyData.session) {
+                setPaymentInfo({
+                  amount: verifyData.session.amount_total,
+                  currency: verifyData.session.currency,
+                  paid: verifyData.session.payment_status === 'paid',
+                });
+              }
+            }
+          } catch {
+            // Non-blocking — payment verification failure doesn't block confirmation
+          }
+        }
+
         if (!reference) {
           throw new Error('No booking reference provided');
         }
-        
+
         if (typeof reference !== 'string') {
           throw new Error('Invalid booking reference format');
         }
@@ -223,6 +248,30 @@ export default function BookingConfirmation() {
                 </div>
               </div>
               
+              {/* Payment confirmation card (for Stripe Checkout) */}
+              {paymentInfo?.paid && (
+                <div className="border-t border-gray-200 mt-8 pt-8">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="bg-green-100 text-green-600 rounded-full w-10 h-10 flex items-center justify-center">
+                        <FaCheckCircle className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-green-800">Payment Received</h3>
+                        {paymentInfo.amount && (
+                          <p className="text-green-700 font-medium">
+                            ${paymentInfo.amount.toFixed(2)} {paymentInfo.currency?.toUpperCase() || 'CAD'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-sm text-green-700">
+                      An invoice will be emailed after your repair is complete.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className="border-t border-gray-200 mt-8 pt-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>

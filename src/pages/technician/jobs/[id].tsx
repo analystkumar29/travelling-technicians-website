@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import TechnicianLayout from '@/components/technician/TechnicianLayout';
 import JobTimeline from '@/components/technician/JobTimeline';
 import RepairCompletionForm from '@/components/technician/RepairCompletionForm';
+import PaymentLinkSection from '@/components/technician/PaymentLinkSection';
 import { techFetch } from '@/utils/technicianAuth';
 import {
   Loader2, ArrowLeft, Phone, MapPin, Clock, DollarSign,
@@ -248,6 +249,16 @@ export default function JobDetail() {
           )}
         </div>
       </div>
+
+      {/* Payment Link Section (completed + unpaid) */}
+      {job.status === 'completed' && (
+        <PaymentLinkSection
+          bookingId={job.id}
+          bookingRef={job.booking_ref}
+          paymentStatus={job.payment_status || 'unpaid'}
+          existingPaymentUrl={job.payment_link_url}
+        />
+      )}
 
       {/* Warranty Card (if completed) */}
       {job.warranty && (

@@ -64,6 +64,10 @@ export interface BookingController {
   detectingLocation: boolean;
   needsPostalCodeAttention: boolean;
 
+  // Payment
+  paymentMode: 'pay-later' | 'upfront';
+  setPaymentMode: (mode: 'pay-later' | 'upfront') => void;
+
   // Actions
   handleFinalSubmit: () => Promise<void>;
   revealSection: (name: string) => void;
@@ -156,6 +160,7 @@ export function useBookingController({
   const [showSwipeIndicator, setShowSwipeIndicator] = useState(false);
   const [showBrandWarning, setShowBrandWarning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentMode, setPaymentMode] = useState<'pay-later' | 'upfront'>('pay-later');
 
   // UUID tracking
   const [selectedBrandId, setSelectedBrandId] = useState('');
@@ -600,12 +605,42 @@ export function useBookingController({
         issueDescription: data.issueDescription || '',
         agreedToTerms: true,
         termsVersion: '2026-02-06-v1',
+        paymentMode,
       };
+
+      if (paymentMode === 'upfront' && quotedPrice && quotedPrice > 0) {
+        // Redirect to Stripe Checkout
+        const response = await fetch('/api/stripe/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(processedData),
+        });
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to create checkout session');
+        }
+
+        // Redirect to Stripe
+        if (result.url) {
+          window.location.href = result.url;
+          return; // Don't reset isSubmitting — page is navigating away
+        }
+      }
+
+      // Pay-later: use existing booking flow
       await onSubmit(processedData);
-    } finally {
+    } catch (err: any) {
+      // Re-throw so the parent can handle the error
       setIsSubmitting(false);
+      throw err;
+    } finally {
+      // Only reset if not redirecting
+      if (paymentMode !== 'upfront') {
+        setIsSubmitting(false);
+      }
     }
-  }, [agreeToTerms, isSubmitting, methods, quotedPrice, onSubmit]);
+  }, [agreeToTerms, isSubmitting, methods, quotedPrice, onSubmit, paymentMode]);
 
   // ── Return ───────────────────────────────────────────────────────────────
 
@@ -637,6 +672,8 @@ export function useBookingController({
     locationWasPreFilled,
     detectingLocation,
     needsPostalCodeAttention,
+    paymentMode,
+    setPaymentMode,
     handleFinalSubmit,
     revealSection,
     scrollToElement,

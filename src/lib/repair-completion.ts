@@ -220,6 +220,25 @@ export async function executeRepairCompletion(input: RepairCompletionInput): Pro
     }
   }
 
+  // Generate invoice (non-blocking)
+  try {
+    const { generateInvoice } = await import('@/lib/invoice-generator');
+    const invoiceResult = await generateInvoice(input.booking_id);
+    if (invoiceResult.success) {
+      logger.info('Invoice generated on repair completion', {
+        booking_id: input.booking_id,
+        invoiceId: invoiceResult.stripe_invoice_id,
+      });
+    } else {
+      logger.warn('Invoice generation returned error (non-blocking)', {
+        booking_id: input.booking_id,
+        error: invoiceResult.error,
+      });
+    }
+  } catch (e) {
+    logger.error('Invoice generation failed (non-blocking)', { error: String(e) });
+  }
+
   return {
     success: true,
     repair_completion: completionData,

@@ -312,6 +312,107 @@ ${data.issueDescription ? detailRow('Issue', data.issueDescription) : ''}
   return emailWrapper(content);
 }
 
+// ─── Payment Link Email ───────────────────────────────────────────────────────
+
+export interface PaymentLinkEmailData {
+  name: string;
+  bookingReference: string;
+  serviceName: string;
+  deviceName: string;
+  paymentUrl: string;
+  subtotal: number;
+  gst: number;
+  pst: number;
+  total: number;
+}
+
+export function buildPaymentLinkEmail(data: PaymentLinkEmailData): string {
+  const content = `
+${headerBanner()}
+<!-- Body -->
+<tr><td style="padding:32px 32px 0;">
+<p style="margin:0 0 16px;font-size:16px;color:${TEXT};">Hi ${data.name},</p>
+<p style="margin:0 0 8px;font-size:16px;color:${TEXT};">Your repair is complete! Please complete your payment below.</p>
+<p style="margin:0 0 24px;font-size:14px;color:${TEXT_LIGHT};">Booking reference: <strong style="color:${NAVY};">${data.bookingReference}</strong></p>
+</td></tr>
+<!-- Service Details -->
+<tr><td style="padding:0 32px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${CARD_BG};border-radius:8px;margin-bottom:16px;">
+<tr><td style="padding:16px 16px 4px;font-size:15px;font-weight:700;color:${NAVY};" colspan="2">Payment Summary</td></tr>
+${detailRow('Service', data.serviceName)}
+${detailRow('Device', data.deviceName)}
+<tr><td colspan="2" style="padding:0 16px;"><hr style="border:none;border-top:1px solid #e2e8f0;margin:8px 0;" /></td></tr>
+${detailRow('Subtotal', `$${data.subtotal.toFixed(2)}`)}
+${detailRow('GST (5%)', `$${data.gst.toFixed(2)}`)}
+${detailRow('BC PST (7%)', `$${data.pst.toFixed(2)}`)}
+<tr>
+<td style="padding:8px 16px;font-size:14px;font-weight:700;color:${NAVY};width:120px;">Total</td>
+<td style="padding:8px 16px;font-size:16px;font-weight:700;color:${NAVY};">$${data.total.toFixed(2)} CAD</td>
+</tr>
+<tr><td colspan="2" style="padding:0 0 12px;"></td></tr>
+</table>
+</td></tr>
+<!-- CTA Button -->
+<tr><td style="padding:0 32px 12px;text-align:center;">
+<a href="${data.paymentUrl}" style="display:inline-block;background-color:${AMBER};color:${NAVY};font-size:16px;font-weight:700;text-decoration:none;padding:16px 48px;border-radius:6px;">Pay Now &mdash; $${data.total.toFixed(2)}</a>
+</td></tr>
+<tr><td style="padding:0 32px 32px;text-align:center;">
+<p style="margin:0;font-size:13px;color:${TEXT_LIGHT};">This link expires in 72 hours. Payment is processed securely via Stripe.</p>
+</td></tr>`;
+
+  return emailWrapper(content);
+}
+
+// ─── Payment Receipt Email ────────────────────────────────────────────────────
+
+export interface PaymentReceiptEmailData {
+  name: string;
+  bookingReference: string;
+  subtotal: number;
+  gst: number;
+  pst: number;
+  total: number;
+  paymentMethod: string;
+}
+
+export function buildPaymentReceiptEmail(data: PaymentReceiptEmailData): string {
+  const content = `
+${headerBanner()}
+<!-- Body -->
+<tr><td style="padding:32px 32px 0;">
+<div style="text-align:center;margin-bottom:24px;">
+<div style="display:inline-block;background-color:#dcfce7;border-radius:50%;width:60px;height:60px;line-height:60px;text-align:center;">
+<span style="color:#16a34a;font-size:28px;">&#10003;</span>
+</div>
+</div>
+<p style="margin:0 0 8px;font-size:18px;font-weight:700;color:${NAVY};text-align:center;">Payment Received</p>
+<p style="margin:0 0 24px;font-size:14px;color:${TEXT_LIGHT};text-align:center;">Thank you for your payment, ${data.name}!</p>
+</td></tr>
+<!-- Payment Details -->
+<tr><td style="padding:0 32px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${CARD_BG};border-radius:8px;margin-bottom:28px;">
+<tr><td style="padding:16px 16px 4px;font-size:15px;font-weight:700;color:${NAVY};" colspan="2">Payment Details</td></tr>
+${detailRow('Booking Ref', data.bookingReference)}
+${detailRow('Payment', data.paymentMethod)}
+<tr><td colspan="2" style="padding:0 16px;"><hr style="border:none;border-top:1px solid #e2e8f0;margin:8px 0;" /></td></tr>
+${detailRow('Subtotal', `$${data.subtotal.toFixed(2)}`)}
+${detailRow('GST (5%)', `$${data.gst.toFixed(2)}`)}
+${detailRow('BC PST (7%)', `$${data.pst.toFixed(2)}`)}
+<tr>
+<td style="padding:8px 16px;font-size:14px;font-weight:700;color:${NAVY};width:120px;">Total Paid</td>
+<td style="padding:8px 16px;font-size:16px;font-weight:700;color:#16a34a;">$${data.total.toFixed(2)} CAD</td>
+</tr>
+<tr><td colspan="2" style="padding:0 0 12px;"></td></tr>
+</table>
+</td></tr>
+<tr><td style="padding:0 32px 32px;">
+<p style="margin:0;font-size:14px;color:${TEXT};">Your invoice will be emailed separately after your repair is complete.</p>
+<p style="margin:8px 0 0;font-size:13px;color:${TEXT_LIGHT};">Questions? Call us at ${PHONE}</p>
+</td></tr>`;
+
+  return emailWrapper(content);
+}
+
 export function buildRescheduleConfirmationEmail(data: RescheduleEmailData): string {
   const device = formatDevice(data.deviceType, data.brand, data.model);
 

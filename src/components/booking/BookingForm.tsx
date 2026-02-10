@@ -211,6 +211,8 @@ export default function BookingForm({ onSubmit, onCancel, initialData = {} }: Bo
                       validatedSteps={controller.validatedSteps}
                       scrollToElement={controller.scrollToElement}
                       watchedAppointmentDate={controller.watchedAppointmentDate}
+                      paymentMode={controller.paymentMode}
+                      onPaymentModeChange={controller.setPaymentMode}
                     />
                   )}
                 </motion.div>
