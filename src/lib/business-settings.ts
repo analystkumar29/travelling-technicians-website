@@ -54,7 +54,7 @@ export const DEFAULT_BUSINESS_SETTINGS: BusinessSettings = {
   socialMedia: {
     facebook: 'https://www.facebook.com/travellingtechnicians',
     instagram: 'https://www.instagram.com/travellingtechnicians',
-    linkedin: 'https://www.linkedin.com/company/travelling-technicians'
+    linkedin: 'https://www.linkedin.com/company/the-travelling-technicians'
   }
 };
 

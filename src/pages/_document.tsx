@@ -458,7 +458,7 @@ class MyDocument extends Document {
                 "sameAs": [
                   "https://www.facebook.com/travellingtechnicians",
                   "https://www.instagram.com/travellingtechnicians", 
-                  "https://www.linkedin.com/company/travelling-technicians"
+                  "https://www.linkedin.com/company/the-travelling-technicians"
                 ]
               })
             }}
@@ -606,7 +606,7 @@ class MyDocument extends Document {
                 sameAs: [
                   "https://www.facebook.com/travellingtechnicians",
                   "https://www.instagram.com/travellingtechnicians",
-                  "https://www.linkedin.com/company/travelling-technicians"
+                  "https://www.linkedin.com/company/the-travelling-technicians"
                 ]
               })
             }}

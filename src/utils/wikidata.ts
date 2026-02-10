@@ -178,7 +178,7 @@ export function getSameAsUrls(citySlug: string): string[] {
   const urls = [
     'https://www.facebook.com/travellingtechnicians',
     'https://www.instagram.com/travellingtechnicians',
-    'https://www.linkedin.com/company/travelling-technicians'
+    'https://www.linkedin.com/company/the-travelling-technicians'
   ];
   
   if (entity) {

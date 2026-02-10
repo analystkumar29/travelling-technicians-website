@@ -129,7 +129,7 @@ export function LocalBusinessSchema({
   sameAs = [
     "https://www.facebook.com/travellingtechnicians",
     "https://www.instagram.com/travellingtechnicians",
-    "https://www.linkedin.com/company/travelling-technicians"
+    "https://www.linkedin.com/company/the-travelling-technicians"
   ]
 }: LocalBusinessSchemaProps) {
   const siteUrl = getSiteUrl();
@@ -212,7 +212,7 @@ export function LocalBusinessSchema({
     "sameAs": [
       "https://www.facebook.com/travellingtechnicians",
       "https://www.instagram.com/travellingtechnicians", 
-      "https://www.linkedin.com/company/travelling-technicians"
+      "https://www.linkedin.com/company/the-travelling-technicians"
     ],
     "paymentAccepted": "Cash, Credit Card, Debit Card, E-transfer",
     "currenciesAccepted": "CAD"
@@ -530,7 +530,7 @@ export function OrganizationSchema({ telephone }: OrganizationSchemaProps = {}) 
     "sameAs": [
       "https://www.facebook.com/travellingtechnicians",
       "https://www.instagram.com/travellingtechnicians",
-      "https://www.linkedin.com/company/travelling-technicians"
+      "https://www.linkedin.com/company/the-travelling-technicians"
     ],
     "founder": {
       "@type": "Person",

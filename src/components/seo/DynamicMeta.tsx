@@ -227,7 +227,7 @@ export default function DynamicMeta({
                 sameAs: [
                   'https://www.facebook.com/travellingtechnicians',
                   'https://www.instagram.com/travellingtechnicians',
-                  'https://www.linkedin.com/company/travelling-technicians'
+                  'https://www.linkedin.com/company/the-travelling-technicians'
                 ]
               })
             }}
