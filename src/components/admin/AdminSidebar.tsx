@@ -20,6 +20,7 @@ import {
   Wrench,
   X,
   Settings,
+  Package,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -29,6 +30,7 @@ const NAV_ITEMS = [
   { href: '/management/invoices', label: 'Invoices', icon: FileText },
   { href: '/management/devices', label: 'Devices', icon: Smartphone },
   { href: '/management/pricing', label: 'Pricing', icon: DollarSign },
+  { href: '/management/parts-catalog', label: 'Parts', icon: Package },
   { href: '/management/pricing-coverage', label: 'Price Audit', icon: BarChart3 },
   { href: '/management/quality-control', label: 'Quality', icon: ScanSearch },
   { href: '/management/route-health', label: 'Route Health', icon: Activity },

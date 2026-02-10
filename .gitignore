@@ -66,3 +66,6 @@ logs
 
 # MobileActive extraction data
 tmp/
+
+# MobileSentrix scraper session
+.msx-session.json

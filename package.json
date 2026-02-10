@@ -74,7 +74,8 @@
     "scripts:help": "cat scripts/README.md",
     "seed:services": "npx tsx scripts/seed-service-pages.ts",
     "seed:services:dry-run": "npx tsx scripts/seed-service-pages.ts --dry-run",
-    "seed:services:execute": "npx tsx scripts/seed-service-pages.ts --execute"
+    "seed:services:execute": "npx tsx scripts/seed-service-pages.ts --execute",
+    "scrape:parts": "node scripts/scraper/scrape-msx-parts.js"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",
@@ -142,6 +143,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "node-fetch": "^2.7.0",
     "node-mocks-http": "^1.17.2",
+    "playwright": "^1.58.2",
     "sharp": "^0.34.2",
     "typescript": "^5.2.2"
   },
