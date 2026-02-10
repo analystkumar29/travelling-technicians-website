@@ -9,13 +9,14 @@
 - **Database**: Supabase PostgreSQL 17.6 (`@supabase/supabase-js` v2.57.4)
 - **Styling**: Tailwind CSS 3.3.3, Framer Motion 10, Radix UI primitives
 - **Email**: SendGrid (`@sendgrid/mail`)
+- **Payments**: Stripe (`stripe` v18, `@stripe/stripe-js`, `micro` for webhooks) — API version `2026-01-28.clover`
 - **Maps**: Leaflet + react-leaflet
 - **State**: React Query (TanStack v5), react-hook-form
 - **SEO**: `next-seo` v7, programmatic JSON-LD, DB-driven sitemap
 - **Deploy**: Vercel (inferred from `VERCEL_URL` checks in `src/utils/supabaseClient.ts`)
 - **Domain**: `www.travelling-technicians.ca` (non-www redirects via `next.config.js`)
 
-**Database** (30 tables, 4 views, 32 triggers):
+**Database** (32 tables, 4 views, 32 triggers):
 
 | Hot Table | Rows | Seq Scans | Idx Scans | Total Updates |
 |---|---|---|---|---|
@@ -58,6 +59,8 @@ npm run test:cache-full        # Cache performance + API response benchmarks
 - `SUPABASE_SERVICE_ROLE_KEY` — server-side only, used by booking + management APIs
 - `ADMIN_USERNAME` / `ADMIN_PASSWORD_HASH` / `ADMIN_JWT_SECRET` — admin panel auth
 - `SENDGRID_API_KEY` / `SENDGRID_FROM_EMAIL` — email confirmations
+- `STRIPE_SECRET_KEY` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` — Stripe payment processing
+- `STRIPE_WEBHOOK_SECRET` — Stripe webhook signature verification
 
 ## Section 3: The Graph
 
@@ -114,6 +117,12 @@ Admin changes pricing → dynamic_pricing row updated
 Repair completed → repair_completions INSERT
   └─ trg_auto_create_warranty → INSERT into warranties (90-day, status='active')
        └─ set_warranty_number (BEFORE INSERT) → generates WT-YYMMDD-XXXX number
+
+Stripe payment flow:
+  Checkout completed (webhook) → booking confirmed + payment row inserted
+    → confirmation email + admin notification + payment receipt email
+  Repair completed → warranty email → invoice auto-generated (non-blocking)
+    → Stripe Invoice created + finalized → PDF emailed to customer
 ```
 
 ### API Layer Map
@@ -132,6 +141,14 @@ Repair completed → repair_completions INSERT
 | `/api/technician/login` | None (public) | Service Role | `technicians` |
 | `/api/technician/*` (other) | Technician JWT | Service Role | `bookings`, `technicians`, `technician_specializations`, `repair_completions` |
 | `/api/management/technicians/[id]/*` | Admin JWT | Service Role | `technician_specializations`, `technician_service_zones`, `technicians` |
+| `/api/stripe/webhook` | Stripe signature | Service Role | `stripe_events`, `bookings`, `payments`, `customer_profiles` |
+| `/api/stripe/create-checkout-session` | None (public) | Service Role | `bookings`, `customer_profiles`, `payments` |
+| `/api/stripe/create-payment-link` | Tech JWT / Admin JWT | Service Role | `bookings`, `payments` |
+| `/api/stripe/send-payment-link` | Tech JWT / Admin JWT | Service Role | `bookings` (calls create-payment-link internally) |
+| `/api/stripe/create-invoice` | Tech JWT / Admin JWT | Service Role | `invoices`, `bookings`, `repair_completions` |
+| `/api/stripe/verify-session` | None (session_id as auth) | Service Role | `bookings` |
+| `/api/stripe/refund` | Admin JWT | Service Role | `bookings`, `payments` |
+| `/api/management/invoices` | Admin JWT | Service Role | `invoices`, `bookings` |
 | `/api/sitemap.xml` | None | Anon | `dynamic_routes` |
 
 ## Section 4: Rules of Engagement
@@ -478,3 +495,89 @@ All 3,172 `model-service-page` routes now have:
 - Each model-service page: ~19 links (footer only) → ~30-35 contextual links
 - ~34,000+ new internal links across all 3,172 model-service pages
 - FAQ schema on 3,172 pages for rich results eligibility
+
+## Stripe Payment & Invoicing (APPLIED 2026-02-09)
+
+### Architecture
+
+Two payment flows integrated via Stripe Checkout Sessions:
+
+1. **Upfront Payment** — Customer selects "Pay Now" during booking → `create-checkout-session` creates booking with `pending-payment` status → redirects to Stripe Checkout → webhook confirms booking on success / cancels on expiry
+2. **Pay-Later Payment Link** — Technician or admin sends payment link after repair → `send-payment-link` creates Checkout Session + emails link → customer pays → webhook updates `payment_status`
+
+### New Packages
+- `stripe` — server-side SDK (API version `2026-01-28.clover`)
+- `@stripe/stripe-js` — client-side Checkout redirect (lazy-loaded)
+- `micro` — raw body parsing for webhook signature verification
+
+### Database Changes (migration: `stripe_payment_infrastructure`)
+
+**New tables:**
+- **`stripe_events`** — idempotent webhook processing (stripe_event_id UNIQUE, processed flag). RLS enabled, service-role only.
+- **`invoices`** — tracks Stripe Invoice objects (booking_id FK, stripe_invoice_id, PDF URL, line_items JSONB, tax breakdown). RLS enabled, service-role only.
+
+**Altered tables:**
+- **`customer_profiles`** — added `stripe_customer_id` (TEXT UNIQUE, indexed)
+- **`bookings`** — added `payment_intent_id`, `stripe_checkout_session_id`, `payment_status` (unpaid/pending/paid/refunded/partially_refunded), `payment_link_id`, `payment_link_url`, `stripe_invoice_id`; status constraint updated to include `pending-payment`
+- **`payments`** — dropped one-payment-per-booking constraint; added `stripe_payment_intent_id`, `stripe_charge_id`, `stripe_refund_id`, `subtotal`, `gst_amount`, `pst_amount`, `tax_province`, `payment_type` (full/partial/refund/adjustment); added `stripe` to payment_method enum; partial unique index `idx_one_completed_full_payment_per_booking`
+
+**Site settings:**
+- `gst_rate` (0.05), `pst_rate` (0.07), `tax_registration_gst`, `tax_registration_pst`
+
+### Key Files
+
+| File | Purpose |
+|---|---|
+| `src/lib/stripe.ts` | Stripe singleton, `getOrCreateStripeCustomer()`, `getBaseUrl()` |
+| `src/lib/tax-calculator.ts` | `calculateTax()` (GST 5% + PST 7%), `toStripeCents()`, `formatCurrency()` |
+| `src/lib/invoice-generator.ts` | `generateInvoice()` — creates Stripe Invoice with line items + tax, finalizes, inserts into `invoices` table |
+| `src/pages/api/stripe/webhook.ts` | Handles 7 events with idempotency via `stripe_events`. Always returns 200. |
+| `src/pages/api/stripe/create-checkout-session.ts` | Public. Creates booking + Stripe Checkout Session (30-min expiry). |
+| `src/pages/api/stripe/create-payment-link.ts` | Tech/Admin auth. Creates Checkout Session for completed bookings (23h expiry). |
+| `src/pages/api/stripe/send-payment-link.ts` | Tech/Admin auth. Calls create-payment-link, emails customer, returns WhatsApp URL. |
+| `src/pages/api/stripe/create-invoice.ts` | Tech/Admin auth. Manual invoice generation via `generateInvoice()`. |
+| `src/pages/api/stripe/verify-session.ts` | Public. Verifies Checkout Session for confirmation page. |
+| `src/pages/api/stripe/refund.ts` | Admin only. Full and partial refunds. |
+| `src/components/booking/PaymentModeSelector.tsx` | "Pay After Repair" / "Pay Now" toggle with tax breakdown. |
+| `src/components/technician/PaymentLinkSection.tsx` | Payment link send/copy/WhatsApp UI for technician job detail. |
+| `src/pages/management/invoices.tsx` | Admin invoice listing with search, filters, PDF download. |
+
+### Webhook Events
+
+| Event | Action |
+|---|---|
+| `checkout.session.completed` | Booking → confirmed, payment_status → paid, insert payment row, send confirmation + admin + receipt emails |
+| `checkout.session.expired` | Booking → cancelled (if still pending-payment) |
+| `payment_intent.succeeded` | Payment row → completed, booking payment_status → paid |
+| `payment_intent.payment_failed` | Payment row → failed, log error |
+| `charge.refunded` | Insert refund payment row, update booking payment_status |
+| `invoice.paid` | Invoice → paid, store PDF URL |
+| `invoice.finalized` | Invoice → store hosted URL + PDF URL + invoice number |
+
+### Booking Form Integration
+- `useBookingController.ts`: `paymentMode` state ('pay-later' default), Stripe redirect in `handleFinalSubmit`, `pageshow` listener for bfcache restoration
+- `ScheduleConfirmStep.tsx`: Renders `PaymentModeSelector` between price display and terms
+- `book-online.tsx`: Handles `?cancelled=true` from Stripe with amber banner
+- `booking-confirmation.tsx`: Handles `?session_id=` with payment verification card
+
+### Invoice Auto-Generation
+- Triggered non-blocking in `src/lib/repair-completion.ts` after warranty email
+- Every completed repair gets a Stripe Invoice regardless of payment method
+- For Stripe payments: invoice marked as paid automatically
+- For non-Stripe payments (cash, debit, etc.): invoice marked as `paid_out_of_band`
+
+### Email Templates (in `src/lib/email-templates.ts`)
+- `buildPaymentLinkEmail()` — "Complete Your Payment" with tax breakdown and Pay Now CTA
+- `buildPaymentReceiptEmail()` — "Payment Received" with amount, method, tax breakdown
+- Sent via `/api/send-payment-link-email.ts` and `/api/send-payment-receipt-email.ts`
+
+### Admin Panel
+- **Sidebar**: Invoices link added between Payments and Devices (`AdminSidebar.tsx`)
+- **Bookings page**: Payment status badges (green=paid, yellow=pending, red=refunded)
+- **Invoices page**: `/management/invoices` — list all invoices, search, filter by status, PDF download, Stripe link
+- **Payments API**: Expanded to support `stripe` method, tax fields, multiple payments per booking
+
+### Known Limitations
+- Stripe Checkout Session `expires_at` max is 24 hours (set to 23h for payment links)
+- `send-payment-link.ts` calls `create-payment-link` via internal HTTP fetch (works on Vercel but adds latency)
+- Invoice generation requires `STRIPE_SECRET_KEY` — fails silently if not configured
