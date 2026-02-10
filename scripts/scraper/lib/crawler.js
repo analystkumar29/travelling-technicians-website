@@ -3,7 +3,7 @@
  * MobileSentrix is Magento-based with server-rendered product listings.
  */
 
-const { CATEGORY_URLS, DELAYS, MAX_RETRIES, BASE_URL } = require('./config');
+const { CATEGORY_URLS, DEVICE_LINE_MAP, DELAYS, MAX_RETRIES, BASE_URL } = require('./config');
 const { parseProductCards } = require('./parser');
 const { logger } = require('./logger');
 
@@ -34,8 +34,9 @@ async function withRetry(fn, label, maxRetries = MAX_RETRIES) {
 }
 
 /**
- * Extract sub-model page links from a category page
- * MobileSentrix uses links like /replacement-parts/apple/macbook-pro/pro-14-a2779
+ * Extract sub-model page links from a category page.
+ * Works for all brands — extracts the category slug from the URL
+ * and finds links one level deeper.
  */
 async function getSubModelLinks(page, categoryUrl, lineKey) {
   logger.info(`Fetching sub-model links from: ${categoryUrl}`);
@@ -45,27 +46,35 @@ async function getSubModelLinks(page, categoryUrl, lineKey) {
     await delay(2000);
   }, `Navigate to ${categoryUrl}`);
 
-  const pathPrefix = lineKey === 'pro' ? 'macbook-pro/' : 'macbook-air/';
+  // Extract the category path segments to determine depth
+  // e.g. /replacement-parts/apple/macbook-pro → 3 segments
+  // e.g. /replacement-parts/google-pixel/pixel → 3 segments
+  const categoryPath = new URL(categoryUrl).pathname;
+  const categorySegments = categoryPath.split('/').filter(Boolean);
+  const categoryDepth = categorySegments.length;
+  const lastSegment = categorySegments[categoryDepth - 1];
 
   const links = await page.evaluate(
-    ({ baseUrl, prefix }) => {
+    ({ baseUrl, catPath, catDepth, slug }) => {
       const results = new Set();
-      // Find all links to sub-model pages
-      // Category URL = /replacement-parts/apple/macbook-pro (3 segments)
-      // Sub-model  = /replacement-parts/apple/macbook-pro/pro-14-a2779 (4 segments)
-      document.querySelectorAll(`a[href*="${prefix}"]`).forEach((a) => {
+      // Find all links that extend the category path by one more segment
+      document.querySelectorAll(`a[href*="${slug}"]`).forEach((a) => {
         const href = a.getAttribute('href') || '';
         const fullUrl = href.startsWith('http') ? href : `${baseUrl}${href.startsWith('/') ? '' : '/'}${href}`;
-        const pathPart = new URL(fullUrl).pathname;
-        const segments = pathPart.split('/').filter(Boolean);
-        // Sub-model pages have 4+ segments (replacement-parts/apple/macbook-pro/MODEL)
-        if (segments.length >= 4 && segments[2].startsWith('macbook-')) {
-          results.add(fullUrl);
+        try {
+          const pathPart = new URL(fullUrl).pathname;
+          const segments = pathPart.split('/').filter(Boolean);
+          // Sub-model pages are exactly one level deeper than the category
+          if (segments.length === catDepth + 1 && pathPart.startsWith(catPath)) {
+            results.add(fullUrl);
+          }
+        } catch (e) {
+          // Skip invalid URLs
         }
       });
       return [...results];
     },
-    { baseUrl: BASE_URL, prefix: pathPrefix }
+    { baseUrl: BASE_URL, catPath: categoryPath, catDepth: categoryDepth, slug: lastSegment }
   );
 
   logger.info(`Found ${links.length} sub-model pages`);
@@ -157,11 +166,12 @@ async function scrapeSubModelPage(page, url, deviceLine) {
 }
 
 /**
- * Scrape all products for a device line (MacBook Pro or Air)
+ * Scrape all products for a device line (MacBook Pro, Air, iPhone, Galaxy, Pixel)
  */
 async function scrapeDeviceLine(page, lineKey) {
   const categoryUrl = CATEGORY_URLS[lineKey];
-  const deviceLine = lineKey === 'pro' ? 'MacBook Pro' : 'MacBook Air';
+  const lineInfo = DEVICE_LINE_MAP[lineKey];
+  const deviceLine = lineInfo ? lineInfo.line : lineKey;
 
   logger.section(`Scraping ${deviceLine}`);
 

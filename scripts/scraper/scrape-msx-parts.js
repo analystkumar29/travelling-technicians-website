@@ -1,13 +1,20 @@
 #!/usr/bin/env node
 
 /**
- * MobileSentrix MacBook Parts Scraper
+ * MobileSentrix Parts Scraper — All Brands
  *
  * Usage:
- *   npm run scrape:parts                  Full scrape (MacBook Pro + Air)
- *   npm run scrape:parts -- --dry-run     Parse only, no DB writes
- *   npm run scrape:parts -- --category=air    MacBook Air only
- *   npm run scrape:parts -- --category=pro    MacBook Pro only
+ *   npm run scrape:parts                           Full scrape (all categories)
+ *   npm run scrape:parts -- --dry-run              Parse only, no DB writes
+ *   npm run scrape:parts -- --category=iphone      iPhone only
+ *   npm run scrape:parts -- --category=galaxy-s    Galaxy S series only
+ *   npm run scrape:parts -- --category=pixel       Pixel only
+ *   npm run scrape:parts -- --category=pro         MacBook Pro only
+ *   npm run scrape:parts -- --brand=apple          All Apple categories
+ *   npm run scrape:parts -- --brand=samsung        All Samsung categories
+ *
+ * Categories: pro, air, iphone, galaxy-s, galaxy-note, pixel
+ * Brands: apple (pro+air+iphone), samsung (galaxy-s+galaxy-note), google (pixel)
  *
  * Requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local
  */
@@ -20,12 +27,20 @@ const { crawlAll } = require('./lib/crawler');
 const { createScrapeLog, updateScrapeLog, upsertProducts, getCatalogStats } = require('./lib/db');
 const { logger } = require('./lib/logger');
 
+const ALL_CATEGORIES = ['pro', 'air', 'iphone', 'galaxy-s', 'galaxy-note', 'pixel'];
+
+const BRAND_CATEGORIES = {
+  apple: ['pro', 'air', 'iphone'],
+  samsung: ['galaxy-s', 'galaxy-note'],
+  google: ['pixel'],
+};
+
 // Parse CLI args
 function parseArgs() {
   const args = process.argv.slice(2);
   const opts = {
     dryRun: false,
-    categories: ['pro', 'air'],
+    categories: ALL_CATEGORIES,
   };
 
   for (const arg of args) {
@@ -33,21 +48,34 @@ function parseArgs() {
       opts.dryRun = true;
     } else if (arg.startsWith('--category=')) {
       const val = arg.split('=')[1].toLowerCase();
-      if (val === 'pro' || val === 'air') {
+      if (ALL_CATEGORIES.includes(val)) {
         opts.categories = [val];
       } else {
-        logger.error(`Unknown category: ${val}. Use 'pro' or 'air'.`);
+        logger.error(`Unknown category: ${val}. Use one of: ${ALL_CATEGORIES.join(', ')}`);
+        process.exit(1);
+      }
+    } else if (arg.startsWith('--brand=')) {
+      const val = arg.split('=')[1].toLowerCase();
+      if (BRAND_CATEGORIES[val]) {
+        opts.categories = BRAND_CATEGORIES[val];
+      } else {
+        logger.error(`Unknown brand: ${val}. Use one of: ${Object.keys(BRAND_CATEGORIES).join(', ')}`);
         process.exit(1);
       }
     } else if (arg === '--help' || arg === '-h') {
       console.log(`
-MobileSentrix MacBook Parts Scraper
+MobileSentrix Parts Scraper — All Brands
 
 Usage:
-  npm run scrape:parts                     Full scrape
-  npm run scrape:parts -- --dry-run        Parse only, no DB writes
-  npm run scrape:parts -- --category=pro   MacBook Pro only
-  npm run scrape:parts -- --category=air   MacBook Air only
+  npm run scrape:parts                           Full scrape (all categories)
+  npm run scrape:parts -- --dry-run              Parse only, no DB writes
+  npm run scrape:parts -- --category=iphone      iPhone only
+  npm run scrape:parts -- --category=galaxy-s    Galaxy S series only
+  npm run scrape:parts -- --brand=apple          All Apple (pro+air+iphone)
+  npm run scrape:parts -- --brand=samsung        All Samsung (galaxy-s+galaxy-note)
+  npm run scrape:parts -- --brand=google         All Google (pixel)
+
+Categories: ${ALL_CATEGORIES.join(', ')}
 `);
       process.exit(0);
     }
@@ -62,7 +90,7 @@ async function main() {
   let browser = null;
   let scrapeLog = null;
 
-  logger.section('MobileSentrix Parts Scraper');
+  logger.section('MobileSentrix Parts Scraper — All Brands');
   logger.info(`Mode: ${opts.dryRun ? 'DRY RUN (no DB writes)' : 'LIVE'}`);
   logger.info(`Categories: ${opts.categories.join(', ')}`);
 

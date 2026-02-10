@@ -17,20 +17,30 @@ function parsePrice(priceStr) {
 }
 
 /**
- * Extract model compatibility from product name
- * e.g., "MacBook Pro 14 A2779 (2023)" from title
+ * Extract model compatibility from product name.
+ * Supports MacBook (A-numbers), iPhone, Samsung Galaxy, Google Pixel.
  */
 function extractModelCompatibility(name) {
-  const patterns = [
-    // "MacBook Pro 14" (A2442 / Late 2021) / Pro 14" (A2779 / Early 2023)"
+  // iPhone patterns: "iPhone 16 Pro Max", "iPhone SE (3rd Gen)"
+  const iphoneMatch = name.match(/iPhone\s+(\d+[A-Za-z]*(?:\s+(?:Pro\s+Max|Pro|Plus|mini|SE))?|SE\s*\([^)]+\))/i);
+  if (iphoneMatch) return iphoneMatch[0].trim();
+
+  // Samsung patterns: "Galaxy S24 Ultra", "Galaxy S10+", "Galaxy Note 20 Ultra"
+  const samsungMatch = name.match(/Galaxy\s+(S\d+\s*(?:Ultra|\+|Plus|FE|Edge|e)?|Note\s+\d+\s*(?:Ultra|\+|Plus)?)/i);
+  if (samsungMatch) return ('Galaxy ' + samsungMatch[1]).trim();
+
+  // Google Pixel patterns: "Pixel 9 Pro XL", "Pixel 8a"
+  const pixelMatch = name.match(/Pixel\s+(\d+[a-z]?\s*(?:Pro\s+XL|Pro|XL)?)/i);
+  if (pixelMatch) return ('Pixel ' + pixelMatch[1]).trim();
+
+  // MacBook patterns (original)
+  const macPatterns = [
     /MacBook\s+(?:Pro|Air)\s+[\d."]+\s*["""]?\s*\(?([A-Z]\d{4}(?:\s*\/\s*[A-Z]\d{4})*)\)?/i,
-    // "For MacBook Pro 14" A2779 (2023)"
     /(?:MacBook\s+(?:Pro|Air)\s+[\d."]+["""]?\s*(?:\([^)]+\)\s*)?)/i,
-    // Just model numbers "A2442 / A2779"
     /([A-Z]\d{4}(?:\s*\/\s*[A-Z]\d{4})*)/,
   ];
 
-  for (const pattern of patterns) {
+  for (const pattern of macPatterns) {
     const match = name.match(pattern);
     if (match) return match[0].trim();
   }
@@ -44,7 +54,27 @@ function detectDeviceLine(name, pageContext) {
   const lower = name.toLowerCase();
   if (lower.includes('macbook pro')) return 'MacBook Pro';
   if (lower.includes('macbook air')) return 'MacBook Air';
+  if (lower.includes('iphone')) return 'iPhone';
+  if (lower.includes('galaxy s')) return 'Galaxy S';
+  if (lower.includes('galaxy note')) return 'Galaxy Note';
+  if (lower.includes('pixel')) return 'Pixel';
   return pageContext || null;
+}
+
+/**
+ * Detect brand from product name or page context
+ */
+function detectBrand(name, pageContext) {
+  const lower = name.toLowerCase();
+  if (lower.includes('macbook') || lower.includes('iphone') || lower.includes('apple')) return 'Apple';
+  if (lower.includes('galaxy') || lower.includes('samsung')) return 'Samsung';
+  if (lower.includes('pixel') || lower.includes('google')) return 'Google';
+  // Fall back to page context device line map
+  const { DEVICE_LINE_MAP } = require('./config');
+  for (const [, info] of Object.entries(DEVICE_LINE_MAP)) {
+    if (info.line === pageContext) return info.brand;
+  }
+  return 'Apple'; // legacy fallback
 }
 
 /**
@@ -123,7 +153,7 @@ async function parseProductCards(page, pageContext) {
       return {
         name: p.name,
         sku: p.productId ? `MSX-${p.productId}` : generateSkuFromName(p.name),
-        brand: 'Apple',
+        brand: detectBrand(p.name, p.pageContext),
         device_line: detectDeviceLine(p.name, p.pageContext),
         model_compatibility: extractModelCompatibility(p.fullTitle || p.name),
         category: detectCategory(p.name),
@@ -156,6 +186,7 @@ module.exports = {
   parsePrice,
   extractModelCompatibility,
   detectDeviceLine,
+  detectBrand,
   detectQualityFromBadge,
   generateSkuFromName,
 };

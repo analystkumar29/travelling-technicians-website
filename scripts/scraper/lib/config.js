@@ -7,6 +7,19 @@ const BASE_URL = 'https://www.mobilesentrix.ca';
 const CATEGORY_URLS = {
   pro: `${BASE_URL}/replacement-parts/apple/macbook-pro`,
   air: `${BASE_URL}/replacement-parts/apple/macbook-air`,
+  iphone: `${BASE_URL}/replacement-parts/apple/iphone-parts`,
+  'galaxy-s': `${BASE_URL}/replacement-parts/samsung/galaxy-s-series`,
+  'galaxy-note': `${BASE_URL}/replacement-parts/samsung/galaxy-note-series`,
+  pixel: `${BASE_URL}/replacement-parts/google-pixel/pixel`,
+};
+
+const DEVICE_LINE_MAP = {
+  pro: { line: 'MacBook Pro', brand: 'Apple' },
+  air: { line: 'MacBook Air', brand: 'Apple' },
+  iphone: { line: 'iPhone', brand: 'Apple' },
+  'galaxy-s': { line: 'Galaxy S', brand: 'Samsung' },
+  'galaxy-note': { line: 'Galaxy Note', brand: 'Samsung' },
+  pixel: { line: 'Pixel', brand: 'Google' },
 };
 
 // Delays (milliseconds)
@@ -86,6 +99,7 @@ function detectQuality(name) {
 module.exports = {
   BASE_URL,
   CATEGORY_URLS,
+  DEVICE_LINE_MAP,
   DELAYS,
   MAX_RETRIES,
   SELECTORS,
