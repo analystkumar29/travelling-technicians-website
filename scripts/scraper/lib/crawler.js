@@ -3,7 +3,7 @@
  * MobileSentrix is Magento-based with server-rendered product listings.
  */
 
-const { CATEGORY_URLS, DEVICE_LINE_MAP, DELAYS, MAX_RETRIES, BASE_URL } = require('./config');
+const { CATEGORY_URLS, DEVICE_LINE_MAP, SUB_MODEL_SLUGS, DELAYS, MAX_RETRIES, BASE_URL } = require('./config');
 const { parseProductCards } = require('./parser');
 const { logger } = require('./logger');
 
@@ -175,8 +175,17 @@ async function scrapeDeviceLine(page, lineKey) {
 
   logger.section(`Scraping ${deviceLine}`);
 
-  // Get sub-model page links
-  const subModelLinks = await getSubModelLinks(page, categoryUrl, lineKey);
+  // For phone categories, use hardcoded sub-model slugs (not discoverable from page)
+  // For MacBook categories (pro/air), use dynamic discovery from the category page
+  const hardcodedSlugs = SUB_MODEL_SLUGS[lineKey];
+  let subModelLinks;
+
+  if (hardcodedSlugs && hardcodedSlugs.length > 0) {
+    subModelLinks = hardcodedSlugs.map((slug) => `${categoryUrl}/${slug}`);
+    logger.info(`Using ${subModelLinks.length} known sub-model pages for ${deviceLine}`);
+  } else {
+    subModelLinks = await getSubModelLinks(page, categoryUrl, lineKey);
+  }
 
   if (subModelLinks.length === 0) {
     logger.warn(`No sub-model pages found for ${deviceLine}. Trying category page directly...`);
@@ -184,6 +193,7 @@ async function scrapeDeviceLine(page, lineKey) {
   }
 
   let allProducts = [];
+  let skipped = 0;
   for (let i = 0; i < subModelLinks.length; i++) {
     const link = subModelLinks[i];
     logger.progress(i + 1, subModelLinks.length, deviceLine);
@@ -192,15 +202,22 @@ async function scrapeDeviceLine(page, lineKey) {
       const products = await scrapeSubModelPage(page, link, deviceLine);
       if (products.length > 0) {
         logger.success(`  ${products.length} products from ${link.split('/').pop()}`);
+      } else {
+        skipped++;
       }
       allProducts = allProducts.concat(products);
     } catch (err) {
       logger.error(`Failed to scrape ${link}: ${err.message}`);
+      skipped++;
     }
 
     if (i < subModelLinks.length - 1) {
       await delay(DELAYS.betweenPages);
     }
+  }
+
+  if (skipped > 0) {
+    logger.info(`Skipped ${skipped} empty/404 sub-model pages`);
   }
 
   return allProducts;

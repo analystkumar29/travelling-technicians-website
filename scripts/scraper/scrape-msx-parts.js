@@ -13,8 +13,8 @@
  *   npm run scrape:parts -- --brand=apple          All Apple categories
  *   npm run scrape:parts -- --brand=samsung        All Samsung categories
  *
- * Categories: pro, air, iphone, galaxy-s, galaxy-note, pixel
- * Brands: apple (pro+air+iphone), samsung (galaxy-s+galaxy-note), google (pixel)
+ * Categories: pro, air, iphone, galaxy-s, galaxy-note, galaxy-a, pixel
+ * Brands: apple (pro+air+iphone), samsung (galaxy-s+galaxy-note+galaxy-a), google (pixel)
  *
  * Requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local
  */
@@ -27,11 +27,11 @@ const { crawlAll } = require('./lib/crawler');
 const { createScrapeLog, updateScrapeLog, upsertProducts, getCatalogStats } = require('./lib/db');
 const { logger } = require('./lib/logger');
 
-const ALL_CATEGORIES = ['pro', 'air', 'iphone', 'galaxy-s', 'galaxy-note', 'pixel'];
+const ALL_CATEGORIES = ['pro', 'air', 'iphone', 'galaxy-s', 'galaxy-note', 'galaxy-a', 'pixel'];
 
 const BRAND_CATEGORIES = {
   apple: ['pro', 'air', 'iphone'],
-  samsung: ['galaxy-s', 'galaxy-note'],
+  samsung: ['galaxy-s', 'galaxy-note', 'galaxy-a'],
   google: ['pixel'],
 };
 
