@@ -119,8 +119,9 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
     const brandsMap = new Map((brands || []).map((b: any) => [b.id, b]));
     const deviceTypesMap = new Map((deviceTypes || []).map((dt: any) => [dt.id, dt]));
 
-    // Fetch wholesale costs from MSX for all models with mappings
-    const wholesaleCosts = new Map<string, { wholesale_price: number; part_name: string }>();
+    // Fetch ALL wholesale parts from MSX for all models with mappings
+    const allPartsCache = new Map<string, any[]>();
+    const cheapestByTier = new Map<string, { wholesale_price: number; part_name: string }>();
 
     // Get all model IDs that have model_number_mapping entries
     const { data: mappedModels } = await supabase
@@ -145,20 +146,34 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
       const msxCategory = serviceSlugToCategory[service.slug];
       if (!msxCategory) continue;
 
-      const msxQuality = entry.pricing_tier === 'premium' ? 'oem' : 'standard';
-      const cacheKey = `${entry.model_id}:${msxCategory}:${msxQuality}`;
+      const partsKey = `${entry.model_id}:${msxCategory}`;
 
-      if (!wholesaleCosts.has(cacheKey)) {
-        const { data: wsData } = await supabase.rpc('get_wholesale_cost', {
+      // Fetch all parts for this model+category combo (once per combo)
+      if (!allPartsCache.has(partsKey)) {
+        const { data: partsData } = await supabase.rpc('get_all_wholesale_parts', {
           p_device_model_id: entry.model_id,
           p_service_category: msxCategory,
-          p_quality: msxQuality,
         });
-        if (wsData && wsData.length > 0) {
-          wholesaleCosts.set(cacheKey, {
-            wholesale_price: parseFloat(wsData[0].wholesale_price),
-            part_name: wsData[0].part_name,
-          });
+        const parts = (partsData || []).map((p: any) => ({
+          part_id: p.part_id,
+          name: p.part_name,
+          price: parseFloat(p.wholesale_price),
+          quality_tier: p.quality_tier,
+          sku: p.sku,
+        }));
+        allPartsCache.set(partsKey, parts);
+
+        // Pre-compute cheapest per quality tier for backward compat
+        for (const part of parts) {
+          const tierKey = part.quality_tier === 'oem' ? 'oem' : 'standard';
+          const cacheKey = `${entry.model_id}:${msxCategory}:${tierKey}`;
+          const existing = cheapestByTier.get(cacheKey);
+          if (!existing || part.price < existing.wholesale_price) {
+            cheapestByTier.set(cacheKey, {
+              wholesale_price: part.price,
+              part_name: part.name,
+            });
+          }
         }
       }
     }
@@ -170,19 +185,22 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
       const brand: any = model ? brandsMap.get(model.brand_id) : null;
       const deviceType: any = model ? deviceTypesMap.get(model.type_id) : null;
 
-      // Look up wholesale cost
+      // Look up wholesale cost + all available parts
       let wholesale_cost = null;
       let wholesale_part_name = null;
+      let available_parts: any[] = [];
       if (service && model && mappedModelIds.has(entry.model_id)) {
         const msxCategory = serviceSlugToCategory[service.slug];
         if (msxCategory) {
           const msxQuality = entry.pricing_tier === 'premium' ? 'oem' : 'standard';
           const cacheKey = `${entry.model_id}:${msxCategory}:${msxQuality}`;
-          const ws = wholesaleCosts.get(cacheKey);
+          const ws = cheapestByTier.get(cacheKey);
           if (ws) {
             wholesale_cost = ws.wholesale_price;
             wholesale_part_name = ws.part_name;
           }
+          const partsKey = `${entry.model_id}:${msxCategory}`;
+          available_parts = allPartsCache.get(partsKey) || [];
         }
       }
 
@@ -207,6 +225,8 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
         // Wholesale cost from MSX catalog
         wholesale_cost,
         wholesale_part_name,
+        // All available parts for this model+service combo
+        available_parts,
       };
     });
 

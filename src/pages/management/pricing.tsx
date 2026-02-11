@@ -6,6 +6,14 @@ import { authFetch } from '@/utils/auth';
 import { isValidUUID } from '@/types/admin';
 import { toast } from 'sonner';
 
+interface WholesalePart {
+  part_id: string;
+  name: string;
+  price: number;
+  quality_tier: string;
+  sku: string;
+}
+
 interface DynamicPricing {
   id: string;
   service_id: string;
@@ -24,6 +32,7 @@ interface DynamicPricing {
   device_type?: string;
   wholesale_cost?: number | null;
   wholesale_part_name?: string | null;
+  available_parts?: WholesalePart[];
 }
 
 export default function PricingAdmin() {
@@ -73,6 +82,9 @@ export default function PricingAdmin() {
   // Bulk selection state (NEW)
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkUpdating, setBulkUpdating] = useState(false);
+
+  // Expanded parts panel state
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   // Confirm dialog state
   const [confirmAction, setConfirmAction] = useState<{ action: () => void; title: string; message: string; variant?: 'danger' | 'warning' } | null>(null);
@@ -803,8 +815,13 @@ export default function PricingAdmin() {
                 <tbody>
                   {paginatedPricing.map((pricing) => {
                     const isEditing = !!editingRows[pricing.id];
+                    const isExpanded = expandedRows.has(pricing.id);
+                    const partsCount = pricing.available_parts?.length || 0;
+                    const hasparts = partsCount > 0;
+
                     return (
-                      <tr key={pricing.id} className="border-b hover:bg-gray-50">
+                      <React.Fragment key={pricing.id}>
+                      <tr className="border-b hover:bg-gray-50">
                         <td className="px-4 py-3 text-center">
                           <input
                             type="checkbox"
@@ -824,14 +841,31 @@ export default function PricingAdmin() {
                         <td className="px-4 py-3 capitalize">{pricing.pricing_tier}</td>
                         <td className="px-4 py-3 text-right">
                           {pricing.wholesale_cost != null ? (
-                            <span
-                              className="text-gray-600 cursor-help"
+                            <button
+                              onClick={() => {
+                                if (!hasparts) return;
+                                setExpandedRows(prev => {
+                                  const next = new Set(prev);
+                                  if (next.has(pricing.id)) next.delete(pricing.id);
+                                  else next.add(pricing.id);
+                                  return next;
+                                });
+                              }}
+                              className={`inline-flex items-center gap-1 ${hasparts ? 'cursor-pointer hover:text-primary-700' : 'cursor-default'} text-gray-600`}
                               title={pricing.wholesale_part_name || ''}
                             >
                               ${pricing.wholesale_cost.toFixed(2)}
-                            </span>
+                              {hasparts && (
+                                <span className="text-[10px] font-medium bg-gray-200 text-gray-600 rounded-full px-1.5 py-0.5">
+                                  {partsCount}
+                                </span>
+                              )}
+                              {hasparts && (
+                                <span className={`text-[10px] transition-transform ${isExpanded ? 'rotate-180' : ''}`}>&#9660;</span>
+                              )}
+                            </button>
                           ) : (
-                            <span className="text-gray-300">—</span>
+                            <span className="text-gray-300">&mdash;</span>
                           )}
                         </td>
                         <td className="px-4 py-3 text-right font-semibold">
@@ -863,7 +897,7 @@ export default function PricingAdmin() {
                               </span>
                             );
                           })() : (
-                            <span className="text-gray-300">—</span>
+                            <span className="text-gray-300">&mdash;</span>
                           )}
                         </td>
                         <td className="px-4 py-3">
@@ -891,6 +925,42 @@ export default function PricingAdmin() {
                           )}
                         </td>
                       </tr>
+                      {isExpanded && pricing.available_parts && pricing.available_parts.length > 0 && (
+                        <tr className="bg-gray-50">
+                          <td colSpan={9} className="px-4 py-4">
+                            <div className="space-y-3">
+                              {(['oem', 'premium', 'standard'] as const).map(tier => {
+                                const tierParts = pricing.available_parts!.filter(p => p.quality_tier === tier);
+                                if (tierParts.length === 0) return null;
+                                const tierLabel = tier === 'oem' ? 'OEM' : tier === 'premium' ? 'Premium' : 'Standard';
+                                const tierColor = tier === 'oem' ? 'bg-blue-100 text-blue-800' : tier === 'premium' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-700';
+                                return (
+                                  <div key={tier}>
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className={`px-2 py-0.5 rounded text-xs font-semibold ${tierColor}`}>{tierLabel}</span>
+                                      <span className="text-xs text-gray-400">{tierParts.length} part{tierParts.length !== 1 ? 's' : ''}</span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      {tierParts.map(part => (
+                                        <div
+                                          key={part.part_id}
+                                          className="border border-gray-200 bg-white rounded px-3 py-2 text-xs max-w-xs"
+                                          title={part.name}
+                                        >
+                                          <span className="font-bold text-sm">${part.price.toFixed(2)}</span>
+                                          <span className="text-gray-400 ml-1.5">{part.sku}</span>
+                                          <div className="text-gray-500 mt-0.5 truncate">{part.name.length > 70 ? part.name.slice(0, 67) + '...' : part.name}</div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      </React.Fragment>
                     );
                   })}
                 </tbody>
