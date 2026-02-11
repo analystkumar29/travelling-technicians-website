@@ -22,15 +22,15 @@ function parsePrice(priceStr) {
  */
 function extractModelCompatibility(name) {
   // iPhone patterns: "iPhone 16 Pro Max", "iPhone SE (3rd Gen)"
-  const iphoneMatch = name.match(/iPhone\s+(\d+[A-Za-z]*(?:\s+(?:Pro\s+Max|Pro|Plus|mini|SE))?|X(?:S\s+Max|S|R)?|SE\s*\([^)]+\))/i);
+  const iphoneMatch = name.match(/iPhone\s+(\d+[A-Za-z]*(?:\s+(?:Pro\s+Max|Pro|Plus|mini|SE))?|X(?:S\s+Max|S|R)?|Air|SE\s*\([^)]+\))/i);
   if (iphoneMatch) return iphoneMatch[0].trim();
 
   // Samsung patterns: "Galaxy S24 Ultra", "Galaxy S10+", "Galaxy Note 20 Ultra"
-  const samsungMatch = name.match(/Galaxy\s+(S\d+\s*(?:Ultra|\+|Plus|FE|Edge|e)?|Note\s+\d+\s*(?:Ultra|\+|Plus)?)/i);
+  const samsungMatch = name.match(/Galaxy\s+(S\d+\s*(?:Ultra|\+|Plus|FE|Edge|e)?|Note\s+\d+\s*(?:Ultra|\+|Plus)?|A\d+[a-z]?\s*(?:5G|FE)?)/i);
   if (samsungMatch) return ('Galaxy ' + samsungMatch[1]).trim();
 
   // Google Pixel patterns: "Pixel 9 Pro XL", "Pixel 8a"
-  const pixelMatch = name.match(/Pixel\s+(\d+[a-z]?\s*(?:Pro\s+XL|Pro|XL)?)/i);
+  const pixelMatch = name.match(/Pixel\s+(\d+[a-z]?\s*(?:Pro\s+XL|Pro\s+Fold|Pro|XL|Fold)?|Fold)/i);
   if (pixelMatch) return ('Pixel ' + pixelMatch[1]).trim();
 
   // MacBook patterns (original)
@@ -57,6 +57,7 @@ function detectDeviceLine(name, pageContext) {
   if (lower.includes('iphone')) return 'iPhone';
   if (lower.includes('galaxy s')) return 'Galaxy S';
   if (lower.includes('galaxy note')) return 'Galaxy Note';
+  if (lower.includes('galaxy a')) return 'Galaxy A';
   if (lower.includes('pixel')) return 'Pixel';
   return pageContext || null;
 }
