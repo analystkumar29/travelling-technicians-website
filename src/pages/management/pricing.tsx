@@ -32,7 +32,7 @@ interface DynamicPricing {
   device_type?: string;
   wholesale_cost?: number | null;
   wholesale_part_name?: string | null;
-  available_parts?: WholesalePart[];
+  parts_count?: number;
 }
 
 export default function PricingAdmin() {
@@ -85,6 +85,8 @@ export default function PricingAdmin() {
 
   // Expanded parts panel state
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [partsCache, setPartsCache] = useState<Record<string, WholesalePart[]>>({});
+  const [partsLoading, setPartsLoading] = useState<Set<string>>(new Set());
 
   // Confirm dialog state
   const [confirmAction, setConfirmAction] = useState<{ action: () => void; title: string; message: string; variant?: 'danger' | 'warning' } | null>(null);
@@ -179,6 +181,39 @@ export default function PricingAdmin() {
       }
     } catch (err) {
       console.error('Error loading dynamic pricing:', err);
+    }
+  };
+
+  const serviceSlugToCategory: Record<string, string> = {
+    'battery-replacement-laptop': 'battery',
+    'screen-replacement-laptop': 'screen',
+    'battery-replacement-mobile': 'battery',
+    'screen-replacement-mobile': 'screen',
+  };
+
+  const fetchPartsForRow = async (pricing: DynamicPricing) => {
+    const cacheKey = `${pricing.model_id}:${pricing.service_id}`;
+    if (partsCache[cacheKey]) return; // already cached
+
+    const service = services.find((s: any) => s.id === pricing.service_id);
+    const category = service ? serviceSlugToCategory[service.slug] : null;
+    if (!category) return;
+
+    setPartsLoading(prev => new Set(prev).add(cacheKey));
+    try {
+      const response = await authFetch(`/api/management/wholesale-parts?model_id=${pricing.model_id}&category=${category}`);
+      const data = await response.json();
+      if (data.success) {
+        setPartsCache(prev => ({ ...prev, [cacheKey]: data.parts }));
+      }
+    } catch (err) {
+      console.error('Error fetching parts:', err);
+    } finally {
+      setPartsLoading(prev => {
+        const next = new Set(prev);
+        next.delete(cacheKey);
+        return next;
+      });
     }
   };
 
@@ -816,8 +851,11 @@ export default function PricingAdmin() {
                   {paginatedPricing.map((pricing) => {
                     const isEditing = !!editingRows[pricing.id];
                     const isExpanded = expandedRows.has(pricing.id);
-                    const partsCount = pricing.available_parts?.length || 0;
-                    const hasparts = partsCount > 0;
+                    const partsCount = pricing.parts_count || 0;
+                    const hasParts = partsCount > 0;
+                    const partsCacheKey = `${pricing.model_id}:${pricing.service_id}`;
+                    const cachedParts = partsCache[partsCacheKey];
+                    const isLoadingParts = partsLoading.has(partsCacheKey);
 
                     return (
                       <React.Fragment key={pricing.id}>
@@ -843,24 +881,28 @@ export default function PricingAdmin() {
                           {pricing.wholesale_cost != null ? (
                             <button
                               onClick={() => {
-                                if (!hasparts) return;
+                                if (!hasParts) return;
+                                const willExpand = !expandedRows.has(pricing.id);
                                 setExpandedRows(prev => {
                                   const next = new Set(prev);
                                   if (next.has(pricing.id)) next.delete(pricing.id);
                                   else next.add(pricing.id);
                                   return next;
                                 });
+                                if (willExpand && !cachedParts) {
+                                  fetchPartsForRow(pricing);
+                                }
                               }}
-                              className={`inline-flex items-center gap-1 ${hasparts ? 'cursor-pointer hover:text-primary-700' : 'cursor-default'} text-gray-600`}
+                              className={`inline-flex items-center gap-1 ${hasParts ? 'cursor-pointer hover:text-primary-700' : 'cursor-default'} text-gray-600`}
                               title={pricing.wholesale_part_name || ''}
                             >
                               ${pricing.wholesale_cost.toFixed(2)}
-                              {hasparts && (
+                              {hasParts && (
                                 <span className="text-[10px] font-medium bg-gray-200 text-gray-600 rounded-full px-1.5 py-0.5">
                                   {partsCount}
                                 </span>
                               )}
-                              {hasparts && (
+                              {hasParts && (
                                 <span className={`text-[10px] transition-transform ${isExpanded ? 'rotate-180' : ''}`}>&#9660;</span>
                               )}
                             </button>
@@ -925,37 +967,43 @@ export default function PricingAdmin() {
                           )}
                         </td>
                       </tr>
-                      {isExpanded && pricing.available_parts && pricing.available_parts.length > 0 && (
+                      {isExpanded && (
                         <tr className="bg-gray-50">
                           <td colSpan={9} className="px-4 py-4">
-                            <div className="space-y-3">
-                              {(['oem', 'premium', 'standard'] as const).map(tier => {
-                                const tierParts = pricing.available_parts!.filter(p => p.quality_tier === tier);
-                                if (tierParts.length === 0) return null;
-                                const tierLabel = tier === 'oem' ? 'OEM' : tier === 'premium' ? 'Premium' : 'Standard';
-                                const tierColor = tier === 'oem' ? 'bg-blue-100 text-blue-800' : tier === 'premium' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-700';
-                                return (
-                                  <div key={tier}>
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <span className={`px-2 py-0.5 rounded text-xs font-semibold ${tierColor}`}>{tierLabel}</span>
-                                      <span className="text-xs text-gray-400">{tierParts.length} part{tierParts.length !== 1 ? 's' : ''}</span>
+                            {isLoadingParts ? (
+                              <div className="text-center text-gray-400 py-2">Loading parts...</div>
+                            ) : cachedParts && cachedParts.length > 0 ? (
+                              <div className="space-y-3">
+                                {(['oem', 'premium', 'standard'] as const).map(tier => {
+                                  const tierParts = cachedParts.filter(p => p.quality_tier === tier);
+                                  if (tierParts.length === 0) return null;
+                                  const tierLabel = tier === 'oem' ? 'OEM' : tier === 'premium' ? 'Premium' : 'Standard';
+                                  const tierColor = tier === 'oem' ? 'bg-blue-100 text-blue-800' : tier === 'premium' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-700';
+                                  return (
+                                    <div key={tier}>
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <span className={`px-2 py-0.5 rounded text-xs font-semibold ${tierColor}`}>{tierLabel}</span>
+                                        <span className="text-xs text-gray-400">{tierParts.length} part{tierParts.length !== 1 ? 's' : ''}</span>
+                                      </div>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+                                        {tierParts.map(part => (
+                                          <div
+                                            key={part.part_id}
+                                            className="border border-gray-200 bg-white rounded px-3 py-2 text-xs"
+                                          >
+                                            <span className="font-bold text-sm">${part.price.toFixed(2)}</span>
+                                            <span className="text-gray-400 ml-1.5">{part.sku}</span>
+                                            <div className="text-gray-500 mt-0.5 leading-snug">{part.name}</div>
+                                          </div>
+                                        ))}
+                                      </div>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
-                                      {tierParts.map(part => (
-                                        <div
-                                          key={part.part_id}
-                                          className="border border-gray-200 bg-white rounded px-3 py-2 text-xs"
-                                        >
-                                          <span className="font-bold text-sm">${part.price.toFixed(2)}</span>
-                                          <span className="text-gray-400 ml-1.5">{part.sku}</span>
-                                          <div className="text-gray-500 mt-0.5 leading-snug">{part.name}</div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="text-center text-gray-400 py-2">No parts found</div>
+                            )}
                           </td>
                         </tr>
                       )}

@@ -119,9 +119,9 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
     const brandsMap = new Map((brands || []).map((b: any) => [b.id, b]));
     const deviceTypesMap = new Map((deviceTypes || []).map((dt: any) => [dt.id, dt]));
 
-    // Fetch ALL wholesale parts from MSX for all models with mappings
-    const allPartsCache = new Map<string, any[]>();
+    // Fetch wholesale costs from MSX — parallel batches for speed
     const cheapestByTier = new Map<string, { wholesale_price: number; part_name: string }>();
+    const partsCountCache = new Map<string, number>();
 
     // Get all model IDs that have model_number_mapping entries
     const { data: mappedModels } = await supabase
@@ -137,36 +137,41 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
       'screen-replacement-mobile': 'screen',
     };
 
+    // Collect unique model+category combos
+    const uniqueCombos = new Map<string, { model_id: string; category: string }>();
     for (const entry of (pricing || [])) {
       const model: any = modelsMap.get(entry.model_id);
       const service: any = servicesMap.get(entry.service_id);
       if (!model || !service) continue;
       if (!mappedModelIds.has(entry.model_id)) continue;
-
       const msxCategory = serviceSlugToCategory[service.slug];
       if (!msxCategory) continue;
-
       const partsKey = `${entry.model_id}:${msxCategory}`;
+      if (!uniqueCombos.has(partsKey)) {
+        uniqueCombos.set(partsKey, { model_id: entry.model_id, category: msxCategory });
+      }
+    }
 
-      // Fetch all parts for this model+category combo (once per combo)
-      if (!allPartsCache.has(partsKey)) {
+    // Fetch all combos in parallel batches of 20
+    const BATCH_SIZE = 20;
+    const comboEntries = Array.from(uniqueCombos.entries());
+    for (let i = 0; i < comboEntries.length; i += BATCH_SIZE) {
+      const batch = comboEntries.slice(i, i + BATCH_SIZE);
+      await Promise.all(batch.map(async ([partsKey, { model_id, category }]) => {
         const { data: partsData } = await supabase.rpc('get_all_wholesale_parts', {
-          p_device_model_id: entry.model_id,
-          p_service_category: msxCategory,
+          p_device_model_id: model_id,
+          p_service_category: category,
         });
         const parts = (partsData || []).map((p: any) => ({
-          part_id: p.part_id,
-          name: p.part_name,
           price: parseFloat(p.wholesale_price),
+          name: p.part_name,
           quality_tier: p.quality_tier,
-          sku: p.sku,
         }));
-        allPartsCache.set(partsKey, parts);
-
-        // Pre-compute cheapest per quality tier for backward compat
+        partsCountCache.set(partsKey, parts.length);
+        // Compute cheapest per quality tier
         for (const part of parts) {
           const tierKey = part.quality_tier === 'oem' ? 'oem' : 'standard';
-          const cacheKey = `${entry.model_id}:${msxCategory}:${tierKey}`;
+          const cacheKey = `${model_id}:${category}:${tierKey}`;
           const existing = cheapestByTier.get(cacheKey);
           if (!existing || part.price < existing.wholesale_price) {
             cheapestByTier.set(cacheKey, {
@@ -175,7 +180,7 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
             });
           }
         }
-      }
+      }));
     }
 
     // Transform the data to include related information
@@ -185,10 +190,10 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
       const brand: any = model ? brandsMap.get(model.brand_id) : null;
       const deviceType: any = model ? deviceTypesMap.get(model.type_id) : null;
 
-      // Look up wholesale cost + all available parts
+      // Look up wholesale cost
       let wholesale_cost = null;
       let wholesale_part_name = null;
-      let available_parts: any[] = [];
+      let parts_count = 0;
       if (service && model && mappedModelIds.has(entry.model_id)) {
         const msxCategory = serviceSlugToCategory[service.slug];
         if (msxCategory) {
@@ -200,7 +205,7 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
             wholesale_part_name = ws.part_name;
           }
           const partsKey = `${entry.model_id}:${msxCategory}`;
-          available_parts = allPartsCache.get(partsKey) || [];
+          parts_count = partsCountCache.get(partsKey) || 0;
         }
       }
 
@@ -225,8 +230,8 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
         // Wholesale cost from MSX catalog
         wholesale_cost,
         wholesale_part_name,
-        // All available parts for this model+service combo
-        available_parts,
+        // Part count for expand UI (full parts fetched on demand)
+        parts_count,
       };
     });
 
