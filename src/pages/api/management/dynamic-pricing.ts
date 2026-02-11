@@ -131,7 +131,7 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
       'screen-replacement-mobile': 'screen',
     };
 
-    const { data: bulkParts, error: bulkError } = await supabase.rpc('get_all_wholesale_parts_bulk');
+    const { data: bulkParts, error: bulkError } = await supabase.rpc('get_all_wholesale_parts_bulk').limit(5000);
     if (bulkError) {
       apiLogger.error('Error fetching bulk wholesale parts', { error: bulkError });
     }
