@@ -22,7 +22,7 @@ function parsePrice(priceStr) {
  */
 function extractModelCompatibility(name) {
   // iPhone patterns: "iPhone 16 Pro Max", "iPhone SE (3rd Gen)"
-  const iphoneMatch = name.match(/iPhone\s+(\d+[A-Za-z]*(?:\s+(?:Pro\s+Max|Pro|Plus|mini|SE))?|SE\s*\([^)]+\))/i);
+  const iphoneMatch = name.match(/iPhone\s+(\d+[A-Za-z]*(?:\s+(?:Pro\s+Max|Pro|Plus|mini|SE))?|X(?:S\s+Max|S|R)?|SE\s*\([^)]+\))/i);
   if (iphoneMatch) return iphoneMatch[0].trim();
 
   // Samsung patterns: "Galaxy S24 Ultra", "Galaxy S10+", "Galaxy Note 20 Ultra"
