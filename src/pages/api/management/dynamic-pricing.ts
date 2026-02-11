@@ -119,15 +119,9 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
     const brandsMap = new Map((brands || []).map((b: any) => [b.id, b]));
     const deviceTypesMap = new Map((deviceTypes || []).map((dt: any) => [dt.id, dt]));
 
-    // Fetch wholesale costs from MSX — parallel batches for speed
+    // Fetch ALL wholesale costs in one bulk query (replaces ~250 individual RPC calls)
     const cheapestByTier = new Map<string, { wholesale_price: number; part_name: string }>();
     const partsCountCache = new Map<string, number>();
-
-    // Get all model IDs that have model_number_mapping entries
-    const { data: mappedModels } = await supabase
-      .from('model_number_mapping')
-      .select('device_model_id');
-    const mappedModelIds = new Set((mappedModels || []).map((m: any) => m.device_model_id));
 
     // Service slug → MSX category mapping (laptop + mobile)
     const serviceSlugToCategory: Record<string, string> = {
@@ -137,50 +131,31 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
       'screen-replacement-mobile': 'screen',
     };
 
-    // Collect unique model+category combos
-    const uniqueCombos = new Map<string, { model_id: string; category: string }>();
-    for (const entry of (pricing || [])) {
-      const model: any = modelsMap.get(entry.model_id);
-      const service: any = servicesMap.get(entry.service_id);
-      if (!model || !service) continue;
-      if (!mappedModelIds.has(entry.model_id)) continue;
-      const msxCategory = serviceSlugToCategory[service.slug];
-      if (!msxCategory) continue;
-      const partsKey = `${entry.model_id}:${msxCategory}`;
-      if (!uniqueCombos.has(partsKey)) {
-        uniqueCombos.set(partsKey, { model_id: entry.model_id, category: msxCategory });
-      }
+    const { data: bulkParts, error: bulkError } = await supabase.rpc('get_all_wholesale_parts_bulk');
+    if (bulkError) {
+      apiLogger.error('Error fetching bulk wholesale parts', { error: bulkError });
     }
 
-    // Fetch all combos in parallel batches of 20
-    const BATCH_SIZE = 20;
-    const comboEntries = Array.from(uniqueCombos.entries());
-    for (let i = 0; i < comboEntries.length; i += BATCH_SIZE) {
-      const batch = comboEntries.slice(i, i + BATCH_SIZE);
-      await Promise.all(batch.map(async ([partsKey, { model_id, category }]) => {
-        const { data: partsData } = await supabase.rpc('get_all_wholesale_parts', {
-          p_device_model_id: model_id,
-          p_service_category: category,
+    // Build mappedModelIds set and group parts by model_id:category
+    const mappedModelIds = new Set<string>();
+    for (const part of (bulkParts || [])) {
+      mappedModelIds.add(part.device_model_id);
+      const partsKey = `${part.device_model_id}:${part.service_category}`;
+      const price = parseFloat(part.wholesale_price);
+
+      // Count parts per model+category
+      partsCountCache.set(partsKey, (partsCountCache.get(partsKey) || 0) + 1);
+
+      // Compute cheapest per quality tier
+      const tierKey = part.quality_tier === 'oem' ? 'oem' : 'standard';
+      const cacheKey = `${part.device_model_id}:${part.service_category}:${tierKey}`;
+      const existing = cheapestByTier.get(cacheKey);
+      if (!existing || price < existing.wholesale_price) {
+        cheapestByTier.set(cacheKey, {
+          wholesale_price: price,
+          part_name: part.part_name,
         });
-        const parts = (partsData || []).map((p: any) => ({
-          price: parseFloat(p.wholesale_price),
-          name: p.part_name,
-          quality_tier: p.quality_tier,
-        }));
-        partsCountCache.set(partsKey, parts.length);
-        // Compute cheapest per quality tier
-        for (const part of parts) {
-          const tierKey = part.quality_tier === 'oem' ? 'oem' : 'standard';
-          const cacheKey = `${model_id}:${category}:${tierKey}`;
-          const existing = cheapestByTier.get(cacheKey);
-          if (!existing || part.price < existing.wholesale_price) {
-            cheapestByTier.set(cacheKey, {
-              wholesale_price: part.price,
-              part_name: part.name,
-            });
-          }
-        }
-      }));
+      }
     }
 
     // Transform the data to include related information
