@@ -940,16 +940,15 @@ export default function PricingAdmin() {
                                       <span className={`px-2 py-0.5 rounded text-xs font-semibold ${tierColor}`}>{tierLabel}</span>
                                       <span className="text-xs text-gray-400">{tierParts.length} part{tierParts.length !== 1 ? 's' : ''}</span>
                                     </div>
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
                                       {tierParts.map(part => (
                                         <div
                                           key={part.part_id}
-                                          className="border border-gray-200 bg-white rounded px-3 py-2 text-xs max-w-xs"
-                                          title={part.name}
+                                          className="border border-gray-200 bg-white rounded px-3 py-2 text-xs"
                                         >
                                           <span className="font-bold text-sm">${part.price.toFixed(2)}</span>
                                           <span className="text-gray-400 ml-1.5">{part.sku}</span>
-                                          <div className="text-gray-500 mt-0.5 truncate">{part.name.length > 70 ? part.name.slice(0, 67) + '...' : part.name}</div>
+                                          <div className="text-gray-500 mt-0.5 leading-snug">{part.name}</div>
                                         </div>
                                       ))}
                                     </div>
