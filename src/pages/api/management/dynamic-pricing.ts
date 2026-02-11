@@ -146,12 +146,10 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
       // Count parts per model+category
       partsCountCache.set(partsKey, (partsCountCache.get(partsKey) || 0) + 1);
 
-      // Compute cheapest per quality tier
-      const tierKey = part.quality_tier === 'oem' ? 'oem' : 'standard';
-      const cacheKey = `${part.device_model_id}:${part.service_category}:${tierKey}`;
-      const existing = cheapestByTier.get(cacheKey);
+      // Compute cheapest across all quality tiers per model+category
+      const existing = cheapestByTier.get(partsKey);
       if (!existing || price < existing.wholesale_price) {
-        cheapestByTier.set(cacheKey, {
+        cheapestByTier.set(partsKey, {
           wholesale_price: price,
           part_name: part.part_name,
         });
@@ -172,14 +170,12 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, supabase: an
       if (service && model && mappedModelIds.has(entry.model_id)) {
         const msxCategory = serviceSlugToCategory[service.slug];
         if (msxCategory) {
-          const msxQuality = entry.pricing_tier === 'premium' ? 'oem' : 'standard';
-          const cacheKey = `${entry.model_id}:${msxCategory}:${msxQuality}`;
-          const ws = cheapestByTier.get(cacheKey);
+          const partsKey = `${entry.model_id}:${msxCategory}`;
+          const ws = cheapestByTier.get(partsKey);
           if (ws) {
             wholesale_cost = ws.wholesale_price;
             wholesale_part_name = ws.part_name;
           }
-          const partsKey = `${entry.model_id}:${msxCategory}`;
           parts_count = partsCountCache.get(partsKey) || 0;
         }
       }
