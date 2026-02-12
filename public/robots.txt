@@ -64,8 +64,6 @@ Disallow: /minimal
 # SITEMAP
 # ============================================
 # Dynamic sitemap at root (rewrites to /api/sitemap.xml via Vercel)
-# Contains ~4,900+ URLs with real lastmod dates from database
+# Contains ~3,300+ URLs with real lastmod dates from database
 Sitemap: https://www.travelling-technicians.ca/sitemap.xml
 
-# Crawl delay (be nice to servers)
-Crawl-delay: 1

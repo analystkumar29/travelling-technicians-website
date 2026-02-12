@@ -35,11 +35,6 @@ interface DynamicContent {
     model: string;
     updated_at: string;
   }>;
-  cityModelPages: Array<{
-    city: string;
-    model: string;
-    updated_at: string;
-  }>;
   neighborhoods: Array<{
     city: string;
     citySlug: string;
@@ -95,9 +90,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const cityServiceModelPages = getCityServiceModelPages(siteUrl, dynamicContent.cityServiceModels);
     sitemapLogger.info(`🎯 City-service-model pages (MAIN DYNAMIC ROUTES): ${cityServiceModelPages.length}`);
 
-    const cityModelPages = getCityModelSitemapEntries(siteUrl, dynamicContent.cityModelPages);
-    sitemapLogger.info(`📱 City-model pages (/repair/{city}/{model}): ${cityModelPages.length}`);
-
     const cityServicePages = getCityServiceSitemapEntries(siteUrl, dynamicContent.cityServicePages);
     sitemapLogger.info(`🔧 City-service pages (/repair/{city}/{service}): ${cityServicePages.length}`);
 
@@ -115,7 +107,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ...blogPages,
       ...servicePages,
       ...cityServiceModelPages,
-      ...cityModelPages,
       ...informationalPages,
       ...legalPages
     ];
@@ -134,7 +125,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     sitemapLogger.info(`  - Blog: ${blogPages.length}`);
     sitemapLogger.info(`  - Services: ${servicePages.length}`);
     sitemapLogger.info(`  - City-Service-Model (dynamic): ${cityServiceModelPages.length}`);
-    sitemapLogger.info(`  - City-Model pages: ${cityModelPages.length}`);
     sitemapLogger.info(`  - City-Service pages: ${cityServicePages.length}`);
     sitemapLogger.info(`  - Informational: ${informationalPages.length}`);
     sitemapLogger.info(`  - Legal: ${legalPages.length}`);
@@ -228,7 +218,7 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       { slug: 'tablet-repair', updated_at: FALLBACK_DATE, device_type: 'tablet' }
     ];
 
-    sitemapLogger.info(`Fetched ${allRoutesResult.modelServiceRoutes.length} model-service, ${allRoutesResult.cityModelRoutes.length} city-model, ${allRoutesResult.cityServiceRoutes.length} city-service routes`);
+    sitemapLogger.info(`Fetched ${allRoutesResult.modelServiceRoutes.length} model-service, ${allRoutesResult.cityServiceRoutes.length} city-service routes`);
 
     const serviceAreas = serviceLocations?.map(loc => ({
       city: loc.city_name,
@@ -240,7 +230,6 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       blogPosts,
       services,
       cityServiceModels: allRoutesResult.modelServiceRoutes,
-      cityModelPages: allRoutesResult.cityModelRoutes,
       neighborhoods: neighborhoodsResult,
       cityServicePages: allRoutesResult.cityServiceRoutes
     };
@@ -252,7 +241,6 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       blogPosts: [],
       services: [],
       cityServiceModels: [],
-      cityModelPages: [],
       neighborhoods: [],
       cityServicePages: []
     };
@@ -269,12 +257,10 @@ async function fetchAllDynamicRoutes(
   timeout: number
 ): Promise<{
   modelServiceRoutes: Array<{ city: string; service: string; model: string; updated_at: string }>;
-  cityModelRoutes: Array<{ city: string; model: string; updated_at: string }>;
   cityServiceRoutes: Array<{ citySlug: string; serviceSlug: string; updated_at: string }>;
 }> {
   const BATCH_SIZE = 1000;
   const modelServiceRoutes: Array<{ city: string; service: string; model: string; updated_at: string }> = [];
-  const cityModelRoutes: Array<{ city: string; model: string; updated_at: string }> = [];
   const cityServiceRoutes: Array<{ citySlug: string; serviceSlug: string; updated_at: string }> = [];
 
   try {
@@ -283,11 +269,11 @@ async function fetchAllDynamicRoutes(
       .from('dynamic_routes')
       .select('*', { count: 'exact', head: true })
       .eq('is_active', true)
-      .in('route_type', ['model-service-page', 'city-model-page', 'city-service-page']);
+      .in('route_type', ['model-service-page', 'city-service-page']);
 
     if (countError) {
       sitemapLogger.error('Error counting routes:', countError);
-      return { modelServiceRoutes: getFallbackCombinations(), cityModelRoutes: [], cityServiceRoutes: [] };
+      return { modelServiceRoutes: getFallbackCombinations(), cityServiceRoutes: [] };
     }
 
     const numBatches = Math.ceil((totalRoutes || 0) / BATCH_SIZE);
@@ -295,7 +281,7 @@ async function fetchAllDynamicRoutes(
 
     for (let batch = 0; batch < numBatches; batch++) {
       if (Date.now() - startTime > timeout) {
-        sitemapLogger.warn(`Timeout at batch ${batch + 1}/${numBatches}, got ${modelServiceRoutes.length + cityModelRoutes.length + cityServiceRoutes.length} routes so far`);
+        sitemapLogger.warn(`Timeout at batch ${batch + 1}/${numBatches}, got ${modelServiceRoutes.length + cityServiceRoutes.length} routes so far`);
         break;
       }
 
@@ -306,7 +292,7 @@ async function fetchAllDynamicRoutes(
         .from('dynamic_routes')
         .select('slug_path, route_type, last_updated, content_updated_at')
         .eq('is_active', true)
-        .in('route_type', ['model-service-page', 'city-model-page', 'city-service-page'])
+        .in('route_type', ['model-service-page', 'city-service-page'])
         .order('slug_path', { ascending: true })
         .range(start, end);
 
@@ -321,8 +307,6 @@ async function fetchAllDynamicRoutes(
 
         if (route.route_type === 'model-service-page' && parts.length === 4 && parts[0] === 'repair') {
           modelServiceRoutes.push({ city: parts[1], service: parts[2], model: parts[3], updated_at: lastmod });
-        } else if (route.route_type === 'city-model-page' && parts.length === 3 && parts[0] === 'repair') {
-          cityModelRoutes.push({ city: parts[1], model: parts[2], updated_at: lastmod });
         } else if (route.route_type === 'city-service-page' && parts.length === 3 && parts[0] === 'repair') {
           cityServiceRoutes.push({ citySlug: parts[1], serviceSlug: parts[2], updated_at: lastmod });
         }
@@ -333,15 +317,15 @@ async function fetchAllDynamicRoutes(
 
     if (modelServiceRoutes.length === 0) {
       sitemapLogger.warn('No model-service routes parsed, using fallback');
-      return { modelServiceRoutes: getFallbackCombinations(), cityModelRoutes, cityServiceRoutes };
+      return { modelServiceRoutes: getFallbackCombinations(), cityServiceRoutes };
     }
 
-    sitemapLogger.info(`Route fetch complete: ${modelServiceRoutes.length} model-service, ${cityModelRoutes.length} city-model, ${cityServiceRoutes.length} city-service (${Date.now() - startTime}ms)`);
-    return { modelServiceRoutes, cityModelRoutes, cityServiceRoutes };
+    sitemapLogger.info(`Route fetch complete: ${modelServiceRoutes.length} model-service, ${cityServiceRoutes.length} city-service (${Date.now() - startTime}ms)`);
+    return { modelServiceRoutes, cityServiceRoutes };
 
   } catch (error) {
     sitemapLogger.error('Error in fetchAllDynamicRoutes:', error);
-    return { modelServiceRoutes: getFallbackCombinations(), cityModelRoutes: [], cityServiceRoutes: [] };
+    return { modelServiceRoutes: getFallbackCombinations(), cityServiceRoutes: [] };
   }
 }
 
@@ -412,22 +396,6 @@ function getCityServiceSitemapEntries(siteUrl: string, cityServicePages: Array<{
     lastmod: updated_at,
     changefreq: 'weekly',
     priority: '0.8'
-  }));
-}
-
-/**
- * Generate sitemap entries for city-model pages
- */
-function getCityModelSitemapEntries(siteUrl: string, cityModelPages: Array<{
-  city: string;
-  model: string;
-  updated_at: string;
-}>): SitemapEntry[] {
-  return cityModelPages.map(({ city, model, updated_at }) => ({
-    loc: `${siteUrl}/repair/${city}/${model}`,
-    lastmod: updated_at,
-    changefreq: 'weekly',
-    priority: '0.75' // Between city pages (0.8) and model-service pages (0.7)
   }));
 }
 
@@ -637,7 +605,7 @@ function getCityServiceModelPages(siteUrl: string, cityServiceModels: Array<{
       loc: `${siteUrl}/repair/${city}/${service}/${model}`,
       lastmod: updated_at,
       changefreq: 'weekly',
-      priority: '0.7' // Lower priority than main city pages but higher than blog posts
+      priority: '0.5'
     });
   });
   

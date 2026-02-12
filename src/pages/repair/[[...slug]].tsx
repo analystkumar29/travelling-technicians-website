@@ -199,7 +199,7 @@ export default function UniversalRepairPage({ routeType, routeData, cities, serv
             <title>{`${cmpModelName} Repair in ${cmpCityName} | The Travelling Technicians`}</title>
             <meta name="description" content={`Professional ${cmpModelName} repair services in ${cmpCityName}. Screen replacement, battery replacement, and more. Doorstep service with 90-day warranty.`} />
             <meta name="keywords" content={`${cmpModelName} repair, ${cmpBrandName} repair, ${cmpCityName} phone repair, doorstep repair`} />
-            <meta name="robots" content="index, follow" />
+            <meta name="robots" content="noindex, follow" />
             <link rel="canonical" href={`${siteUrl}/${routeData.slug_path}`} />
 
             {/* Open Graph */}

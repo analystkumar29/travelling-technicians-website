@@ -1,4 +1,5 @@
 import { useRouter } from 'next/router';
+import Head from 'next/head';
 import Layout from '@/components/layout/Layout';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -43,18 +44,6 @@ const blogPosts = [
     featured: false
   },
   {
-    id: 'worth-repair-replace',
-    slug: 'repair-or-replace-making-the-right-decision',
-    title: 'Repair or Replace? Making the Right Decision',
-    excerpt: 'How to determine whether it\'s more cost-effective to repair your existing device or invest in a new one.',
-    date: 'May 5, 2023',
-    author: 'Jamie Garcia',
-    category: 'Consumer Guide',
-    readTime: '8 min read',
-    image: 'https://images.unsplash.com/photo-1585399000684-d2f72660f092',
-    featured: false
-  },
-  {
     id: 'screen-protection',
     slug: 'ultimate-guide-to-screen-protection',
     title: 'The Ultimate Guide to Screen Protection',
@@ -66,18 +55,6 @@ const blogPosts = [
     image: 'https://images.unsplash.com/photo-1608503396060-0322b3e88af7',
     featured: false
   },
-  {
-    id: 'laptop-cleaning',
-    slug: 'properly-cleaning-your-laptop-inside-and-out',
-    title: 'Properly Cleaning Your Laptop Inside and Out',
-    excerpt: 'Step-by-step guide to safely clean your laptop, including keyboard, screen, vents and internals for better performance.',
-    date: 'June 12, 2023',
-    author: 'Emma Wright',
-    category: 'Laptop Maintenance',
-    readTime: '9 min read',
-    image: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed',
-    featured: false
-  }
 ];
 
 // Blog categories
@@ -135,7 +112,13 @@ export default function CategoryPage() {
   };
 
   return (
-    <Layout title={`${categoryName || 'Category'} - The Travelling Technicians Blog`}>
+    <Layout
+      title={`${categoryName || 'Category'} - The Travelling Technicians Blog`}
+      canonical={typeof category === 'string' ? `https://www.travelling-technicians.ca/blog/category/${category}` : undefined}
+    >
+      <Head>
+        <meta name="robots" content="noindex, follow" />
+      </Head>
       {/* Hero Section */}
       <section className="pt-16 pb-20 bg-gradient-to-r from-primary-700 to-primary-900 text-white">
         <div className="container-custom">
