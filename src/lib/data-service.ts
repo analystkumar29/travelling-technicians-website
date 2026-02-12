@@ -854,7 +854,7 @@ export async function getServicesByDeviceType(deviceType: 'laptop' | 'mobile' | 
     const { data: deviceTypeData, error: deviceTypeError } = await supabase
       .from('device_types')
       .select('id')
-      .eq('name', deviceType)
+      .ilike('name', deviceType)
       .eq('is_active', true)
       .maybeSingle();
 
@@ -972,7 +972,7 @@ export async function getBrandsByDeviceType(deviceType: 'laptop' | 'mobile' | 't
     const { data: deviceTypeData, error: deviceTypeError } = await supabase
       .from('device_types')
       .select('id')
-      .eq('name', deviceType)
+      .ilike('name', deviceType)
       .eq('is_active', true)
       .maybeSingle();
 

@@ -2,44 +2,19 @@ import Layout from '@/components/layout/Layout';
 import Head from 'next/head';
 import Link from 'next/link';
 import {
-  CheckCircle, Laptop, BatteryFull, Keyboard, Mouse,
-  MemoryStick, HardDrive, Bug, Shield, Fan, Zap,
-  Smartphone, Mic, Camera, Droplets,
-  Tablet, Volume2, Hand, RefreshCw,
-  Rocket, Wrench, Award, Clock, Home
+  CheckCircle, Laptop, BatteryFull,
+  Smartphone, Star,
+  Shield, Zap, Award, Clock,
+  MapPin
 } from 'lucide-react';
 import { ServiceSchema, LocalBusinessSchema } from '@/components/seo/StructuredData';
 import { getServicesByDeviceType, getBrandsByDeviceType, getAllActiveServiceSlugs } from '@/lib/data-service';
+import InternalLinkingFooter from '@/components/seo/InternalLinkingFooter';
+import GoogleReviewBadge from '@/components/common/GoogleReviewBadge';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import { GetStaticProps, GetStaticPaths } from 'next';
 import { serviceConfig, ServiceSlug } from '@/config/service-page-config';
-
-// Map icon names to React components
-const iconMap: Record<string, React.ReactNode> = {
-  'laptop': <Laptop className="h-10 w-10" />,
-  'battery-full': <BatteryFull className="h-10 w-10" />,
-  'keyboard': <Keyboard className="h-10 w-10" />,
-  'mouse': <Mouse className="h-10 w-10" />,
-  'memory': <MemoryStick className="h-10 w-10" />,
-  'hard-drive': <HardDrive className="h-10 w-10" />,
-  'bug': <Bug className="h-10 w-10" />,
-  'shield-alt': <Shield className="h-10 w-10" />,
-  'fan': <Fan className="h-10 w-10" />,
-  'bolt': <Zap className="h-10 w-10" />,
-  'mobile-alt': <Smartphone className="h-10 w-10" />,
-  'microphone': <Mic className="h-10 w-10" />,
-  'camera': <Camera className="h-10 w-10" />,
-  'water': <Droplets className="h-10 w-10" />,
-  'sd-card': <MemoryStick className="h-10 w-10" />,
-  'tablet-alt': <Tablet className="h-10 w-10" />,
-  'volume-up': <Volume2 className="h-10 w-10" />,
-  'hand-pointer': <Hand className="h-10 w-10" />,
-  'sync-alt': <RefreshCw className="h-10 w-10" />,
-  'microchip': <MemoryStick className="h-10 w-10" />,
-  'droplet': <Droplets className="h-10 w-10" />,
-  'settings': <RefreshCw className="h-10 w-10" />,
-  'wrench': <Zap className="h-10 w-10" />,
-};
+import { getServiceSupabase } from '@/utils/supabaseClient';
 
 interface Service {
   id: number;
@@ -52,26 +27,66 @@ interface Service {
   popular: boolean;
 }
 
+interface Testimonial {
+  customer_name: string;
+  city: string;
+  device_model: string;
+  rating: number;
+  review: string;
+  service: string;
+}
+
+interface CityRepairs {
+  cityName: string;
+  citySlug: string;
+  models: { name: string; slug: string; serviceSlug: string; brand: string }[];
+}
+
+interface BrandWithModels {
+  name: string;
+  models: { name: string; slug: string; serviceSlug: string }[];
+}
+
 interface ServicePageProps {
   slug: ServiceSlug;
   services: Service[];
   brands: string[];
   config: typeof serviceConfig[ServiceSlug];
+  testimonials: Testimonial[];
+  popularRepairsByCity: CityRepairs[];
+  brandsWithModels: BrandWithModels[];
 }
 
-export default function ServicePage({ slug, services, brands, config }: ServicePageProps) {
-  // Map icon strings to React components
-  const servicesWithIcons = services.map(service => ({
-    ...service,
-    icon: iconMap[service.icon] || <Laptop className="h-10 w-10" />
-  }));
+// "What's included" bullets per service name
+const SERVICE_INCLUDES: Record<string, string[]> = {
+  'Screen Replacement': [
+    'Certified replacement parts',
+    'Same-day doorstep service',
+    'Up to 6 months warranty',
+    'Free diagnostic assessment',
+  ],
+  'Battery Replacement': [
+    'Genuine-quality batteries',
+    'Same-day doorstep service',
+    'Up to 6 months warranty',
+    'Battery health check included',
+  ],
+};
 
-  const popularServices = servicesWithIcons.filter(service => service.popular);
+export default function ServicePage({
+  slug,
+  services,
+  brands,
+  config,
+  testimonials,
+  popularRepairsByCity,
+  brandsWithModels,
+}: ServicePageProps) {
+  const deviceLabel = config.deviceType.charAt(0).toUpperCase() + config.deviceType.slice(1);
 
   return (
     <>
       <Head>
-        {/* Service Structured Data */}
         <ServiceSchema
           name={config.title}
           description={`${config.serviceDescription} Convenient doorstep service across Vancouver and Lower Mainland.`}
@@ -107,7 +122,7 @@ export default function ServicePage({ slug, services, brands, config }: ServiceP
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Link href={`/book-online?deviceType=${config.deviceType}`} className="inline-flex items-center justify-center bg-accent-500 hover:bg-accent-600 text-primary-900 font-semibold px-6 py-3 rounded-lg transition-colors text-center">
-                    Book {config.deviceType.charAt(0).toUpperCase() + config.deviceType.slice(1)} Repair
+                    Book {deviceLabel} Repair
                   </Link>
                   <Link href="/pricing" className="inline-flex items-center justify-center border border-white/30 text-white hover:bg-white/10 font-medium px-6 py-3 rounded-lg transition-colors text-center">
                     View Pricing
@@ -135,127 +150,207 @@ export default function ServicePage({ slug, services, brands, config }: ServiceP
           </div>
         </section>
 
-        {/* Services Section */}
+        {/* Our Services — Detailed Cards */}
         <section className="py-16 bg-white">
           <div className="container-custom">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6 text-primary-900">Our {config.deviceType.charAt(0).toUpperCase() + config.deviceType.slice(1)} Repair Services</h2>
+              <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4 text-primary-900">
+                Our {deviceLabel} Repair Services
+              </h2>
               <p className="text-xl text-primary-500 max-w-3xl mx-auto">
                 Professional {config.deviceType} repair services brought directly to your doorstep by our certified technicians.
               </p>
-              <div className="flex justify-center items-center mt-4">
-                <div className="flex items-center mr-6">
-                  <CheckCircle className="text-emerald-500 mr-2 h-5 w-5" />
-                  <span className="text-primary-600">Available for doorstep service</span>
-                </div>
-                <div className="flex items-center">
-                  <CheckCircle className="text-accent-500 mr-2 h-5 w-5" />
-                  <span className="text-primary-600">Limited doorstep availability</span>
-                </div>
-              </div>
             </div>
 
-            {/* Popular Services */}
-            {popularServices.length > 0 && (
-              <div className="mb-16">
-                <h3 className="text-2xl font-bold mb-8 text-center text-primary-900">Most Popular Services</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {popularServices.map((service) => (
-                    <div key={service.id} className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow border border-primary-100">
-                      <div className="flex flex-col md:flex-row md:items-center">
-                        <div className="flex-shrink-0 mb-4 md:mb-0 md:mr-6">
-                          <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center text-primary-800">
-                            {service.icon}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="flex items-center mb-2">
-                            <h3 className="text-xl font-bold mr-3 text-primary-900">{service.name}</h3>
-                            {service.doorstep && !service.limited && (
-                              <span className="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded-full">
-                                Doorstep Service
-                              </span>
-                            )}
-                            {service.limited && (
-                              <span className="bg-accent-100 text-accent-800 text-xs px-2 py-1 rounded-full">
-                                Limited Doorstep
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-primary-500 mb-3">{service.description}</p>
-                          <div className="flex justify-between items-center">
-                            <span className="font-bold text-lg text-primary-800">{service.price}</span>
-                            <div className="flex justify-center mt-6">
-                              <Link href={`/book-online?deviceType=${config.deviceType}`} className="bg-primary-800 hover:bg-primary-900 text-white font-semibold text-sm py-2 px-4 rounded-lg transition-colors">
-                                Book This Service
-                              </Link>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <div className="space-y-8 max-w-4xl mx-auto">
+              {services.map((service) => {
+                const includes = SERVICE_INCLUDES[service.name] || [];
 
-            {/* All Services */}
-            <h3 className="text-2xl font-bold mb-8 text-center text-primary-900">All {config.deviceType.charAt(0).toUpperCase() + config.deviceType.slice(1)} Services</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {servicesWithIcons.map((service) => (
-                <div key={service.id} className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow border border-primary-100">
-                  <div className="flex flex-col md:flex-row md:items-center">
-                    <div className="flex-shrink-0 mb-4 md:mb-0 md:mr-6">
-                      <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center text-primary-800">
-                        {service.icon}
+                return (
+                  <div key={service.id} className="bg-white rounded-xl p-8 shadow-sm border border-primary-100 hover:shadow-md transition-shadow">
+                    <div className="flex flex-col md:flex-row gap-6">
+                      <div className="flex-shrink-0">
+                        <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center text-primary-800">
+                          {service.name.toLowerCase().includes('screen')
+                            ? (config.deviceType === 'laptop' ? <Laptop className="h-10 w-10" /> : <Smartphone className="h-10 w-10" />)
+                            : <BatteryFull className="h-10 w-10" />}
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <div className="flex items-center mb-2">
-                        <h3 className="text-xl font-bold mr-3 text-primary-900">{service.name}</h3>
-                        {service.doorstep && !service.limited && (
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-3">
+                          <h3 className="text-2xl font-bold text-primary-900">{service.name}</h3>
                           <span className="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded-full">
                             Doorstep Service
                           </span>
+                        </div>
+                        <p className="text-primary-600 mb-4 text-lg">{service.description}</p>
+
+                        {includes.length > 0 && (
+                          <div className="mb-5">
+                            <p className="font-semibold text-primary-800 mb-2">What&apos;s included:</p>
+                            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {includes.map((item, i) => (
+                                <li key={i} className="flex items-center text-primary-600">
+                                  <CheckCircle className="h-4 w-4 text-emerald-500 mr-2 flex-shrink-0" />
+                                  {item}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
                         )}
-                        {service.limited && (
-                          <span className="bg-accent-100 text-accent-800 text-xs px-2 py-1 rounded-full">
-                            Limited Doorstep
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-primary-500 mb-3">{service.description}</p>
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-lg text-primary-800">{service.price}</span>
-                        <Link href={`/book-online?deviceType=${config.deviceType}`} className="bg-primary-800 hover:bg-primary-900 text-white font-semibold text-sm py-2 px-4 rounded-lg transition-colors">
-                          Book This Service
-                        </Link>
+
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-2xl text-primary-800">{service.price}</span>
+                          <Link
+                            href={`/book-online?deviceType=${config.deviceType}`}
+                            className="bg-accent-500 hover:bg-accent-600 text-primary-900 font-semibold py-2.5 px-6 rounded-lg transition-colors"
+                          >
+                            Book This Service
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
 
-        {/* Brands Section */}
+        {/* Customer Testimonials */}
+        {testimonials.length > 0 && (
+          <section className="py-16 bg-primary-50">
+            <div className="container-custom">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4 text-primary-900">
+                  What Our Customers Say
+                </h2>
+                <p className="text-xl text-primary-500 max-w-3xl mx-auto">
+                  Real reviews from {config.deviceType} repair customers across the Lower Mainland.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+                {testimonials.map((testimonial, index) => (
+                  <div key={index} className="bg-white rounded-xl p-6 shadow-sm border border-primary-100">
+                    <div className="flex items-center mb-3">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`h-4 w-4 ${i < testimonial.rating ? 'text-accent-500 fill-accent-500' : 'text-gray-300'}`}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-primary-600 mb-4 text-sm leading-relaxed line-clamp-4">
+                      &ldquo;{testimonial.review}&rdquo;
+                    </p>
+                    <div className="border-t border-primary-100 pt-3">
+                      <p className="font-semibold text-primary-900">{testimonial.customer_name}</p>
+                      <p className="text-sm text-primary-500">
+                        {testimonial.device_model} &middot; {testimonial.city}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-center mt-8">
+                <GoogleReviewBadge />
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Popular Repairs by City */}
+        {popularRepairsByCity.length > 0 && (
+          <section className="py-16 bg-white">
+            <div className="container-custom">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4 text-primary-900">
+                  Popular {deviceLabel} Repairs by City
+                </h2>
+                <p className="text-xl text-primary-500 max-w-3xl mx-auto">
+                  Find {config.deviceType} repair services near you. We serve the entire Lower Mainland.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                {popularRepairsByCity.map((city) => (
+                  <div key={city.citySlug} className="bg-primary-50 rounded-xl p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <MapPin className="h-5 w-5 text-primary-700" />
+                      <Link
+                        href={`/repair/${city.citySlug}`}
+                        className="text-xl font-bold text-primary-900 hover:text-primary-700 transition-colors"
+                      >
+                        {city.cityName}
+                      </Link>
+                    </div>
+                    <ul className="space-y-2">
+                      {city.models.map((model, i) => (
+                        <li key={i}>
+                          <Link
+                            href={`/repair/${city.citySlug}/${model.serviceSlug}/${model.slug}`}
+                            className="text-primary-600 hover:text-primary-800 hover:underline transition-colors text-sm"
+                          >
+                            {model.name} {services[0]?.name || 'Repair'}
+                          </Link>
+                          <span className="text-primary-400 text-xs ml-1">({model.brand})</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Link
+                      href={`/repair/${city.citySlug}`}
+                      className="inline-block mt-4 text-sm font-semibold text-primary-600 hover:text-primary-700"
+                    >
+                      All {city.cityName} repairs →
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Brands We Service */}
         <section className="py-16 bg-primary-50">
           <div className="container-custom">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6 text-primary-900">Brands We Service</h2>
+              <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4 text-primary-900">Brands We Service</h2>
               <p className="text-xl text-primary-500 max-w-3xl mx-auto">
                 {config.brandsDescription}
               </p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-              {brands.map((brand, index) => (
-                <div key={index} className="bg-white rounded-xl p-6 text-center shadow-sm hover:shadow-md transition-shadow">
-                  <p className="font-medium text-primary-700">{brand}</p>
-                </div>
-              ))}
-            </div>
+            {brandsWithModels.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                {brandsWithModels.map((brand) => (
+                  <div key={brand.name} className="bg-white rounded-xl p-6 shadow-sm border border-primary-100">
+                    <h3 className="text-xl font-bold text-primary-900 mb-4">{brand.name}</h3>
+                    <ul className="space-y-2">
+                      {brand.models.map((model, i) => (
+                        <li key={i}>
+                          <Link
+                            href={`/repair/vancouver/${model.serviceSlug}/${model.slug}`}
+                            className="text-primary-600 hover:text-primary-800 hover:underline transition-colors text-sm"
+                          >
+                            {model.name}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+                {brands.map((brand, index) => (
+                  <div key={index} className="bg-white rounded-xl p-6 text-center shadow-sm hover:shadow-md transition-shadow">
+                    <p className="font-medium text-primary-700">{brand}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
@@ -322,7 +417,6 @@ export default function ServicePage({ slug, services, brands, config }: ServiceP
                     <div className="rounded-full bg-primary-800 w-12 h-12 flex items-center justify-center mx-auto mb-6 text-white font-bold text-xl">
                       {index + 1}
                     </div>
-                    {/* Connecting line between steps on desktop */}
                     {index < config.processSteps.length - 1 && (
                       <div className="hidden md:block absolute top-6 left-1/2 w-full h-0.5 bg-primary-100"></div>
                     )}
@@ -335,11 +429,14 @@ export default function ServicePage({ slug, services, brands, config }: ServiceP
           </div>
         </section>
 
+        {/* Internal Linking Footer */}
+        <InternalLinkingFooter currentService={slug} />
+
         {/* CTA Section */}
         <section className="py-16 bg-primary-900 text-white">
           <div className="container-custom">
             <div className="text-center">
-              <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6">Ready to Fix Your {config.deviceType.charAt(0).toUpperCase() + config.deviceType.slice(1)}?</h2>
+              <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6">Ready to Fix Your {deviceLabel}?</h2>
               <p className="text-xl mb-8 max-w-3xl mx-auto text-primary-200">
                 Book our doorstep {config.deviceType} repair service and have your {config.deviceType === 'laptop' ? 'computer' : config.deviceType} fixed without the hassle of going to a repair shop.
               </p>
@@ -361,22 +458,18 @@ export default function ServicePage({ slug, services, brands, config }: ServiceP
 
 export const getStaticPaths: GetStaticPaths = async () => {
   try {
-    // Fetch active service slugs from database
     const activeSlugs = await getAllActiveServiceSlugs();
-
-    // Map to Next.js paths format
     const paths = activeSlugs.map(({ slug }) => ({
       params: { slug },
     }));
 
     return {
       paths,
-      fallback: 'blocking', // Generate new pages on-demand if not pre-rendered
+      fallback: 'blocking',
     };
   } catch (error) {
     console.error('Error fetching active service slugs:', error);
 
-    // Fallback to hardcoded paths if database fails
     const fallbackPaths = [
       { params: { slug: 'laptop-repair' } },
       { params: { slug: 'mobile-repair' } },
@@ -390,40 +483,172 @@ export const getStaticPaths: GetStaticPaths = async () => {
   }
 };
 
+// Top 6 cities for the popular repairs section
+const TOP_CITIES = [
+  { slug: 'vancouver', name: 'Vancouver' },
+  { slug: 'surrey', name: 'Surrey' },
+  { slug: 'burnaby', name: 'Burnaby' },
+  { slug: 'richmond', name: 'Richmond' },
+  { slug: 'coquitlam', name: 'Coquitlam' },
+  { slug: 'north-vancouver', name: 'North Vancouver' },
+];
+
 export const getStaticProps: GetStaticProps = async ({ params }) => {
   const slug = params?.slug as ServiceSlug;
 
-  // Validate slug
   if (!slug || !serviceConfig[slug]) {
-    return {
-      notFound: true,
-    };
+    return { notFound: true };
   }
 
   const config = serviceConfig[slug];
 
-  // Map slug to device type ID for database queries
-  const deviceTypeMap: Record<ServiceSlug, number> = {
-    'laptop-repair': 2, // laptop
-    'mobile-repair': 1, // mobile
-    'tablet-repair': 3, // tablet
+  const deviceTypeStringMap: Record<string, 'laptop' | 'mobile' | 'tablet'> = {
+    'laptop-repair': 'laptop',
+    'mobile-repair': 'mobile',
+    'tablet-repair': 'tablet',
   };
 
-  const deviceTypeId = deviceTypeMap[slug];
+  const deviceTypeString = deviceTypeStringMap[slug];
 
-  // Map device type ID to string for the API functions
-  const deviceTypeStringMap: Record<number, 'laptop' | 'mobile' | 'tablet'> = {
-    1: 'mobile',
-    2: 'laptop',
-    3: 'tablet',
-  };
+  // Map device type to testimonial device_type (capitalized in DB)
+  const testimonialDeviceType = deviceTypeString === 'mobile' ? 'Mobile' : deviceTypeString === 'laptop' ? 'Laptop' : 'Tablet';
 
-  const deviceTypeString = deviceTypeStringMap[deviceTypeId];
+  // Service slugs for this device type
+  const serviceSlugPatterns = deviceTypeString === 'mobile'
+    ? ['screen-replacement-mobile', 'battery-replacement-mobile']
+    : deviceTypeString === 'laptop'
+    ? ['screen-replacement-laptop', 'battery-replacement-laptop']
+    : ['screen-replacement-tablet', 'battery-replacement-tablet'];
 
   try {
-    // Fetch services and brands from database with fallback
-    const services = await getServicesByDeviceType(deviceTypeString);
-    const brands = await getBrandsByDeviceType(deviceTypeString);
+    const supabase = getServiceSupabase();
+
+    // Fetch services, brands, testimonials, and popular routes in parallel
+    const [services, brands, testimonialsResult, routesResult] = await Promise.all([
+      getServicesByDeviceType(deviceTypeString),
+      getBrandsByDeviceType(deviceTypeString),
+
+      // Service-specific testimonials
+      supabase
+        .from('testimonials')
+        .select('customer_name, city, device_model, rating, review, service, device_type')
+        .eq('status', 'approved')
+        .eq('device_type', testimonialDeviceType)
+        .order('is_featured', { ascending: false })
+        .order('rating', { ascending: false })
+        .limit(6),
+
+      // Popular model-service routes for internal linking (for top 6 cities)
+      supabase
+        .from('dynamic_routes')
+        .select('slug_path, payload')
+        .eq('route_type', 'model-service-page')
+        .eq('is_active', true)
+        .or(TOP_CITIES.map(c => `slug_path.like.repair/${c.slug}/%`).join(','))
+        .limit(2000),
+    ]);
+
+    const testimonials: Testimonial[] = (testimonialsResult.data || []).map((t: Record<string, unknown>) => ({
+      customer_name: t.customer_name as string,
+      city: t.city as string,
+      device_model: t.device_model as string,
+      rating: t.rating as number,
+      review: t.review as string,
+      service: t.service as string,
+    }));
+
+    // Process routes into popular repairs by city
+    // Filter to only routes matching this device type's service slugs
+    const serviceSlugSet = new Set(serviceSlugPatterns);
+    const routesByCity = new Map<string, { name: string; slug: string; serviceSlug: string; brand: string }[]>();
+
+    for (const route of (routesResult.data || [])) {
+      const payload = route.payload as Record<string, Record<string, string>> | null;
+      if (!payload) continue;
+
+      const serviceSlug = payload.service?.slug;
+      if (!serviceSlug || !serviceSlugSet.has(serviceSlug)) continue;
+
+      const citySlug = payload.city?.slug;
+      const cityInfo = TOP_CITIES.find(c => c.slug === citySlug);
+      if (!cityInfo) continue;
+
+      const modelName = payload.model?.name;
+      const modelSlug = payload.model?.slug;
+      const brandName = payload.brand?.name;
+
+      if (!modelName || !modelSlug || !brandName) continue;
+
+      if (!routesByCity.has(citySlug)) {
+        routesByCity.set(citySlug, []);
+      }
+      routesByCity.get(citySlug)!.push({ name: modelName, slug: modelSlug, serviceSlug, brand: brandName });
+    }
+
+    // Pick top 3 brand-diverse models per city
+    const popularRepairsByCity: CityRepairs[] = TOP_CITIES
+      .filter(city => routesByCity.has(city.slug))
+      .map(city => {
+        const allModels = routesByCity.get(city.slug)!;
+        const picked: typeof allModels = [];
+        const usedBrands = new Set<string>();
+
+        // Prioritize popular models by sorting (flagship names first)
+        const priorityKeywords = ['pro max', 'ultra', 'pro', 'plus', '16', '25', '15', '24', '9'];
+        const sorted = [...allModels].sort((a, b) => {
+          const aScore = priorityKeywords.findIndex(kw => a.name.toLowerCase().includes(kw));
+          const bScore = priorityKeywords.findIndex(kw => b.name.toLowerCase().includes(kw));
+          return (aScore === -1 ? 999 : aScore) - (bScore === -1 ? 999 : bScore);
+        });
+
+        // Pick brand-diverse: one from each brand first
+        for (const model of sorted) {
+          if (picked.length >= 3) break;
+          if (!usedBrands.has(model.brand)) {
+            usedBrands.add(model.brand);
+            picked.push(model);
+          }
+        }
+
+        // Fill remaining slots
+        for (const model of sorted) {
+          if (picked.length >= 3) break;
+          if (!picked.includes(model)) {
+            picked.push(model);
+          }
+        }
+
+        return {
+          cityName: city.name,
+          citySlug: city.slug,
+          models: picked,
+        };
+      });
+
+    // Build brands with popular models (for Vancouver, the biggest city)
+    const vancouverModels = routesByCity.get('vancouver') || [];
+    const brandModelMap = new Map<string, typeof vancouverModels>();
+    for (const model of vancouverModels) {
+      if (!brandModelMap.has(model.brand)) {
+        brandModelMap.set(model.brand, []);
+      }
+      brandModelMap.get(model.brand)!.push(model);
+    }
+
+    const brandsWithModels: BrandWithModels[] = brands.slice(0, 3).map(brandName => {
+      const models = brandModelMap.get(brandName) || [];
+      // Sort same way and pick top 4
+      const priorityKeywords = ['pro max', 'ultra', 'pro', 'plus', '16', '25', '15', '24', '9'];
+      const sorted = [...models].sort((a, b) => {
+        const aScore = priorityKeywords.findIndex(kw => a.name.toLowerCase().includes(kw));
+        const bScore = priorityKeywords.findIndex(kw => b.name.toLowerCase().includes(kw));
+        return (aScore === -1 ? 999 : aScore) - (bScore === -1 ? 999 : bScore);
+      });
+      return {
+        name: brandName,
+        models: sorted.slice(0, 4).map(m => ({ name: m.name, slug: m.slug, serviceSlug: m.serviceSlug })),
+      };
+    }).filter(b => b.models.length > 0);
 
     return {
       props: {
@@ -431,14 +656,15 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
         services,
         brands,
         config,
+        testimonials,
+        popularRepairsByCity,
+        brandsWithModels,
       },
-      revalidate: 3600, // Revalidate every hour (ISR)
+      revalidate: 3600,
     };
   } catch (error) {
     console.error(`Error fetching data for ${slug}:`, error);
 
-    // Return fallback data if database fails
-    // This ensures the page still works even if database is down
     const fallbackServices = config.fallbackServices || [];
     const fallbackBrands = config.fallbackBrands || [];
 
@@ -448,8 +674,11 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
         services: fallbackServices,
         brands: fallbackBrands,
         config,
+        testimonials: [],
+        popularRepairsByCity: [],
+        brandsWithModels: [],
       },
-      revalidate: 60, // Shorter revalidation time for fallback
+      revalidate: 60,
     };
   }
 };

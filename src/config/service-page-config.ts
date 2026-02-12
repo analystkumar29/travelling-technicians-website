@@ -52,89 +52,9 @@ export const serviceConfig = {
         limited: false,
         price: 'From $99',
         popular: true
-      },
-      {
-        id: 3,
-        name: 'Keyboard Repair',
-        description: 'Fix stuck, broken, or unresponsive keys on your laptop keyboard.',
-        icon: 'keyboard',
-        doorstep: true,
-        limited: false,
-        price: 'From $79',
-        popular: false
-      },
-      {
-        id: 4,
-        name: 'RAM Upgrade',
-        description: 'Increase your laptop\'s performance with additional memory.',
-        icon: 'memory',
-        doorstep: true,
-        limited: false,
-        price: 'From $89',
-        popular: true
-      },
-      {
-        id: 5,
-        name: 'Hard Drive Replacement',
-        description: 'Upgrade to SSD or replace failing hard drives for better performance.',
-        icon: 'hard-drive',
-        doorstep: true,
-        limited: false,
-        price: 'From $129',
-        popular: false
-      },
-      {
-        id: 6,
-        name: 'Virus Removal',
-        description: 'Remove malware, viruses, and spyware from your laptop.',
-        icon: 'bug',
-        doorstep: true,
-        limited: false,
-        price: 'From $79',
-        popular: false
-      },
-      {
-        id: 7,
-        name: 'Motherboard Repair',
-        description: 'Diagnose and repair motherboard issues for complex laptop problems.',
-        icon: 'shield-alt',
-        doorstep: false,
-        limited: true,
-        price: 'From $299',
-        popular: false
-      },
-      {
-        id: 8,
-        name: 'Fan & Cooling System',
-        description: 'Fix overheating issues by cleaning or replacing cooling fans.',
-        icon: 'fan',
-        doorstep: true,
-        limited: false,
-        price: 'From $89',
-        popular: false
-      },
-      {
-        id: 9,
-        name: 'Charging Port Repair',
-        description: 'Repair or replace damaged charging ports that prevent your laptop from charging.',
-        icon: 'bolt',
-        doorstep: true,
-        limited: false,
-        price: 'From $99',
-        popular: false
-      },
-      {
-        id: 10,
-        name: 'Data Recovery',
-        description: 'Recover important files from damaged or inaccessible hard drives.',
-        icon: 'hard-drive',
-        doorstep: false,
-        limited: true,
-        price: 'From $199',
-        popular: false
       }
     ],
-    fallbackBrands: ['Apple', 'Dell', 'HP', 'Lenovo', 'Asus', 'Acer', 'Microsoft', 'Samsung', 'Toshiba', 'MSI']
+    fallbackBrands: ['Apple', 'Samsung', 'Google']
   },
   'mobile-repair': {
     deviceType: 'mobile' as const,
@@ -186,69 +106,9 @@ export const serviceConfig = {
         limited: false,
         price: 'From $79',
         popular: true
-      },
-      {
-        id: 3,
-        name: 'Charging Port Repair',
-        description: 'Fix charging issues by repairing or replacing the charging port.',
-        icon: 'bolt',
-        doorstep: true,
-        limited: false,
-        price: 'From $89',
-        popular: false
-      },
-      {
-        id: 4,
-        name: 'Camera Repair',
-        description: 'Fix blurry, broken, or non-functional front or rear cameras.',
-        icon: 'camera',
-        doorstep: true,
-        limited: false,
-        price: 'From $129',
-        popular: false
-      },
-      {
-        id: 5,
-        name: 'Speaker/Microphone Repair',
-        description: 'Fix audio issues with speakers, microphones, or earpieces.',
-        icon: 'microphone',
-        doorstep: true,
-        limited: false,
-        price: 'From $69',
-        popular: false
-      },
-      {
-        id: 6,
-        name: 'Water Damage Repair',
-        description: 'Diagnose and repair water-damaged phones to restore functionality.',
-        icon: 'water',
-        doorstep: true,
-        limited: false,
-        price: 'From $149',
-        popular: false
-      },
-      {
-        id: 7,
-        name: 'Back Glass Replacement',
-        description: 'Replace cracked or damaged back glass on your phone.',
-        icon: 'mobile-alt',
-        doorstep: true,
-        limited: false,
-        price: 'From $89',
-        popular: false
-      },
-      {
-        id: 8,
-        name: 'Software Troubleshooting',
-        description: 'Fix software issues, crashes, and performance problems.',
-        icon: 'bug',
-        doorstep: true,
-        limited: false,
-        price: 'From $59',
-        popular: false
       }
     ],
-    fallbackBrands: ['Apple', 'Samsung', 'Google', 'OnePlus', 'Motorola', 'LG', 'Sony', 'Nokia', 'Huawei', 'Xiaomi']
+    fallbackBrands: ['Apple', 'Samsung', 'Google']
   },
   'tablet-repair': {
     deviceType: 'tablet' as const,
@@ -300,69 +160,9 @@ export const serviceConfig = {
         limited: false,
         price: 'From $99',
         popular: true
-      },
-      {
-        id: 3,
-        name: 'Charging Port Repair',
-        description: 'Fix charging issues by repairing or replacing the charging port.',
-        icon: 'bolt',
-        doorstep: true,
-        limited: false,
-        price: 'From $89',
-        popular: false
-      },
-      {
-        id: 4,
-        name: 'Home Button Repair',
-        description: 'Fix unresponsive or broken home buttons on tablets.',
-        icon: 'hand-pointer',
-        doorstep: true,
-        limited: false,
-        price: 'From $79',
-        popular: false
-      },
-      {
-        id: 5,
-        name: 'Volume Button Repair',
-        description: 'Fix stuck or broken volume buttons on tablets.',
-        icon: 'volume-up',
-        doorstep: true,
-        limited: false,
-        price: 'From $69',
-        popular: false
-      },
-      {
-        id: 6,
-        name: 'Water Damage Repair',
-        description: 'Diagnose and repair water-damaged tablets to restore functionality.',
-        icon: 'water',
-        doorstep: true,
-        limited: false,
-        price: 'From $149',
-        popular: false
-      },
-      {
-        id: 7,
-        name: 'Software Troubleshooting',
-        description: 'Fix software issues, crashes, and performance problems.',
-        icon: 'bug',
-        doorstep: true,
-        limited: false,
-        price: 'From $59',
-        popular: false
-      },
-      {
-        id: 8,
-        name: 'Data Recovery',
-        description: 'Recover important files from damaged or inaccessible tablets.',
-        icon: 'hard-drive',
-        doorstep: false,
-        limited: true,
-        price: 'From $199',
-        popular: false
       }
     ],
-    fallbackBrands: ['Apple', 'Samsung', 'Microsoft', 'Lenovo', 'Amazon', 'Google', 'Huawei', 'Xiaomi', 'Acer', 'Asus']
+    fallbackBrands: ['Apple', 'Samsung', 'Google']
   },
 } as const;
 
