@@ -32,21 +32,6 @@ function EnvironmentGuard({ children }: { children: ReactNode }) {
 }
 
 function SafeHydrate({ children }: { children: React.ReactNode }) {
-  const [isClient, setIsClient] = useState(false);
-  
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-  
-  // In development, don't delay rendering - this breaks Fast Refresh
-  if (process.env.NODE_ENV === 'development') {
-    return <>{children}</>;
-  }
-  
-  if (!isClient) {
-    return <div>Loading...</div>;
-  }
-  
   return <>{children}</>;
 }
 
