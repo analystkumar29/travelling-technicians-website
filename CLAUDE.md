@@ -397,6 +397,25 @@ Any non-completed status can also → `cancelled`.
 - **`useBookingController.ts`**: Detects if selected date equals tomorrow, passes `isTomorrow=true` to filter slots
 - **Result**: Tomorrow → slots before 3 PM only; 2+ days out → all slots available; cutoff controlled by DB setting
 
+## SafeHydrate SSR Fix (APPLIED 2026-02-12)
+
+> **This was the #1 SEO blocker.** Full SEO knowledge base: `memory/seo.md`
+
+### Root Cause
+- `SafeHydrate` in `src/pages/_app.tsx` used `useState(false)` + `useEffect(() => setIsClient(true))` to gate all rendering
+- During `next build` (production), `useEffect` never runs → `isClient` stays `false` → returns `<div>Loading...</div>`
+- Had a `NODE_ENV === 'development'` escape hatch — so it worked fine in `npm run dev`, only broke production builds
+- **All ~4,920 SSG pages had empty HTML** — no titles, no meta descriptions, no schema.org, no content
+- Google indexed "Loading..." as the page title
+
+### Fix
+- Replaced `SafeHydrate` body with `return <>{children}</>` — renders children unconditionally on both server and client
+- Component wrapper kept (not removed) for future targeted hydration handling if needed
+
+### Verification
+- `npm run build` succeeds (no SSR-breaking `window`/`document` access)
+- Built HTML files in `.next/server/pages/repair/` contain actual page content with proper titles and structured data
+
 ## GSC Coverage Fixes (APPLIED 2026-02-09)
 
 ### Context (from GSC Coverage export Feb 9)
@@ -581,3 +600,9 @@ Two payment flows integrated via Stripe Checkout Sessions:
 - Stripe Checkout Session `expires_at` max is 24 hours (set to 23h for payment links)
 - `send-payment-link.ts` calls `create-payment-link` via internal HTTP fetch (works on Vercel but adds latency)
 - Invoice generation requires `STRIPE_SECRET_KEY` — fails silently if not configured
+
+## SEO Knowledge Base
+
+> **Full SEO reference**: `memory/seo.md` — update whenever working on SEO issues (indexing, crawling, structured data, meta tags, sitemaps, redirects, GSC findings).
+>
+> Covers: fix history, GSC status tracking, indexing strategy, redirect inventory, structured data map, internal linking architecture, noindex rules, SEO file map, and lessons learned.
