@@ -8,7 +8,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { ServiceSchema, LocalBusinessSchema } from '@/components/seo/StructuredData';
-import { getServicesByDeviceType, getBrandsByDeviceType, getAllActiveServiceSlugs } from '@/lib/data-service';
+import { getServicesByDeviceType, getBrandsByDeviceType, getAllActiveServiceSlugs, hasModelPage } from '@/lib/data-service';
 import InternalLinkingFooter from '@/components/seo/InternalLinkingFooter';
 import GoogleReviewBadge from '@/components/common/GoogleReviewBadge';
 import OptimizedImage from '@/components/common/OptimizedImage';
@@ -45,7 +45,7 @@ interface CityRepairs {
 interface BrandWithModels {
   name: string;
   slug: string;
-  models: { name: string; slug: string; serviceSlug: string }[];
+  models: { name: string; slug: string; serviceSlug: string; hasLandingPage: boolean }[];
 }
 
 interface ServicePageProps {
@@ -336,7 +336,7 @@ export default function ServicePage({
                       {brand.models.map((model, i) => (
                         <li key={i}>
                           <Link
-                            href={`/repair/vancouver/${model.serviceSlug}/${model.slug}`}
+                            href={model.hasLandingPage ? `/models/${model.slug}` : `/repair/vancouver/${model.serviceSlug}/${model.slug}`}
                             className="text-primary-600 hover:text-primary-800 hover:underline transition-colors text-sm"
                           >
                             {model.name}
@@ -594,17 +594,33 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
       routesByCity.get(citySlug)!.push({ name: modelName, slug: modelSlug, serviceSlug, brand: brandName, brandSlug });
     }
 
+    // Priority keywords — specific model numbers first for recency, then generic
+    const priorityKeywords = [
+      '16 pro max', '25 ultra', '16 pro', '9 pro xl',
+      '15 pro max', 's25', '15 pro', 's24 ultra', '9 pro',
+      '16', '15', 's24', '14 pro max', '8 pro',
+      '14 pro', 's23 ultra', '14', '8',
+      'pro max', 'ultra', 'pro', 'plus',
+    ];
+
     // Pick top 3 brand-diverse models per city
     const popularRepairsByCity: CityRepairs[] = TOP_CITIES
       .filter(city => routesByCity.has(city.slug))
       .map(city => {
         const allModels = routesByCity.get(city.slug)!;
-        const picked: typeof allModels = [];
+
+        // Deduplicate by model slug (same model has multiple service routes)
+        const seenSlugs = new Set<string>();
+        const uniqueModels = allModels.filter(m => {
+          if (seenSlugs.has(m.slug)) return false;
+          seenSlugs.add(m.slug);
+          return true;
+        });
+
+        const picked: typeof uniqueModels = [];
         const usedBrands = new Set<string>();
 
-        // Prioritize popular models by sorting (flagship names first)
-        const priorityKeywords = ['pro max', 'ultra', 'pro', 'plus', '16', '25', '15', '24', '9'];
-        const sorted = [...allModels].sort((a, b) => {
+        const sorted = [...uniqueModels].sort((a, b) => {
           const aScore = priorityKeywords.findIndex(kw => a.name.toLowerCase().includes(kw));
           const bScore = priorityKeywords.findIndex(kw => b.name.toLowerCase().includes(kw));
           return (aScore === -1 ? 999 : aScore) - (bScore === -1 ? 999 : bScore);
@@ -636,8 +652,17 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
 
     // Build brands with popular models (for Vancouver, the biggest city)
     const vancouverModels = routesByCity.get('vancouver') || [];
-    const brandModelMap = new Map<string, typeof vancouverModels>();
-    for (const model of vancouverModels) {
+
+    // Deduplicate by model slug (same model has multiple service routes)
+    const seenVancouverSlugs = new Set<string>();
+    const uniqueVancouverModels = vancouverModels.filter(m => {
+      if (seenVancouverSlugs.has(m.slug)) return false;
+      seenVancouverSlugs.add(m.slug);
+      return true;
+    });
+
+    const brandModelMap = new Map<string, typeof uniqueVancouverModels>();
+    for (const model of uniqueVancouverModels) {
       if (!brandModelMap.has(model.brand)) {
         brandModelMap.set(model.brand, []);
       }
@@ -646,8 +671,6 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
 
     const brandsWithModels: BrandWithModels[] = brands.slice(0, 3).map(brandName => {
       const models = brandModelMap.get(brandName) || [];
-      // Sort same way and pick top 4
-      const priorityKeywords = ['pro max', 'ultra', 'pro', 'plus', '16', '25', '15', '24', '9'];
       const sorted = [...models].sort((a, b) => {
         const aScore = priorityKeywords.findIndex(kw => a.name.toLowerCase().includes(kw));
         const bScore = priorityKeywords.findIndex(kw => b.name.toLowerCase().includes(kw));
@@ -658,7 +681,12 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
       return {
         name: brandName,
         slug: brandSlug,
-        models: sorted.slice(0, 4).map(m => ({ name: m.name, slug: m.slug, serviceSlug: m.serviceSlug })),
+        models: sorted.slice(0, 4).map(m => ({
+          name: m.name,
+          slug: m.slug,
+          serviceSlug: m.serviceSlug,
+          hasLandingPage: hasModelPage(m.slug),
+        })),
       };
     }).filter(b => b.models.length > 0);
 
