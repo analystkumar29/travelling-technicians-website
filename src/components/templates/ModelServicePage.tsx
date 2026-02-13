@@ -22,6 +22,7 @@ import Footer from '@/components/layout/Footer';
 import InternalLinkingFooter from '@/components/seo/InternalLinkingFooter';
 import WhatsAppButton from '@/components/common/WhatsAppButton';
 import GoogleReviewBadge from '@/components/common/GoogleReviewBadge';
+import { hasModelPage } from '@/lib/data-service';
 
 // Types - Updated to match actual database payload structure
 interface PricingTier {
@@ -820,6 +821,24 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
                     </Link>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* All Cities Link (model hub page) */}
+            {hasModelPage(model.slug) && (
+              <div className="bg-primary-50 rounded-xl border border-primary-200 p-4 mb-8 flex items-center justify-between">
+                <p className="text-primary-700 font-medium">
+                  See all {model.display_name} repair options across the Lower Mainland
+                </p>
+                <Link
+                  href={`/models/${model.slug}`}
+                  className="inline-flex items-center gap-1 text-primary-800 font-semibold hover:text-accent-600 transition-colors whitespace-nowrap"
+                >
+                  All cities
+                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </Link>
               </div>
             )}
 

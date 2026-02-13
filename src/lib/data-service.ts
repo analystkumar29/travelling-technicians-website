@@ -2198,6 +2198,209 @@ export async function getBrandWithModels(brandSlug: string): Promise<{
 }
 
 /**
+ * Top 15 model slugs for model landing pages
+ */
+const MODEL_PAGE_SLUGS = [
+  'iphone-16-pro-max', 'iphone-16-pro', 'iphone-15-pro-max', 'iphone-15', 'iphone-14',
+  'macbook-pro-14-m3', 'macbook-air-m3',
+  'galaxy-s25-ultra', 'galaxy-s25', 'galaxy-s24-ultra', 'galaxy-s24', 'galaxy-s23-ultra',
+  'pixel-9-pro', 'pixel-8-pro', 'pixel-8'
+];
+
+/**
+ * Get the list of model slugs that have dedicated landing pages
+ */
+export function getModelPageSlugs(): string[] {
+  return MODEL_PAGE_SLUGS;
+}
+
+/**
+ * Check if a model slug has a dedicated model landing page
+ */
+export function hasModelPage(modelSlug: string): boolean {
+  return MODEL_PAGE_SLUGS.includes(modelSlug);
+}
+
+/**
+ * Get detailed model data for model landing pages
+ * Fetches model metadata, services with pricing across cities, testimonials, and related models
+ */
+export async function getModelWithDetails(modelSlug: string): Promise<{
+  model: { name: string; displayName: string; slug: string; releaseYear?: number; deviceType: string };
+  brand: { name: string; displayName: string; slug: string };
+  services: Array<{
+    name: string;
+    displayName: string;
+    slug: string;
+    minPrice: number;
+    maxPrice: number;
+    estimatedDuration: number;
+    cities: Array<{ name: string; slug: string; routePath: string; price: number }>;
+  }>;
+  testimonials: Array<{ customer_name: string; city: string; device_model: string; rating: number; review: string }>;
+  relatedModels: Array<{ name: string; slug: string; brandName: string }>;
+} | null> {
+  try {
+    const supabase = getServiceSupabase();
+
+    // 1. Get model metadata with brand and device type
+    const { data: modelData, error: modelError } = await supabase
+      .from('device_models')
+      .select(`
+        id, name, display_name, slug, release_year, type_id, brand_id,
+        brands(name, display_name, slug),
+        device_types(name)
+      `)
+      .eq('slug', modelSlug)
+      .eq('is_active', true)
+      .single();
+
+    if (modelError || !modelData) {
+      dataLogger.warn(`Model not found for slug ${modelSlug}`, { error: modelError?.message });
+      return null;
+    }
+
+    const brandInfo = Array.isArray(modelData.brands) ? modelData.brands[0] : modelData.brands;
+    const deviceTypeInfo = Array.isArray(modelData.device_types) ? modelData.device_types[0] : modelData.device_types;
+
+    if (!brandInfo) {
+      dataLogger.warn(`Brand not found for model ${modelSlug}`);
+      return null;
+    }
+
+    // 2. Fetch all model-service-page routes for this model across all cities
+    const { data: routesData, error: routesError } = await supabase
+      .from('dynamic_routes')
+      .select('slug_path, payload')
+      .eq('route_type', 'model-service-page')
+      .eq('is_active', true)
+      .like('slug_path', `repair/%/%/${modelSlug}`);
+
+    if (routesError) {
+      dataLogger.warn(`Error fetching routes for model ${modelSlug}`, { error: routesError.message });
+    }
+
+    // Group routes by service, collect cities and pricing
+    const serviceMap = new Map<string, {
+      name: string;
+      displayName: string;
+      slug: string;
+      estimatedDuration: number;
+      cities: Array<{ name: string; slug: string; routePath: string; price: number }>;
+    }>();
+
+    for (const route of (routesData || [])) {
+      const payload = route.payload as any;
+      if (!payload?.service || !payload?.city) continue;
+
+      const serviceSlug = payload.service.slug;
+      const serviceName = payload.service.name;
+      const serviceDisplayName = payload.service.display_name || serviceName;
+      const cityName = payload.city.name;
+      const citySlug = payload.city.slug;
+      const duration = payload.service.estimated_duration_minutes || 45;
+
+      // Get price from standard_pricing or pricing fallback
+      const price = payload.standard_pricing?.base_price
+        ?? payload.pricing?.base_price
+        ?? 0;
+
+      if (!serviceMap.has(serviceSlug)) {
+        serviceMap.set(serviceSlug, {
+          name: serviceName,
+          displayName: serviceDisplayName,
+          slug: serviceSlug,
+          estimatedDuration: duration,
+          cities: []
+        });
+      }
+
+      const svc = serviceMap.get(serviceSlug)!;
+      // Avoid duplicate cities
+      if (!svc.cities.some(c => c.slug === citySlug)) {
+        svc.cities.push({
+          name: cityName,
+          slug: citySlug,
+          routePath: `/${route.slug_path}`,
+          price: typeof price === 'number' ? price : parseFloat(price) || 0
+        });
+      }
+    }
+
+    // Build services array with price ranges
+    const services = Array.from(serviceMap.values()).map(svc => {
+      const prices = svc.cities.map(c => c.price).filter(p => p > 0);
+      return {
+        name: svc.name,
+        displayName: svc.displayName,
+        slug: svc.slug,
+        minPrice: prices.length > 0 ? Math.min(...prices) : 0,
+        maxPrice: prices.length > 0 ? Math.max(...prices) : 0,
+        estimatedDuration: svc.estimatedDuration,
+        cities: svc.cities.sort((a, b) => a.name.localeCompare(b.name))
+      };
+    });
+
+    // 3. Fetch testimonials for this model
+    const { data: testimonialData } = await supabase
+      .from('testimonials')
+      .select('customer_name, city, device_model, rating, review')
+      .eq('status', 'approved')
+      .ilike('device_model', `%${modelData.name}%`)
+      .order('rating', { ascending: false })
+      .limit(6);
+
+    const testimonials = (testimonialData || []).map(t => ({
+      customer_name: t.customer_name || 'Customer',
+      city: t.city || 'Vancouver',
+      device_model: t.device_model || '',
+      rating: t.rating || 5,
+      review: t.review || ''
+    }));
+
+    // 4. Get related models (same brand + device type, excluding current)
+    const { data: relatedData } = await supabase
+      .from('device_models')
+      .select('name, slug, brands(name)')
+      .eq('brand_id', modelData.brand_id)
+      .eq('type_id', modelData.type_id)
+      .eq('is_active', true)
+      .neq('slug', modelSlug)
+      .order('popularity_score', { ascending: false })
+      .limit(8);
+
+    const relatedModels = (relatedData || []).map(m => ({
+      name: m.name,
+      slug: m.slug,
+      brandName: (Array.isArray(m.brands) ? m.brands[0]?.name : (m.brands as any)?.name) || ''
+    }));
+
+    return {
+      model: {
+        name: modelData.name,
+        displayName: modelData.display_name || modelData.name,
+        slug: modelData.slug,
+        releaseYear: modelData.release_year,
+        deviceType: deviceTypeInfo?.name || 'Mobile'
+      },
+      brand: {
+        name: brandInfo.name,
+        displayName: brandInfo.display_name || brandInfo.name,
+        slug: brandInfo.slug
+      },
+      services,
+      testimonials,
+      relatedModels
+    };
+  } catch (error) {
+    dataLogger.error(`Unexpected error fetching model details for ${modelSlug}`, {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    return null;
+  }
+}
+
+/**
  * Health check for database connection
  */
 export async function checkDbConnection(): Promise<{ healthy: boolean; message: string }> {

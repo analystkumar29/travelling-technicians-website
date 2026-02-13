@@ -102,7 +102,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     const legalPages = getLegalPages(siteUrl);
     sitemapLogger.info(`⚖️ Legal pages: ${legalPages.length}`);
-    
+
+    const modelPages = getModelPages(siteUrl);
+    sitemapLogger.info(`📱 Model pages: ${modelPages.length}`);
+
     const entries: SitemapEntry[] = [
       ...staticPages,
       ...serviceAreaPages,
@@ -111,6 +114,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ...blogPages,
       ...servicePages,
       ...brandPages,
+      ...modelPages,
       ...cityServiceModelPages,
       ...informationalPages,
       ...legalPages
@@ -130,6 +134,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     sitemapLogger.info(`  - Blog: ${blogPages.length}`);
     sitemapLogger.info(`  - Services: ${servicePages.length}`);
     sitemapLogger.info(`  - Brands: ${brandPages.length}`);
+    sitemapLogger.info(`  - Models: ${modelPages.length}`);
     sitemapLogger.info(`  - City-Service-Model (dynamic): ${cityServiceModelPages.length}`);
     sitemapLogger.info(`  - City-Service pages: ${cityServicePages.length}`);
     sitemapLogger.info(`  - Informational: ${informationalPages.length}`);
@@ -609,11 +614,11 @@ function getServicePages(siteUrl: string, services: Array<{ slug: string; update
 }
 
 /**
- * Generate brand pages (/brands/{slug})
+ * Generate brand pages (/repair/{slug}-devices)
  */
 function getBrandPages(siteUrl: string, brands: Array<{ slug: string; updated_at: string }>): SitemapEntry[] {
   return brands.map(brand => ({
-    loc: `${siteUrl}/brands/${brand.slug}`,
+    loc: `${siteUrl}/repair/${brand.slug}-devices`,
     lastmod: brand.updated_at,
     changefreq: 'weekly',
     priority: '0.85'
@@ -693,6 +698,25 @@ function getLegalPages(siteUrl: string): SitemapEntry[] {
       priority: '0.3'
     }
   ];
+}
+
+/**
+ * Generate model landing pages (/models/{slug})
+ */
+function getModelPages(siteUrl: string): SitemapEntry[] {
+  const modelSlugs = [
+    'iphone-16-pro-max', 'iphone-16-pro', 'iphone-15-pro-max', 'iphone-15', 'iphone-14',
+    'macbook-pro-14-m3', 'macbook-air-m3',
+    'galaxy-s25-ultra', 'galaxy-s25', 'galaxy-s24-ultra', 'galaxy-s24', 'galaxy-s23-ultra',
+    'pixel-9-pro', 'pixel-8-pro', 'pixel-8'
+  ];
+
+  return modelSlugs.map(slug => ({
+    loc: `${siteUrl}/models/${slug}`,
+    lastmod: FALLBACK_DATE,
+    changefreq: 'weekly',
+    priority: '0.85'
+  }));
 }
 
 /**

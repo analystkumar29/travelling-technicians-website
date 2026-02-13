@@ -5,7 +5,7 @@ import {
   Star, Shield, Zap, Award, Clock, MapPin, Wrench
 } from 'lucide-react';
 import { LocalBusinessSchema } from '@/components/seo/StructuredData';
-import { getAllActiveBrandSlugs, getBrandWithModels } from '@/lib/data-service';
+import { getAllActiveBrandSlugs, getBrandWithModels, hasModelPage } from '@/lib/data-service';
 import InternalLinkingFooter from '@/components/seo/InternalLinkingFooter';
 import GoogleReviewBadge from '@/components/common/GoogleReviewBadge';
 import { GetStaticProps, GetStaticPaths } from 'next';
@@ -61,13 +61,15 @@ export default function BrandPage({ brand, deviceTypeGroups, testimonials }: Bra
   const totalModels = deviceTypeGroups.reduce((sum, g) => sum + g.models.length, 0);
   const siteUrl = 'https://www.travelling-technicians.ca';
 
+  const canonicalPath = `/repair/${brand.slug}-devices`;
+
   // BreadcrumbList JSON-LD
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
-      { '@type': 'ListItem', position: 2, name: `${brand.displayName} Repair`, item: `${siteUrl}/brands/${brand.slug}` },
+      { '@type': 'ListItem', position: 2, name: `${brand.displayName} Device Repair`, item: `${siteUrl}${canonicalPath}` },
     ]
   };
 
@@ -75,7 +77,7 @@ export default function BrandPage({ brand, deviceTypeGroups, testimonials }: Bra
   const itemListSchema = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    name: `${brand.displayName} Repair Services`,
+    name: `Independent ${brand.displayName} Device Repair Services`,
     numberOfItems: totalModels,
     itemListElement: deviceTypeGroups.flatMap(g =>
       g.models.map((model, i) => ({
@@ -90,34 +92,37 @@ export default function BrandPage({ brand, deviceTypeGroups, testimonials }: Bra
   return (
     <>
       <Head>
-        <title>{brand.displayName} Repair Services | The Travelling Technicians</title>
-        <meta name="description" content={`Expert ${brand.displayName} repair services at your doorstep. Screen replacement, battery replacement, and more for ${totalModels}+ ${brand.displayName} models across Vancouver and the Lower Mainland.`} />
-        <link rel="canonical" href={`${siteUrl}/brands/${brand.slug}`} />
-        <meta property="og:title" content={`${brand.displayName} Repair Services | The Travelling Technicians`} />
-        <meta property="og:description" content={`Doorstep ${brand.displayName} repair for ${totalModels}+ models. Fast, certified service across the Lower Mainland.`} />
-        <meta property="og:url" content={`${siteUrl}/brands/${brand.slug}`} />
+        <title>Independent {brand.displayName} Device Repair | The Travelling Technicians</title>
+        <meta name="description" content={`Independent ${brand.displayName} device repair at your doorstep. Screen replacement, battery replacement, and more for ${totalModels}+ ${brand.displayName} models across Vancouver and the Lower Mainland.`} />
+        <link rel="canonical" href={`${siteUrl}${canonicalPath}`} />
+        <meta property="og:title" content={`Independent ${brand.displayName} Device Repair | The Travelling Technicians`} />
+        <meta property="og:description" content={`Independent doorstep ${brand.displayName} device repair for ${totalModels}+ models. Fast, certified service across the Lower Mainland.`} />
+        <meta property="og:url" content={`${siteUrl}${canonicalPath}`} />
         <meta property="og:type" content="website" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }} />
         <LocalBusinessSchema />
       </Head>
-      <Layout title={`${brand.displayName} Repair Services`}>
+      <Layout title={`Independent ${brand.displayName} Device Repair`}>
         {/* Hero */}
         <section className="pt-16 pb-20 bg-gradient-to-br from-primary-900 to-primary-800 text-white">
           <div className="container-custom">
             <div className="max-w-3xl">
+              <p className="text-sm text-primary-300 mb-4 border border-primary-600 rounded-lg px-4 py-2 inline-block">
+                The Travelling Technicians is an independent, third-party repair service. We are not an authorized service provider for {brand.displayName}. All brand names and trademarks are the property of their respective owners.
+              </p>
               <h1 className="text-4xl md:text-5xl font-heading font-bold mb-6 leading-tight">
-                Expert {brand.displayName} Repair at Your Doorstep
+                Independent {brand.displayName} Device Repair at Your Doorstep
               </h1>
               <p className="text-xl mb-8 text-primary-200">
-                Professional repair services for {totalModels}+ {brand.displayName} models. Screen replacements, battery swaps, and more — all done at your location across the Lower Mainland.
+                Professional independent repair services for {totalModels}+ {brand.displayName} models. Screen replacements, battery swaps, and more — all done at your location across the Lower Mainland.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
                   href="/book-online"
                   className="inline-flex items-center justify-center bg-accent-500 hover:bg-accent-600 text-primary-900 font-semibold px-6 py-3 rounded-lg transition-colors text-center"
                 >
-                  Book {brand.displayName} Repair
+                  Book Your Repair
                 </Link>
                 <Link
                   href="/pricing"
@@ -150,7 +155,13 @@ export default function BrandPage({ brand, deviceTypeGroups, testimonials }: Bra
                       <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-800 flex-shrink-0">
                         <Wrench className="h-5 w-5" />
                       </div>
-                      <h3 className="text-lg font-bold text-primary-900">{model.name}</h3>
+                      <h3 className="text-lg font-bold text-primary-900">
+                        {hasModelPage(model.slug) ? (
+                          <Link href={`/models/${model.slug}`} className="hover:text-primary-700 transition-colors">
+                            {model.name}
+                          </Link>
+                        ) : model.name}
+                      </h3>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {model.services.map((service) => (
@@ -245,7 +256,7 @@ export default function BrandPage({ brand, deviceTypeGroups, testimonials }: Bra
           <div className="container-custom">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6 text-primary-900">
-                Why Choose Us for {brand.displayName} Repair
+                Why Choose Us for {brand.displayName} Device Repair
               </h2>
               <p className="text-xl text-primary-500 max-w-3xl mx-auto">
                 We bring convenience, quality, and expertise directly to your doorstep.

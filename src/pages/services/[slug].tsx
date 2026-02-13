@@ -328,7 +328,7 @@ export default function ServicePage({
                 {brandsWithModels.map((brand) => (
                   <div key={brand.name} className="bg-white rounded-xl p-6 shadow-sm border border-primary-100">
                     <h3 className="text-xl font-bold text-primary-900 mb-4">
-                      <Link href={`/brands/${brand.slug}`} className="hover:text-primary-700 transition-colors">
+                      <Link href={`/repair/${brand.slug}-devices`} className="hover:text-primary-700 transition-colors">
                         {brand.name} →
                       </Link>
                     </h3>
@@ -352,7 +352,7 @@ export default function ServicePage({
                 {brands.map((brand, index) => {
                   const brandSlug = brand.toLowerCase().replace(/\s+/g, '-');
                   return (
-                    <Link key={index} href={`/brands/${brandSlug}`} className="bg-white rounded-xl p-6 text-center shadow-sm hover:shadow-md transition-shadow block">
+                    <Link key={index} href={`/repair/${brandSlug}-devices`} className="bg-white rounded-xl p-6 text-center shadow-sm hover:shadow-md transition-shadow block">
                       <p className="font-medium text-primary-700">{brand}</p>
                     </Link>
                   );

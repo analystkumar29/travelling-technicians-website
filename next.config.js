@@ -65,6 +65,22 @@ module.exports = (phase, { defaultConfig }) => {
           destination: '/repair',
           permanent: true,
         },
+        // Brand pages → /repair/{brand}-devices (trademark compliance)
+        {
+          source: '/brands/apple',
+          destination: '/repair/apple-devices',
+          permanent: true,
+        },
+        {
+          source: '/brands/samsung',
+          destination: '/repair/samsung-devices',
+          permanent: true,
+        },
+        {
+          source: '/brands/google',
+          destination: '/repair/google-devices',
+          permanent: true,
+        },
         // Catch-all for old /services/mobile/... and /services/laptop/... patterns
         {
           source: '/services/mobile/:path*',
