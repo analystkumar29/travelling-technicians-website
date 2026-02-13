@@ -36,16 +36,30 @@ interface Testimonial {
   service: string;
 }
 
+interface ModelWithServices {
+  name: string;
+  slug: string;
+  brand: string;
+  services: { name: string; slug: string }[];
+}
+
 interface CityRepairs {
   cityName: string;
   citySlug: string;
-  models: { name: string; slug: string; serviceSlug: string; brand: string }[];
+  models: ModelWithServices[];
+}
+
+interface BrandModelWithServices {
+  name: string;
+  slug: string;
+  hasLandingPage: boolean;
+  services: { name: string; slug: string }[];
 }
 
 interface BrandWithModels {
   name: string;
   slug: string;
-  models: { name: string; slug: string; serviceSlug: string; hasLandingPage: boolean }[];
+  models: BrandModelWithServices[];
 }
 
 interface ServicePageProps {
@@ -287,16 +301,26 @@ export default function ServicePage({
                         {city.cityName}
                       </Link>
                     </div>
-                    <ul className="space-y-2">
+                    <ul className="space-y-3">
                       {city.models.map((model, i) => (
                         <li key={i}>
-                          <Link
-                            href={`/repair/${city.citySlug}/${model.serviceSlug}/${model.slug}`}
-                            className="text-primary-600 hover:text-primary-800 hover:underline transition-colors text-sm"
-                          >
-                            {model.name} {services[0]?.name || 'Repair'}
-                          </Link>
+                          <span className="text-sm font-medium text-primary-800">
+                            {model.name}
+                          </span>
                           <span className="text-primary-400 text-xs ml-1">({model.brand})</span>
+                          <div className="flex flex-wrap gap-x-2 mt-0.5">
+                            {model.services.map((svc, j) => (
+                              <span key={svc.slug}>
+                                <Link
+                                  href={`/repair/${city.citySlug}/${svc.slug}/${model.slug}`}
+                                  className="text-primary-500 hover:text-primary-800 hover:underline transition-colors text-xs"
+                                >
+                                  {svc.name}
+                                </Link>
+                                {j < model.services.length - 1 && <span className="text-primary-300 ml-2">&middot;</span>}
+                              </span>
+                            ))}
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -332,15 +356,34 @@ export default function ServicePage({
                         {brand.name} →
                       </Link>
                     </h3>
-                    <ul className="space-y-2">
+                    <ul className="space-y-3">
                       {brand.models.map((model, i) => (
                         <li key={i}>
-                          <Link
-                            href={model.hasLandingPage ? `/models/${model.slug}` : `/repair/vancouver/${model.serviceSlug}/${model.slug}`}
-                            className="text-primary-600 hover:text-primary-800 hover:underline transition-colors text-sm"
-                          >
-                            {model.name}
-                          </Link>
+                          {model.hasLandingPage ? (
+                            <Link
+                              href={`/models/${model.slug}`}
+                              className="text-sm font-medium text-primary-800 hover:text-primary-600 hover:underline transition-colors"
+                            >
+                              {model.name} →
+                            </Link>
+                          ) : (
+                            <>
+                              <span className="text-sm font-medium text-primary-800">{model.name}</span>
+                              <div className="flex flex-wrap gap-x-2 mt-0.5">
+                                {model.services.map((svc, j) => (
+                                  <span key={svc.slug}>
+                                    <Link
+                                      href={`/repair/vancouver/${svc.slug}/${model.slug}`}
+                                      className="text-primary-500 hover:text-primary-800 hover:underline transition-colors text-xs"
+                                    >
+                                      {svc.name}
+                                    </Link>
+                                    {j < model.services.length - 1 && <span className="text-primary-300 ml-2">&middot;</span>}
+                                  </span>
+                                ))}
+                              </div>
+                            </>
+                          )}
                         </li>
                       ))}
                     </ul>
@@ -565,10 +608,32 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
       service: t.service as string,
     }));
 
+    // Build service slug → display name map
+    const serviceSlugToName: Record<string, string> = {};
+    for (const s of services) {
+      // Map service slugs to display names (e.g., 'screen-replacement-laptop' → 'Screen Replacement')
+      for (const pattern of serviceSlugPatterns) {
+        if (pattern.startsWith(s.name.toLowerCase().replace(/\s+/g, '-').split('-').slice(0, 2).join('-'))) {
+          serviceSlugToName[pattern] = s.name;
+        }
+      }
+    }
+    // Fallback: build from slug patterns directly if map is incomplete
+    for (const pattern of serviceSlugPatterns) {
+      if (!serviceSlugToName[pattern]) {
+        serviceSlugToName[pattern] = pattern
+          .replace(/-(?:mobile|laptop|tablet)$/, '')
+          .split('-')
+          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' ');
+      }
+    }
+
     // Process routes into popular repairs by city
     // Filter to only routes matching this device type's service slugs
     const serviceSlugSet = new Set(serviceSlugPatterns);
-    const routesByCity = new Map<string, { name: string; slug: string; serviceSlug: string; brand: string; brandSlug: string }[]>();
+    // Intermediate: collect all routes per city, keyed by model slug
+    const routesByCity = new Map<string, Map<string, { name: string; slug: string; brand: string; brandSlug: string; services: { name: string; slug: string }[] }>>();
 
     for (const route of (routesResult.data || [])) {
       const payload = route.payload as Record<string, Record<string, string>> | null;
@@ -589,9 +654,17 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
       if (!modelName || !modelSlug || !brandName) continue;
 
       if (!routesByCity.has(citySlug)) {
-        routesByCity.set(citySlug, []);
+        routesByCity.set(citySlug, new Map());
       }
-      routesByCity.get(citySlug)!.push({ name: modelName, slug: modelSlug, serviceSlug, brand: brandName, brandSlug });
+      const cityModels = routesByCity.get(citySlug)!;
+      if (!cityModels.has(modelSlug)) {
+        cityModels.set(modelSlug, { name: modelName, slug: modelSlug, brand: brandName, brandSlug, services: [] });
+      }
+      const existing = cityModels.get(modelSlug)!;
+      // Avoid duplicate services for the same model
+      if (!existing.services.some(s => s.slug === serviceSlug)) {
+        existing.services.push({ name: serviceSlugToName[serviceSlug] || 'Repair', slug: serviceSlug });
+      }
     }
 
     // Priority keywords — specific model identifiers first, then generic
@@ -614,20 +687,13 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     const popularRepairsByCity: CityRepairs[] = TOP_CITIES
       .filter(city => routesByCity.has(city.slug))
       .map(city => {
-        const allModels = routesByCity.get(city.slug)!;
+        const cityModels = routesByCity.get(city.slug)!;
+        const allModels = Array.from(cityModels.values());
 
-        // Deduplicate by model slug (same model has multiple service routes)
-        const seenSlugs = new Set<string>();
-        const uniqueModels = allModels.filter(m => {
-          if (seenSlugs.has(m.slug)) return false;
-          seenSlugs.add(m.slug);
-          return true;
-        });
-
-        const picked: typeof uniqueModels = [];
+        const picked: typeof allModels = [];
         const usedBrands = new Set<string>();
 
-        const sorted = [...uniqueModels].sort((a, b) => {
+        const sorted = [...allModels].sort((a, b) => {
           const aScore = priorityKeywords.findIndex(kw => a.name.toLowerCase().includes(kw));
           const bScore = priorityKeywords.findIndex(kw => b.name.toLowerCase().includes(kw));
           return (aScore === -1 ? 999 : aScore) - (bScore === -1 ? 999 : bScore);
@@ -653,23 +719,21 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
         return {
           cityName: city.name,
           citySlug: city.slug,
-          models: picked,
+          models: picked.map(m => ({
+            name: m.name,
+            slug: m.slug,
+            brand: m.brand,
+            services: m.services,
+          })),
         };
       });
 
     // Build brands with popular models (for Vancouver, the biggest city)
-    const vancouverModels = routesByCity.get('vancouver') || [];
+    const vancouverCityModels = routesByCity.get('vancouver');
+    const vancouverModels = vancouverCityModels ? Array.from(vancouverCityModels.values()) : [];
 
-    // Deduplicate by model slug (same model has multiple service routes)
-    const seenVancouverSlugs = new Set<string>();
-    const uniqueVancouverModels = vancouverModels.filter(m => {
-      if (seenVancouverSlugs.has(m.slug)) return false;
-      seenVancouverSlugs.add(m.slug);
-      return true;
-    });
-
-    const brandModelMap = new Map<string, typeof uniqueVancouverModels>();
-    for (const model of uniqueVancouverModels) {
+    const brandModelMap = new Map<string, typeof vancouverModels>();
+    for (const model of vancouverModels) {
       if (!brandModelMap.has(model.brand)) {
         brandModelMap.set(model.brand, []);
       }
@@ -691,8 +755,8 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
         models: sorted.slice(0, 4).map(m => ({
           name: m.name,
           slug: m.slug,
-          serviceSlug: m.serviceSlug,
           hasLandingPage: hasModelPage(m.slug),
+          services: m.services,
         })),
       };
     }).filter(b => b.models.length > 0);

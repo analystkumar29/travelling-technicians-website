@@ -64,6 +64,26 @@ const MODEL_ABOUT_CONTENT: Record<string, { issues: string; details: string }> =
     issues: 'Cracked screens, aging batteries, and Lightning port issues are the top repair requests. Back glass damage is also common due to the glass-sandwich design.',
     details: 'The iPhone 14 features a redesigned internal layout that makes battery replacement easier than previous models. Its 6.1-inch Super Retina XDR display and A15 Bionic chip remain popular, making it a frequently repaired model.'
   },
+  'macbook-pro-16-m4-max-2024': {
+    issues: 'Common issues include Liquid Retina XDR display damage from drops or pressure, battery degradation under sustained high-performance workloads, and Thunderbolt 5 port wear from frequent docking and undocking.',
+    details: 'The MacBook Pro 16 with M4 Max (2024) is Apple\'s most powerful laptop, featuring up to 128 GB unified memory and a 16.2-inch Liquid Retina XDR display with 3456×2234 resolution. Its advanced thermal system with dual fans handles the M4 Max chip\'s 16-core CPU and up to 40-core GPU. Screen replacements require precision calibration for ProMotion 120Hz and XDR brightness. The larger chassis and high-capacity battery (100 Wh) make battery replacement a multi-step procedure involving careful adhesive removal.'
+  },
+  'macbook-pro-16-m4-pro-2024': {
+    issues: 'Frequent repair needs include cracked or pressure-damaged displays, battery health decline after heavy creative workloads, and USB-C/Thunderbolt port issues from regular peripheral use.',
+    details: 'The MacBook Pro 16 with M4 Pro (2024) balances performance and efficiency with a 14-core CPU and 20-core GPU. It shares the same 16.2-inch Liquid Retina XDR display and 100 Wh battery as the M4 Max variant, so repair procedures are nearly identical. The Thunderbolt 5 ports, HDMI 2.1, SDXC slot, and MagSafe 3 connector are all potential service points. Our technicians handle the complete disassembly required for screen and battery replacements on this unibody design.'
+  },
+  'macbook-pro-14-m4-2024': {
+    issues: 'Display damage, battery cycle depletion, and keyboard or trackpad malfunctions are the top repair requests for the 14-inch M4 MacBook Pro.',
+    details: 'The MacBook Pro 14 with M4 (2024) is the entry point to Apple\'s pro laptop lineup, featuring the base M4 chip with a 10-core CPU and 10-core GPU. Its 14.2-inch Liquid Retina XDR display delivers the same ProMotion technology as higher-tier models. With 72 Wh battery capacity and Thunderbolt 4 ports (not Thunderbolt 5), it\'s slightly simpler to service than the 16-inch models. Battery replacement still requires careful adhesive work, and screen replacements must preserve True Tone calibration.'
+  },
+  'macbook-air-13-m4-2025': {
+    issues: 'Screen cracks from drops, battery degradation over time, and USB-C port wear are the most common repair needs for the MacBook Air 13-inch M4.',
+    details: 'The MacBook Air 13 with M4 (2025) is Apple\'s thinnest laptop at just 11.3 mm, featuring a 13.6-inch Liquid Retina display, 10-core CPU, and 10-core GPU. Its fanless design means there are no moving parts to fail, but the compact form factor requires precision tools for disassembly. The 52.6 Wh battery is adhered in place, and screen replacements must preserve the 500-nit brightness calibration and P3 wide colour gamut. MagSafe 3 charging and two Thunderbolt 4 ports are the main external service points.'
+  },
+  'macbook-air-15-m4-2025': {
+    issues: 'Display damage from everyday use, battery health decline, and port connectivity issues are the most frequent repair requests for the MacBook Air 15-inch M4.',
+    details: 'The MacBook Air 15 with M4 (2025) offers a spacious 15.3-inch Liquid Retina display in a fanless, 11.5 mm-thin design weighing just 1.51 kg. The larger display makes screen replacements more involved than the 13-inch model, with careful handling needed to avoid flexing the thin aluminium lid. Its 66.5 Wh battery provides all-day battery life but uses the same adhesive-mounted design as other recent MacBooks. The six-speaker sound system and Thunderbolt 4 ports round out the key components our technicians service.'
+  },
   'macbook-pro-14-m3': {
     issues: 'Common issues include Liquid Retina XDR display damage, battery cycle count reaching replacement threshold (around 1,000 cycles), and keyboard or trackpad malfunctions.',
     details: 'The MacBook Pro 14-inch with M3 chip features a 14.2-inch Liquid Retina XDR display with ProMotion. Its unified memory architecture and MagSafe 3 charging port represent key service points. Battery replacement requires careful adhesive removal.'

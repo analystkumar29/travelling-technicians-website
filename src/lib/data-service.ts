@@ -2202,6 +2202,8 @@ export async function getBrandWithModels(brandSlug: string): Promise<{
  */
 const MODEL_PAGE_SLUGS = [
   'iphone-16-pro-max', 'iphone-16-pro', 'iphone-15-pro-max', 'iphone-15', 'iphone-14',
+  'macbook-pro-16-m4-max-2024', 'macbook-pro-16-m4-pro-2024', 'macbook-pro-14-m4-2024',
+  'macbook-air-13-m4-2025', 'macbook-air-15-m4-2025',
   'macbook-pro-14-m3', 'macbook-air-m3',
   'galaxy-s25-ultra', 'galaxy-s25', 'galaxy-s24-ultra', 'galaxy-s24', 'galaxy-s23-ultra',
   'pixel-9-pro', 'pixel-8-pro', 'pixel-8'
