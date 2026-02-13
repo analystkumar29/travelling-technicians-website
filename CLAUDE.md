@@ -167,7 +167,7 @@ Stripe payment flow:
 
 6. **Admin auth is client-side only**: The `withAuth()` HOC checks `localStorage` for a JWT. API endpoints under `/api/management/*` must independently verify the Bearer token. There is no SSR-level auth guard.
 
-7. **SEO meta pattern**: `repair/[[...slug]].tsx` generates `<title>`, `<meta description>`, OG tags, hreflang (`en-CA`), and BreadcrumbList JSON-LD inline. The XML sitemap at `/api/sitemap.xml` paginates `dynamic_routes` in batches of 1,000. Global LocalBusiness + Service + FAQ JSON-LD schemas live in `_document.tsx` with `areaServed` covering 13 cities with GeoCoordinates.
+7. **SEO meta pattern**: `repair/[[...slug]].tsx` generates `<title>`, `<meta description>`, OG tags, hreflang (`en-CA`), and BreadcrumbList JSON-LD inline. The XML sitemap at `/api/sitemap.xml` paginates `dynamic_routes` in batches of 1,000. Global LocalBusiness + Organization + Service JSON-LD schemas live in `_document.tsx` with `areaServed` covering 13 cities with GeoCoordinates. Layout component supports `noindex` prop for transactional pages.
 
 8. **Booking form controller pattern**: The booking form is split into `useBookingController` hook (state, validation, navigation) + 3 step components (`DeviceServiceStep`, `ContactLocationStep`, `ScheduleConfirmStep`). The hook exposes watched values via `useWatch` (not `watch()`) for performance. Liquid-glass CSS in `src/styles/liquid-glass.css`.
 
@@ -437,7 +437,7 @@ Any non-completed status can also → `cancelled`.
 - **10 pages updated** with canonical URLs: `/pricing`, `/faq`, `/privacy-policy`, `/terms-conditions`, `/book-online`, `/check-warranty`, `/leave-review`, `/verify-booking`, `/booking-confirmation`, `/services/[slug]` (dynamic)
 - Pages that already had canonicals (no changes): `/`, `/about`, `/contact`, `/blog`, `/sitemap`, `/service-areas`, `/repair` (index), all `repair/[[...slug]]` route types
 
-### Full Redirect Inventory (`next.config.js`, 11 rules)
+### Full Redirect Inventory (`next.config.js`, 14 rules)
 1. Non-www → `www.travelling-technicians.ca` (host-based)
 2. `/mobile-screen-repair` → `/services/mobile-repair`
 3. `/laptop-screen-repair` → `/services/laptop-repair`
@@ -449,6 +449,9 @@ Any non-completed status can also → `cancelled`.
 9. `/doorstep` → `/repair`
 10. `/services/mobile/:path*` → `/services/mobile-repair`
 11. `/services/laptop/:path*` → `/services/laptop-repair`
+12. `/brands/apple` → `/repair/apple-devices` (301, added 2026-02-12)
+13. `/brands/samsung` → `/repair/samsung-devices` (301, added 2026-02-12)
+14. `/brands/google` → `/repair/google-devices` (301, added 2026-02-12)
 
 ## Cross-Linking & Conversion Optimization (APPLIED 2026-02-09)
 
