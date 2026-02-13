@@ -44,6 +44,7 @@ interface CityRepairs {
 
 interface BrandWithModels {
   name: string;
+  slug: string;
   models: { name: string; slug: string; serviceSlug: string }[];
 }
 
@@ -326,7 +327,11 @@ export default function ServicePage({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
                 {brandsWithModels.map((brand) => (
                   <div key={brand.name} className="bg-white rounded-xl p-6 shadow-sm border border-primary-100">
-                    <h3 className="text-xl font-bold text-primary-900 mb-4">{brand.name}</h3>
+                    <h3 className="text-xl font-bold text-primary-900 mb-4">
+                      <Link href={`/brands/${brand.slug}`} className="hover:text-primary-700 transition-colors">
+                        {brand.name} →
+                      </Link>
+                    </h3>
                     <ul className="space-y-2">
                       {brand.models.map((model, i) => (
                         <li key={i}>
@@ -344,11 +349,14 @@ export default function ServicePage({
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
-                {brands.map((brand, index) => (
-                  <div key={index} className="bg-white rounded-xl p-6 text-center shadow-sm hover:shadow-md transition-shadow">
-                    <p className="font-medium text-primary-700">{brand}</p>
-                  </div>
-                ))}
+                {brands.map((brand, index) => {
+                  const brandSlug = brand.toLowerCase().replace(/\s+/g, '-');
+                  return (
+                    <Link key={index} href={`/brands/${brandSlug}`} className="bg-white rounded-xl p-6 text-center shadow-sm hover:shadow-md transition-shadow block">
+                      <p className="font-medium text-primary-700">{brand}</p>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -560,7 +568,7 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     // Process routes into popular repairs by city
     // Filter to only routes matching this device type's service slugs
     const serviceSlugSet = new Set(serviceSlugPatterns);
-    const routesByCity = new Map<string, { name: string; slug: string; serviceSlug: string; brand: string }[]>();
+    const routesByCity = new Map<string, { name: string; slug: string; serviceSlug: string; brand: string; brandSlug: string }[]>();
 
     for (const route of (routesResult.data || [])) {
       const payload = route.payload as Record<string, Record<string, string>> | null;
@@ -576,13 +584,14 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
       const modelName = payload.model?.name;
       const modelSlug = payload.model?.slug;
       const brandName = payload.brand?.name;
+      const brandSlug = payload.brand?.slug || brandName?.toLowerCase().replace(/\s+/g, '-') || '';
 
       if (!modelName || !modelSlug || !brandName) continue;
 
       if (!routesByCity.has(citySlug)) {
         routesByCity.set(citySlug, []);
       }
-      routesByCity.get(citySlug)!.push({ name: modelName, slug: modelSlug, serviceSlug, brand: brandName });
+      routesByCity.get(citySlug)!.push({ name: modelName, slug: modelSlug, serviceSlug, brand: brandName, brandSlug });
     }
 
     // Pick top 3 brand-diverse models per city
@@ -644,8 +653,11 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
         const bScore = priorityKeywords.findIndex(kw => b.name.toLowerCase().includes(kw));
         return (aScore === -1 ? 999 : aScore) - (bScore === -1 ? 999 : bScore);
       });
+      // Get brand slug from first model's data, or derive from name
+      const brandSlug = sorted[0]?.brandSlug || brandName.toLowerCase().replace(/\s+/g, '-');
       return {
         name: brandName,
+        slug: brandSlug,
         models: sorted.slice(0, 4).map(m => ({ name: m.name, slug: m.slug, serviceSlug: m.serviceSlug })),
       };
     }).filter(b => b.models.length > 0);

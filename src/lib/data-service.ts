@@ -65,6 +65,7 @@ const STATIC_TESTIMONIALS = [
 ];
 
 // Hardcoded services data (from src/pages/services/*.tsx)
+// Only include currently active services to prevent inactive services from leaking via fallback
 const STATIC_LAPTOP_SERVICES = [
   {
     id: 1,
@@ -85,86 +86,6 @@ const STATIC_LAPTOP_SERVICES = [
     limited: false,
     price: 'From $99',
     popular: true
-  },
-  {
-    id: 3,
-    name: 'Keyboard Repair',
-    description: 'Having issues with sticky keys, broken keys, or non-responsive keyboard? Our doorstep service includes expert keyboard repair and replacement for all laptop models.',
-    icon: 'keyboard',
-    doorstep: true,
-    limited: false,
-    price: 'From $89',
-    popular: false
-  },
-  {
-    id: 4,
-    name: 'Charging Port Repair',
-    description: 'Struggling with loose connections or charging issues? Our technicians can repair or replace your laptop\'s charging port on-site, restoring reliable power to your device.',
-    icon: 'bolt',
-    doorstep: true,
-    limited: false,
-    price: 'From $89',
-    popular: false
-  },
-  {
-    id: 5,
-    name: 'Motherboard Repair',
-    description: 'Complex motherboard issues require expert diagnosis and repair. Our technicians can perform initial diagnostics at your location and provide repair options.',
-    icon: 'microchip',
-    doorstep: true,
-    limited: true,
-    price: 'From $199',
-    popular: false
-  },
-  {
-    id: 6,
-    name: 'Fan & Cooling System',
-    description: 'Is your laptop overheating or making loud fan noises? Our technicians can clean, repair, or replace cooling systems at your doorstep.',
-    icon: 'fan',
-    doorstep: true,
-    limited: false,
-    price: 'From $79',
-    popular: false
-  },
-  {
-    id: 7,
-    name: 'Software Issues',
-    description: 'Experiencing software problems, slow performance, or virus issues? Our technicians can diagnose and resolve software-related issues at your doorstep.',
-    icon: 'bug',
-    doorstep: true,
-    limited: false,
-    price: 'From $89',
-    popular: false
-  },
-  {
-    id: 8,
-    name: 'Data Recovery',
-    description: 'Worried about lost files, photos, or documents? We offer data recovery services with an initial assessment at your location.',
-    icon: 'hard-drive',
-    doorstep: true,
-    limited: true,
-    price: 'From $99',
-    popular: false
-  },
-  {
-    id: 9,
-    name: 'Screen Hinge Repair',
-    description: 'Loose or broken screen hinges can be frustrating and potentially damaging. Our technicians can repair or replace hinges for most laptop models.',
-    icon: 'settings',
-    doorstep: true,
-    limited: false,
-    price: 'From $109',
-    popular: false
-  },
-  {
-    id: 10,
-    name: 'Water Damage Diagnostics',
-    description: 'If your laptop has been exposed to liquid, quick action is essential. Our technicians can perform initial diagnostics at your doorstep and provide emergency treatment.',
-    icon: 'droplet',
-    doorstep: true,
-    limited: true,
-    price: 'From $49',
-    popular: false
   }
 ];
 
@@ -188,66 +109,6 @@ const STATIC_MOBILE_SERVICES = [
     limited: false,
     price: 'From $79',
     popular: true
-  },
-  {
-    id: 3,
-    name: 'Charging Port Repair',
-    description: 'Struggling with loose connections or charging issues? Our technicians can repair or replace your device\'s charging port on-site, restoring reliable power to your phone without you ever leaving home.',
-    icon: 'bolt',
-    doorstep: true,
-    limited: false,
-    price: 'From $89',
-    popular: false
-  },
-  {
-    id: 4,
-    name: 'Speaker/Microphone Repair',
-    description: 'Having trouble hearing callers or being heard? Our doorstep service includes expert diagnosis and repair of speaker and microphone issues for all major phone models.',
-    icon: 'microphone',
-    doorstep: true,
-    limited: false,
-    price: 'From $79',
-    popular: false
-  },
-  {
-    id: 5,
-    name: 'Camera Repair',
-    description: 'Don\'t miss capturing important moments due to camera malfunctions. Our technicians can fix front and rear camera issues at your location, usually completing repairs within an hour.',
-    icon: 'camera',
-    doorstep: true,
-    limited: false,
-    price: 'From $89',
-    popular: false
-  },
-  {
-    id: 6,
-    name: 'Water Damage Diagnostics',
-    description: 'If your phone has been exposed to water, quick action is essential. Our technicians can perform initial diagnostics at your doorstep and provide emergency treatment. Severe cases may require additional service at our specialized facility.',
-    icon: 'water',
-    doorstep: true,
-    limited: true,
-    price: 'From $49',
-    popular: false
-  },
-  {
-    id: 7,
-    name: 'Data Recovery',
-    description: 'Worried about lost photos, contacts, or messages? We offer data recovery services with an initial assessment at your location. Complex recovery may require additional time and specialized equipment.',
-    icon: 'memory',
-    doorstep: true,
-    limited: true,
-    price: 'From $99',
-    popular: false
-  },
-  {
-    id: 8,
-    name: 'Storage Upgrade',
-    description: 'Running out of space on your phone? For select Android devices, we can upgrade your storage capacity with larger memory modules or optimize your existing storage right at your location.',
-    icon: 'sd-card',
-    doorstep: true,
-    limited: false,
-    price: 'From $89',
-    popular: false
   }
 ];
 
@@ -271,66 +132,6 @@ const STATIC_TABLET_SERVICES = [
     limited: false,
     price: 'From $99',
     popular: true
-  },
-  {
-    id: 3,
-    name: 'Charging Port Repair',
-    description: 'Struggling with loose connections or charging issues? Our technicians can repair or replace your tablet\'s charging port on-site, restoring reliable power to your device.',
-    icon: 'bolt',
-    doorstep: true,
-    limited: false,
-    price: 'From $89',
-    popular: false
-  },
-  {
-    id: 4,
-    name: 'Camera Repair',
-    description: 'Don\'t miss capturing important moments due to camera malfunctions. Our technicians can fix front and rear camera issues on your tablet at your location.',
-    icon: 'camera',
-    doorstep: true,
-    limited: false,
-    price: 'From $109',
-    popular: false
-  },
-  {
-    id: 5,
-    name: 'Button Repair',
-    description: 'Having issues with power buttons, volume controls, or home buttons? Our doorstep service includes expert repair of physical buttons for all major tablet models.',
-    icon: 'volume-up',
-    doorstep: true,
-    limited: false,
-    price: 'From $79',
-    popular: false
-  },
-  {
-    id: 6,
-    name: 'Software Issues',
-    description: 'Experiencing software problems, slow performance, or app crashes? Our technicians can diagnose and resolve software-related issues at your doorstep.',
-    icon: 'bug',
-    doorstep: true,
-    limited: false,
-    price: 'From $89',
-    popular: false
-  },
-  {
-    id: 7,
-    name: 'Touch Screen Calibration',
-    description: 'If your tablet\'s touch response is inaccurate or unresponsive in certain areas, our technicians can recalibrate or repair touch functionality on-site.',
-    icon: 'hand-pointer',
-    doorstep: true,
-    limited: false,
-    price: 'From $69',
-    popular: false
-  },
-  {
-    id: 8,
-    name: 'Factory Reset & Setup',
-    description: 'Need a fresh start? Our technicians can perform a factory reset and help set up your tablet with all your essential apps and settings at your location.',
-    icon: 'sync-alt',
-    doorstep: true,
-    limited: false,
-    price: 'From $59',
-    popular: false
   }
 ];
 
@@ -915,9 +716,10 @@ export async function getServicesByDeviceType(deviceType: 'laptop' | 'mobile' | 
       };
     });
 
-    // Apply 10% price deviation safety check
+    // Apply 10% price deviation safety check — skip when all base_price values are NULL
     const staticServices = getStaticServicesByDeviceType(deviceType);
-    const shouldUseStaticData = checkPriceDeviation(dynamicServices, staticServices);
+    const hasRealPrices = data.some(s => s.base_price !== null && s.base_price !== undefined);
+    const shouldUseStaticData = hasRealPrices ? checkPriceDeviation(dynamicServices, staticServices) : false;
     
     if (shouldUseStaticData) {
       dataLogger.warn(`Dynamic ${deviceType} service prices deviate by >10% from hardcoded values, using static data for safety`);
@@ -2213,6 +2015,185 @@ export async function getRelatedNeighborhoods(
       error: error instanceof Error ? error.message : 'Unknown error'
     });
     return [];
+  }
+}
+
+/**
+ * Get all active brand slugs for getStaticPaths
+ */
+export async function getAllActiveBrandSlugs(): Promise<string[]> {
+  try {
+    const supabase = getServiceSupabase();
+    const { data, error } = await supabase
+      .from('brands')
+      .select('slug')
+      .eq('is_active', true)
+      .order('name');
+
+    if (error || !data) {
+      dataLogger.warn('Error fetching brand slugs, using fallback', { error: error?.message });
+      return ['apple', 'samsung', 'google'];
+    }
+
+    const slugs = data.map(b => b.slug).filter(Boolean);
+    return slugs.length > 0 ? slugs : ['apple', 'samsung', 'google'];
+  } catch (error) {
+    dataLogger.error('Unexpected error fetching brand slugs', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    return ['apple', 'samsung', 'google'];
+  }
+}
+
+/**
+ * Get brand data with models grouped by device type for brand pages
+ */
+export async function getBrandWithModels(brandSlug: string): Promise<{
+  brand: { name: string; displayName: string; slug: string };
+  deviceTypeGroups: Array<{
+    deviceType: string;
+    models: Array<{
+      name: string;
+      slug: string;
+      services: Array<{ name: string; slug: string; routePath: string }>;
+    }>;
+  }>;
+  testimonials: Array<{
+    customer_name: string;
+    city: string;
+    device_model: string;
+    rating: number;
+    review: string;
+  }>;
+} | null> {
+  try {
+    const supabase = getServiceSupabase();
+
+    // Fetch brand info
+    const { data: brandData, error: brandError } = await supabase
+      .from('brands')
+      .select('id, name, display_name, slug')
+      .eq('slug', brandSlug)
+      .eq('is_active', true)
+      .single();
+
+    if (brandError || !brandData) {
+      dataLogger.warn(`Brand not found for slug ${brandSlug}`, { error: brandError?.message });
+      return null;
+    }
+
+    // Fetch all model-service-page routes for Vancouver matching this brand
+    const { data: routesData, error: routesError } = await supabase
+      .from('dynamic_routes')
+      .select('slug_path, payload')
+      .eq('route_type', 'model-service-page')
+      .eq('is_active', true)
+      .like('slug_path', 'repair/vancouver/%');
+
+    if (routesError) {
+      dataLogger.warn(`Error fetching routes for brand ${brandSlug}`, { error: routesError.message });
+      return null;
+    }
+
+    // Filter routes to this brand and group by device type → model → services
+    const deviceTypeMap = new Map<string, Map<string, { name: string; slug: string; services: Array<{ name: string; slug: string; routePath: string }> }>>();
+
+    for (const route of (routesData || [])) {
+      const payload = route.payload as Record<string, Record<string, string>> | null;
+      if (!payload) continue;
+
+      const routeBrandSlug = payload.brand?.slug;
+      if (routeBrandSlug !== brandSlug) continue;
+
+      const deviceType = payload.device_type?.name || 'Other';
+      const modelName = payload.model?.name;
+      const modelSlug = payload.model?.slug;
+      const serviceName = payload.service?.display_name || payload.service?.name;
+      const serviceSlug = payload.service?.slug;
+
+      if (!modelName || !modelSlug || !serviceName || !serviceSlug) continue;
+
+      if (!deviceTypeMap.has(deviceType)) {
+        deviceTypeMap.set(deviceType, new Map());
+      }
+      const modelsMap = deviceTypeMap.get(deviceType)!;
+
+      if (!modelsMap.has(modelSlug)) {
+        modelsMap.set(modelSlug, { name: modelName, slug: modelSlug, services: [] });
+      }
+
+      const model = modelsMap.get(modelSlug)!;
+      // Avoid duplicate services
+      if (!model.services.some(s => s.slug === serviceSlug)) {
+        model.services.push({
+          name: serviceName,
+          slug: serviceSlug,
+          routePath: `/${route.slug_path}`
+        });
+      }
+    }
+
+    // Sort models by flagship priority
+    const priorityKeywords = ['pro max', 'ultra', 'pro', 'plus', '16', '25', '15', '24', '9', 'air', 'mini'];
+    const sortModels = (models: Array<{ name: string; slug: string; services: any[] }>) => {
+      return models.sort((a, b) => {
+        const aScore = priorityKeywords.findIndex(kw => a.name.toLowerCase().includes(kw));
+        const bScore = priorityKeywords.findIndex(kw => b.name.toLowerCase().includes(kw));
+        return (aScore === -1 ? 999 : aScore) - (bScore === -1 ? 999 : bScore);
+      });
+    };
+
+    // Preferred device type order
+    const deviceTypeOrder = ['Mobile', 'Laptop', 'Tablet'];
+    const deviceTypeGroups = Array.from(deviceTypeMap.entries())
+      .sort((a, b) => {
+        const aIdx = deviceTypeOrder.indexOf(a[0]);
+        const bIdx = deviceTypeOrder.indexOf(b[0]);
+        return (aIdx === -1 ? 999 : aIdx) - (bIdx === -1 ? 999 : bIdx);
+      })
+      .map(([deviceType, modelsMap]) => ({
+        deviceType,
+        models: sortModels(Array.from(modelsMap.values()))
+      }));
+
+    // Fetch testimonials mentioning this brand's models
+    const allModelNames = deviceTypeGroups.flatMap(g => g.models.map(m => m.name));
+    let testimonials: Array<{ customer_name: string; city: string; device_model: string; rating: number; review: string }> = [];
+
+    if (allModelNames.length > 0) {
+      // Build OR filter for device_model matching brand models
+      const brandNameLower = brandData.name.toLowerCase();
+      const { data: testimonialData } = await supabase
+        .from('testimonials')
+        .select('customer_name, city, device_model, rating, review')
+        .eq('status', 'approved')
+        .ilike('device_model', `%${brandNameLower}%`)
+        .order('rating', { ascending: false })
+        .limit(6);
+
+      testimonials = (testimonialData || []).map(t => ({
+        customer_name: t.customer_name || 'Customer',
+        city: t.city || 'Vancouver',
+        device_model: t.device_model || '',
+        rating: t.rating || 5,
+        review: t.review || ''
+      }));
+    }
+
+    return {
+      brand: {
+        name: brandData.name,
+        displayName: brandData.display_name || brandData.name,
+        slug: brandData.slug
+      },
+      deviceTypeGroups,
+      testimonials
+    };
+  } catch (error) {
+    dataLogger.error(`Unexpected error fetching brand data for ${brandSlug}`, {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    return null;
   }
 }
 

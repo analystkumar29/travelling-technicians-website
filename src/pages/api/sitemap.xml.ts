@@ -29,6 +29,7 @@ interface DynamicContent {
   serviceAreas: Array<{ city: string; updated_at: string }>;
   blogPosts: Array<{ slug: string; updated_at: string; publishDate?: string }>;
   services: Array<{ slug: string; updated_at: string; device_type: string }>;
+  brands: Array<{ slug: string; updated_at: string }>;
   cityServiceModels: Array<{
     city: string;
     service: string;
@@ -86,7 +87,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     const servicePages = getServicePages(siteUrl, dynamicContent.services);
     sitemapLogger.info(`🔧 Service pages: ${servicePages.length}`);
-    
+
+    const brandPages = getBrandPages(siteUrl, dynamicContent.brands);
+    sitemapLogger.info(`🏷️ Brand pages: ${brandPages.length}`);
+
     const cityServiceModelPages = getCityServiceModelPages(siteUrl, dynamicContent.cityServiceModels);
     sitemapLogger.info(`🎯 City-service-model pages (MAIN DYNAMIC ROUTES): ${cityServiceModelPages.length}`);
 
@@ -106,6 +110,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ...cityServicePages,
       ...blogPages,
       ...servicePages,
+      ...brandPages,
       ...cityServiceModelPages,
       ...informationalPages,
       ...legalPages
@@ -124,6 +129,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     sitemapLogger.info(`  - Neighborhoods: ${neighborhoodPages.length}`);
     sitemapLogger.info(`  - Blog: ${blogPages.length}`);
     sitemapLogger.info(`  - Services: ${servicePages.length}`);
+    sitemapLogger.info(`  - Brands: ${brandPages.length}`);
     sitemapLogger.info(`  - City-Service-Model (dynamic): ${cityServiceModelPages.length}`);
     sitemapLogger.info(`  - City-Service pages: ${cityServicePages.length}`);
     sitemapLogger.info(`  - Informational: ${informationalPages.length}`);
@@ -171,6 +177,7 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       serviceLocationsResult,
       blogPostsResult,
       servicesResult,
+      brandsResult,
       allRoutesResult,
       neighborhoodsResult
     ] = await Promise.all([
@@ -189,6 +196,11 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
         .select('name, slug, updated_at, device_type_id')
         .eq('is_active', true)
         .order('sort_order'),
+      supabase
+        .from('brands')
+        .select('slug, updated_at')
+        .eq('is_active', true)
+        .order('name'),
       fetchAllDynamicRoutes(supabase, startTime, GLOBAL_TIMEOUT),
       getNeighborhoodPagesFromDB()
     ]);
@@ -218,7 +230,12 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       { slug: 'tablet-repair', updated_at: FALLBACK_DATE, device_type: 'tablet' }
     ];
 
-    sitemapLogger.info(`Fetched ${allRoutesResult.modelServiceRoutes.length} model-service, ${allRoutesResult.cityServiceRoutes.length} city-service routes`);
+    const brands = (brandsResult.data || []).map(b => ({
+      slug: b.slug,
+      updated_at: b.updated_at || FALLBACK_DATE
+    })).filter(b => b.slug);
+
+    sitemapLogger.info(`Fetched ${allRoutesResult.modelServiceRoutes.length} model-service, ${allRoutesResult.cityServiceRoutes.length} city-service routes, ${brands.length} brands`);
 
     const serviceAreas = serviceLocations?.map(loc => ({
       city: loc.city_name,
@@ -229,6 +246,7 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       serviceAreas,
       blogPosts,
       services,
+      brands,
       cityServiceModels: allRoutesResult.modelServiceRoutes,
       neighborhoods: neighborhoodsResult,
       cityServicePages: allRoutesResult.cityServiceRoutes
@@ -240,6 +258,7 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       serviceAreas: [],
       blogPosts: [],
       services: [],
+      brands: [],
       cityServiceModels: [],
       neighborhoods: [],
       cityServicePages: []
@@ -587,6 +606,18 @@ function getServicePages(siteUrl: string, services: Array<{ slug: string; update
   });
   
   return entries;
+}
+
+/**
+ * Generate brand pages (/brands/{slug})
+ */
+function getBrandPages(siteUrl: string, brands: Array<{ slug: string; updated_at: string }>): SitemapEntry[] {
+  return brands.map(brand => ({
+    loc: `${siteUrl}/brands/${brand.slug}`,
+    lastmod: brand.updated_at,
+    changefreq: 'weekly',
+    priority: '0.85'
+  }));
 }
 
 /**
