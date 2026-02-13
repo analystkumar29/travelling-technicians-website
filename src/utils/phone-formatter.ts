@@ -147,24 +147,3 @@ export function getDefaultPhoneNumber(): PhoneNumber {
   return parsePhoneNumber(DEFAULT_PHONE_NUMBER);
 }
 
-// Test the formatter with various inputs
-if (process.env.NODE_ENV === 'development') {
-  const testNumbers = [
-    '+16048495329',
-    '604-849-5329',
-    '(604) 849-5329',
-    '6048495329',
-    '+1-604-849-5329',
-    '1-604-849-5329'
-  ];
-  
-  console.log('Phone formatter test:');
-  testNumbers.forEach(num => {
-    try {
-      const parsed = parsePhoneNumber(num);
-      console.log(`Input: ${num} -> Display: ${parsed.display}, Href: ${parsed.href}`);
-    } catch (error: any) {
-      console.log(`Input: ${num} -> Error: ${error.message}`);
-    }
-  });
-}

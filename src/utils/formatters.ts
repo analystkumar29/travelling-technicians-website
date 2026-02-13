@@ -81,22 +81,16 @@ export function formatDate(dateString: string): string {
   if (!dateString) return '';
   
   try {
-    console.log(`DEBUG - formatDate input:`, dateString);
-    
     // Format: YYYY-MM-DD
     const [year, month, day] = dateString.split('-').map(Number);
-    
-    console.log(`DEBUG - formatDate parsed:`, { year, month, day });
-    
+
     if (!year || !month || !day) {
-      console.log(`DEBUG - formatDate invalid format:`, dateString);
       return dateString; // Return original if format doesn't match expected
     }
-    
+
     // Force the UTC date (this ensures no timezone shift)
     const utcDate = new Date(Date.UTC(year, month - 1, day));
-    console.log(`DEBUG - formatDate utcDate:`, utcDate.toISOString());
-    
+
     // Convert to weekday, month day, year format using UTC date
     const formatted = new Intl.DateTimeFormat('en-US', {
       weekday: 'long',
@@ -105,8 +99,7 @@ export function formatDate(dateString: string): string {
       year: 'numeric',
       timeZone: 'UTC' // Force UTC timezone for consistent display
     }).format(utcDate);
-    
-    console.log(`DEBUG - formatDate result:`, formatted);
+
     return formatted;
   } catch (e) {
     console.error('Error formatting date:', e);

@@ -188,8 +188,6 @@ export default async function handler(
       });
     }
 
-    console.log('Fetching models for:', { deviceType, brand });
-
     const supabase = getServiceSupabase();
 
     // Step 1: Get device type ID (case-insensitive search)
@@ -265,8 +263,6 @@ export default async function handler(
     
     // Apply intelligent sorting (latest models first)
     const sortedModels = smartSortModels(deduplicatedModels);
-
-    console.log(`Found ${transformedModels.length} models, deduplicated to ${deduplicatedModels.length}, final sorted: ${sortedModels.length} for ${brand} ${deviceType}`);
 
     return res.status(200).json({
       success: true,

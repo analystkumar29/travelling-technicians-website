@@ -2,26 +2,6 @@ import React, { useState, useEffect, useRef, FormEvent, useCallback } from 'reac
 import { FaMapMarkerAlt, FaSpinner } from 'react-icons/fa';
 import { checkServiceArea } from '@/utils/locationUtils';
 
-// Debug utility for consistent logging
-const debugLog = (component: string, message: string, data?: any) => {
-  const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
-  console.log(`[${timestamp}] [${component}] ${message}`, data || '');
-};
-
-const debugError = (component: string, message: string, error?: any) => {
-  const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
-  console.error(`[${timestamp}] [${component}] ❌ ${message}`, error || '');
-};
-
-const debugWarn = (component: string, message: string, data?: any) => {
-  const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
-  console.warn(`[${timestamp}] [${component}] ⚠️ ${message}`, data || '');
-};
-
-const debugSuccess = (component: string, message: string, data?: any) => {
-  const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
-  console.log(`[${timestamp}] [${component}] ✅ ${message}`, data || '');
-};
 
 // Function to extract postal code from an address string
 function extractPostalCode(address: string): string {
@@ -86,19 +66,6 @@ export default function AddressAutocomplete({
   const debouncedFetchSuggestions = useRef<((input: string) => void) | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Component mount debug
-  useEffect(() => {
-    debugLog('ADDRESS_AUTOCOMPLETE', 'Component mounted', {
-      hasApiKey: !!apiKey,
-      apiKeyIsPlaceholder: apiKey === 'your-google-maps-api-key' || apiKey.includes('your-'),
-      initialValue: initialValue || 'none'
-    });
-    
-    // Log that we're using OpenStreetMap only
-    if (!apiKey || apiKey === 'your-google-maps-api-key' || apiKey.includes('your-')) {
-      debugLog('ADDRESS_AUTOCOMPLETE', 'No valid Google Maps API key provided, using OpenStreetMap only');
-    }
-  }, [apiKey, initialValue]);
 
   const fetchSuggestions = useCallback(async (input: string) => {
     if (!input) {
@@ -110,7 +77,6 @@ export default function AddressAutocomplete({
     // Always use OpenStreetMap Nominatim API for address suggestions
     try {
       setLoading(true);
-      debugLog('ADDRESS_AUTOCOMPLETE', 'Using OpenStreetMap API for suggestions');
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(input)}&addressdetails=1&limit=5&countrycodes=ca`,
         {
@@ -126,26 +92,17 @@ export default function AddressAutocomplete({
       }
       
       const data = await response.json();
-      debugLog('ADDRESS_AUTOCOMPLETE', 'OpenStreetMap API response:', {
-        count: Array.isArray(data) ? data.length : 0,
-        data: data
-      });
-      
+
       if (data && Array.isArray(data)) {
-        debugSuccess('ADDRESS_AUTOCOMPLETE', 'OpenStreetMap returned suggestions:', {
-          count: data.length,
-          firstSuggestion: data[0]?.display_name
-        });
         setSuggestions(data);
         setShowSuggestions(data.length > 0);
         setActiveSuggestionIndex(-1);
       } else {
-        debugWarn('ADDRESS_AUTOCOMPLETE', 'OpenStreetMap returned invalid data format');
         setSuggestions([]);
         setShowSuggestions(false);
       }
     } catch (error) {
-      debugError('ADDRESS_AUTOCOMPLETE', 'Error fetching OpenStreetMap suggestions:', error);
+      console.error('Error fetching address suggestions:', error);
       setSuggestions([]);
       setShowSuggestions(false);
     } finally {
@@ -192,8 +149,6 @@ export default function AddressAutocomplete({
     
     // Create a stable function reference
     stableCallbackRef.current = (data: any) => {
-      console.log("JSONP Suggestions received:", data);
-      
       // Safely handle the data
       try {
         setSuggestions(data || []);
@@ -300,12 +255,9 @@ export default function AddressAutocomplete({
   }, [inputValue, fetchSuggestions, initialValue]);
 
   const handleSuggestionClick = (e: any) => {
-    debugLog('ADDRESS_AUTOCOMPLETE', 'Suggestion clicked:', e);
-    
     try {
       // Handle case when e doesn't have an address property
       if (!e || typeof e !== 'object') {
-        debugError('ADDRESS_AUTOCOMPLETE', 'Invalid suggestion object');
         return;
       }
       
@@ -324,12 +276,6 @@ export default function AddressAutocomplete({
           }
         }
         
-        debugSuccess('ADDRESS_AUTOCOMPLETE', 'Using Nominatim format suggestion', {
-          displayName,
-          postalCode: postalCode || 'none',
-          hasAddressObject: !!(e.address && typeof e.address === 'object')
-        });
-        
         // Set the input value
         setInputValue(displayName);
         
@@ -339,18 +285,8 @@ export default function AddressAutocomplete({
         
         // Call the onAddressSelect callback
         if (onAddressSelect && displayName) {
-          if (!postalCode) {
-            debugWarn('ADDRESS_AUTOCOMPLETE', 'No postal code found in Nominatim suggestion');
-          }
-          
           const result = checkServiceArea(postalCode);
           const isValid = !!(result && result.serviceable);
-          debugSuccess('ADDRESS_AUTOCOMPLETE', 'Calling onAddressSelect with Nominatim suggestion', {
-            address: displayName,
-            postalCode: postalCode || 'none',
-            isValid,
-            serviceAreaResult: result
-          });
           onAddressSelect(displayName, postalCode, isValid);
         }
         return;
@@ -366,12 +302,6 @@ export default function AddressAutocomplete({
         const addressStr = `${combinedAddress},${restOfAddress}`;
         const postalCode = e.postalCode || '';
         
-        debugSuccess('ADDRESS_AUTOCOMPLETE', 'Using string address format suggestion', {
-          address: addressStr,
-          postalCode: postalCode || 'none',
-          originalAddress: e.address
-        });
-        
         // Set the input value
         setInputValue(addressStr);
         
@@ -383,12 +313,6 @@ export default function AddressAutocomplete({
         if (onAddressSelect && addressStr) {
           const result = checkServiceArea(postalCode);
           const isValid = !!(result && result.serviceable);
-          debugSuccess('ADDRESS_AUTOCOMPLETE', 'Calling onAddressSelect with string address', {
-            address: addressStr,
-            postalCode: postalCode || 'none',
-            isValid,
-            serviceAreaResult: result
-          });
           onAddressSelect(addressStr, postalCode, isValid);
         }
         return;
@@ -397,12 +321,6 @@ export default function AddressAutocomplete({
       // Fallback for other formats
       const addressStr = e.name || e.formatted_address || e.description || JSON.stringify(e);
       const postalCode = e.postal_code || e.postalCode || '';
-      
-      debugLog('ADDRESS_AUTOCOMPLETE', 'Using fallback format suggestion', {
-        address: addressStr,
-        postalCode: postalCode || 'none',
-        suggestionType: 'fallback'
-      });
       
       // Set the input value
       setInputValue(addressStr);
@@ -415,16 +333,10 @@ export default function AddressAutocomplete({
       if (onAddressSelect && addressStr) {
         const result = checkServiceArea(postalCode);
         const isValid = !!(result && result.serviceable);
-        debugSuccess('ADDRESS_AUTOCOMPLETE', 'Calling onAddressSelect with fallback format', {
-          address: addressStr,
-          postalCode: postalCode || 'none',
-          isValid,
-          serviceAreaResult: result
-        });
         onAddressSelect(addressStr, postalCode, isValid);
       }
     } catch (error) {
-      debugError('ADDRESS_AUTOCOMPLETE', 'Error processing address selection:', error);
+      console.error('Error processing address selection:', error);
       setError('Error processing selected address. Please try another or enter manually.');
     }
   };
@@ -443,8 +355,7 @@ export default function AddressAutocomplete({
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        console.log("Got coordinates:", latitude, longitude);
-        
+
         // Use the Nominatim reverse geocoding service
         fetchAddressFromCoordinates(latitude, longitude);
       },
@@ -491,8 +402,6 @@ export default function AddressAutocomplete({
         return response.json();
       })
       .then(data => {
-        console.log("Reverse geocoding response:", data);
-        
         if (data && data.display_name) {
           setInputValue(data.display_name);
           
@@ -508,7 +417,6 @@ export default function AddressAutocomplete({
             
             // If we have a valid postal code, call onAddressSelect
             if (postalCode) {
-              console.log("Got location with postal code, calling onAddressSelect:", postalCode);
               if (onAddressSelect) {
                 const serviceAreaResult = checkServiceArea(postalCode);
                 const isServiceable = serviceAreaResult?.serviceable || false;
@@ -551,21 +459,15 @@ export default function AddressAutocomplete({
   
   const validateManualInput = () => {
     if (!inputValue.trim()) {
-      console.log('DEBUG - Input value is empty');
       return;
     }
 
-    console.log('DEBUG - Validating manual input:', inputValue);
-    
     // Try to extract a postal code from the input
     const extractedCode = extractPostalCode(inputValue);
     
     if (extractedCode) {
-      console.log('DEBUG - Found postal code in input:', extractedCode);
       validateAndSelectAddress(inputValue, extractedCode);
     } else {
-      console.log('DEBUG - No valid postal code found in input');
-      
       // Instead of stopping here with an error, we'll still allow the user to proceed
       // and ask them to enter a postal code separately in the next step
       setError('No postal code detected in your address. You will need to enter it in the next step.');
@@ -573,7 +475,6 @@ export default function AddressAutocomplete({
       // Even without a postal code, we should call onAddressSelect to allow the user to proceed
       // We'll pass a special flag (false for inServiceArea) to indicate postal code validation is needed
       if (onAddressSelect) {
-        console.log('DEBUG - Proceeding without postal code validation');
         // Use the address as entered, mark as not validated yet (third parameter false)
         onAddressSelect(inputValue, '', false);
       }
@@ -586,12 +487,7 @@ export default function AddressAutocomplete({
   };
   
   const validateAndSelectAddress = (address: string, postalCode: string) => {
-    console.log('DEBUG - Validating address with postal code:', postalCode);
-    console.log('DEBUG - Address value:', address);
-    
     if (!postalCode || postalCode.trim().length < 6) {
-      console.log('DEBUG - Invalid postal code format:', postalCode);
-      
       // Instead of stopping with an error, allow proceeding with a warning
       setError('Invalid postal code format. You will need to enter a valid postal code in the next step.');
       
@@ -613,12 +509,6 @@ export default function AddressAutocomplete({
     const serviceAreaResult = checkServiceArea(cleanPostalCode);
     const inServiceArea = serviceAreaResult?.serviceable || false;
     
-    console.log('DEBUG - Postal code check result:', { 
-      postalCode: cleanPostalCode, 
-      inServiceArea,
-      serviceAreaResult
-    });
-    
     if (!inServiceArea) {
       setError(`Unfortunately, we don't service ${cleanPostalCode} at this time.`);
       if (onError) {
@@ -632,13 +522,7 @@ export default function AddressAutocomplete({
     } else {
       setError('');
       if (onError) onError('');
-      
-      console.log('DEBUG - Calling onAddressSelect with:', { 
-        address, 
-        postalCode: cleanPostalCode,
-        inServiceArea
-      });
-      
+
       if (onAddressSelect) {
         onAddressSelect(address, cleanPostalCode, inServiceArea);
       }

@@ -1,6 +1,4 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import Link from 'next/link';
-import { FaExclamationCircle, FaHome } from 'react-icons/fa';
 
 interface Props {
   children: ReactNode;
@@ -80,46 +78,29 @@ class ErrorBoundary extends Component<Props, State> {
     }
     
     // Handle booking-related errors
-    if (error.message?.includes('booking') || 
+    if (error.message?.includes('booking') ||
         error.message?.includes('address') ||
         error.message?.includes('location')) {
-      console.log('Booking process error detected, applying fixes');
       this.handleBookingErrors();
-    }
-    
-    // Handle other specific error types as needed
-    if (error.message?.includes('CoreLocationProvider')) {
-      console.log('Location error detected, will use fallback system');
     }
   }
   
   // Clean up JSONP script tags that might be causing errors
   cleanupJSONPScriptTags() {
     try {
-      console.log('Cleaning up JSONP scripts to fix errors');
-      
-      // Remove all scripts with 'json_callback' in the URL
       const jsonpScripts = document.querySelectorAll('script[src*="json_callback"]');
       jsonpScripts.forEach((script: Element) => {
-        const scriptElement = script as HTMLScriptElement;
-        console.log('Removing problematic JSONP script:', scriptElement.src);
-        scriptElement.remove();
+        script.remove();
       });
-      
-      // Also remove all scripts related to map/location services that might be causing issues
+
       const locationScripts = document.querySelectorAll('script[src*="nominatim"]');
       locationScripts.forEach((script: Element) => {
-        const scriptElement = script as HTMLScriptElement;
-        console.log('Removing location script:', scriptElement.src);
-        scriptElement.remove();
+        script.remove();
       });
-      
-      // Clear any global JSONP callbacks
+
       if (typeof window !== 'undefined') {
-        // Find and remove all jsonp callback functions in the global scope
         Object.keys(window).forEach((key) => {
           if (key.includes('jsonp_callback')) {
-            console.log('Removing global JSONP callback:', key);
             delete (window as any)[key];
           }
         });
@@ -139,8 +120,6 @@ class ErrorBoundary extends Component<Props, State> {
       // Remove any error overlay elements that might be present
       const errorOverlays = document.querySelectorAll('.error-overlay');
       errorOverlays.forEach((overlay) => overlay.remove());
-      
-      console.log('Applied booking error fixes');
     } catch (e) {
       console.error('Error handling booking errors:', e);
     }

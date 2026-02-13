@@ -54,8 +54,8 @@ export default function App({ Component, pageProps }: AppProps) {
     if (process.env.NODE_ENV === 'production' && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
-          .then(registration => {
-            console.log('Service Worker registered successfully:', registration.scope);
+          .then(() => {
+            // Service worker registered
           })
           .catch(error => {
             console.warn('Service Worker registration failed:', error);

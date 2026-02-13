@@ -63,9 +63,7 @@ export default function PostalCodeChecker({
     setLoading(true);
     
     try {
-      console.log('Checking service area for:', postalCode);
       const serviceArea = checkServiceArea(postalCode);
-      console.log('Service area result:', serviceArea);
       
       setResult(serviceArea);
       
@@ -97,8 +95,7 @@ export default function PostalCodeChecker({
         
         // Save to localStorage for use in the booking form
         localStorage.setItem('travellingTech_location', JSON.stringify(locationData));
-        console.log('Saved location data to localStorage:', locationData);
-        
+
         // Call onSuccess callback with the result and postal code
         if (onSuccess) onSuccess(serviceArea, postalCode);
       }
@@ -150,8 +147,7 @@ export default function PostalCodeChecker({
         };
         
         localStorage.setItem('travellingTech_location', JSON.stringify(locationData));
-        console.log('Saved test location data:', locationData);
-        
+
         if (onSuccess) {
           onSuccess(serviceArea, testPostalCode);
         }
@@ -175,8 +171,7 @@ export default function PostalCodeChecker({
           });
           
           const { latitude, longitude } = position.coords;
-          console.log('Detected coordinates:', latitude, longitude);
-          
+
           // Use these coordinates with OpenStreetMap API to get address details
           const response = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&zoom=18`,
@@ -191,8 +186,7 @@ export default function PostalCodeChecker({
           
           if (response.ok) {
             const data = await response.json();
-            console.log('Nominatim address data:', data);
-            
+
             if (data.address) {
               // Extract postal code if available
               if (data.address.postcode) {
@@ -269,8 +263,7 @@ export default function PostalCodeChecker({
       };
       
       localStorage.setItem('travellingTech_location', JSON.stringify(locationData));
-      console.log('Saved detected location data:', locationData);
-      
+
       // Call success callback
       if (onSuccess) {
         onSuccess(serviceArea, detectedPostalCode);

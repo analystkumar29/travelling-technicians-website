@@ -5,7 +5,6 @@
 
 // Only apply in browser environment and skip some fixes in development for Fast Refresh
 if (typeof window !== 'undefined') {
-  console.log('[NextFix] Applying Next.js runtime fixes');
   
   // 1. Ensure __NEXT_DATA__ always exists
   if (!window.__NEXT_DATA__) {
@@ -68,7 +67,6 @@ if (typeof window !== 'undefined') {
       }
       return state.data;
     } catch (e) {
-      console.warn('[NextFix] Error accessing history state:', e);
       return {
         props: {},
         page: window.location.pathname || '/',
@@ -95,8 +93,6 @@ if (typeof window !== 'undefined') {
          message.includes('is not defined') ||
          message.includes('data of undefined'))) {
       
-      console.log('[NextFix] Handled error:', message);
-      
       // Fix the current state if necessary
       try {
         if (window.history.state && !window.history.state.data) {
@@ -114,10 +110,8 @@ if (typeof window !== 'undefined') {
       if (process.env.NODE_ENV !== 'development') {
         // Prevent the white screen issue by checking document body
         if (document.body && document.body.children.length === 0) {
-          console.log('[NextFix] Detected white screen, checking state...');
           setTimeout(() => {
             if (document.body.children.length === 0) {
-              console.log('[NextFix] Still white screen, refreshing page...');
               window.location.reload();
             }
           }, 1000);
@@ -146,14 +140,12 @@ if (typeof window !== 'undefined') {
         });
         
         if (visibleElements.length === 0) {
-          console.log('[NextFix] No visible elements detected after load, refreshing...');
           window.location.reload();
         }
       }, 2000);
     });
   }
   
-  console.log('[NextFix] All runtime fixes applied');
 }
 
 export default function initNextFixes() {
