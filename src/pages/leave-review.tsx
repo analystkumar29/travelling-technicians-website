@@ -116,7 +116,7 @@ export default function LeaveReviewPage() {
   const hasParams = token && ref;
 
   return (
-    <Layout title="Leave a Review | The Travelling Technicians" canonical="https://www.travelling-technicians.ca/leave-review">
+    <Layout title="Leave a Review | The Travelling Technicians" canonical="https://www.travelling-technicians.ca/leave-review" noindex>
       <div className="max-w-2xl mx-auto px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
         {/* Success State */}
         {submitted && (

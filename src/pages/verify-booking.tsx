@@ -138,7 +138,7 @@ export default function VerifyBooking() {
   };
   
   return (
-    <Layout title="Verify Booking | The Travelling Technicians" canonical="https://www.travelling-technicians.ca/verify-booking">
+    <Layout title="Verify Booking | The Travelling Technicians" canonical="https://www.travelling-technicians.ca/verify-booking" noindex>
       <div className="max-w-4xl mx-auto px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
           <div className="px-4 py-5 sm:p-6">

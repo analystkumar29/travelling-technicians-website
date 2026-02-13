@@ -10,9 +10,10 @@ export interface LayoutProps {
   title?: string;
   metaDescription?: string;
   canonical?: string;
+  noindex?: boolean;
 }
 
-export default function Layout({ children, title, metaDescription, canonical }: LayoutProps) {
+export default function Layout({ children, title, metaDescription, canonical, noindex }: LayoutProps) {
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
@@ -56,6 +57,7 @@ export default function Layout({ children, title, metaDescription, canonical }: 
         <meta name="twitter:title" content={pageTitle} />
         <meta name="twitter:description" content={description} />
         {canonical && <link rel="canonical" href={canonical} />}
+        {noindex && <meta name="robots" content="noindex, nofollow" />}
       </Head>
       <Header />
       <main className="flex-grow">{children}</main>

@@ -56,7 +56,9 @@ Disallow: /management/
 Disallow: /login
 Disallow: /admin
 Disallow: /admin/
-Disallow: /_next/
+Allow: /_next/static/
+Disallow: /_next/data/
+Disallow: /_next/image
 Disallow: /debug
 Disallow: /minimal
 
@@ -64,6 +66,7 @@ Disallow: /minimal
 # SITEMAP
 # ============================================
 # Dynamic sitemap at root (rewrites to /api/sitemap.xml via Vercel)
-# Contains ~3,300+ URLs with real lastmod dates from database
+# Contains ~4,900+ URLs with real lastmod dates from database
 Sitemap: https://www.travelling-technicians.ca/sitemap.xml
+Sitemap: https://www.travelling-technicians.ca/image-sitemap.xml
 

@@ -727,7 +727,7 @@ const RescheduleBooking: React.FC = () => {
   };
 
   return (
-    <Layout title="Reschedule Booking | The Travelling Technicians">
+    <Layout title="Reschedule Booking | The Travelling Technicians" noindex>
       <div className="py-16 bg-gradient-to-b from-gray-50 to-white min-h-screen">
         <div className="container-custom">
           <div className="text-center mb-12">

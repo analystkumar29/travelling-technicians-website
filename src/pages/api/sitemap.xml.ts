@@ -8,6 +8,7 @@ import {
   isValidUrlSlug,
   logSlugTransformation
 } from '@/utils/slug-utils';
+import { getModelPageSlugs } from '@/lib/data-service';
 
 // Create a module logger
 const sitemapLogger = logger.createModuleLogger('sitemap');
@@ -203,7 +204,7 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
         .order('sort_order'),
       supabase
         .from('brands')
-        .select('slug, updated_at')
+        .select('slug, created_at')
         .eq('is_active', true)
         .order('name'),
       fetchAllDynamicRoutes(supabase, startTime, GLOBAL_TIMEOUT),
@@ -237,7 +238,7 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
 
     const brands = (brandsResult.data || []).map(b => ({
       slug: b.slug,
-      updated_at: b.updated_at || FALLBACK_DATE
+      updated_at: b.created_at || FALLBACK_DATE
     })).filter(b => b.slug);
 
     sitemapLogger.info(`Fetched ${allRoutesResult.modelServiceRoutes.length} model-service, ${allRoutesResult.cityServiceRoutes.length} city-service routes, ${brands.length} brands`);
@@ -493,6 +494,12 @@ function getStaticPages(siteUrl: string): SitemapEntry[] {
       lastmod: FALLBACK_DATE,
       changefreq: 'weekly',
       priority: '0.5'
+    },
+    {
+      loc: `${siteUrl}/check-warranty`,
+      lastmod: FALLBACK_DATE,
+      changefreq: 'monthly',
+      priority: '0.6'
     }
     // Archived pages removed (redirected to dynamic equivalents):
     // - /mobile-screen-repair → /services/mobile-repair
@@ -641,7 +648,7 @@ function getCityServiceModelPages(siteUrl: string, cityServiceModels: Array<{
       loc: `${siteUrl}/repair/${city}/${service}/${model}`,
       lastmod: updated_at,
       changefreq: 'weekly',
-      priority: '0.5'
+      priority: '0.7'
     });
   });
   
@@ -704,14 +711,7 @@ function getLegalPages(siteUrl: string): SitemapEntry[] {
  * Generate model landing pages (/models/{slug})
  */
 function getModelPages(siteUrl: string): SitemapEntry[] {
-  const modelSlugs = [
-    'iphone-16-pro-max', 'iphone-16-pro', 'iphone-15-pro-max', 'iphone-15', 'iphone-14',
-    'macbook-pro-14-m3', 'macbook-air-m3',
-    'galaxy-s25-ultra', 'galaxy-s25', 'galaxy-s24-ultra', 'galaxy-s24', 'galaxy-s23-ultra',
-    'pixel-9-pro', 'pixel-8-pro', 'pixel-8'
-  ];
-
-  return modelSlugs.map(slug => ({
+  return getModelPageSlugs().map(slug => ({
     loc: `${siteUrl}/models/${slug}`,
     lastmod: FALLBACK_DATE,
     changefreq: 'weekly',
