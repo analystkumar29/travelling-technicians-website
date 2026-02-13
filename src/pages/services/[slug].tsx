@@ -594,10 +594,17 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
       routesByCity.get(citySlug)!.push({ name: modelName, slug: modelSlug, serviceSlug, brand: brandName, brandSlug });
     }
 
-    // Priority keywords — specific model numbers first for recency, then generic
+    // Priority keywords — specific model identifiers first, then generic
+    // findIndex returns the first match, so more-specific keywords must come before
+    // generic ones (e.g. 'm4 max' before 'm4', '16 pro max' before '16')
     const priorityKeywords = [
+      // Phone models (iPhone, Galaxy, Pixel) — specific first
       '16 pro max', '25 ultra', '16 pro', '9 pro xl',
       '15 pro max', 's25', '15 pro', 's24 ultra', '9 pro',
+      // Laptop models (MacBook chip generations, newest first)
+      // Must come before generic '16'/'15' which also match MacBook Pro 16/15
+      'm4 max', 'm4 pro', 'm4', 'm3 max', 'm3 pro', 'm3', 'm2', 'm1',
+      // Generic model numbers (phones + laptops share these)
       '16', '15', 's24', '14 pro max', '8 pro',
       '14 pro', 's23 ultra', '14', '8',
       'pro max', 'ultra', 'pro', 'plus',
