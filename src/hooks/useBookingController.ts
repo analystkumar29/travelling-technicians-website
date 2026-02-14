@@ -192,7 +192,9 @@ export function useBookingController({
       deviceBrand: initialData.deviceBrand || '',
       deviceModel: initialData.deviceModel || '',
       customBrand: initialData.customBrand || '',
-      serviceType: initialData.serviceType || '',
+      serviceType: initialData.serviceType
+        ? (Array.isArray(initialData.serviceType) ? initialData.serviceType : [initialData.serviceType])
+        : '',
       issueDescription: initialData.issueDescription || '',
       appointmentDate: initialData.appointmentDate || '',
       appointmentTime: initialData.appointmentTime || '',

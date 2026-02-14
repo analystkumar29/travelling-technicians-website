@@ -394,15 +394,16 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
   }), [faqItems]);
 
   // Handle booking CTA
-  const handleBookNow = () => {
+  const handleBookNow = (tier?: 'standard' | 'premium') => {
     router.push({
       pathname: '/book-online',
       query: {
-        city: city.slug,
+        city: city.name,
         service: service.slug,
-        model: model.slug,
+        model: model.display_name,
         deviceType: type.slug,
-        brand: brand.slug
+        brand: brand.slug,
+        ...(tier && { tier }),
       }
     });
   };
@@ -530,7 +531,7 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
                   </div>
 
                   <button
-                    onClick={handleBookNow}
+                    onClick={() => handleBookNow('standard')}
                     className="w-full mt-6 bg-primary-100 hover:bg-primary-200 text-primary-900 font-bold py-3 px-8 rounded-lg transition duration-300"
                   >
                     Select Standard
@@ -590,7 +591,7 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
                   </div>
 
                   <button
-                    onClick={handleBookNow}
+                    onClick={() => handleBookNow('premium')}
                     className="w-full mt-6 bg-primary-800 hover:bg-primary-900 text-white font-bold py-3 px-8 rounded-lg transition duration-300"
                   >
                     Select Premium
@@ -896,7 +897,7 @@ export default function ModelServicePage({ routeData }: ModelServicePageProps) {
               <h2 className="text-3xl font-bold mb-4">Ready to Repair Your {model.display_name}?</h2>
               <p className="text-xl mb-6 opacity-90">Book our doorstep service in {city.name} today!</p>
               <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <button onClick={handleBookNow} className="bg-white text-primary-800 hover:bg-primary-50 font-bold py-3 px-8 rounded-lg transition duration-300">
+                <button onClick={() => handleBookNow()} className="bg-white text-primary-800 hover:bg-primary-50 font-bold py-3 px-8 rounded-lg transition duration-300">
                   Book Online Now
                 </button>
                 <a href={formatPhoneNumberForHref(cleanPhone)} className="bg-transparent border-2 border-white hover:bg-white hover:text-primary-800 text-white font-bold py-3 px-8 rounded-lg transition duration-300">

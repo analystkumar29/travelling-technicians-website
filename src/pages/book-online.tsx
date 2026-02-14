@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import Layout from '@/components/layout/Layout';
@@ -33,6 +33,22 @@ const BookOnlinePage: NextPage = () => {
       router.replace('/book-online', undefined, { shallow: true });
     }
   }, [router.query.cancelled, router]);
+
+  // Build initialData from query params (from ModelServicePage tier selection)
+  const initialData = useMemo(() => {
+    if (!router.isReady) return {};
+    const q = router.query;
+    const data: Partial<CreateBookingRequest> = {};
+    if (typeof q.deviceType === 'string') data.deviceType = q.deviceType as CreateBookingRequest['deviceType'];
+    if (typeof q.brand === 'string') data.deviceBrand = q.brand;
+    if (typeof q.model === 'string') data.deviceModel = q.model;
+    if (typeof q.service === 'string') data.serviceType = [q.service] as any;
+    if (typeof q.city === 'string') data.city = q.city;
+    if (typeof q.tier === 'string' && (q.tier === 'standard' || q.tier === 'premium')) {
+      data.pricingTier = q.tier;
+    }
+    return data;
+  }, [router.isReady, router.query]);
 
   const handleSubmit = async (data: CreateBookingRequest) => {
     try {
@@ -160,7 +176,7 @@ const BookOnlinePage: NextPage = () => {
           )}
           
           {isSuccess && bookingData ? (
-            <BookingComplete 
+            <BookingComplete
               bookingReference={bookingData.reference_number}
               customerName={bookingData.customer_name}
               customerEmail={bookingData.customer_email}
@@ -168,10 +184,18 @@ const BookOnlinePage: NextPage = () => {
               appointmentTime={bookingData.booking_time}
               onReset={handleReset}
             />
+          ) : !router.isReady ? (
+            <div className="max-w-3xl mx-auto py-16 text-center">
+              <div className="animate-pulse space-y-4">
+                <div className="h-8 bg-primary-100 rounded w-1/3 mx-auto"></div>
+                <div className="h-4 bg-primary-100 rounded w-2/3 mx-auto"></div>
+                <div className="h-64 bg-primary-50 rounded-xl"></div>
+              </div>
+            </div>
           ) : (
-            <BookingForm 
-              onSubmit={handleSubmit} 
-              initialData={{}}
+            <BookingForm
+              onSubmit={handleSubmit}
+              initialData={initialData}
             />
           )}
           
