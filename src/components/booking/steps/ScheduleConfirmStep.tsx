@@ -165,7 +165,6 @@ export default function ScheduleConfirmStep({
                     disabled={isLoadingTimeSlots || !watchedAppointmentDate}
                     onChange={(e) => {
                       field.onChange(e);
-                      if (e.target.value) scrollToElement('#terms-section', 500);
                     }}
                   >
                     <option value="">
