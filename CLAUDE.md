@@ -604,6 +604,16 @@ Two payment flows integrated via Stripe Checkout Sessions:
 - `send-payment-link.ts` calls `create-payment-link` via internal HTTP fetch (works on Vercel but adds latency)
 - Invoice generation requires `STRIPE_SECRET_KEY` — fails silently if not configured
 
+## Accepted Vulnerabilities (reviewed 2026-02-13)
+
+`next@14.2.35` has 2 high-severity CVEs. Neither is exploitable in this deployment:
+
+1. **Image Optimizer DoS** ([GHSA-9g9p-9gw9-jx7f](https://github.com/advisories/GHSA-9g9p-9gw9-jx7f), CVSS 5.9) — affects self-hosted deployments only. This project deploys on **Vercel** where the image optimizer is managed infrastructure.
+
+2. **RSC deserialization DoS** ([GHSA-h25m-26qc-wcjf](https://github.com/advisories/GHSA-h25m-26qc-wcjf), CVSS 7.5) — requires React Server Components (App Router). This project uses **Pages Router exclusively** — no `app/` directory, no `use server` directives.
+
+**Re-review triggers**: Moving off Vercel (re-evaluate #1) or adopting App Router (re-evaluate #2).
+
 ## SEO Knowledge Base
 
 > **Full SEO reference**: `memory/seo.md` — update whenever working on SEO issues (indexing, crawling, structured data, meta tags, sitemaps, redirects, GSC findings).
