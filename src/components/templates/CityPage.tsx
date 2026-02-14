@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { formatPhoneNumberForDisplay, formatPhoneNumberForHref, DEFAULT_PHONE_NUMBER } from '@/utils/phone-formatter';
@@ -11,6 +11,7 @@ import { CityLocalBusinessSchema } from '@/components/seo/CityLocalBusinessSchem
 import { TechnicianSchema } from '@/components/seo/TechnicianSchema';
 import { LocalContent } from '@/components/seo/LocalContent';
 import { NeighborhoodLinks } from '@/components/seo/NeighborhoodLinks';
+import InternalLinkingFooter from '@/components/seo/InternalLinkingFooter';
 
 /**
  * CityPage Template - "Best of Both Worlds" Consolidation
@@ -142,6 +143,43 @@ export default function CityPage({ routeData }: CityPageProps) {
     warrantyDays: 90
   };
 
+  // FAQ questions for city page
+  const faqItems = useMemo(() => [
+    {
+      question: `Do you offer doorstep device repair in ${cityName}?`,
+      answer: `Yes! The Travelling Technicians provides doorstep repair service throughout ${cityName}, BC. Our certified technicians come to your home, office, or any convenient location with all necessary tools and parts. No need to visit a repair shop.`
+    },
+    {
+      question: `How much does phone repair cost in ${cityName}?`,
+      answer: `Phone repair prices in ${cityName} start from $57 for battery replacement and $84 for screen replacement. We offer standard and premium tiers with 3-month and 6-month warranties respectively. Exact pricing depends on your device model.`
+    },
+    {
+      question: `How quickly can you repair my device in ${cityName}?`,
+      answer: `Most repairs in ${cityName} are completed in 30-60 minutes at your location. We offer next-day appointments when booked before 3 PM. Same-day service may be available depending on technician availability.`
+    },
+    {
+      question: `What devices do you repair in ${cityName}?`,
+      answer: `We repair all major phone and laptop brands in ${cityName}, including iPhone, Samsung Galaxy, Google Pixel, MacBook, and more. Services include screen replacement, battery replacement, charging port repair, and water damage repair.`
+    }
+  ], [cityName]);
+
+  // FAQ JSON-LD schema
+  const faqLd = useMemo(() => ({
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": faqItems.map(item => ({
+      "@type": "Question",
+      "name": item.question,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": item.answer
+      }
+    }))
+  }), [faqItems]);
+
+  // FAQ accordion state
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+
   return (
     <>
       <Head>
@@ -272,7 +310,13 @@ export default function CityPage({ routeData }: CityPageProps) {
           })
         }}
       />
-      
+
+      {/* FAQPage Schema for Rich Snippets */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
+      />
+
       <Header />
       
       {/* ========== HERO SECTION ========== */}
@@ -657,6 +701,39 @@ export default function CityPage({ routeData }: CityPageProps) {
         <LocalContent content={local_content} cityName={cityName} />
       )}
 
+      {/* ========== FAQ SECTION ========== */}
+      <section className="py-16 bg-white">
+        <div className="container-custom">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-3xl font-bold mb-8 text-center">Frequently Asked Questions</h2>
+            <div className="space-y-3">
+              {faqItems.map((item, index) => (
+                <div key={index} className="border border-gray-100 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)}
+                    className="w-full flex items-center justify-between p-4 text-left hover:bg-primary-50 transition-colors"
+                  >
+                    <span className="font-medium text-primary-900 pr-4">{item.question}</span>
+                    <svg
+                      className={`h-5 w-5 text-primary-400 flex-shrink-0 transition-transform ${openFaqIndex === index ? 'rotate-180' : ''}`}
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  {openFaqIndex === index && (
+                    <div className="px-4 pb-4 text-primary-600">
+                      {item.answer}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ========== CTA SECTION ========== */}
       <section className="py-16 bg-primary-50">
         <div className="container-custom text-center">
@@ -684,6 +761,7 @@ export default function CityPage({ routeData }: CityPageProps) {
         </div>
       </section>
       
+      <InternalLinkingFooter currentCity={citySlug} />
       <Footer />
     </>
   );

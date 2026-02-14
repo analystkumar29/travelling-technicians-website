@@ -20,6 +20,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import OptimizedImage from '@/components/common/OptimizedImage';
 import { FaTools, FaCheck, FaClock, FaMapMarkerAlt, FaShieldAlt, FaArrowRight, FaMobile, FaLaptop } from 'react-icons/fa';
+import InternalLinkingFooter from '@/components/seo/InternalLinkingFooter';
 
 interface RepairIndexProps {
   cities: Array<{ slug: string; city_name: string }>;
@@ -682,6 +683,7 @@ export default function RepairIndex({ cities = [], services = [], models = [], r
         </div>
       </div>
       
+      <InternalLinkingFooter />
       <Footer />
     </>
   );
