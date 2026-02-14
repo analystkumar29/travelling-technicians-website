@@ -121,11 +121,8 @@ export default function BookingConfirmation() {
           phone: data.customer.phone
         });
         
-        // Auto-scroll to top on mobile to show the confirmation title
-        // Use setTimeout to ensure the DOM has updated before scrolling
-        setTimeout(() => {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 100);
+        // Scroll to top so the confirmation title is visible
+        window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
       } catch (err) {
         console.error('Error fetching booking:', err);
         setError(err instanceof Error ? err.message : 'Failed to load booking information');

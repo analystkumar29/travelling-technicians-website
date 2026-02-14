@@ -90,8 +90,9 @@ const BookOnlinePage: NextPage = () => {
         localStorage.setItem('lastBookingReference', result.reference);
       }
       
+      window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
       setIsSuccess(true);
-      
+
       // Email is already sent by the API, no need to send again
       
     } catch (err: any) {
