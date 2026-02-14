@@ -499,7 +499,12 @@ All 3,172 `model-service-page` routes now have:
 - Now accepts optional `currentCity`/`currentService` props
 - When `currentCity` is set: service links go to `/repair/{city}/{service}` instead of `/services/{slug}`
 - Current city is highlighted with bold text
-- Currently only imported in `ModelServicePage.tsx`
+- **Imported in ALL templates** (as of 2026-02-13):
+  - `ModelServicePage.tsx` — with `currentCity` + `currentService`
+  - `CityPage.tsx` — with `currentCity`
+  - `NeighborhoodPage.tsx` — with `currentCity`
+  - `RepairIndex.tsx` — no city context
+  - Also on `services/[slug]`, `brands/[slug]`, `models/[slug]`
 
 ### WhatsApp Integration
 - **`WhatsAppButton.tsx`** (`src/components/common/`): Mobile FAB (bottom-left, green, `md:hidden`), scroll-triggered
@@ -513,10 +518,19 @@ All 3,172 `model-service-page` routes now have:
 - **GBP review URL**: `https://g.page/r/CXBAlSwIpGMSEAE/review` (stored in `site_settings.google_review_url`)
 - Added to ModelServicePage testimonials section and Footer business hours section
 
+### FAQPage Schema Coverage (updated 2026-02-13)
+- **ModelServicePage** (3,172 pages): 4 contextual Qs (cost, duration, doorstep, warranty)
+- **CityPage** (13 pages): 4 city-specific Qs (doorstep service, pricing, speed, devices) — added 2026-02-13
+- **NeighborhoodPage** (96 pages): 4 neighborhood-specific Qs (doorstep, response time, services, fees) — added 2026-02-13
+- **RepairIndex** (1 page): 6 Qs about doorstep repair
+- **Model landing pages** (20 pages): 4 Qs per model
+- **Total**: 3,302 pages with FAQPage JSON-LD schema
+
 ### Net Impact on Internal Linking
 - Each model-service page: ~19 links (footer only) → ~30-35 contextual links
 - ~34,000+ new internal links across all 3,172 model-service pages
-- FAQ schema on 3,172 pages for rich results eligibility
+- InternalLinkingFooter now on all templates — 110 additional pages with ~19 internal links each
+- FAQ schema on 3,302 pages for rich results eligibility
 
 ## Stripe Payment & Invoicing (APPLIED 2026-02-09)
 
