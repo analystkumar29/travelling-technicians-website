@@ -432,6 +432,24 @@ export function useBookingController({
 
   // ── Effects ──────────────────────────────────────────────────────────────
 
+  // Auto-advance to Step 2 when all Step 1 fields are pre-filled from query params
+  useEffect(() => {
+    const vals = methods.getValues();
+    if (
+      vals.deviceType &&
+      vals.deviceBrand &&
+      vals.deviceModel &&
+      vals.serviceType && (Array.isArray(vals.serviceType) ? vals.serviceType.length > 0 : vals.serviceType !== '') &&
+      vals.pricingTier &&
+      currentStep === 0
+    ) {
+      revealSection('brandSelection');
+      setValidatedSteps(prev => prev.includes(0) ? prev : [...prev, 0]);
+      setCurrentStep(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Reset isSubmitting when page is restored from bfcache (browser back from Stripe)
   useEffect(() => {
     const handlePageShow = (e: PageTransitionEvent) => {

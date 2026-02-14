@@ -8,6 +8,7 @@ const apiLogger = logger.createModuleLogger('api/pricing/services');
 interface Service {
   id: number;
   name: string;
+  slug?: string;
   display_name: string;
   description?: string;
   estimated_duration_minutes?: number;
@@ -156,6 +157,7 @@ export default async function handler(
     const services: Service[] = dbServices.map((s: any) => ({
       id: s.id,
       name: s.name,
+      slug: s.slug,
       display_name: s.display_name || s.name,
       description: s.description,
       estimated_duration_minutes: s.estimated_duration_minutes,
