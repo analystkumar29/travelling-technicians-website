@@ -123,6 +123,12 @@ module.exports = (phase, { defaultConfig }) => {
           destination: '/repair/:city',
           permanent: true,
         },
+        // Tablet repair service temporarily inactive — redirect to main repair page
+        {
+          source: '/services/tablet-repair',
+          destination: '/repair',
+          permanent: false,
+        },
         // Catch-all for old /services/mobile/... and /services/laptop/... patterns
         {
           source: '/services/mobile/:path*',

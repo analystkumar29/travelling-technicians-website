@@ -3,8 +3,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogoImage } from '@/components/common/OptimizedImage';
-import { ChevronDown, Menu, X } from 'lucide-react';
+import { ChevronDown, Menu, X, Smartphone, Laptop, Tablet } from 'lucide-react';
 import { useServiceAreas } from '@/hooks/useBusinessSettings';
+import { getActiveServiceNavItems, ServiceNavItem } from '@/config/service-nav';
+
+const SERVICE_ICON_MAP: Record<ServiceNavItem['icon'], React.ComponentType<{ className?: string }>> = {
+  smartphone: Smartphone,
+  laptop: Laptop,
+  tablet: Tablet,
+};
 
 const Header = () => {
   const router = useRouter();
@@ -83,15 +90,11 @@ const Header = () => {
               </button>
               <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-primary-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                 <div className="py-1.5">
-                  <Link href="/services/mobile-repair" className="block px-4 py-2 text-sm text-primary-700 hover:bg-primary-50 hover:text-primary-900 transition-colors">
-                    Mobile Repair
-                  </Link>
-                  <Link href="/services/laptop-repair" className="block px-4 py-2 text-sm text-primary-700 hover:bg-primary-50 hover:text-primary-900 transition-colors">
-                    Laptop Repair
-                  </Link>
-                  <Link href="/services/tablet-repair" className="block px-4 py-2 text-sm text-primary-700 hover:bg-primary-50 hover:text-primary-900 transition-colors">
-                    Tablet Repair
-                  </Link>
+                  {getActiveServiceNavItems().map((item) => (
+                    <Link key={item.slug} href={item.href} className="block px-4 py-2 text-sm text-primary-700 hover:bg-primary-50 hover:text-primary-900 transition-colors">
+                      {item.label}
+                    </Link>
+                  ))}
                   <div className="border-t border-primary-100 my-1" />
                   <Link href="/repair" className="block px-4 py-2 text-sm text-primary-700 hover:bg-primary-50 hover:text-primary-900 transition-colors">
                     Doorstep Service
@@ -173,15 +176,11 @@ const Header = () => {
                 {/* Mobile Services */}
                 <div className="px-3 py-2">
                   <div className="text-primary-400 text-xs font-semibold uppercase tracking-wide mb-2">Services</div>
-                  <Link href="/services/mobile-repair" className="block px-3 py-1.5 text-primary-600 hover:text-accent-600 transition-colors text-sm">
-                    Mobile Repair
-                  </Link>
-                  <Link href="/services/laptop-repair" className="block px-3 py-1.5 text-primary-600 hover:text-accent-600 transition-colors text-sm">
-                    Laptop Repair
-                  </Link>
-                  <Link href="/services/tablet-repair" className="block px-3 py-1.5 text-primary-600 hover:text-accent-600 transition-colors text-sm">
-                    Tablet Repair
-                  </Link>
+                  {getActiveServiceNavItems().map((item) => (
+                    <Link key={item.slug} href={item.href} className="block px-3 py-1.5 text-primary-600 hover:text-accent-600 transition-colors text-sm">
+                      {item.label}
+                    </Link>
+                  ))}
                   <Link href="/repair" className="block px-3 py-1.5 text-primary-600 hover:text-accent-600 transition-colors text-sm">
                     Doorstep Service
                   </Link>

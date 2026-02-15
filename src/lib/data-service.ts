@@ -1574,7 +1574,6 @@ function getFallbackServiceSlugs(): Array<{ slug: string; deviceType: string }> 
   return [
     { slug: 'laptop-repair', deviceType: 'laptop' },
     { slug: 'mobile-repair', deviceType: 'mobile' },
-    { slug: 'tablet-repair', deviceType: 'tablet' }
   ];
 }
 

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import { getServiceSupabase } from '@/utils/supabaseClient';
+import { getActiveServiceNavItems } from '@/config/service-nav';
 
 interface RouteCount {
   route_type: string;
@@ -216,9 +217,9 @@ const SitemapPage = ({
                 icon={<Wrench className="w-6 h-6 text-accent-500" />}
                 description="Comprehensive repair services for all devices"
               >
-                <SitemapLink href="/services/mobile-repair" label="Mobile Phone Repair" />
-                <SitemapLink href="/services/laptop-repair" label="Laptop Repair" />
-                <SitemapLink href="/services/tablet-repair" label="Tablet Repair" />
+                {getActiveServiceNavItems().map((item) => (
+                  <SitemapLink key={item.slug} href={item.href} label={item.label} />
+                ))}
 
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <h4 className="font-semibold text-primary-700 mb-2">Common Services:</h4>

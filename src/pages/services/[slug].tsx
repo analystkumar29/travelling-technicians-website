@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { ServiceSchema, LocalBusinessSchema } from '@/components/seo/StructuredData';
 import { getServicesByDeviceType, getBrandsByDeviceType, getAllActiveServiceSlugs, hasModelPage } from '@/lib/data-service';
+import { getActiveServiceNavItems } from '@/config/service-nav';
 import InternalLinkingFooter from '@/components/seo/InternalLinkingFooter';
 import GoogleReviewBadge from '@/components/common/GoogleReviewBadge';
 import OptimizedImage from '@/components/common/OptimizedImage';
@@ -521,11 +522,9 @@ export const getStaticPaths: GetStaticPaths = async () => {
   } catch (error) {
     console.error('Error fetching active service slugs:', error);
 
-    const fallbackPaths = [
-      { params: { slug: 'laptop-repair' } },
-      { params: { slug: 'mobile-repair' } },
-      { params: { slug: 'tablet-repair' } },
-    ];
+    const fallbackPaths = getActiveServiceNavItems().map(item => ({
+      params: { slug: item.slug },
+    }));
 
     return {
       paths: fallbackPaths,

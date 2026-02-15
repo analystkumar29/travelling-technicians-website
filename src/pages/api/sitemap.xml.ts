@@ -9,6 +9,7 @@ import {
   logSlugTransformation
 } from '@/utils/slug-utils';
 import { getModelPageSlugs } from '@/lib/data-service';
+import { getActiveServiceNavItems } from '@/config/service-nav';
 
 // Create a module logger
 const sitemapLogger = logger.createModuleLogger('sitemap');
@@ -230,11 +231,11 @@ async function fetchDynamicContent(): Promise<DynamicContent> {
       if (service.device_type_id === 2) deviceType = 'laptop';
       if (service.device_type_id === 3) deviceType = 'tablet';
       return { slug: serviceSlug, updated_at: lastmod, device_type: deviceType };
-    }).filter(service => isValidUrlSlug(service.slug)) || [
-      { slug: 'mobile-repair', updated_at: FALLBACK_DATE, device_type: 'mobile' },
-      { slug: 'laptop-repair', updated_at: FALLBACK_DATE, device_type: 'laptop' },
-      { slug: 'tablet-repair', updated_at: FALLBACK_DATE, device_type: 'tablet' }
-    ];
+    }).filter(service => isValidUrlSlug(service.slug)) || getActiveServiceNavItems().map(item => ({
+      slug: item.slug,
+      updated_at: FALLBACK_DATE,
+      device_type: item.icon === 'smartphone' ? 'mobile' : item.icon,
+    }));
 
     const brands = (brandsResult.data || []).map(b => ({
       slug: b.slug,

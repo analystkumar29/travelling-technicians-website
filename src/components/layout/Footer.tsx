@@ -2,6 +2,13 @@ import Link from 'next/link';
 import { LogoImage } from '@/components/common/OptimizedImage';
 import { useSimplePhoneNumber, useBusinessSettings, useServiceAreas } from '@/hooks/useBusinessSettings';
 import { Phone, Mail, MapPin, Smartphone, Laptop, Tablet, MessageCircle } from 'lucide-react';
+import { getActiveServiceNavItems, ServiceNavItem } from '@/config/service-nav';
+
+const FOOTER_ICON_MAP: Record<ServiceNavItem['icon'], React.ComponentType<{ className?: string }>> = {
+  smartphone: Smartphone,
+  laptop: Laptop,
+  tablet: Tablet,
+};
 
 /** Format 24h time string (e.g. "08:00") to 12h display (e.g. "8:00 AM") */
 function formatTime(time: string): string {
@@ -64,21 +71,16 @@ export default function Footer() {
             <h3 className="text-lg font-heading font-bold mb-4 text-accent-400">Quick Links</h3>
             <ul className="space-y-2">
               <li><Link href="/" className="text-primary-200 hover:text-white transition-colors duration-200">Home</Link></li>
-              <li>
-                <Link href="/services/mobile-repair" className="text-primary-200 hover:text-white transition-colors duration-200 flex items-center">
-                  <Smartphone className="h-3.5 w-3.5 mr-2 text-primary-400" />Mobile Repair
-                </Link>
-              </li>
-              <li>
-                <Link href="/services/laptop-repair" className="text-primary-200 hover:text-white transition-colors duration-200 flex items-center">
-                  <Laptop className="h-3.5 w-3.5 mr-2 text-primary-400" />Laptop Repair
-                </Link>
-              </li>
-              <li>
-                <Link href="/services/tablet-repair" className="text-primary-200 hover:text-white transition-colors duration-200 flex items-center">
-                  <Tablet className="h-3.5 w-3.5 mr-2 text-primary-400" />Tablet Repair
-                </Link>
-              </li>
+              {getActiveServiceNavItems().map((item) => {
+                const Icon = FOOTER_ICON_MAP[item.icon];
+                return (
+                  <li key={item.slug}>
+                    <Link href={item.href} className="text-primary-200 hover:text-white transition-colors duration-200 flex items-center">
+                      <Icon className="h-3.5 w-3.5 mr-2 text-primary-400" />{item.label}
+                    </Link>
+                  </li>
+                );
+              })}
               <li><Link href="/repair" className="text-primary-200 hover:text-white transition-colors duration-200">Doorstep Repair</Link></li>
               <li><Link href="/pricing" className="text-primary-200 hover:text-white transition-colors duration-200">Pricing</Link></li>
               <li><Link href="/book-online" className="text-primary-200 hover:text-white transition-colors duration-200">Book Online</Link></li>
