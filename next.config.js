@@ -81,6 +81,48 @@ module.exports = (phase, { defaultConfig }) => {
           destination: '/repair/google-devices',
           permanent: true,
         },
+        // Fix GSC 404s: sub-service slugs → parent service pages
+        {
+          source: '/services/screen-replacement-mobile',
+          destination: '/services/mobile-repair',
+          permanent: true,
+        },
+        {
+          source: '/services/battery-replacement-mobile',
+          destination: '/services/mobile-repair',
+          permanent: true,
+        },
+        {
+          source: '/services/screen-replacement-laptop',
+          destination: '/services/laptop-repair',
+          permanent: true,
+        },
+        {
+          source: '/services/battery-replacement-laptop',
+          destination: '/services/laptop-repair',
+          permanent: true,
+        },
+        {
+          source: '/services/charging-port-repair',
+          destination: '/repair',
+          permanent: true,
+        },
+        {
+          source: '/services/water-damage-repair',
+          destination: '/repair',
+          permanent: true,
+        },
+        // Fix GSC 404s: inactive city-service routes → city pages
+        {
+          source: '/repair/:city/charging-port-repair',
+          destination: '/repair/:city',
+          permanent: true,
+        },
+        {
+          source: '/repair/:city/water-damage-repair',
+          destination: '/repair/:city',
+          permanent: true,
+        },
         // Catch-all for old /services/mobile/... and /services/laptop/... patterns
         {
           source: '/services/mobile/:path*',

@@ -21,6 +21,7 @@ interface PopularCity {
 interface PopularService {
   slug: string;
   display_name: string;
+  fallbackHref: string; // Used when no currentCity — links to the parent /services/ page
 }
 
 // Static fallback cities - all 13 active service areas
@@ -40,14 +41,13 @@ const FALLBACK_CITIES: PopularCity[] = [
   { slug: 'squamish', name: 'Squamish' }
 ];
 
-// Static fallback services - most popular repairs
+// Static fallback services - must match actual active routes
+// Note: water-damage-repair and charging-port-repair removed (inactive, no pages)
 const FALLBACK_SERVICES: PopularService[] = [
-  { slug: 'screen-replacement-mobile', display_name: 'Mobile Screen Repair' },
-  { slug: 'battery-replacement-mobile', display_name: 'Mobile Battery Replacement' },
-  { slug: 'screen-replacement-laptop', display_name: 'Laptop Screen Repair' },
-  { slug: 'battery-replacement-laptop', display_name: 'Laptop Battery Replacement' },
-  { slug: 'water-damage-repair', display_name: 'Water Damage Repair' },
-  { slug: 'charging-port-repair', display_name: 'Charging Port Repair' }
+  { slug: 'screen-replacement-mobile', display_name: 'Mobile Screen Repair', fallbackHref: '/services/mobile-repair' },
+  { slug: 'battery-replacement-mobile', display_name: 'Mobile Battery Replacement', fallbackHref: '/services/mobile-repair' },
+  { slug: 'screen-replacement-laptop', display_name: 'Laptop Screen Repair', fallbackHref: '/services/laptop-repair' },
+  { slug: 'battery-replacement-laptop', display_name: 'Laptop Battery Replacement', fallbackHref: '/services/laptop-repair' },
 ];
 
 interface InternalLinkingFooterProps {
@@ -101,7 +101,7 @@ export default function InternalLinkingFooter({ currentCity, currentService }: I
               {FALLBACK_SERVICES.map((service: PopularService) => (
                 <Link
                   key={service.slug}
-                  href={currentCity ? `/repair/${currentCity}/${service.slug}` : `/services/${service.slug}`}
+                  href={currentCity ? `/repair/${currentCity}/${service.slug}` : service.fallbackHref}
                   className="text-sm text-primary-600 hover:text-primary-700 hover:underline transition-colors"
                   title={service.display_name}
                 >
